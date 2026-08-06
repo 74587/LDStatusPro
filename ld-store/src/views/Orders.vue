@@ -110,8 +110,8 @@
             </div>
           </div>
           
-          <!-- 发货内容展示区 -->
-          <div 
+          <!-- 发货内容仅在订单详情页展示，列表卡片不直接暴露 CDK/发货内容。 -->
+          <!-- <div
             v-if="hasDeliveryContent(order)"
             class="cdk-display"
             @click.stop
@@ -123,7 +123,7 @@
               </span>
             </div>
             <div class="cdk-content-wrapper">
-              <code 
+              <code
                 class="cdk-code"
                 :class="{ hidden: !order._showCdk }"
               >
@@ -147,7 +147,7 @@
                 </button>
               </div>
             </div>
-          </div>
+          </div> -->
           
           <div class="order-footer">
             <div class="order-amount-wrap compact">

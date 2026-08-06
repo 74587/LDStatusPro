@@ -289,6 +289,7 @@ import {
   getProductTypeIcon,
   getProductTypeText,
   getStockDisplay as resolveStockDisplay,
+  isCdkProduct,
   isLegacyLinkProduct,
   isLowStock as hasLowStock,
   isPlatformOrderProduct
@@ -666,6 +667,14 @@ function getProductType(product) {
 
 function isPlatformOrderProductItem(product) {
   return isPlatformOrderProduct(product)
+}
+
+function isCdkItem(product) {
+  return isCdkProduct(product)
+}
+
+function isSharedCdkProduct(product) {
+  return isCdkProduct(product) && !!(product?.sharedCdkEnabled || Number(product?.shared_cdk_enabled || 0) === 1)
 }
 
 // 状态文本

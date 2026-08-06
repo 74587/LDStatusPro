@@ -386,6 +386,13 @@
                   >
                     正在审核中，暂时仅自己可见
                   </span>
+                  <span
+                    v-else-if="isCommentRejectedStatus(item.status)"
+                    class="comment-inline-status-tag comment-inline-status-tag--rejected"
+                    :title="item.review_reason || '该评论未通过审核'"
+                  >
+                    审核未通过，仅自己可见
+                  </span>
                 </div>
                 <div class="comment-footer">
                   <time class="comment-time">{{ formatCommentTime(item.created_at) }}</time>
@@ -454,6 +461,13 @@
                               class="comment-inline-status-tag"
                             >
                               正在审核中，暂时仅自己可见
+                            </span>
+                            <span
+                              v-else-if="isCommentRejectedStatus(reply.status)"
+                              class="comment-inline-status-tag comment-inline-status-tag--rejected"
+                              :title="reply.review_reason || '该回复未通过审核'"
+                            >
+                              审核未通过，仅自己可见
                             </span>
                           </div>
                         </div>
@@ -904,7 +918,9 @@ const commentReplyDraftMap = ref({})
 
 const COMMENT_VOTE_UP = 'up'
 const COMMENT_VOTE_DOWN = 'down'
-const COMMENT_PUBLIC_STATUS_SET = new Set(['ai_approved', 'manual_approved'])
+const COMMENT_PUBLIC_STATUS_SET = new Set(['ai_approved', 'manual_approved', 'approved'])
+const COMMENT_PENDING_STATUS_SET = new Set(['pending_ai', 'pending_manual', 'pending'])
+const COMMENT_REJECTED_STATUS_SET = new Set(['ai_rejected', 'manual_rejected', 'rejected'])
 
 const quickReportReasons = [
   { text: '收款配置缺失，无法生成支付链接', category: 'payment_config_issue' },
@@ -1436,8 +1452,11 @@ function isCommentPublicStatus(status) {
 }
 
 function isCommentPendingStatus(status) {
-  const safeStatus = String(status || '').trim()
-  return safeStatus === 'pending_ai' || safeStatus === 'pending_manual'
+  return COMMENT_PENDING_STATUS_SET.has(String(status || '').trim())
+}
+
+function isCommentRejectedStatus(status) {
+  return COMMENT_REJECTED_STATUS_SET.has(String(status || '').trim())
 }
 
 function canOpenCommentActionMenu(item) {
@@ -3674,6 +3693,11 @@ async function handleOpenStore() {
   font-size: 12px;
   font-weight: 600;
   line-height: 1.4;
+}
+
+.comment-inline-status-tag--rejected {
+  background: rgba(220, 38, 38, 0.1);
+  color: #b91c1c;
 }
 
 .comment-footer {

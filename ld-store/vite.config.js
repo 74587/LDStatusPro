@@ -26,9 +26,9 @@ export default defineConfig({
         rewrite: (path) => path
       },
       '/api': {
-        target: 'https://api2.ldspro.qzz.io',
+        target: 'http://localhost:8791',
         changeOrigin: true,
-        secure: true,
+        secure: false,
         rewrite: (path) => path
       }
     }
