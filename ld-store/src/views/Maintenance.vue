@@ -169,14 +169,14 @@ const serviceStatus = computed(() => {
       tone: 'warning',
     },
     {
-      name: 'LinuxDo Credit 积分服务',
-      description: '上游能力状态请以 LinuxDo 与状态页通知为准。',
-      state: '待恢复',
-      tone: 'info',
+      name: '后端服务迁移',
+      description: '数据与服务正在整体迁移，迁移完成前暂停全部业务。',
+      state: '迁移中',
+      tone: 'warning',
     },
     {
       name: '恢复通知',
-      description: '恢复后会第一时间切回正常模式。',
+      description: '迁移完成后将自动恢复正常访问。',
       state: '关注中',
       tone: 'info',
     },
@@ -194,9 +194,9 @@ const noticeItems = computed(() => {
   }
 
   return [
-    '当前处于全站维护模式，请稍后再试。',
+    `本次维护原因：${MAINTENANCE_STATE.reason}`,
     '恢复时间与可用性将通过状态页同步。',
-    '维护完成后将自动恢复正常访问。',
+    '迁移完成后将自动恢复正常访问。',
   ]
 })
 

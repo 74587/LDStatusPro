@@ -14,6 +14,20 @@ const STATUS_CACHE_MS = 60_000
 // Frontend fallback profile used before backend status is fetched.
 const TEMPORARY_MAINTENANCE_ENABLED = false
 
+// Frontend force-maintenance override. When enabled, the frontend always
+// shows the maintenance page regardless of backend system-status (used when
+// the backend itself must go offline, e.g. service migration). Set enabled to
+// false to restore normal operation.
+const FRONTEND_FORCE_MAINTENANCE = Object.freeze({
+  enabled: true,
+  mode: MAINTENANCE_MODES.FULL,
+  title: 'LD士多服务迁移中',
+  message: '站点因后端数据与服务整体迁移暂时关闭，请稍后再试。',
+  reason: '后端数据与服务整体迁移中，迁移完成前暂停全部业务。',
+  eta: '恢复时间待定，请关注状态页或稍后刷新页面。',
+  statusUrl: 'https://status.ldspro.qzz.io/',
+})
+
 const DEFAULT_STATUS_URL = 'https://status.ldspro.qzz.io/'
 const DEFAULT_ETA = '恢复时间待定，请关注状态页或稍后刷新页面。'
 
@@ -165,6 +179,7 @@ function normalizeMode(value) {
 }
 
 function resolveFallbackMode() {
+  if (FRONTEND_FORCE_MAINTENANCE.enabled) return FRONTEND_FORCE_MAINTENANCE.mode
   const envMode = normalizeMode(import.meta.env.VITE_MAINTENANCE_PROFILE)
   if (envMode !== MAINTENANCE_MODES.NORMAL) return envMode
   if (TEMPORARY_MAINTENANCE_ENABLED || envFlag(import.meta.env.VITE_MAINTENANCE_MODE)) {
@@ -184,6 +199,19 @@ function normalizeList(values = []) {
 }
 
 function normalizeStatusPayload(payload = {}) {
+  if (FRONTEND_FORCE_MAINTENANCE.enabled) {
+    payload = {
+      maintenance: {
+        mode: FRONTEND_FORCE_MAINTENANCE.mode,
+        title: FRONTEND_FORCE_MAINTENANCE.title,
+        message: FRONTEND_FORCE_MAINTENANCE.message,
+        reason: FRONTEND_FORCE_MAINTENANCE.reason,
+        eta: FRONTEND_FORCE_MAINTENANCE.eta,
+        statusUrl: FRONTEND_FORCE_MAINTENANCE.statusUrl,
+      },
+    }
+  }
+
   const source = payload?.maintenance && typeof payload.maintenance === 'object'
     ? payload.maintenance
     : payload
