@@ -261,20 +261,30 @@ let fetchPromise = null
 let lastFetchedAt = 0
 let hasFetched = false
 
+const STATUS_FETCH_TIMEOUT_MS = 8_000
+
 async function fetchSystemStatus() {
-  const response = await fetch(`${API_BASE}/api/shop/system-status`, {
-    method: 'GET',
-    headers: {
-      Accept: 'application/json',
-    },
-  })
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), STATUS_FETCH_TIMEOUT_MS)
 
-  if (!response.ok) {
-    throw new Error(`status_${response.status}`)
+  try {
+    const response = await fetch(`${API_BASE}/api/shop/system-status`, {
+      method: 'GET',
+      headers: {
+        Accept: 'application/json',
+      },
+      signal: controller.signal,
+    })
+
+    if (!response.ok) {
+      throw new Error(`status_${response.status}`)
+    }
+
+    const data = await response.json().catch(() => null)
+    return data?.data || data || {}
+  } finally {
+    clearTimeout(timeout)
   }
-
-  const data = await response.json().catch(() => null)
-  return data?.data || data || {}
 }
 
 export function applyMaintenanceStatus(payload = {}) {
@@ -285,6 +295,15 @@ export function applyMaintenanceStatus(payload = {}) {
 export async function ensureMaintenanceStatusLoaded(options = {}) {
   const force = options.force === true
   const now = Date.now()
+
+  // Force-maintenance is fully local: skip the backend status fetch so the
+  // page renders even when the backend is unreachable mid-migration.
+  if (FRONTEND_FORCE_MAINTENANCE.enabled) {
+    applyMaintenanceStatus({})
+    hasFetched = true
+    lastFetchedAt = Date.now()
+    return maintenanceState
+  }
 
   if (!force && fetchPromise) {
     return fetchPromise
