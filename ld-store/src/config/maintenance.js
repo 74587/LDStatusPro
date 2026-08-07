@@ -20,7 +20,7 @@ const TEMPORARY_MAINTENANCE_ENABLED = false
 // FORCE_MAINTENANCE_ENABLED to false to restore normal operation. Local dev
 // (`vite dev`) is always exempt so the site can be tested normally while
 // production stays in maintenance.
-const FORCE_MAINTENANCE_ENABLED = true
+const FORCE_MAINTENANCE_ENABLED = false
 const FRONTEND_FORCE_MAINTENANCE = Object.freeze({
   enabled: FORCE_MAINTENANCE_ENABLED && !import.meta.env.DEV,
   mode: MAINTENANCE_MODES.FULL,
