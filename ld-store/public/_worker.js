@@ -559,7 +559,24 @@ export default {
     }
 
     if (shouldBypassHtmlRewrite(url.pathname)) {
-      return env.ASSETS.fetch(request)
+      const assetResponse = await env.ASSETS.fetch(request)
+      // A hashed asset that resolved to the HTML fallback (e.g. a stale URL
+      // from an older deployment) must be served as a real 404: browsers
+      // refuse to apply an HTML response as a stylesheet and may cache the
+      // polluted response for a long time.
+      if (assetResponse.status === 200) {
+        const contentType = (assetResponse.headers.get('content-type') || '').toLowerCase()
+        if (contentType.includes('text/html') && /\.[a-zA-Z0-9]+$/.test(url.pathname)) {
+          return new Response(request.method === 'HEAD' ? null : 'Not Found', {
+            status: 404,
+            headers: {
+              'content-type': 'text/plain; charset=utf-8',
+              'cache-control': 'no-store'
+            }
+          })
+        }
+      }
+      return assetResponse
     }
 
     return handleHtmlRequest(request, env)
