@@ -19,7 +19,7 @@ const TEMPORARY_MAINTENANCE_ENABLED = false
 // the backend itself must go offline, e.g. service migration). Set enabled to
 // false to restore normal operation.
 const FRONTEND_FORCE_MAINTENANCE = Object.freeze({
-  enabled: true,
+  enabled: false,
   mode: MAINTENANCE_MODES.FULL,
   title: 'LD士多服务迁移中',
   message: '站点因后端数据与服务整体迁移暂时关闭，请稍后再试。',
