@@ -25,10 +25,10 @@ const FRONTEND_FORCE_MAINTENANCE = Object.freeze({
   message: '站点因后端数据与服务整体迁移暂时关闭，请稍后再试。',
   reason: '后端数据与服务整体迁移中，迁移完成前暂停全部业务。',
   eta: '恢复时间待定，请关注状态页或稍后刷新页面。',
-  statusUrl: 'https://status.ldspro.qzz.io/',
+  statusUrl: 'https://status.ldspro.qzz.io/status/ldstatus',
 })
 
-const DEFAULT_STATUS_URL = 'https://status.ldspro.qzz.io/'
+const DEFAULT_STATUS_URL = 'https://status.ldspro.qzz.io/status/ldstatus'
 const DEFAULT_ETA = '恢复时间待定，请关注状态页或稍后刷新页面。'
 
 const DEFAULT_FEATURES_BY_MODE = Object.freeze({
