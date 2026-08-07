@@ -16,10 +16,13 @@ const TEMPORARY_MAINTENANCE_ENABLED = false
 
 // Frontend force-maintenance override. When enabled, the frontend always
 // shows the maintenance page regardless of backend system-status (used when
-// the backend itself must go offline, e.g. service migration). Set enabled to
-// false to restore normal operation.
+// the backend itself must go offline, e.g. service migration). Set
+// FORCE_MAINTENANCE_ENABLED to false to restore normal operation. Local dev
+// (`vite dev`) is always exempt so the site can be tested normally while
+// production stays in maintenance.
+const FORCE_MAINTENANCE_ENABLED = true
 const FRONTEND_FORCE_MAINTENANCE = Object.freeze({
-  enabled: true,
+  enabled: FORCE_MAINTENANCE_ENABLED && !import.meta.env.DEV,
   mode: MAINTENANCE_MODES.FULL,
   title: 'LD士多服务迁移中',
   message: '站点因后端数据与服务整体迁移暂时关闭，请稍后再试。',
