@@ -1,7 +1,0 @@
-# Hashed assets are immutable and versioned by content; a missing asset means
-# a stale URL from an older deployment — serve a real 404 so browsers never
-# apply/cache an HTML response as a stylesheet (MIME pollution).
-/assets/* /index.html 404
-
-# SPA navigation fallback: only extension-less routes rewrite to index.html.
-/* /index.html 200
