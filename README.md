@@ -300,20 +300,6 @@ LDStatusPro/
 
 ---
 
-## 📦 关联仓库
-
-本项目由多个独立仓库组成，本仓库仅包含用户脚本、Cloudflare Worker 网关与官网：
-
-| 仓库 | 地址 | 说明 |
-| :-- | :-- | :-- |
-| **LDStatusPro**（本仓库） | [caigg188/LDStatusPro](https://github.com/caigg188/LDStatusPro) | 用户脚本、后端网关、官网 |
-| **ld-store-web** | [caigg188/ld-store-web](https://github.com/caigg188/ld-store-web) | LD 士多网页版前端（Vue 3） |
-| **ldsp-admin-panel** | [caigg188/ldsp-admin-panel](https://github.com/caigg188/ldsp-admin-panel) | 管理后台前端（Vue 3，私有） |
-| **ld-store-backend** | [caigg188/ld-store-backend](https://github.com/caigg188/ld-store-backend) | LD 士多后端（Node + SQLite，私有） |
-| **ldsp-backend** | [caigg188/ldsp-backend](https://github.com/caigg188/ldsp-backend) | LDStatusPro 主后端（Node + SQLite，私有） |
-
----
-
 ## 📋 更新日志
 
 ### v3.9.0.0
