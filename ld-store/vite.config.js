@@ -1,0 +1,57 @@
+import { defineConfig } from 'vite'
+import vue from '@vitejs/plugin-vue'
+import { fileURLToPath, URL } from 'node:url'
+import { HttpsProxyAgent } from 'https-proxy-agent'
+
+// Route dev-server proxies through the local HTTP proxy when set (e.g.
+// HTTPS_PROXY=http://127.0.0.1:7897) — Node itself ignores the system proxy,
+// so Cloudflare-hosted backends are unreachable without this on some networks.
+const proxyEnv = process.env.HTTPS_PROXY || process.env.HTTP_PROXY || ''
+const proxyAgent = proxyEnv ? new HttpsProxyAgent(proxyEnv) : undefined
+
+function proxyOptions(target) {
+  return {
+    target,
+    changeOrigin: true,
+    secure: true,
+    rewrite: (path) => path,
+    ...(proxyAgent ? { agent: proxyAgent } : {})
+  }
+}
+
+export default defineConfig({
+  plugins: [vue()],
+  resolve: {
+    alias: {
+      '@': fileURLToPath(new URL('./src', import.meta.url))
+    }
+  },
+  server: {
+    port: 3001,
+    open: true,
+    proxy: {
+      '/api/auth': proxyOptions('https://api1.ldspro.qzz.io'),
+      '/api/image': proxyOptions('https://api.ldspro.qzz.io'),
+      '/api': proxyOptions('https://api2.ldspro.qzz.io')
+    }
+  },
+  build: {
+    outDir: 'dist',
+    assetsDir: 'assets',
+    sourcemap: false,
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true,
+        drop_debugger: true
+      }
+    },
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor': ['vue', 'vue-router', 'pinia']
+        }
+      }
+    }
+  }
+})

@@ -1,0 +1,430 @@
+# LD 士多 - Web 版
+
+<p align="center">
+  <img src="https://ldspro.qzz.io/favicon.ico" alt="LD Status Pro Logo" width="80">
+</p>
+
+<p align="center">
+  <strong>基于 LDC (Linux.do Credit) 的在线商品交易平台</strong>
+</p>
+
+<p align="center">
+  <a href="#功能特性">功能特性</a> •
+  <a href="#技术栈">技术栈</a> •
+  <a href="#快速开始">快速开始</a> •
+  <a href="#部署指南">部署指南</a> •
+  <a href="#项目结构">项目结构</a> •
+  <a href="#文档">文档</a>
+</p>
+
+---
+
+## 📖 简介
+
+LD 士多 Web 版是 [LDStatus Pro](https://ldspro.qzz.io) 客户端脚本中「LD 士多」功能的独立网页版本。它提供了一个基于 LDC 积分系统的在线商品交易平台，支持 CDK 密钥、链接两种商品类型的发布与购买。
+
+### 为什么选择 Web 版？
+
+- 🌐 **无需安装** - 直接通过浏览器访问，无需安装浏览器扩展
+- 📱 **响应式设计** - 完美支持桌面端和移动端
+- 🎨 **更好的 UI/UX** - 采用现代化的莫兰迪配色设计
+- ✨ **液态玻璃效果** - 苹果风格的交互动效，流畅自然
+- 🔐 **安全可靠** - 前端安全防护，防止 XSS 等攻击
+
+## ✨ 功能特性
+
+### 🛒 商品浏览
+- 分类浏览（AI、存储、小鸡、咨询）
+- 分类切换缓存（减少重复请求）
+- 商品搜索
+- 商品详情查看
+- 无限滚动加载
+- 返回页面保持滚动位置
+
+### 💰 商品购买
+- CDK 自动发放
+- 链接商品跳转
+- 寄存商品对接
+- LDC 支付集成
+
+### 📦 商家功能
+- 发布商品
+- 编辑商品
+- CDK 库存管理
+- 订单管理
+- 收款设置
+
+### 👤 用户功能
+- Linux.do OAuth 登录
+- LDC 余额查询
+- 订单历史查看
+- 个人信息管理
+
+### 🏪 小店集市
+- 小店入驻与管理
+- 小店商品浏览
+- 店主信息展示
+
+### 📚 帮助文档
+- 快速入门指南
+- 商品类型说明（链接/CDK）
+- 发布流程详解
+- 常见问题解答
+
+## 🛠 技术栈
+
+| 技术 | 版本 | 说明 |
+|------|------|------|
+| [Vue.js](https://vuejs.org/) | 3.4+ | 渐进式 JavaScript 框架 |
+| [Vue Router](https://router.vuejs.org/) | 4.2+ | 官方路由管理器 |
+| [Pinia](https://pinia.vuejs.org/) | 2.1+ | Vue 状态管理库 |
+| [Tailwind CSS](https://tailwindcss.com/) | 3.4+ | 原子化 CSS 框架 |
+| [Vite](https://vitejs.dev/) | 5.0+ | 下一代前端构建工具 |
+
+## 🚀 快速开始
+
+### 环境要求
+
+- Node.js 18+
+- npm 或 pnpm
+
+### 安装依赖
+
+```bash
+cd ld-store
+npm install
+```
+
+### 环境变量（可选）
+
+复制并按需调整：
+
+```bash
+cp .env.example .env
+```
+
+关键变量：
+
+- `VITE_API_BASE`：LD 士多后端地址，同时用于商家收款配置页展示回调地址
+- `VITE_AUTH_API_BASE`：登录认证接口地址（生产建议 `https://api1.ldspro.qzz.io`，本地开发建议留空走 Vite 代理）
+- `VITE_IMAGE_API_BASE`：图床接口地址（当前仍使用旧后端可保持 `https://api.ldspro.qzz.io`）
+- `VITE_MAINTENANCE_MODE`：维护模式开关（`1` 开启，`0` 关闭）
+- `VITE_MAINTENANCE_TITLE`、`VITE_MAINTENANCE_MESSAGE`、`VITE_MAINTENANCE_ETA`：维护页文案
+- `VITE_MAINTENANCE_STATUS_URL`：维护状态页地址
+
+### 开发模式
+
+```bash
+npm run dev
+```
+
+访问 http://localhost:3001 查看应用。
+
+### 代码检查
+
+```bash
+npm run lint
+```
+
+如需在提交前一次性验证构建和规范：
+
+```bash
+npm run check
+```
+
+### 构建生产版本
+
+```bash
+npm run build
+```
+
+构建产物将输出到 `dist` 目录。
+
+### 预览生产版本
+
+```bash
+npm run preview
+```
+
+## 📦 部署指南
+
+### 方式一：Cloudflare Pages（推荐）
+
+1. **连接 GitHub 仓库**
+   - 登录 [Cloudflare Dashboard](https://dash.cloudflare.com/)
+   - 进入 Pages
+   - 点击 "Create a project" → "Connect to Git"
+   - 选择您的仓库
+
+2. **配置构建设置**
+   ```
+   构建命令: npm run build
+   构建输出目录: dist
+   根目录: ld-store
+   ```
+
+3. **环境变量**（如需要）
+   ```
+   NODE_VERSION: 18
+   LD_STORE_META_API_BASE: https://api2.ldspro.qzz.io
+   LD_STORE_SITE_URL: https://ldstore.cc.cd/
+   LD_STORE_DEFAULT_OG_IMAGE: https://img.ldspro.qzz.io/JackyLiii/20260123_og-image_9zs1sl.png
+   ```
+
+4. **自动部署**
+   - 每次推送到指定分支时自动触发部署
+
+### 方式二：使用 Wrangler CLI
+
+1. **安装 Wrangler**
+   ```bash
+   npm install -g wrangler
+   ```
+
+2. **登录 Cloudflare**
+   ```bash
+   wrangler login
+   ```
+
+3. **部署**
+   ```bash
+   npm run deploy
+   ```
+
+### 方式三：其他静态托管平台
+
+本项目可以部署到任何支持静态网站托管的平台：
+
+- **Vercel**
+- **Netlify**
+- **GitHub Pages**
+- **阿里云 OSS**
+- **腾讯云 COS**
+
+只需运行 `npm run build` 并上传 `dist` 目录即可。
+
+### 🖼️ 社交分享图片 (og-image)
+
+为了在社交媒体和论坛分享时显示预览图，需要准备 `og-image.jpg` 文件：
+
+1. 在浏览器中打开 `public/generate-og-image.html`
+2. 点击「下载图片」按钮下载 PNG 格式图片
+3. 使用图片工具将 PNG 转换为 JPG 格式
+4. 将 `og-image.jpg` 放到 `public` 目录下
+5. 重新部署
+
+**图片规格要求：**
+- 尺寸：1200 x 630 像素
+- 格式：JPG（推荐）或 PNG
+- 大小：建议 < 500KB
+
+### 🔗 动态链接预览（论坛/社交平台）
+
+项目在 `public/_worker.js` 中提供了动态元信息注入能力：
+
+- 访问 `/product/:id` 时，分享卡片标题会变为 `商品名 - LD士多`
+- 访问 `/shop/:id` 时，分享卡片标题会变为 `店铺名 - LD士多`
+- 访问 `/merchant/:username` 时，分享卡片标题会变为 `用户名的小店 - LD士多`
+- 同步更新 `title`、`og:title`、`twitter:title`、`oembed` 等字段
+
+说明：
+- 本地 `npm run dev` 仍按前端 SPA 行为运行，动态抓取逻辑在 Cloudflare Pages 边缘生效
+- 若使用自定义 API 域名，请同步配置 `LD_STORE_META_API_BASE`
+
+## 📁 项目结构
+
+```
+ld-store/
+├── .editorconfig          # UTF-8（无 BOM）/缩进/换行约束
+├── docs/
+│   └── README.md          # 文档索引与维护说明
+├── public/                # 静态资源与 Cloudflare Pages 边缘脚本
+│   ├── _headers           # Cloudflare 安全头配置
+│   ├── _redirects         # SPA 路由重定向配置
+│   ├── _worker.js         # Cloudflare Pages 动态元信息注入
+│   └── oembed.json        # 分享卡片补充元信息
+├── scripts/
+│   └── generate-og-image.js  # og 图片生成辅助脚本
+├── src/
+│   ├── components/        # Vue 组件
+│   │   ├── common/        # 通用组件
+│   │   ├── docs/          # 文档内容组件
+│   │   ├── layout/        # 布局组件
+│   │   ├── product/       # 商品相关组件
+│   │   └── shop/          # 小店相关组件
+│   ├── composables/       # 复用逻辑（已清理未使用文件）
+│   ├── config/            # 运行期开关与维护配置
+│   ├── router/            # 路由配置
+│   ├── services/          # 业务服务层（按领域拆分请求逻辑）
+│   ├── stores/            # Pinia 状态管理
+│   ├── styles/            # 全局样式
+│   ├── utils/             # 请求、存储、导航、安全等工具
+│   ├── views/             # 页面视图
+│   ├── App.vue            # 根组件
+│   └── main.js            # 应用入口
+├── .env.example           # 环境变量示例
+├── eslint.config.js       # ESLint 配置
+├── index.html             # HTML 入口
+├── package.json           # 项目脚本与依赖
+├── postcss.config.js      # PostCSS 配置
+├── tailwind.config.js     # Tailwind 配置
+├── vite.config.js         # Vite 配置
+└── wrangler.toml          # Cloudflare Pages / Wrangler 配置
+```
+
+## 📚 文档
+
+当前仓库内与 LD 士多前端直接相关的文档以“索引 + 关键文件说明”为主：
+
+| 文档 | 说明 |
+|------|------|
+| **[README.md](./README.md)** | 项目介绍、开发命令、部署说明 |
+| **[docs/README.md](./docs/README.md)** | 前端维护索引、关键配置入口、排查建议 |
+| **[../PROJECT_STRUCTURE.md](../PROJECT_STRUCTURE.md)** | 仓库级职责边界、服务拆分与域名语义 |
+
+如后续需要扩展专项文档，优先围绕“部署、架构、故障排查”补充到 `docs/`，不要继续保留与仓库实际不符的占位说明。
+
+当前前端已开始将商城请求从 `src/stores/shop.js` 下沉到 `src/services/shop/`，后续新增接口优先进入 service 层，不要再继续把 URL 拼装和请求细节直接堆回 store。
+
+---
+
+## 🔐 安全特性
+
+### XSS 防护
+- HTML 实体转义
+- 内容净化处理
+- 严格的输入验证
+
+### CSP 策略
+- 严格的内容安全策略
+- 限制外部资源加载
+- 防止内联脚本执行
+
+### 认证安全
+- JWT Token 认证
+- 自动 Token 刷新
+- 安全的 Cookie 存储
+
+### 输入验证
+- 商品名称长度限制
+- 商品描述内容过滤
+- 价格范围验证
+- URL 格式验证
+
+## 🎨 设计规范
+
+### 莫兰迪配色
+
+本项目采用柔和的莫兰迪色系，给用户带来舒适的视觉体验：
+
+| 颜色名 | 色值 | 用途 |
+|--------|------|------|
+| Sage | `#a5b4a3` | 主色调、按钮、链接 |
+| Dusty | `#778d9c` | 次要色、信息提示 |
+| Rose | `#ad9090` | 警告、删除操作 |
+| Warm | `#cfa76f` | 强调色、价格显示 |
+| Morandi | `#f5f3f0` | 背景色、卡片底色 |
+
+### 响应式断点
+
+- **Mobile**: < 640px
+- **Tablet**: 640px - 1024px
+- **Desktop**: > 1024px
+
+### 液态玻璃效果 (Liquid Glass)
+
+本项目实现了类似苹果 iOS/macOS 的液态玻璃交互效果：
+
+| 特性 | 实现方式 |
+|------|----------|
+| 毛玻璃背景 | `backdrop-filter: blur(24px) saturate(180%)` |
+| 白色透明指示器 | `rgba(255, 255, 255, 0.95)` 渐变 |
+| 高光反射 | `.liquid-shine` 顶部渐变层 |
+| 弹性动画 | `cubic-bezier(0.32, 1.2, 0.32, 1)` |
+| 点击缩放 | `transform: scale(0.96)` 反馈 |
+
+应用场景：
+- 首页板块切换（物品广场/小店集市）
+- 分类筛选器
+- 排序选项卡
+- 顶部导航栏
+- 首页 Banner
+
+### 3D 卡片倾斜效果
+
+商品卡片和小店卡片实现了 3D 透视倾斜效果：
+
+| 特性 | 说明 |
+|------|------|
+| 透视倾斜 | 鼠标位置控制卡片倾斜方向 |
+| 动态阴影 | 阴影跟随倾斜方向偏移 |
+| 光泽反射 | 高光层跟随鼠标移动 |
+| 平滑过渡 | `lerp` 线性插值实现流畅动画 |
+| 触摸设备 | 自动禁用，避免体验问题 |
+
+### 图片加载优化
+
+- 骨架屏占位（shimmer 动画）
+- 图片淡入效果
+- 加载状态管理
+
+### 页面状态保持
+
+- `keep-alive` 缓存首页和分类页
+- 返回时恢复滚动位置
+- 分类数据前端缓存（5分钟）
+
+## 📝 开发指南
+
+### 代码规范
+
+- 使用 Vue 3 Composition API
+- 组件使用 `<script setup>` 语法
+- 遵循 ESLint 规则
+- CSS 类名使用 BEM 命名
+
+### 提交规范
+
+```
+feat: 新功能
+fix: 修复问题
+docs: 文档更新
+style: 代码格式
+refactor: 重构
+test: 测试相关
+chore: 构建/工具
+```
+
+### 添加新页面
+
+1. 在 `src/views/` 创建 Vue 文件
+2. 在 `src/router/index.js` 添加路由
+3. 如需认证，添加 `meta: { requiresAuth: true }`
+
+### 添加新组件
+
+1. 在 `src/components/` 对应目录创建组件
+2. 使用 `<script setup>` 语法
+3. 样式使用 `<style scoped>`
+
+## 🔗 相关链接
+
+- [LDStatus Pro 主站](https://ldspro.qzz.io)
+- [LDC 官网](https://credit.linux.do)
+- [Linux.do 社区](https://linux.do)
+
+## 📄 许可证
+
+本项目遵循 MIT 许可证。
+
+---
+
+<p align="center">
+  Made with ❤️ by LDStatus Pro Team
+</p>
+
+---
+
+**最后更新**: 2026-01-22  
+**维护者**: LDStatus Pro 开发团队  
+**项目版本**: 1.0.0
