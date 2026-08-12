@@ -13,6 +13,15 @@
         @update:modelValue="switchRole"
       />
 
+      <!-- 状态筛选（求购订单状态体系不同，不显示） -->
+      <LiquidTabs
+        v-if="currentRole !== 'buy'"
+        :modelValue="statusFilter"
+        :tabs="statusTabs"
+        class="status-tabs"
+        @update:modelValue="selectStatus"
+      />
+
       <div class="orders-filters">
         <AppSelect
           v-model="timeRange"
@@ -61,12 +70,14 @@
       <EmptyState
         v-else-if="orders.length === 0"
         icon="📋"
-        title="暂无订单"
-        :description="currentRole === 'buyer' ? '您还没有购买任何物品' : (currentRole === 'seller' ? '您还没有收到任何订单' : '您还没有求购订单')"
+        :text="currentRole === 'buy' ? '暂无求购订单' : '暂无订单'"
+        :hint="currentRole === 'buyer' ? '您还没有购买任何物品' : (currentRole === 'seller' ? '您还没有收到任何订单' : '您还没有求购订单')"
       >
-        <router-link to="/" class="browse-btn">
-          浏览物品
-        </router-link>
+        <template #action>
+          <router-link to="/" class="browse-btn">
+            浏览物品
+          </router-link>
+        </template>
       </EmptyState>
       
       <!-- 订单列表 -->
@@ -76,7 +87,7 @@
           :key="order.id"
           class="order-card"
         >
-          <div class="order-header" @click="viewOrderDetail(order)">
+          <router-link :to="getOrderDetailTarget(order)" class="order-header" @click="handleOrderCardClick">
             <div class="order-header-main">
               <span class="order-date">{{ formatDate(order.created_at || order.createdAt) }}</span>
               <span v-if="order.status === 'pending' && (isPlatformOrder(order) || isBuyRequestOrder(order))" class="order-expire-chip">
@@ -84,11 +95,11 @@
               </span>
             </div>
             <span :class="['order-status', getStatusClass(order.status)]">
-              {{ getStatusText(order.status) }}
+              {{ getStatusText(order.status, order) }}
             </span>
-          </div>
+          </router-link>
 
-          <div class="order-content" @click="viewOrderDetail(order)">
+          <router-link :to="getOrderDetailTarget(order)" class="order-content" @click="handleOrderCardClick">
             <div class="product-name-row">
               <div class="product-name">{{ getOrderDisplayName(order) }}</div>
               <span v-if="isPlatformOrder(order)" class="order-quantity-badge">x{{ getOrderQuantity(order) }}</span>
@@ -108,7 +119,7 @@
             <div v-if="requiresBuyerContactOrder(order)" class="order-manual-hint">
               {{ currentRole === 'buyer' ? '支付后请主动联系卖家获取服务' : '该订单需手动履约，请及时处理' }}
             </div>
-          </div>
+          </router-link>
           
           <!-- 发货内容仅在订单详情页展示，列表卡片不直接暴露 CDK/发货内容。 -->
           <!-- <div
@@ -283,6 +294,12 @@ import {
   isPlatformOrderProduct,
   requiresBuyerContact
 } from '@/utils/shopProduct'
+import {
+  ORDER_LIST_SCROLL_KEY,
+  ORDER_LIST_SCROLL_SOURCE,
+  readOrderScrollSnapshot,
+  clearOrderScrollState
+} from '@/utils/orderListScroll'
 
 const router = useRouter()
 const route = useRoute()
@@ -304,6 +321,7 @@ const roleTabs = [
 ]
 const orderSearch = ref('')
 const timeRange = ref('1m')
+const statusFilter = ref('')
 const activeCategoryId = ref(0)
 const activeCategoryName = ref('')
 const onlyDealOrders = ref(false)
@@ -311,6 +329,14 @@ const timeRangeOptions = [
   { value: '1m', label: '最近1个月' },
   { value: '6m', label: '最近半年' },
   { value: '1y', label: '最近一年' }
+]
+const VALID_STATUS_FILTERS = ['paid', 'delivered', 'cancelled', 'refunded']
+const statusTabs = [
+  { value: '', label: '全部', icon: '📋' },
+  { value: 'paid', label: '待发货', icon: '📦' },
+  { value: 'delivered', label: '已发货', icon: '🚚' },
+  { value: 'cancelled', label: '已取消', icon: '❌' },
+  { value: 'refunded', label: '已退款', icon: '↩️' }
 ]
 const cancellingOrderId = ref(null)
 const deliverFormOrderId = ref(null)
@@ -322,8 +348,6 @@ const refreshingBuyOrderId = ref(null)
 const nowTs = ref(Date.now())
 let countdownTimer = null
 let restoredScrollKey = ''
-const ORDER_LIST_SCROLL_KEY = 'orders_list_scroll_state'
-const ORDER_LIST_SCROLL_SOURCE = 'order-detail'
 const isPaymentMaintenanceBlocked = computed(() =>
   isRestrictedMaintenanceMode() && !isMaintenanceFeatureEnabled('orderPayment')
 )
@@ -356,6 +380,12 @@ function syncRouteState() {
     ? String(route.query.categoryName || `分类 #${activeCategoryId.value}`).trim()
     : ''
   onlyDealOrders.value = currentRole.value === 'buy' ? false : parseRouteBoolean(route.query.dealOnly)
+  statusFilter.value = currentRole.value === 'buy' ? ''
+    : (VALID_STATUS_FILTERS.includes(String(route.query.status || '').trim()) ? String(route.query.status).trim() : '')
+  timeRange.value = ['1m', '6m', '1y'].includes(String(route.query.timeRange || '').trim())
+    ? String(route.query.timeRange).trim()
+    : '1m'
+  orderSearch.value = String(route.query.search || '').trim()
 }
 
 function getOrderScrollSnapshot() {
@@ -366,7 +396,10 @@ function getOrderScrollSnapshot() {
     dealOnly: onlyDealOrders.value ? '1' : '',
     search: orderSearch.value.trim(),
     timeRange: timeRange.value,
+    status: statusFilter.value,
+    page: page.value,
     scrollY: window.scrollY || 0,
+    ts: Date.now(),
     source: ''
   }
 }
@@ -378,7 +411,8 @@ function getOrderScrollKey(snapshot = getOrderScrollSnapshot()) {
     snapshot.categoryName || '',
     snapshot.dealOnly || '',
     snapshot.search || '',
-    snapshot.timeRange || ''
+    snapshot.timeRange || '',
+    snapshot.status || ''
   ].join('|')
 }
 
@@ -395,15 +429,22 @@ function saveScrollState(source = '') {
 
 async function restoreScrollState() {
   try {
-    const raw = sessionStorage.getItem(ORDER_LIST_SCROLL_KEY)
-    if (!raw) return
-    const snapshot = JSON.parse(raw)
+    const snapshot = readOrderScrollSnapshot()
+    if (!snapshot) return
     if (snapshot?.source !== ORDER_LIST_SCROLL_SOURCE) return
     const snapshotKey = getOrderScrollKey(snapshot)
     const currentKey = getOrderScrollKey()
     if (snapshotKey !== currentKey || restoredScrollKey === snapshotKey) return
     restoredScrollKey = snapshotKey
-    sessionStorage.removeItem(ORDER_LIST_SCROLL_KEY)
+    clearOrderScrollState()
+
+    // 恢复滚动深度：顺序拉取到快照所在页（订单中途被取消/退款时 hasMore 提前为 false，自然截断）
+    const targetPage = Math.max(1, Number(snapshot.page) || 1)
+    while (page.value < targetPage && hasMore.value) {
+      page.value++
+      await loadOrders(true)
+    }
+
     await nextTick()
     window.scrollTo(0, Number(snapshot.scrollY) || 0)
   } catch {
@@ -421,7 +462,17 @@ async function switchRole(role) {
     delete nextQuery.categoryId
     delete nextQuery.categoryName
     delete nextQuery.dealOnly
+    delete nextQuery.status
   }
+  router.replace({ query: nextQuery }).catch(() => {})
+}
+
+// 选择状态筛选（写入 URL，由 watcher 统一重载）
+function selectStatus(status) {
+  if (statusFilter.value === status && String(route.query.status || '') === status) return
+  const nextQuery = { ...route.query }
+  if (status) nextQuery.status = status
+  else delete nextQuery.status
   router.replace({ query: nextQuery }).catch(() => {})
 }
 
@@ -437,6 +488,9 @@ function buildOrderQueryOptions() {
   }
   if (currentRole.value !== 'buy' && onlyDealOrders.value) {
     options.dealOnly = true
+  }
+  if (currentRole.value !== 'buy' && statusFilter.value) {
+    options.status = statusFilter.value
   }
   return options
 }
@@ -484,9 +538,27 @@ function loadMore() {
   loadOrders(true)
 }
 
+function sameQuery(a, b) {
+  const ka = Object.keys(a).sort()
+  const kb = Object.keys(b).sort()
+  return ka.length === kb.length && ka.every((k, i) => k === kb[i] && a[k] === b[k])
+}
+
 async function applyFilters() {
-  page.value = 1
-  await loadOrders()
+  const nextQuery = { ...route.query }
+  const search = orderSearch.value.trim()
+  if (search) nextQuery.search = search
+  else delete nextQuery.search
+  if (timeRange.value && timeRange.value !== '1m') nextQuery.timeRange = timeRange.value
+  else delete nextQuery.timeRange
+  if (sameQuery(route.query, nextQuery)) {
+    // URL 无变化（如默认值下再点一次搜索），直接手动重载，避免 replace 无导航
+    page.value = 1
+    await loadOrders()
+    return
+  }
+  // 由 route watcher 统一重载（过滤条件已随 query 进入 URL，返回/刷新均可保留）
+  await router.replace({ query: nextQuery }).catch(() => {})
 }
 
 async function clearSearch() {
@@ -616,7 +688,30 @@ function extractErrorMessage(result, fallback) {
   return fallback
 }
 
-// 查看订单详情
+// 订单卡片路由目标（供 <router-link> 使用：Ctrl/⌘/中键点击时浏览器原生新标签页打开）
+function getOrderDetailTarget(order) {
+  // 图床订单跳转到图床页面
+  if (order.order_type === 'image') {
+    return '/ld-image'
+  }
+
+  if (isBuyRequestOrder(order)) {
+    const orderNo = getOrderKey(order)
+    if (!orderNo) return '/user/orders?tab=buy'
+    return `/user/buy-orders/${encodeURIComponent(orderNo)}`
+  }
+
+  const orderNo = getOrderKey(order)
+  if (!orderNo) return '/user/orders'
+  return { path: `/order/${orderNo}`, query: { role: currentRole.value } }
+}
+
+// 卡片点击：仅保存滚动快照，不 preventDefault（router-link 自行处理站内跳转 / 新标签）
+function handleOrderCardClick() {
+  saveScrollState(ORDER_LIST_SCROLL_SOURCE)
+}
+
+// 查看订单详情（底部按钮走站内跳转）
 function viewOrderDetail(order) {
   saveScrollState(ORDER_LIST_SCROLL_SOURCE)
 
@@ -640,12 +735,22 @@ function viewOrderDetail(order) {
   router.push(`/order/${orderNo}?role=${currentRole.value}`)
 }
 
-// 状态文字
-function getStatusText(status) {
+// 状态文字（求购订单状态体系不同，paid 语义为「已支付」；商城/图床订单 paid 即「待发货」）
+function getStatusText(status, orderData) {
+  if (orderData && isBuyRequestOrder(orderData)) {
+    const buyMap = {
+      pending: '待支付',
+      paid: '已支付',
+      completed: '已完成',
+      cancelled: '已取消',
+      expired: '已过期'
+    }
+    return buyMap[status] || status || '未知'
+  }
   const map = {
     pending: '待支付',
     paying: '支付中',
-    paid: '已支付',
+    paid: '待发货',
     completed: '已完成',
     cancelled: '已取消',
     refunded: '已退款',
@@ -979,7 +1084,15 @@ onMounted(() => {
 })
 
 watch(
-  () => [route.query.tab, route.query.categoryId, route.query.categoryName, route.query.dealOnly].join('|'),
+  () => [
+    route.query.tab,
+    route.query.categoryId,
+    route.query.categoryName,
+    route.query.dealOnly,
+    route.query.status,
+    route.query.timeRange,
+    route.query.search
+  ].join('|'),
   async () => {
     restoredScrollKey = ''
     syncRouteState()
@@ -1031,6 +1144,12 @@ onUnmounted(() => {
 .role-tabs :deep(.liquid-tab) {
   flex: 1;
   justify-content: center;
+}
+
+/* 状态筛选 */
+.status-tabs {
+  width: 100%;
+  margin-bottom: 16px;
 }
 
 .orders-filters {
@@ -1258,6 +1377,14 @@ onUnmounted(() => {
   margin-bottom: 14px;
 }
 
+/* 卡片链接化（router-link 渲染为 <a>） */
+.order-header,
+.order-content {
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+}
+
 .order-header-main {
   display: flex;
   align-items: center;
@@ -1331,6 +1458,7 @@ onUnmounted(() => {
 }
 
 .order-content {
+  display: block;
   margin-bottom: 14px;
 }
 

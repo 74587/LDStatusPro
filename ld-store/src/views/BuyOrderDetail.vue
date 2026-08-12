@@ -94,6 +94,7 @@ import { useToast } from '@/composables/useToast'
 import { formatPrice } from '@/utils/format'
 import { isValidLdcPaymentUrl } from '@/utils/security'
 import { preparePaymentPopup, openPaymentPopup, watchPaymentPopup, cleanupPreparedTab } from '@/utils/newTab'
+import { ORDER_LIST_SCROLL_SOURCE, readOrderScrollSnapshot } from '@/utils/orderListScroll'
 
 const route = useRoute()
 const router = useRouter()
@@ -120,6 +121,12 @@ const canRefresh = computed(() => {
 })
 
 function goBack() {
+  // 从订单列表进来（存有滚动快照）时用 router.back()，返回后筛选与滚动位置可完整保留；
+  // 新标签页/直接进入无快照，退回固定地址兜底
+  if (readOrderScrollSnapshot()?.source === ORDER_LIST_SCROLL_SOURCE) {
+    router.back()
+    return
+  }
   router.push('/user/orders?tab=buy')
 }
 

@@ -24,12 +24,14 @@
       <EmptyState
         v-else-if="!order"
         icon="🔍"
-        title="订单不存在"
-        description="无法找到该订单信息"
+        text="订单不存在"
+        hint="无法找到该订单信息"
       >
-        <router-link to="/user/orders" class="back-btn">
-          ← 返回
-        </router-link>
+        <template #action>
+          <router-link to="/user/orders" class="back-btn">
+            ← 返回
+          </router-link>
+        </template>
       </EmptyState>
       
       <!-- 订单详情 -->
@@ -263,6 +265,7 @@ import {
   isPlatformOrderProduct,
   requiresBuyerContact
 } from '@/utils/shopProduct'
+import { ORDER_LIST_SCROLL_SOURCE, readOrderScrollSnapshot } from '@/utils/orderListScroll'
 
 const route = useRoute()
 const router = useRouter()
@@ -335,6 +338,12 @@ const currentStatusTimeLabel = computed(() => getStatusTimeLabel(order.value))
 const currentStatusTimeText = computed(() => formatDateTime(currentStatusTime.value))
 
 function goBack() {
+  // 从订单列表进来（存有滚动快照）时用 router.back()，返回后筛选与滚动位置可完整保留；
+  // 新标签页/直接进入无快照，退回固定地址兜底
+  if (readOrderScrollSnapshot()?.source === ORDER_LIST_SCROLL_SOURCE) {
+    router.back()
+    return
+  }
   router.push(backTarget.value)
 }
 
@@ -546,12 +555,12 @@ function getStatusTimeLabel(orderData) {
   return map[status] || '更新时间'
 }
 
-// 状态文字
+// 状态文字（paid 即「待发货」：已支付未发货，与列表待发货筛选一致）
 function getStatusText(status) {
   const map = {
     pending: '待支付',
     paying: '支付中',
-    paid: '已支付',
+    paid: '待发货',
     completed: '已完成',
     cancelled: '已取消',
     refunded: '已退款',
@@ -732,7 +741,7 @@ async function handleCancelOrder() {
     const orderNo = order.value?.order_no || order.value?.orderNo
     await shopStore.cancelOrder(orderNo)
     toast.success('订单已取消')
-    router.push(backTarget.value)
+    goBack()
   } catch (error) {
     toast.error(error.message || '取消失败')
   } finally {
