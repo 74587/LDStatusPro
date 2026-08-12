@@ -2331,7 +2331,12 @@ async function handleBuyProduct() {
         : `订单已创建：<strong>${result.data.orderNo}</strong><br><br>📝 请在支付窗口中完成支付<br>⏰ 订单有效期 <strong>5分钟</strong>，请尽快完成支付<br>✅ 支付完成后 CDK 将自动发放<br>📋 可在「我的订单」中查看状态`
       await dialog.alert(
         orderCreatedMessage,
-        { title: '订单创建成功', icon: '🎉' }
+        {
+          title: '订单创建成功',
+          icon: '🎉',
+          secondaryText: '我的订单',
+          onSecondary: () => router.push('/user/orders')
+        }
       )
     } else {
       cleanupPreparedTab(preparedWindow)

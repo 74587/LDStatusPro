@@ -19,6 +19,13 @@
               {{ dialog.cancelText }}
             </button>
             <button
+              v-if="dialog.secondaryText"
+              class="dialog-btn dialog-btn-secondary"
+              @click="handleSecondary"
+            >
+              {{ dialog.secondaryText }}
+            </button>
+            <button
               :class="['dialog-btn', 'dialog-btn-confirm', { 'danger': dialog.danger }]"
               @click="handleConfirm"
             >
@@ -47,6 +54,12 @@ function handleConfirm() {
 function handleCancel() {
   if (dialog.value.onCancel) {
     dialog.value.onCancel()
+  }
+}
+
+function handleSecondary() {
+  if (dialog.value.onSecondary) {
+    dialog.value.onSecondary()
   }
 }
 </script>
@@ -129,6 +142,15 @@ function handleCancel() {
 
 .dialog-btn-cancel:hover {
   background: var(--bg-secondary);
+}
+
+.dialog-btn-secondary {
+  color: var(--color-primary);
+  border-right: 1px solid var(--border-light);
+}
+
+.dialog-btn-secondary:hover {
+  background: var(--color-primary-light);
 }
 
 .dialog-btn-confirm {

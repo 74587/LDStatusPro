@@ -36,9 +36,11 @@ export const useUiStore = defineStore('ui', () => {
     danger: false,
     confirmText: '确定',
     cancelText: '取消',
+    secondaryText: '',
     showCancel: true,
     onConfirm: null,
-    onCancel: null
+    onCancel: null,
+    onSecondary: null
   })
 
   function showDialog(options) {
@@ -52,6 +54,7 @@ export const useUiStore = defineStore('ui', () => {
         danger: options.danger || false,
         confirmText: options.confirmText || '确定',
         cancelText: options.cancelText || '取消',
+        secondaryText: options.secondaryText || '',
         showCancel: options.showCancel !== false,
         onConfirm: () => {
           dialog.value.visible = false
@@ -60,6 +63,13 @@ export const useUiStore = defineStore('ui', () => {
         onCancel: () => {
           dialog.value.visible = false
           resolve(false)
+        },
+        onSecondary: () => {
+          dialog.value.visible = false
+          resolve(false)
+          if (typeof options.onSecondary === 'function') {
+            options.onSecondary()
+          }
         }
       }
     })
