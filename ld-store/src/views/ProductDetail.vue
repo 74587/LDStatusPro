@@ -2335,7 +2335,10 @@ async function handleBuyProduct() {
           title: '订单创建成功',
           icon: '🎉',
           secondaryText: '我的订单',
-          onSecondary: () => router.push('/user/orders')
+          onSecondary: () => router.push({
+            path: `/order/${result.data.orderNo}`,
+            query: { role: 'buyer' }
+          })
         }
       )
     } else {
