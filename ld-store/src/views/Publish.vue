@@ -413,7 +413,7 @@
             <p v-if="showError('cdkCodes', cdkCodesError)" class="form-error">{{ cdkCodesError }}</p>
             <p v-else class="form-hint">
               <span v-if="form.sharedCdkEnabled">共享卡密模式下只允许填写 1 个 CDK</span>
-              <span v-else-if="cdkCount > 0">已输入 {{ cdkCount }} 个 CDK</span>
+              <span v-else-if="cdkCount > 0">已输入 {{ cdkCount }} 个 CDK（单次最多 {{ CDK_UPLOAD_LIMITS.perBatch }} 条）</span>
               <span v-else>至少填写 1 个 CDK 卡密</span>
             </p>
           </div>
@@ -559,6 +559,7 @@ import { useShopStore } from '@/stores/shop'
 import { useToast } from '@/composables/useToast'
 import { validateProductName, validateProductDescription, validatePrice } from '@/utils/security'
 import { api } from '@/utils/api'
+import { CDK_UPLOAD_LIMITS } from '@/config/cdkQuota'
 
 const router = useRouter()
 const route = useRoute()
@@ -986,6 +987,9 @@ const cdkCodesError = computed(() => {
     .filter(Boolean)
   if (lines.length === 0) return '请至少填写 1 个 CDK 卡密'
   if (form.value.sharedCdkEnabled && lines.length !== 1) return '共享卡密模式下只能填写 1 个 CDK 卡密'
+  if (!form.value.sharedCdkEnabled && lines.length > CDK_UPLOAD_LIMITS.perBatch) {
+    return `单次最多上传 ${CDK_UPLOAD_LIMITS.perBatch} 个 CDK 卡密（已输入 ${lines.length} 条）`
+  }
   return ''
 })
 const buyTitleError = computed(() => {

@@ -257,11 +257,14 @@
               rows="4"
             ></textarea>
             <div class="add-footer">
-              <span class="add-count" v-if="newCdkCount > 0">将添加 {{ newCdkCount }} 个</span>
+              <span v-if="newCdkCount > 0" class="add-count" :class="{ 'limit-error': cdkExceedsBatchLimit }">
+                将添加 {{ newCdkCount }} 个<template v-if="cdkExceedsBatchLimit">（超过单次上限 {{ CDK_UPLOAD_LIMITS.perBatch }} 条）</template>
+              </span>
+              <span v-else class="add-quota-hint">单次最多 {{ CDK_UPLOAD_LIMITS.perBatch }} 条 · 未售出 {{ unsoldCdkCount }}/{{ CDK_UPLOAD_LIMITS.totalUnsold }}</span>
               <button
                 class="add-btn-primary"
                 @click="addCdks"
-                :disabled="!newCdkText.trim() || addingCdk"
+                :disabled="!newCdkText.trim() || addingCdk || cdkExceedsBatchLimit"
               >
                 {{ addingCdk ? '添加中...' : '添加 CDK' }}
               </button>
@@ -284,6 +287,7 @@ import { useDialog } from '@/composables/useDialog'
 import EmptyState from '@/components/common/EmptyState.vue'
 import { api } from '@/utils/api'
 import { storage } from '@/utils/storage'
+import { CDK_UPLOAD_LIMITS } from '@/config/cdkQuota'
 import {
   getProductType as resolveProductType,
   getProductTypeIcon,
@@ -328,6 +332,12 @@ const newCdkCount = computed(() => {
   if (!newCdkText.value.trim()) return 0
   return newCdkText.value.split('\n').filter(line => line.trim()).length
 })
+
+// 未售出 CDK 数量（available + locked）
+const unsoldCdkCount = computed(() => (cdkStats.value.available || 0) + (cdkStats.value.locked || 0))
+
+// 是否超过单次上传上限
+const cdkExceedsBatchLimit = computed(() => newCdkCount.value > CDK_UPLOAD_LIMITS.perBatch)
 
 // 加载物品
 async function loadProducts(append = false) {
@@ -556,33 +566,49 @@ function closeCdkModal() {
 // 添加 CDK
 async function addCdks() {
   if (!newCdkText.value.trim() || !currentProduct.value) return
-  
+
   const codes = newCdkText.value
     .split('\n')
     .map(code => code.trim())
     .filter(code => code)
-  
+
   if (codes.length === 0) {
     toast.warning('请输入有效的 CDK')
     return
   }
-  
+
+  if (codes.length > CDK_UPLOAD_LIMITS.perBatch) {
+    toast.error(`单次最多上传 ${CDK_UPLOAD_LIMITS.perBatch} 条卡密（已输入 ${codes.length} 条）`)
+    return
+  }
+
   addingCdk.value = true
   try {
-    await shopStore.addProductCdks(currentProduct.value.id, codes)
-    toast.success(`成功添加 ${codes.length} 个 CDK`)
+    const result = await shopStore.addProductCdks(currentProduct.value.id, codes)
+    if (!result.success) {
+      toast.error(result.error || '添加 CDK 失败')
+      return
+    }
+
+    const imported = result.data?.imported ?? codes.length
+    const duplicates = result.data?.duplicates || 0
+    toast.success(duplicates > 0
+      ? `成功添加 ${imported} 个 CDK（跳过重复 ${duplicates} 条）`
+      : `成功添加 ${imported} 个 CDK`)
     newCdkText.value = ''
-    
-    // 刷新 CDK 列表
-    cdkList.value = sortCdkListByStatus(await shopStore.fetchProductCdks(currentProduct.value.id))
-    
-    // 更新库存
+
+    // 刷新 CDK 列表与统计（未售出余额实时更新）
+    const refreshed = await shopStore.fetchCdkList(currentProduct.value.id, { status: cdkStatusFilter.value })
+    cdkList.value = sortCdkListByStatus(refreshed?.cdks || [])
+    cdkStats.value = refreshed?.stats || cdkStats.value
+
+    // 更新库存（用后端返回的库存，避免去重导致的偏差）
     const index = products.value.findIndex(p => p.id === currentProduct.value.id)
     if (index !== -1) {
-      products.value[index].stock = (products.value[index].stock || 0) + codes.length
+      products.value[index].stock = result.data?.stock ?? ((products.value[index].stock || 0) + imported)
     }
   } catch (error) {
-    toast.error('添加 CDK 失败')
+    toast.error(error?.message || '添加 CDK 失败')
   } finally {
     addingCdk.value = false
   }
@@ -1853,6 +1879,15 @@ onMounted(() => {
 .add-count {
   font-size: 13px;
   color: var(--color-success);
+}
+
+.add-count.limit-error {
+  color: var(--color-danger, #e74c3c);
+}
+
+.add-quota-hint {
+  font-size: 13px;
+  color: var(--text-secondary);
 }
 
 .add-btn-primary {
