@@ -209,7 +209,7 @@
         <div class="form-card" v-if="getProductType(product) === 'cdk'">
           <h3 class="card-title">CDK 管理</h3>
           <div class="form-group">
-            <label class="toggle-switch limit-toggle" @click.prevent="form.sharedCdkEnabled = !form.sharedCdkEnabled">
+            <label class="toggle-switch limit-toggle" @click.prevent="toggleSharedCdkMode()">
               <span class="toggle-track" :class="{ active: form.sharedCdkEnabled }">
                 <span class="toggle-thumb"></span>
               </span>
@@ -311,6 +311,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useShopStore } from '@/stores/shop'
 import { useToast } from '@/composables/useToast'
+import { useDialog } from '@/composables/useDialog'
 import { validateProductName, validateProductDescription, validatePrice } from '@/utils/security'
 import EmptyState from '@/components/common/EmptyState.vue'
 import {
@@ -325,6 +326,7 @@ const route = useRoute()
 const router = useRouter()
 const shopStore = useShopStore()
 const toast = useToast()
+const dialog = useDialog()
 
 const loading = ref(true)
 const submitting = ref(false)
@@ -456,6 +458,28 @@ const sharedCdkCodeError = computed(() => {
   const value = String(form.value.sharedCdkCode || '').trim()
   return value ? '' : '请输入共享 CDK 卡密'
 })
+
+// 共享卡密模式切换：与已保存模式不一致时弹确认（说明迁移/暂停语义），
+// 改回已保存模式（误触撤销）不弹窗
+async function toggleSharedCdkMode() {
+  const current = !!form.value.sharedCdkEnabled
+  const savedMode = !!(product.value?.sharedCdkEnabled || Number(product.value?.shared_cdk_enabled || 0) === 1)
+  if (current === savedMode) {
+    form.value.sharedCdkEnabled = !current
+    return
+  }
+  const message = current
+    ? '切换为独立卡密后，当前共享码将自动迁移为 1 条可用卡密（库存 1），可在「我的物品」中批量补充；切换后将重新提交 AI 审核。'
+    : '切换为共享卡密后，现有独立卡密将暂停出售（切回独立时恢复），单次限购固定为 1；请填写共享卡密；切换后将重新提交 AI 审核。'
+  const confirmed = await dialog.confirm(message, {
+    title: '切换卡密模式',
+    confirmText: '确定切换',
+    cancelText: '取消'
+  })
+  if (confirmed) {
+    form.value.sharedCdkEnabled = !current
+  }
+}
 
 function preloadImage(url) {
   return new Promise((resolve, reject) => {

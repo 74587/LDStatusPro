@@ -151,7 +151,12 @@ function getSoldCount(item) {
 
 function getStockText(item) {
   const stock = Number.parseInt(item?.stock, 10)
-  if (stock === -1) return '∞'
+  // 共享卡密（无限库存）：任一库存字段为 -1 即固定显示 9999
+  if (stock === -1
+    || Number.parseInt(item?.availableStock ?? item?.available_stock, 10) === -1
+    || Number.parseInt(item?.cdkStats?.available, 10) === -1
+    || Number.parseInt(item?.cdkStats?.total, 10) === -1
+    || item?.sharedCdkEnabled || Number(item?.shared_cdk_enabled || 0) === 1) return '9999'
 
   const productType = String(item?.product_type || '').toLowerCase()
   if (productType === 'cdk') {

@@ -109,7 +109,7 @@ export function formatNumber(num) {
  * @returns {string}
  */
 export function formatStock(stock, available) {
-  if (stock === -1) return '∞'
+  if (stock === -1) return '9999'
   return `${available}/${stock}`
 }
 
