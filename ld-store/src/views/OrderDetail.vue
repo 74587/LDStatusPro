@@ -467,6 +467,7 @@ function getLogIcon(action) {
   const map = {
     create: '📝',
     pay: '💰',
+    repay: '🔄',
     deliver: '📦',
     refund: '↩️',
     cancel: '❌',
@@ -482,6 +483,7 @@ function getLogText(log) {
   const actionMap = {
     create: '创建订单',
     pay: '支付成功',
+    repay: '重新发起支付',
     deliver: '发货完成',
     refund: '订单退款',
     cancel: '取消订单',
