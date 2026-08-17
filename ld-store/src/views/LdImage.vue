@@ -183,8 +183,9 @@
                 {{ copied ? '✓ 已复制' : '📋 复制' }}
               </button>
             </div>
-            <div class="result-preview">
+            <div class="result-preview" @click="openViewerFromResult" title="查看大图">
               <img :src="uploadResult.url" alt="已上传图片" />
+              <div class="result-preview-hint">🔍 查看大图</div>
             </div>
           </div>
         </div>
@@ -213,11 +214,12 @@
           </div>
 
           <div v-else class="history-grid">
-            <div 
-              v-for="item in history" 
-              :key="item.id" 
+            <div
+              v-for="(item, index) in history"
+              :key="item.id"
               class="history-item"
-              @click="selectHistoryItem(item)"
+              @click="openViewerFromHistory(index)"
+              title="查看大图"
             >
               <div class="item-image">
                 <img :src="item.url" :alt="item.filename" loading="lazy" />
@@ -239,6 +241,63 @@
         </div>
       </template>
     </div>
+
+    <Teleport to="body">
+      <!-- 图片查看弹窗 -->
+      <Transition name="viewer">
+        <div v-if="viewerVisible" class="viewer-overlay" @click.self="closeViewer">
+          <div class="viewer-topbar">
+            <div class="viewer-title">
+              <span class="viewer-name">{{ viewerCurrent?.filename }}</span>
+              <span class="viewer-date">{{ formatDate(viewerCurrent?.created_at) }}</span>
+            </div>
+            <button class="viewer-close" @click="closeViewer" title="关闭 (Esc)">✕</button>
+          </div>
+
+          <div class="viewer-stage">
+            <button
+              v-if="viewerItems.length > 1"
+              class="viewer-nav prev"
+              @click="prevViewer"
+              title="上一张 (←)"
+            >‹</button>
+            <div class="viewer-image-wrap">
+              <img :src="viewerCurrent?.url" :alt="viewerCurrent?.filename" />
+            </div>
+            <button
+              v-if="viewerItems.length > 1"
+              class="viewer-nav next"
+              @click="nextViewer"
+              title="下一张 (→)"
+            >›</button>
+          </div>
+
+          <div class="viewer-footer">
+            <div class="viewer-footer-meta">
+              <span v-if="viewerItems.length > 1" class="viewer-counter">
+                {{ viewerIndex + 1 }} / {{ viewerItems.length }}
+              </span>
+              <span class="viewer-hint">Esc 关闭 · ←/→ 切换</span>
+            </div>
+            <div class="viewer-actions">
+              <button class="viewer-btn" @click="copyViewerText('url')">
+                {{ viewerCopied === 'url' ? '✓ 已复制' : '📋 复制链接' }}
+              </button>
+              <button class="viewer-btn" @click="copyViewerText('md')">
+                {{ viewerCopied === 'md' ? '✓ 已复制' : '🔗 复制 Markdown' }}
+              </button>
+              <a
+                class="viewer-btn"
+                :href="viewerCurrent?.url"
+                target="_blank"
+                rel="noopener"
+              >↗ 新标签打开</a>
+              <button class="viewer-btn danger" @click="confirmDelete(viewerCurrent)">🗑️ 删除</button>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
 
     <Teleport to="body">
       <!-- 删除确认弹窗 -->
@@ -269,7 +328,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useUserStore } from '@/stores/user'
 import { useToast } from '@/composables/useToast'
 import { api } from '@/utils/api'
@@ -298,6 +357,13 @@ const paymentOrderNo = ref('')
 const paymentAmount = ref(0)
 const checking = ref(false)
 const payError = ref('')
+
+// 图片查看器
+const viewerVisible = ref(false)
+const viewerItems = ref([])
+const viewerIndex = ref(0)
+const viewerCopied = ref(null) // null | 'url' | 'md'
+const viewerCurrent = computed(() => viewerItems.value[viewerIndex.value])
 
 // 删除相关
 const showDeleteModal = ref(false)
@@ -627,10 +693,79 @@ function copyHistoryUrl(url) {
   toast.success('链接已复制')
 }
 
-// 选择历史记录项
-function selectHistoryItem(item) {
-  uploadResult.value = item
-  copied.value = false
+// 打开图片查看器
+function openViewer(items, index = 0) {
+  if (!items.length) return
+  viewerItems.value = items
+  viewerIndex.value = index
+  viewerCopied.value = null
+  viewerVisible.value = true
+  document.body.style.overflow = 'hidden'
+}
+
+// 从历史记录打开查看器
+function openViewerFromHistory(index) {
+  openViewer(history.value, index)
+}
+
+// 从上传结果打开查看器
+function openViewerFromResult() {
+  if (!uploadResult.value) return
+  const idx = history.value.findIndex(h => h.id === uploadResult.value.id)
+  if (idx >= 0) {
+    openViewer(history.value, idx)
+  } else {
+    openViewer([uploadResult.value], 0)
+  }
+}
+
+// 关闭图片查看器
+function closeViewer() {
+  viewerVisible.value = false
+  document.body.style.overflow = ''
+}
+
+// 上一张
+function prevViewer() {
+  if (viewerItems.value.length > 1) {
+    viewerIndex.value = (viewerIndex.value - 1 + viewerItems.value.length) % viewerItems.value.length
+    viewerCopied.value = null
+  }
+}
+
+// 下一张
+function nextViewer() {
+  if (viewerItems.value.length > 1) {
+    viewerIndex.value = (viewerIndex.value + 1) % viewerItems.value.length
+    viewerCopied.value = null
+  }
+}
+
+// 复制查看器中的链接或 Markdown
+async function copyViewerText(type) {
+  const item = viewerCurrent.value
+  if (!item) return
+  const text = type === 'md' ? `![${item.filename}](${item.url})` : item.url
+  try {
+    await navigator.clipboard.writeText(text)
+    viewerCopied.value = type
+    toast.success(type === 'md' ? 'Markdown 已复制' : '链接已复制')
+    setTimeout(() => { viewerCopied.value = null }, 2000)
+  } catch (e) {
+    toast.error('复制失败')
+  }
+}
+
+// 查看器键盘快捷键
+function onViewerKeydown(e) {
+  if (!viewerVisible.value) return
+  if (e.key === 'Escape') {
+    closeViewer()
+  } else if (e.key === 'ArrowLeft') {
+    prevViewer()
+  } else if (e.key === 'ArrowRight') {
+    nextViewer()
+  }
 }
 
 // 确认删除
@@ -659,6 +794,10 @@ async function doDelete() {
       // 如果删除的是当前显示的图片，清除结果
       if (uploadResult.value?.id === deleteTarget.value.id) {
         uploadResult.value = null
+      }
+      // 如果删除的是查看器中的当前图片，关闭查看器
+      if (viewerVisible.value && viewerCurrent.value?.id === deleteTarget.value.id) {
+        closeViewer()
       }
       cancelDelete()
     } else {
@@ -705,6 +844,12 @@ onMounted(() => {
     loadHistory()
     loadPriceInfo()
   }
+  window.addEventListener('keydown', onViewerKeydown)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', onViewerKeydown)
+  document.body.style.overflow = ''
 })
 </script>
 
@@ -1285,6 +1430,8 @@ onMounted(() => {
 .result-preview {
   border-radius: 10px;
   overflow: hidden;
+  position: relative;
+  cursor: zoom-in;
 }
 
 .result-preview img {
@@ -1292,6 +1439,26 @@ onMounted(() => {
   max-height: 200px;
   object-fit: contain;
   background: var(--bg-secondary);
+  display: block;
+}
+
+.result-preview-hint {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: rgba(0, 0, 0, 0.28);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.result-preview:hover .result-preview-hint {
+  opacity: 1;
 }
 
 /* 历史记录 */
@@ -1414,6 +1581,26 @@ onMounted(() => {
   width: 100%;
   height: 100px;
   overflow: hidden;
+  position: relative;
+  cursor: zoom-in;
+}
+
+.item-image::after {
+  content: '🔍';
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.25);
+  font-size: 22px;
+  opacity: 0;
+  transition: opacity 0.2s;
+  pointer-events: none;
+}
+
+.history-item:hover .item-image::after {
+  opacity: 1;
 }
 
 .item-image img {
@@ -1623,6 +1810,207 @@ onMounted(() => {
 .modal-leave-to .delete-modal {
   transform: scale(0.9);
   opacity: 0;
+}
+
+/* 图片查看弹窗 */
+.viewer-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 10, 12, 0.82);
+  backdrop-filter: blur(6px);
+  display: flex;
+  flex-direction: column;
+  z-index: 990;
+}
+
+.viewer-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 20px;
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(8px);
+}
+
+.viewer-title {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  min-width: 0;
+}
+
+.viewer-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.viewer-date {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.65);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.viewer-close {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: none;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+  flex-shrink: 0;
+}
+
+.viewer-close:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: rotate(90deg);
+}
+
+.viewer-stage {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 12px 16px;
+  min-height: 0;
+  position: relative;
+}
+
+.viewer-image-wrap {
+  max-width: 100%;
+  max-height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: viewer-pop 0.25s ease;
+}
+
+.viewer-image-wrap img {
+  max-width: 100%;
+  max-height: calc(100vh - 190px);
+  border-radius: 10px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  object-fit: contain;
+}
+
+.viewer-nav {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  font-size: 26px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-bottom: 4px;
+}
+
+.viewer-nav:hover {
+  background: rgba(255, 255, 255, 0.28);
+  transform: scale(1.08);
+}
+
+.viewer-footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 20px;
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(8px);
+}
+
+.viewer-footer-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.viewer-counter {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.65);
+  font-variant-numeric: tabular-nums;
+}
+
+.viewer-hint {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.viewer-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.viewer-btn {
+  padding: 9px 14px;
+  border-radius: 10px;
+  border: none;
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-decoration: none;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.viewer-btn:hover {
+  background: rgba(255, 255, 255, 0.26);
+}
+
+.viewer-btn.danger:hover {
+  background: rgba(220, 38, 38, 0.8);
+}
+
+@keyframes viewer-pop {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.viewer-enter-active,
+.viewer-leave-active {
+  transition: opacity 0.25s ease;
+}
+
+.viewer-enter-from,
+.viewer-leave-to {
+  opacity: 0;
+}
+
+@media (max-width: 640px) {
+  .viewer-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 2;
+    width: 38px;
+    height: 38px;
+  }
+
+  .viewer-nav.prev { left: 8px; }
+  .viewer-nav.next { right: 8px; }
 }
 
 /* 工具类 */
