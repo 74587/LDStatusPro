@@ -67,14 +67,36 @@
           </div>
           
           <div class="form-group">
-            <label class="form-label required">物品描述</label>
+            <div class="form-label-row">
+              <label class="form-label required">物品描述</label>
+              <div class="desc-mode-tabs">
+                <button
+                  type="button"
+                  :class="['desc-mode-tab', { active: descMode === 'write' }]"
+                  @click="descMode = 'write'"
+                >✏️ 编辑</button>
+                <button
+                  type="button"
+                  :class="['desc-mode-tab', { active: descMode === 'preview' }]"
+                  @click="descMode = 'preview'"
+                >👁️ 预览</button>
+              </div>
+            </div>
             <textarea
+              v-if="descMode === 'write'"
               v-model="form.description"
               class="form-textarea"
               placeholder="请输入物品描述（10-1000字符）"
               rows="4"
               maxlength="1000"
             ></textarea>
+            <div
+              v-else
+              class="form-textarea-preview markdown-content"
+              :class="{ 'is-empty': !descriptionPreview }"
+              v-html="descriptionPreview || '暂无内容，切换到「编辑」填写物品描述'"
+            ></div>
+            <p class="form-hint">支持 Markdown：**加粗**、*斜体*、++下划线++、`代码`；网址自动识别为可点击链接（新窗口打开）</p>
             <p class="form-counter">{{ form.description.length }}/1000</p>
           </div>
           
@@ -313,6 +335,7 @@ import { useShopStore } from '@/stores/shop'
 import { useToast } from '@/composables/useToast'
 import { useDialog } from '@/composables/useDialog'
 import { validateProductName, validateProductDescription, validatePrice } from '@/utils/security'
+import { renderProductDescription } from '@/utils/renderProductDescription'
 import EmptyState from '@/components/common/EmptyState.vue'
 import {
   getProductType as resolveProductType,
@@ -331,6 +354,7 @@ const dialog = useDialog()
 const loading = ref(true)
 const submitting = ref(false)
 const updateConfirming = ref(false)
+const descMode = ref('write')
 const product = ref(null)
 // 允许的图片后缀
 const VALID_IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'ico', 'avif']
@@ -382,6 +406,7 @@ const editOverlayDescription = computed(() => {
   return '网络较慢时可能需要较长时间，请耐心等待并保持当前页面。'
 })
 
+const descriptionPreview = computed(() => renderProductDescription(form.value.description))
 const submitButtonText = computed(() => {
   if (updateConfirming.value) return '正在确认保存结果...'
   if (submitting.value) return '保存中...'
@@ -1029,6 +1054,46 @@ watch(
   margin-bottom: 8px;
 }
 
+.form-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.form-label-row .form-label {
+  margin-bottom: 0;
+}
+
+.desc-mode-tabs {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  background: var(--bg-secondary);
+  border-radius: 10px;
+}
+
+.desc-mode-tab {
+  border: none;
+  background: none;
+  padding: 4px 12px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text-secondary);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.desc-mode-tab:hover {
+  color: var(--color-primary);
+}
+
+.desc-mode-tab.active {
+  background: var(--color-primary);
+  color: #fff;
+  font-weight: 600;
+}
+
 .form-label.required::after {
   content: '*';
   color: var(--color-danger);
@@ -1065,7 +1130,8 @@ watch(
   font-size: 14px;
   color: var(--text-primary);
   outline: none;
-  resize: none;
+  resize: vertical;
+  min-height: 100px;
   transition: border-color 0.2s;
   box-sizing: border-box;
 }

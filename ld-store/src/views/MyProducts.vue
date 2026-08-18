@@ -75,7 +75,7 @@
                   📋
                 </button>
               </div>
-              <p class="product-desc">{{ product.description || '暂无描述' }}</p>
+              <p class="product-desc">{{ stripMarkdown(product.description) || '暂无描述' }}</p>
               
               <!-- 价格和数据 -->
               <div class="product-meta">
@@ -295,6 +295,7 @@ import { isMaintenanceFeatureEnabled, isRestrictedMaintenanceMode } from '@/conf
 import { useToast } from '@/composables/useToast'
 import { useDialog } from '@/composables/useDialog'
 import EmptyState from '@/components/common/EmptyState.vue'
+import { stripMarkdown } from '@/utils/renderProductDescription'
 import { api } from '@/utils/api'
 import { storage } from '@/utils/storage'
 import { CDK_UPLOAD_LIMITS } from '@/config/cdkQuota'

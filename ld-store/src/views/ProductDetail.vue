@@ -266,7 +266,7 @@
 
         <div class="detail-description">
           <h2 class="section-title">📝 物品详情</h2>
-          <div class="description-content">{{ product.description || '暂无描述' }}</div>
+          <div class="description-content markdown-content" v-html="renderedDescription || '暂无描述'"></div>
         </div>
 
         <div
@@ -833,6 +833,7 @@ import { useToast } from '@/composables/useToast'
 import { useDialog } from '@/composables/useDialog'
 import { formatRelativeTime, formatPrice } from '@/utils/format'
 import { escapeHtml } from '@/utils/security'
+import { renderProductDescription } from '@/utils/renderProductDescription'
 import { preparePaymentPopup, openPaymentPopup, watchPaymentPopup, prepareNewTab, openInNewTab, cleanupPreparedTab } from '@/utils/newTab'
 import AvatarImage from '@/components/common/AvatarImage.vue'
 import StarRatingDisplay from '@/components/common/StarRatingDisplay.vue'
@@ -940,6 +941,7 @@ const reportCategoryOptions = [
 ]
 
 // 物品类型
+const renderedDescription = computed(() => renderProductDescription(product.value?.description))
 const isCdk = computed(() => isCdkProduct(product.value))
 const isNormal = computed(() => isNormalProduct(product.value))
 const isStore = computed(() => isStoreProduct(product.value))
@@ -3370,6 +3372,11 @@ async function handleOpenStore() {
   line-height: 1.8;
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+/* markdown 渲染：换行由 <br>/块级元素承担，不再依赖 pre-wrap */
+.description-content.markdown-content {
+  white-space: normal;
 }
 
 .detail-comments {

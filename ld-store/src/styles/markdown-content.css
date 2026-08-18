@@ -1,0 +1,147 @@
+/* Markdown 渲染内容通用样式（物品详情 / 使用说明 / 发布编辑预览等） */
+.markdown-content {
+  line-height: 1.8;
+  word-break: break-word;
+}
+
+.markdown-content p {
+  margin: 0 0 8px;
+}
+.markdown-content p:last-child {
+  margin-bottom: 0;
+}
+
+.markdown-content strong {
+  font-weight: 700;
+}
+.markdown-content em {
+  font-style: italic;
+}
+.markdown-content u {
+  text-decoration: underline;
+}
+
+.markdown-content a {
+  color: var(--color-primary);
+  text-decoration: underline;
+  word-break: break-all;
+}
+.markdown-content a:hover {
+  opacity: 0.85;
+}
+
+.markdown-content h1,
+.markdown-content h2,
+.markdown-content h3,
+.markdown-content h4,
+.markdown-content h5,
+.markdown-content h6 {
+  margin: 14px 0 8px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.4;
+}
+.markdown-content h1 {
+  font-size: 1.35em;
+}
+.markdown-content h2 {
+  font-size: 1.25em;
+}
+.markdown-content h3 {
+  font-size: 1.15em;
+}
+.markdown-content h4,
+.markdown-content h5,
+.markdown-content h6 {
+  font-size: 1.05em;
+}
+
+.markdown-content ul,
+.markdown-content ol {
+  margin: 0 0 8px;
+  padding-left: 22px;
+}
+.markdown-content li {
+  margin-bottom: 4px;
+}
+.markdown-content li:last-child {
+  margin-bottom: 0;
+}
+
+.markdown-content blockquote {
+  margin: 0 0 8px;
+  padding: 4px 12px;
+  border-left: 3px solid var(--border-color);
+  color: var(--text-tertiary);
+}
+
+.markdown-content code {
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-light);
+  font-family: 'Monaco', 'Consolas', monospace;
+  font-size: 0.9em;
+  word-break: break-all;
+}
+
+.markdown-content pre {
+  margin: 0 0 8px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-light);
+  overflow-x: auto;
+}
+.markdown-content pre code {
+  padding: 0;
+  border: none;
+  background: none;
+}
+
+.markdown-content table {
+  margin: 0 0 8px;
+  border-collapse: collapse;
+  font-size: 0.95em;
+}
+.markdown-content th,
+.markdown-content td {
+  border: 1px solid var(--border-light);
+  padding: 6px 10px;
+  text-align: left;
+}
+.markdown-content th {
+  background: var(--bg-secondary);
+  font-weight: 600;
+}
+
+.markdown-content img {
+  max-width: 100%;
+  border-radius: 8px;
+}
+
+.markdown-content hr {
+  border: none;
+  border-top: 1px solid var(--border-light);
+  margin: 12px 0;
+}
+
+/* 发布/编辑页描述预览框 */
+.form-textarea-preview {
+  width: 100%;
+  min-height: 112px;
+  max-height: 320px;
+  overflow-y: auto;
+  padding: 14px 16px;
+  background: var(--input-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  font-size: 14px;
+  color: var(--text-primary);
+  box-sizing: border-box;
+}
+
+/* 空预览占位 */
+.form-textarea-preview.is-empty {
+  color: var(--text-placeholder);
+}

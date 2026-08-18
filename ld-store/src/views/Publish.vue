@@ -138,8 +138,23 @@
           </div>
           
           <div class="form-group">
-            <label class="form-label required">物品描述</label>
+            <div class="form-label-row">
+              <label class="form-label required">物品描述</label>
+              <div class="desc-mode-tabs">
+                <button
+                  type="button"
+                  :class="['desc-mode-tab', { active: descMode === 'write' }]"
+                  @click="descMode = 'write'"
+                >✏️ 编辑</button>
+                <button
+                  type="button"
+                  :class="['desc-mode-tab', { active: descMode === 'preview' }]"
+                  @click="descMode = 'preview'"
+                >👁️ 预览</button>
+              </div>
+            </div>
             <textarea
+              v-if="descMode === 'write'"
               v-model="form.description"
               class="form-textarea"
               :class="{ 'input-error': showError('description', descriptionError) }"
@@ -149,6 +164,13 @@
               ref="descriptionInput"
               @input="markTouched('description')"
             ></textarea>
+            <div
+              v-else
+              class="form-textarea-preview markdown-content"
+              :class="{ 'is-empty': !descriptionPreview }"
+              v-html="descriptionPreview || '暂无内容，切换到「编辑」填写物品描述'"
+            ></div>
+            <p class="form-hint">支持 Markdown：**加粗**、*斜体*、++下划线++、`代码`；网址自动识别为可点击链接（新窗口打开）</p>
             <p class="form-counter">{{ form.description.length }}/1000</p>
             <p v-if="showError('description', descriptionError)" class="form-error">{{ descriptionError }}</p>
           </div>
@@ -558,6 +580,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { useShopStore } from '@/stores/shop'
 import { useToast } from '@/composables/useToast'
 import { validateProductName, validateProductDescription, validatePrice } from '@/utils/security'
+import { renderProductDescription } from '@/utils/renderProductDescription'
 import { api } from '@/utils/api'
 import { CDK_UPLOAD_LIMITS } from '@/config/cdkQuota'
 
@@ -568,6 +591,7 @@ const toast = useToast()
 
 const submitting = ref(false)
 const submitConfirming = ref(false)
+const descMode = ref('write')
 const merchantConfigured = ref(false) // 是否已配置商家收款
 const showGuideModal = ref(false)
 const dontShowAgain = ref(false)
@@ -939,6 +963,8 @@ const descriptionError = computed(() => {
   const res = validateProductDescription(form.value.description)
   return res.valid ? '' : res.error
 })
+
+const descriptionPreview = computed(() => renderProductDescription(form.value.description))
 
 const priceError = computed(() => {
   const res = validatePrice(form.value.price)
@@ -1503,6 +1529,46 @@ onMounted(async () => {
   margin-bottom: 8px;
 }
 
+.form-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.form-label-row .form-label {
+  margin-bottom: 0;
+}
+
+.desc-mode-tabs {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  background: var(--bg-secondary);
+  border-radius: 10px;
+}
+
+.desc-mode-tab {
+  border: none;
+  background: none;
+  padding: 4px 12px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text-secondary);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.desc-mode-tab:hover {
+  color: var(--color-success);
+}
+
+.desc-mode-tab.active {
+  background: var(--color-success);
+  color: #fff;
+  font-weight: 600;
+}
+
 .form-label.required::after {
   content: '*';
   color: var(--color-danger);
@@ -1546,7 +1612,8 @@ onMounted(async () => {
   font-size: 14px;
   color: var(--text-primary);
   outline: none;
-  resize: none;
+  resize: vertical;
+  min-height: 100px;
   transition: border-color 0.2s, background-color 0.2s;
   box-sizing: border-box;
 }

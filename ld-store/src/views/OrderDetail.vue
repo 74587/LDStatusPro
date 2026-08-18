@@ -177,7 +177,7 @@
         <!-- 使用说明（显示物品描述） -->
         <div class="info-card" v-if="(isCdkOrder(order) || isNormalOrder(order)) && getProductDescription(order)">
           <h3 class="card-title">📝 使用说明</h3>
-          <div class="description-content">{{ getProductDescription(order) }}</div>
+          <div class="description-content markdown-content" v-html="renderedProductDescription"></div>
         </div>
         
         <!-- 订单信息 -->
@@ -258,6 +258,7 @@ import { useDialog } from '@/composables/useDialog'
 import { isMaintenanceFeatureEnabled, isRestrictedMaintenanceMode } from '@/config/maintenance'
 import EmptyState from '@/components/common/EmptyState.vue'
 import { isValidLdcPaymentUrl } from '@/utils/security'
+import { renderProductDescription } from '@/utils/renderProductDescription'
 import { preparePaymentPopup, openPaymentPopup, watchPaymentPopup, cleanupPreparedTab } from '@/utils/newTab'
 import {
   isCdkProduct,
@@ -336,6 +337,7 @@ const sortedOrderLogs = computed(() => {
 const currentStatusTime = computed(() => getStatusTimestamp(order.value, orderLogs.value))
 const currentStatusTimeLabel = computed(() => getStatusTimeLabel(order.value))
 const currentStatusTimeText = computed(() => formatDateTime(currentStatusTime.value))
+const renderedProductDescription = computed(() => renderProductDescription(getProductDescription(order.value)))
 
 function goBack() {
   // 从订单列表进来（存有滚动快照）时用 router.back()，返回后筛选与滚动位置可完整保留；
@@ -1209,6 +1211,11 @@ onUnmounted(() => {
   line-height: 1.8;
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+/* markdown 渲染：换行由 <br>/块级元素承担，不再依赖 pre-wrap */
+.description-content.markdown-content {
+  white-space: normal;
 }
 
 .order-summary-grid {

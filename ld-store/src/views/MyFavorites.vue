@@ -29,7 +29,7 @@
             </div>
             <div class="card-content">
               <h3 class="card-title">{{ item.name }}</h3>
-              <p class="card-desc">{{ item.description || '暂无描述' }}</p>
+              <p class="card-desc">{{ stripMarkdown(item.description) || '暂无描述' }}</p>
               <div class="card-meta">
                 <span class="meta-tag">{{ item.category_icon || '📦' }} {{ item.category_name || '其他' }}</span>
                 <span :class="['meta-status', `status-${item.status || 'unknown'}`]">
@@ -71,6 +71,7 @@ import { useShopStore } from '@/stores/shop'
 import { useToast } from '@/composables/useToast'
 import { useDialog } from '@/composables/useDialog'
 import { formatPrice, formatRelativeTime } from '@/utils/format'
+import { stripMarkdown } from '@/utils/renderProductDescription'
 import EmptyState from '@/components/common/EmptyState.vue'
 
 const shopStore = useShopStore()

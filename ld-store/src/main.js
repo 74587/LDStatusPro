@@ -6,6 +6,7 @@ import { useUserStore } from '@/stores/user'
 import { useUiStore } from '@/stores/ui'
 import { AUTH_EXPIRED_EVENT } from '@/utils/auth'
 import './styles/main.css'
+import './styles/markdown-content.css'
 
 // 创建应用实例
 const app = createApp(App)
