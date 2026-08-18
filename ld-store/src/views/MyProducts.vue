@@ -65,6 +65,16 @@
             <!-- 物品信息 -->
             <div class="product-info">
               <h3 class="product-name">{{ product.name }}</h3>
+              <!-- 物品 ID（卖家需要知道自己的物品 ID） -->
+              <div v-if="product.id" class="product-id-row">
+                <span class="product-id">
+                  <span class="id-label">ID</span>
+                  <span class="id-value">{{ product.id }}</span>
+                </span>
+                <button class="copy-id-btn" title="复制物品 ID" @click.stop="copyProductId(product)">
+                  📋
+                </button>
+              </div>
               <p class="product-desc">{{ product.description || '暂无描述' }}</p>
               
               <!-- 价格和数据 -->
@@ -422,6 +432,14 @@ function loadMore() {
 // 查看物品
 function viewProduct(product) {
   router.push(`/product/${product.id}`)
+}
+
+// 复制物品 ID
+function copyProductId(product) {
+  if (product.id == null) return
+  navigator.clipboard.writeText(String(product.id))
+    .then(() => toast.success('物品 ID 已复制'))
+    .catch(() => toast.error('复制失败，请长按手动复制'))
 }
 
 // 编辑物品
@@ -1322,6 +1340,54 @@ onMounted(() => {
   line-height: 1.4;
 }
 
+/* 物品 ID 行 */
+.product-id-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.product-id {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.id-label {
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-light);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: var(--text-tertiary);
+}
+
+.id-value {
+  font-family: 'Monaco', 'Consolas', monospace;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.copy-id-btn {
+  padding: 2px 6px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 1.4;
+  cursor: pointer;
+  opacity: 0.55;
+  transition: all 0.2s;
+}
+
+.copy-id-btn:hover {
+  opacity: 1;
+  background: var(--bg-tertiary);
+}
+
 /* 价格和数据 */
 .product-meta {
   display: flex;
@@ -1967,6 +2033,19 @@ onMounted(() => {
   .product-desc {
     font-size: 12px;
     margin-bottom: 6px;
+  }
+
+  .product-id-row {
+    margin-bottom: 4px;
+  }
+
+  .id-value {
+    font-size: 11px;
+  }
+
+  .copy-id-btn {
+    font-size: 11px;
+    padding: 2px 4px;
   }
 
   .product-meta {
