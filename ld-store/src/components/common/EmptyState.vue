@@ -1,7 +1,16 @@
 <template>
   <div class="empty-state">
     <span class="empty-icon">
-      <slot name="icon">{{ icon }}</slot>
+      <slot name="icon">
+        <component
+          :is="iconComponent"
+          v-if="iconComponent"
+          :size="48"
+          :stroke-width="1.6"
+          aria-hidden="true"
+        />
+        <template v-else>{{ icon }}</template>
+      </slot>
     </span>
     <p class="empty-text">{{ text }}</p>
     <p v-if="hint" class="empty-hint">{{ hint }}</p>
@@ -11,6 +20,10 @@
 
 <script setup>
 defineProps({
+  iconComponent: {
+    type: [Object, Function],
+    default: null
+  },
   icon: {
     type: String,
     default: '📭'

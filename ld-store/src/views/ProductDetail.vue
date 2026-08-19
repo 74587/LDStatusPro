@@ -11,30 +11,31 @@
         <!-- 顶部导航 -->
         <div class="detail-nav">
           <button class="back-btn" @click="goBack">
-            ← 返回
+            <ArrowLeft :size="16" aria-hidden="true" />
+            <span>返回</span>
           </button>
-                    <div class="nav-right">
+          <div class="nav-right">
             <div class="nav-tags">
-                          <span class="nav-category">{{ categoryIcon }} {{ categoryName }}</span>
-                          <span v-if="isCdk" class="nav-type cdk">🎫 CDK自动发货</span>
-                          <span v-else-if="isStore" class="nav-type store">🏬 友情小店</span>
-                        </div>
+              <span class="nav-category">
+                <component :is="categoryIconComponent" :size="15" aria-hidden="true" />
+                <span>{{ categoryName }}</span>
+              </span>
+              <span v-if="isCdk" class="nav-type cdk">
+                <Ticket :size="14" aria-hidden="true" />
+                <span>CDK自动发货</span>
+              </span>
+              <span v-else-if="isStore" class="nav-type store">
+                <Store :size="14" aria-hidden="true" />
+                <span>友情小店</span>
+              </span>
+            </div>
             <button
               class="nav-favorite-btn"
               :class="{ active: isFavorited }"
               :disabled="favoriteSubmitting"
               @click="toggleFavorite"
             >
-              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
-                <path
-                  d="M12 21s-7.2-4.35-9.6-8.4C.4 9.29 1.24 5.9 4.06 4.34A5.43 5.43 0 0 1 12 6.2a5.43 5.43 0 0 1 7.94-1.86c2.82 1.56 3.66 4.95 1.66 8.26C19.2 16.65 12 21 12 21z"
-                  :fill="isFavorited ? 'currentColor' : 'none'"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-              </svg>
+              <Heart :size="16" :fill="isFavorited ? 'currentColor' : 'none'" aria-hidden="true" />
               <span>{{ isFavorited ? '已收藏' : '收藏' }}</span>
             </button>
             <button
@@ -44,10 +45,7 @@
               aria-label="将这件商品标记为不感兴趣"
               @click="markNotInterested"
             >
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" aria-hidden="true">
-                <path d="M3 3l18 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-                <path d="M10.6 10.7a2 2 0 0 0 2.7 2.7M9.9 4.2A10.9 10.9 0 0 1 12 4c5.4 0 9 5 9 5s-1.2 1.7-3.2 3.1M6.2 6.3C4.2 7.6 3 9 3 9s3.6 5 9 5c.7 0 1.4-.1 2-.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
-              </svg>
+              <EyeOff :size="16" aria-hidden="true" />
               <span>不感兴趣</span>
             </button>
             <button
@@ -55,7 +53,8 @@
               :disabled="reportSubmitting"
               @click="openReportModal"
             >
-              &#128680; &#20030;&#25253;
+              <Flag :size="16" aria-hidden="true" />
+              <span>举报</span>
             </button>
           </div>
         </div>
@@ -73,10 +72,21 @@
                 @load="handleCoverImageLoad"
                 @error="handleImageError"
               />
-              <span v-else class="media-placeholder">{{ categoryIcon }}</span>
+              <component
+                :is="categoryIconComponent"
+                v-else
+                class="media-placeholder"
+                :size="80"
+                :stroke-width="1.5"
+                aria-hidden="true"
+              />
               <!-- 折扣标签 -->
               <span v-if="hasDiscount" class="discount-tag">
                 -{{ discountPercent }}%
+              </span>
+              <span v-if="product.image_url" class="media-zoom-hint" aria-hidden="true">
+                <Search :size="14" />
+                点击查看大图
               </span>
             </div>
           </div>
@@ -96,39 +106,45 @@
             
             <!-- 测试模式提示 -->
             <div v-if="isTestMode" class="test-mode-banner detail-test-banner">
-              <span class="test-badge">🧪 测试模式</span>
+              <span class="test-badge">
+                <FlaskConical :size="14" aria-hidden="true" />
+                测试模式
+              </span>
               <span class="test-desc">{{ isSeller ? '只有您可以购买此物品' : '该物品为测试模式，仅卖家可购买' }}</span>
             </div>
             
             <!-- 物品状态信息 -->
             <div class="status-row">
               <div class="status-item">
-                <span class="status-icon">👁</span>
+                <Eye class="status-icon" :size="16" aria-hidden="true" />
                 <span class="status-text">{{ product.view_count || 0 }} 浏览</span>
               </div>
               <div v-if="isPlatformOrder" class="status-item">
-                <span class="status-icon">📦</span>
+                <Package class="status-icon" :size="16" aria-hidden="true" />
                 <span :class="['status-text', { low: isOutOfStock }]">库存 {{ stockDisplay }}</span>
               </div>
               <div v-if="isPlatformOrder && soldCount > 0" class="status-item hot">
-                <span class="status-icon">🔥</span>
+                <Flame class="status-icon" :size="16" aria-hidden="true" />
                 <span class="status-text">已售 {{ soldCount }}</span>
               </div>
               <div v-if="purchaseTrustLevel > 0" class="status-item">
-                <span class="status-icon">🔐</span>
+                <ShieldCheck class="status-icon" :size="16" aria-hidden="true" />
                 <span :class="['status-text', { low: !canPurchaseByTrustLevel }]">
                   兑换需 TL{{ purchaseTrustLevel }}
                 </span>
               </div>
               <div class="status-item">
-                <span class="status-icon">📅</span>
+                <CalendarClock class="status-icon" :size="16" aria-hidden="true" />
                 <span class="status-text">{{ updateTime }}</span>
               </div>
             </div>
 
             <div class="detail-side-panel">
             <div v-if="isTestMode" class="test-mode-banner detail-test-banner-landscape">
-                <span class="test-badge">🧪 测试模式</span>
+                <span class="test-badge">
+                  <FlaskConical :size="14" aria-hidden="true" />
+                  测试模式
+                </span>
                 <span class="test-desc">{{ isSeller ? '只有您可以购买此物品' : '该物品为测试模式，仅卖家可购买' }}</span>
               </div>
 
@@ -222,16 +238,18 @@
                                               class="buy-btn store"
                                               @click="handleOpenStore"
                                             >
-                                              🏪 立即前往
+                                              <Store :size="18" aria-hidden="true" />
+                                              <span>立即前往</span>
                                             </button>
                                           </template>
                   <template v-else-if="isPlatformOrder">
                     <div v-if="isOutOfStock" class="buy-action-row">
                       <button
-                        class="buy-btn disabled"
+                                                class="buy-btn disabled"
                                                 disabled
                                               >
-                                                😢 已售罄
+                                                <PackageX :size="18" aria-hidden="true" />
+                                                <span>已售罄</span>
                                               </button>
                                               <button
                                                 v-if="isCdk"
@@ -240,7 +258,8 @@
                                                 :disabled="restockStatusLoading || restockSubscribeLoading || restockSubscribed"
                                                 @click="handleSubscribeRestock"
                                               >
-                                                {{ restockButtonText }}
+                                                <component :is="restockButtonIcon" :size="18" aria-hidden="true" />
+                                                <span>{{ restockButtonText }}</span>
                                               </button>
                                             </div>
                       <button
@@ -248,7 +267,8 @@
                         class="buy-btn disabled test-only"
                         disabled
                       >
-                                              🧪 测试物品
+                                              <FlaskConical :size="18" aria-hidden="true" />
+                                              <span>测试物品</span>
                                             </button>
                                             <button
                                               v-else-if="isOrderCreationMaintenanceBlocked"
@@ -262,7 +282,8 @@
                                               class="buy-btn disabled"
                                               disabled
                                             >
-                                              🚫 暂停销售
+                                              <CircleOff :size="18" aria-hidden="true" />
+                                              <span>暂停销售</span>
                                             </button>
                                             <button
                                               v-else
@@ -287,7 +308,8 @@
                       class="buy-btn"
                       @click="handleOpenStore"
                     >
-                      🏪 立即前往
+                      <Store :size="18" aria-hidden="true" />
+                      <span>立即前往</span>
                     </button>
                   </template>
             </div>
@@ -298,7 +320,10 @@
         </div>
 
         <div class="detail-description">
-          <h2 class="section-title">📝 物品详情</h2>
+          <h2 class="section-title">
+            <FileText :size="18" aria-hidden="true" />
+            <span>物品详情</span>
+          </h2>
           <div class="description-content markdown-content" v-html="renderedDescription || '暂无描述'"></div>
         </div>
 
@@ -334,7 +359,10 @@
         <div id="comments" v-if="supportsComments" class="detail-comments">
           <div class="comment-header">
             <div class="comment-header-title">
-              <h2 class="section-title">💬 物品评论</h2>
+              <h2 class="section-title">
+                <MessageCircle :size="18" aria-hidden="true" />
+                <span>物品评论</span>
+              </h2>
               <span class="comment-total-tag">{{ commentVisibleCount }}</span>
             </div>
             <button
@@ -383,9 +411,11 @@
                       <button
                         class="comment-action-btn"
                         :disabled="commentDeletingId === item.id || commentReportingId === item.id"
+                        :aria-expanded="commentActionMenuId === item.id"
+                        aria-label="评论操作"
                         @click.stop="toggleCommentActionMenu(item.id)"
                       >
-                        ⋯
+                        <MoreHorizontal :size="18" aria-hidden="true" />
                       </button>
                       <div
                         v-if="commentActionMenuId === item.id"
@@ -441,24 +471,22 @@
                       class="comment-footer-btn comment-vote-btn"
                       :class="{ active: normalizeCommentVoteType(item.viewer_vote) === COMMENT_VOTE_UP }"
                       :disabled="isCommentVoting(item.id)"
+                      :aria-label="`赞同，当前 ${Number(item.upvote_count || 0)} 票`"
+                      :aria-pressed="normalizeCommentVoteType(item.viewer_vote) === COMMENT_VOTE_UP"
                       @click="voteComment(item, COMMENT_VOTE_UP)"
                     >
-                      <svg class="comment-vote-icon" viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.3l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.82 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-2z" />
-                      </svg>
+                      <ThumbsUp class="comment-vote-icon" :size="14" aria-hidden="true" />
                       <span>{{ Number(item.upvote_count || 0) }}</span>
                     </button>
                     <button
                       class="comment-footer-btn comment-vote-btn"
                       :class="{ active: normalizeCommentVoteType(item.viewer_vote) === COMMENT_VOTE_DOWN }"
                       :disabled="isCommentVoting(item.id)"
+                      :aria-label="`反对，当前 ${Number(item.downvote_count || 0)} 票`"
+                      :aria-pressed="normalizeCommentVoteType(item.viewer_vote) === COMMENT_VOTE_DOWN"
                       @click="voteComment(item, COMMENT_VOTE_DOWN)"
                     >
-                      <svg class="comment-vote-icon" viewBox="0 0 24 24" aria-hidden="true">
-                        <g transform="rotate(180 12 12)">
-                          <path d="M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.3l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.82 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-2z" />
-                        </g>
-                      </svg>
+                      <ThumbsDown class="comment-vote-icon" :size="14" aria-hidden="true" />
                       <span>{{ Number(item.downvote_count || 0) }}</span>
                     </button>
                   </div>
@@ -632,7 +660,8 @@
                                   class="buy-btn store"
                                   @click="handleOpenStore"
                                 >
-                                  🏪 立即前往
+                                  <Store :size="18" aria-hidden="true" />
+                                  <span>立即前往</span>
                                 </button>
                               </template>
                               <template v-else-if="isPlatformOrder">
@@ -641,7 +670,8 @@
                                     class="buy-btn disabled"
                                     disabled
                                   >
-                                    😢 已售罄
+                                    <PackageX :size="18" aria-hidden="true" />
+                                    <span>已售罄</span>
                                   </button>
                                   <button
                                     v-if="isCdk"
@@ -650,7 +680,8 @@
                                     :disabled="restockStatusLoading || restockSubscribeLoading || restockSubscribed"
                                     @click="handleSubscribeRestock"
                                   >
-                                    {{ restockButtonText }}
+                                    <component :is="restockButtonIcon" :size="18" aria-hidden="true" />
+                                    <span>{{ restockButtonText }}</span>
                                   </button>
                                 </div>
                                 <button
@@ -658,7 +689,8 @@
                                   class="buy-btn disabled test-only"
                                   disabled
                                 >
-                                  🧪 测试物品
+                                  <FlaskConical :size="18" aria-hidden="true" />
+                                  <span>测试物品</span>
                                 </button>
                                 <button
                                   v-else-if="isOrderCreationMaintenanceBlocked"
@@ -672,7 +704,8 @@
                                   class="buy-btn disabled"
                                   disabled
                                 >
-                                  🚫 暂停销售
+                                  <CircleOff :size="18" aria-hidden="true" />
+                                  <span>暂停销售</span>
                                 </button>
                                 <button
                                   v-else
@@ -697,7 +730,8 @@
                                   class="buy-btn"
                                   @click="handleOpenStore"
                                 >
-                                  🏪 立即前往
+                                  <Store :size="18" aria-hidden="true" />
+                                  <span>立即前往</span>
                                 </button>
                               </template>
         </div>
@@ -706,7 +740,7 @@
       <!-- 错误状态 -->
       <EmptyState
         v-else
-        :icon="detailErrorContent.icon"
+        :icon-component="detailErrorContent.icon"
         :text="detailErrorContent.text"
         :hint="detailErrorContent.hint"
       >
@@ -732,7 +766,9 @@
         class="image-preview-overlay"
         @click.self="closeImagePreview"
       >
-        <button class="preview-close" @click="closeImagePreview">✕</button>
+        <button class="preview-close" aria-label="关闭图片预览" @click="closeImagePreview">
+          <X :size="24" aria-hidden="true" />
+        </button>
         <img 
           :src="product.image_url" 
           :alt="product.name" 
@@ -745,12 +781,17 @@
       <div
         v-if="showReportModal"
         class="report-modal-overlay"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="product-report-title"
         @click.self="closeReportModal"
       >
         <div class="report-modal">
           <div class="report-modal-header">
-            <h3>举报物品</h3>
-            <button class="report-modal-close" @click="closeReportModal">&times;</button>
+            <h3 id="product-report-title">举报物品</h3>
+            <button class="report-modal-close" aria-label="关闭举报物品弹窗" @click="closeReportModal">
+              <X :size="20" aria-hidden="true" />
+            </button>
           </div>
           <p class="report-modal-desc">请选择问题分类，并描述你遇到的情况。</p>
           <div class="report-form-card">
@@ -816,12 +857,17 @@
       <div
         v-if="showCommentReportModal"
         class="report-modal-overlay"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="comment-report-title"
         @click.self="closeCommentReportModal"
       >
         <div class="report-modal">
           <div class="report-modal-header">
-            <h3>举报评论</h3>
-            <button class="report-modal-close" @click="closeCommentReportModal">&times;</button>
+            <h3 id="comment-report-title">举报评论</h3>
+            <button class="report-modal-close" aria-label="关闭举报评论弹窗" @click="closeCommentReportModal">
+              <X :size="20" aria-hidden="true" />
+            </button>
           </div>
           <p class="report-modal-desc">请描述该评论存在的问题，管理员会尽快处理。</p>
           <div class="report-form-card">
@@ -859,7 +905,41 @@
 <script setup>
 import { ref, computed, watch, onActivated, onDeactivated, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { TicketPercent } from '@lucide/vue'
+import {
+  ArrowLeft,
+  Bell,
+  BellCheck,
+  Bot,
+  CalendarClock,
+  CircleOff,
+  Eye,
+  EyeOff,
+  FileText,
+  Flag,
+  Flame,
+  FlaskConical,
+  Gamepad2,
+  HardDrive,
+  Heart,
+  Laptop,
+  LockKeyhole,
+  MessageCircle,
+  MessagesSquare,
+  MoreHorizontal,
+  Package,
+  PackageX,
+  Search,
+  Server,
+  ShieldAlert,
+  ShieldCheck,
+  Store,
+  ThumbsDown,
+  ThumbsUp,
+  Ticket,
+  TicketPercent,
+  Wrench,
+  X
+} from '@lucide/vue'
 import { useShopStore } from '@/stores/shop'
 import { useUserStore } from '@/stores/user'
 import { useCheckoutStore } from '@/stores/checkout'
@@ -1047,9 +1127,10 @@ const stockDisplay = computed(() => getStockDisplay(product.value))
 const restockButtonText = computed(() => {
   if (restockStatusLoading.value) return '加载中...'
   if (restockSubscribeLoading.value) return '订阅中...'
-  if (restockSubscribed.value) return '✅ 已订阅'
-  return '🔔 订阅补货通知'
+  if (restockSubscribed.value) return '已订阅'
+  return '订阅补货通知'
 })
+const restockButtonIcon = computed(() => restockSubscribed.value ? BellCheck : Bell)
 // canPurchase 逻辑：后端返回明确的 false 时才禁用，未返回或为 undefined/null 时默认可购买
 const canPurchase = computed(() => {
   // 如果后端没有返回这个字段（undefined），默认允许购买
@@ -1135,7 +1216,7 @@ const buyButtonText = computed(() => {
 const detailErrorContent = computed(() => {
   if (detailErrorType.value === 'login_required') {
     return {
-      icon: '🔐',
+      icon: LockKeyhole,
       text: '请先登录后查看',
       hint: detailErrorMessage.value || '该物品需要更高的账号信任等级，登录后可继续访问当前页面'
     }
@@ -1143,14 +1224,14 @@ const detailErrorContent = computed(() => {
 
   if (detailErrorType.value === 'trust_required') {
     return {
-      icon: '🔒',
+      icon: ShieldAlert,
       text: '信任等级不足',
       hint: detailErrorMessage.value || '当前账号信任等级不足，暂时无法查看该物品'
     }
   }
 
   return {
-    icon: '😢',
+    icon: PackageX,
     text: '物品不存在',
     hint: '该物品可能已下架或被删除'
   }
@@ -1208,8 +1289,21 @@ const hasCommentSummary = computed(() =>
 )
 
 // 分类
-const categoryIcon = computed(() => product.value?.category_icon || '📦')
 const categoryName = computed(() => product.value?.category_name || '其他')
+const categoryIconComponent = computed(() => {
+  const normalizedName = categoryName.value.trim().toLowerCase()
+
+  if (normalizedName === 'ai' || normalizedName.includes('人工智能')) return Bot
+  if (normalizedName.includes('公益站')) return Laptop
+  if (['存储', '网盘', '云盘'].some((keyword) => normalizedName.includes(keyword))) return HardDrive
+  if (['小鸡', '主机', '服务器'].some((keyword) => normalizedName.includes(keyword))) return Server
+  if (normalizedName.includes('咨询')) return MessagesSquare
+  if (normalizedName.includes('服务')) return Wrench
+  if (normalizedName.includes('游戏')) return Gamepad2
+  if (['卡券', 'cdk', '优惠券'].some((keyword) => normalizedName.includes(keyword))) return Ticket
+
+  return Package
+})
 
 // 卖家
 const sellerAvatarSeed = computed(() =>
@@ -1771,7 +1865,7 @@ async function voteComment(comment, voteType) {
   if (!userStore.isLoggedIn) {
     const confirmed = await dialog.confirm('点赞需要先登录，是否前往登录？', {
       title: '需要登录',
-      icon: '🔐',
+      icon: 'lock-keyhole',
       confirmText: '去登录',
       cancelText: '取消'
     })
@@ -1911,7 +2005,7 @@ async function submitCommentReply(comment) {
   if (!userStore.isLoggedIn) {
     const confirmed = await dialog.confirm('回复需要先登录，是否前往登录？', {
       title: '需要登录',
-      icon: '🔐',
+      icon: 'lock-keyhole',
       confirmText: '去登录',
       cancelText: '取消'
     })
@@ -1956,7 +2050,7 @@ async function submitComment() {
   if (!userStore.isLoggedIn) {
     const confirmed = await dialog.confirm('发布评论需要先登录，是否前往登录？', {
       title: '需要登录',
-      icon: '🔐',
+      icon: 'lock-keyhole',
       confirmText: '去登录',
       cancelText: '取消'
     })
@@ -2001,7 +2095,7 @@ async function deleteComment(comment) {
   if (!comment?.id || commentDeletingId.value) return
   const confirmed = await dialog.confirm('确定删除这条评论吗？删除后不可恢复。', {
     title: '删除评论',
-    icon: '🗑️',
+    icon: 'trash-2',
     confirmText: '删除',
     cancelText: '取消'
   })
@@ -2034,7 +2128,7 @@ async function openCommentReportModal(comment) {
   if (!userStore.isLoggedIn) {
     const confirmed = await dialog.confirm('举报评论需要先登录，是否前往登录？', {
       title: '需要登录',
-      icon: '🔐',
+      icon: 'lock-keyhole',
       confirmText: '去登录',
       cancelText: '取消'
     })
@@ -2113,7 +2207,7 @@ async function toggleFavorite() {
   if (!userStore.isLoggedIn) {
     const confirmed = await dialog.confirm('收藏功能需要先登录，是否前往登录？', {
       title: '需要登录',
-      icon: '🔐',
+      icon: 'lock-keyhole',
       confirmText: '去登录',
       cancelText: '取消'
     })
@@ -2162,7 +2256,7 @@ async function markNotInterested() {
   if (!userStore.isLoggedIn) {
     const confirmed = await dialog.confirm('登录后才能管理不感兴趣的商品，是否前往登录？', {
       title: '需要登录',
-      icon: '🔐',
+      icon: 'lock-keyhole',
       confirmText: '去登录',
       cancelText: '取消'
     })
@@ -2278,7 +2372,7 @@ async function openReportModal() {
   if (!userStore.isLoggedIn) {
     const confirmed = await dialog.confirm('举报商品需要先登录，是否前往登录？', {
       title: '需要登录',
-      icon: '🔐',
+      icon: 'lock-keyhole',
       confirmText: '去登录',
       cancelText: '取消'
     })
@@ -2373,7 +2467,7 @@ async function handleSubscribeRestock() {
   if (!userStore.isLoggedIn) {
     const confirmed = await dialog.confirm('请先登录后再订阅补货通知', {
       title: '需要登录',
-      icon: '🔐',
+      icon: 'lock-keyhole',
       confirmText: '去登录'
     })
     if (confirmed) {
@@ -2410,7 +2504,7 @@ async function handleBlockedPurchaseByTrustLevel() {
   if (!userStore.isLoggedIn) {
     const confirmed = await dialog.confirm(message, {
       title: '需要登录',
-      icon: '🔐',
+      icon: 'lock-keyhole',
       confirmText: '去登录'
     })
     if (confirmed) {
@@ -2421,7 +2515,7 @@ async function handleBlockedPurchaseByTrustLevel() {
 
   await dialog.alert(message, {
     title: '兑换受限',
-    icon: '🔒'
+    icon: 'shield-alert'
   })
   return true
 }
@@ -2474,7 +2568,7 @@ async function handleBuyProduct() {
       : '请先登录后再兑换物品'
     const confirmed = await dialog.confirm(message, {
       title: '需要登录',
-      icon: '🔐',
+      icon: 'lock-keyhole',
       confirmText: '去登录'
     })
     if (confirmed) {
@@ -2540,6 +2634,9 @@ async function handleOpenStore() {
 }
 
 .back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 10px 16px;
   background: var(--bg-card);
   border: 1px solid var(--border-light);
@@ -2635,6 +2732,9 @@ async function handleOpenStore() {
 }
 
 .nav-report-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 8px 14px;
   border: 1px solid rgba(234, 179, 8, 0.35);
   border-radius: 20px;
@@ -2658,6 +2758,9 @@ async function handleOpenStore() {
 }
 
 .nav-category {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 8px 14px;
   background: var(--bg-secondary);
   border-radius: 20px;
@@ -2666,6 +2769,9 @@ async function handleOpenStore() {
 }
 
 .nav-type {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 8px 14px;
   border-radius: 20px;
   font-size: 12px;
@@ -2760,8 +2866,7 @@ async function handleOpenStore() {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
 }
 
-.media-wrapper::after {
-  content: '🔍 点击查看大图';
+.media-zoom-hint {
   position: absolute;
   bottom: 0;
   left: 0;
@@ -2770,12 +2875,15 @@ async function handleOpenStore() {
   background: linear-gradient(transparent, rgba(0, 0, 0, 0.5));
   color: white;
   font-size: 12px;
-  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
   opacity: 0;
   transition: opacity 0.3s;
 }
 
-.media-wrapper:has(.media-image):hover::after {
+.media-wrapper:has(.media-image):hover .media-zoom-hint {
   opacity: 1;
 }
 
@@ -2885,14 +2993,16 @@ async function handleOpenStore() {
 }
 
 .report-modal-close {
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   border: 1px solid var(--border-light);
   border-radius: 50%;
   background: var(--bg-secondary);
   color: var(--text-secondary);
-  font-size: 22px;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
 
@@ -3154,7 +3264,7 @@ async function handleOpenStore() {
 }
 
 .media-placeholder {
-  font-size: 80px;
+  color: var(--text-tertiary);
   opacity: 0.6;
 }
 
@@ -3263,7 +3373,7 @@ async function handleOpenStore() {
 }
 
 .status-icon {
-  font-size: 16px;
+  flex: 0 0 auto;
 }
 
 .status-text.low {
@@ -3582,6 +3692,9 @@ async function handleOpenStore() {
 }
 
 .section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 16px;
   font-weight: 600;
   color: var(--text-primary);
@@ -3857,17 +3970,22 @@ async function handleOpenStore() {
 
 .comment-action-btn {
   border: none;
-  border-radius: 0;
+  border-radius: 8px;
   background: transparent;
   color: var(--text-tertiary);
   cursor: pointer;
   line-height: 1;
-  font-size: 20px;
-  padding: 0 2px 2px;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .comment-action-btn:not(:disabled):hover {
   color: var(--text-secondary);
+  background: var(--bg-secondary);
 }
 
 .comment-action-btn:disabled {
@@ -3994,9 +4112,7 @@ async function handleOpenStore() {
 }
 
 .comment-vote-icon {
-  width: 14px;
-  height: 14px;
-  fill: currentColor;
+  flex: 0 0 auto;
 }
 
 .comment-vote-btn.active {
@@ -4312,6 +4428,7 @@ async function handleOpenStore() {
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 8px;
   width: 100%;
   padding: 16px 24px;
   background: linear-gradient(135deg, #cfa76f 0%, #bd8d57 100%);
@@ -4414,6 +4531,9 @@ async function handleOpenStore() {
 }
 
 .test-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
   color: white;
   font-size: 12px;

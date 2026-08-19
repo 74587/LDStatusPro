@@ -4,7 +4,10 @@
       <div v-if="dialog.visible" class="dialog-overlay" @click.self="handleCancel">
         <div class="dialog-container">
           <div class="dialog-header">
-            <span v-if="dialog.icon" class="dialog-icon">{{ dialog.icon }}</span>
+            <span v-if="dialog.icon" class="dialog-icon" aria-hidden="true">
+              <component v-if="dialogIconComponent" :is="dialogIconComponent" :size="40" :stroke-width="1.7" />
+              <template v-else>{{ dialog.icon }}</template>
+            </span>
             <h3 class="dialog-title">{{ dialog.title }}</h3>
           </div>
           
@@ -40,10 +43,17 @@
 
 <script setup>
 import { computed } from 'vue'
+import { LockKeyhole, ShieldAlert, Trash2 } from '@lucide/vue'
 import { useUiStore } from '@/stores/ui'
 
 const uiStore = useUiStore()
 const dialog = computed(() => uiStore.dialog)
+const dialogIconMap = {
+  'lock-keyhole': LockKeyhole,
+  'shield-alert': ShieldAlert,
+  'trash-2': Trash2
+}
+const dialogIconComponent = computed(() => dialogIconMap[dialog.value.icon] || null)
 
 function handleConfirm() {
   if (dialog.value.onConfirm) {
@@ -96,8 +106,12 @@ function handleSecondary() {
 }
 
 .dialog-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   font-size: 40px;
   line-height: 1;
+  color: var(--color-primary);
 }
 
 .dialog-title {
