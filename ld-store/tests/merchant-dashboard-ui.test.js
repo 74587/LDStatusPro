@@ -6,6 +6,7 @@ import {
   sortMerchantTasks
 } from '../src/utils/merchantDashboard'
 import {
+  isSellerNavigationItemActive,
   resolveAppViewKey,
   resolveLegacyPublishTarget,
   resolveOrderArea,
@@ -54,6 +55,23 @@ describe('卖家后台稳定壳层与列表工具', () => {
     expect(resolveAppViewKey({ path: '/seller/products', meta: { layout: 'seller' } })).toBe('seller-layout')
     expect(resolveSellerViewKey({ name: 'SellerOrders', fullPath: '/seller/orders?page=1' })).toBe('SellerOrders')
     expect(resolveSellerViewKey({ name: 'SellerOrders', fullPath: '/seller/orders?page=2' })).toBe('SellerOrders')
+  })
+
+  it('商品导航只激活所属入口且发布页不会同时选中我的物品', () => {
+    const productsItem = {
+      to: '/seller/products',
+      activeRouteNames: ['SellerProducts', 'SellerEdit']
+    }
+    const publishItem = {
+      to: '/seller/products/new',
+      activeRouteNames: ['SellerPublish'],
+      matchChildren: false
+    }
+
+    expect(isSellerNavigationItemActive({ name: 'SellerProducts', path: '/seller/products' }, productsItem)).toBe(true)
+    expect(isSellerNavigationItemActive({ name: 'SellerPublish', path: '/seller/products/new' }, productsItem)).toBe(false)
+    expect(isSellerNavigationItemActive({ name: 'SellerPublish', path: '/seller/products/new' }, publishItem)).toBe(true)
+    expect(isSellerNavigationItemActive({ name: 'SellerEdit', path: '/seller/products/12/edit' }, productsItem)).toBe(true)
   })
 
   it('卖家订单分页参数按商品与求购服务来源正确构造', () => {

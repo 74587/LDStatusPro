@@ -142,7 +142,7 @@ import { api } from '@/utils/api'
 import ThemeToggle from '@/components/common/ThemeToggle.vue'
 import AvatarImage from '@/components/common/AvatarImage.vue'
 import { MAINTENANCE_STATE, isRestrictedMaintenanceMode } from '@/config/maintenance'
-import { resolveSellerViewKey } from '@/utils/sellerNavigation'
+import { isSellerNavigationItemActive, resolveSellerViewKey } from '@/utils/sellerNavigation'
 
 const route = useRoute()
 const router = useRouter()
@@ -163,41 +163,40 @@ const navigation = computed(() => [
   {
     label: '概览',
     items: [
-      { label: '经营概览', to: '/seller', exact: true, icon: LayoutDashboard }
+      { label: '经营概览', to: '/seller', exact: true, activeRouteNames: ['SellerDashboard'], icon: LayoutDashboard }
     ]
   },
   {
     label: '交易',
     items: [
-      { label: '订单管理', to: '/seller/orders', icon: ShoppingBag, badge: orderBadge.value }
+      { label: '订单管理', to: '/seller/orders', activeRouteNames: ['SellerOrders', 'SellerOrderDetail'], icon: ShoppingBag, badge: orderBadge.value }
     ]
   },
   {
     label: '商品',
     items: [
-      { label: '我的物品', to: '/seller/products', icon: Package },
-      { label: '发布物品', to: '/seller/products/new', icon: PlusCircle }
+      { label: '我的物品', to: '/seller/products', activeRouteNames: ['SellerProducts', 'SellerEdit'], icon: Package },
+      { label: '发布物品', to: '/seller/products/new', activeRouteNames: ['SellerPublish'], matchChildren: false, icon: PlusCircle }
     ]
   },
   {
     label: '经营',
     items: [
-      { label: '优惠券管理', to: '/seller/coupons', icon: BadgePercent },
-      { label: '商家服务', to: '/seller/services', icon: Sparkles },
-      { label: '小店管理', to: '/seller/store', icon: Store }
+      { label: '优惠券管理', to: '/seller/coupons', activeRouteNames: ['SellerCoupons'], icon: BadgePercent },
+      { label: '商家服务', to: '/seller/services', activeRouteNames: ['SellerServices'], icon: Sparkles },
+      { label: '小店管理', to: '/seller/store', activeRouteNames: ['SellerStore'], icon: Store }
     ]
   },
   {
     label: '设置',
     items: [
-      { label: '收款设置', to: '/seller/payment', icon: CreditCard }
+      { label: '收款设置', to: '/seller/payment', activeRouteNames: ['SellerPayment'], icon: CreditCard }
     ]
   }
 ])
 
 function isNavigationActive(item) {
-  if (item.exact) return route.path === item.to
-  return route.path === item.to || route.path.startsWith(`${item.to}/`)
+  return isSellerNavigationItemActive(route, item)
 }
 
 function formatBadge(value) {
@@ -384,9 +383,11 @@ html.dark .seller-shell {
 .seller-topbar-profile:focus-visible { outline: 3px solid var(--seller-jade); outline-offset: 2px; }
 .sidebar-close { display: none; }
 
-.seller-nav { display: grid; gap: 20px; }
+.seller-nav { width: 100%; min-width: 0; display: grid; gap: 20px; }
+.seller-nav-group { width: 100%; min-width: 0; }
 .seller-nav-group h2 { margin: 0 0 7px 12px; color: rgba(233,237,240,.42); font-size: 11px; font-weight: 600; letter-spacing: .16em; }
-.seller-nav-item { min-height: 44px; display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 10px; color: rgba(240,244,246,.76); font-size: 14px; transition: background 180ms ease, color 180ms ease, transform 180ms ease; }
+.seller-nav-item { width: 100%; min-width: 0; min-height: 44px; justify-self: stretch; box-sizing: border-box; display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 10px; color: rgba(240,244,246,.76); font-size: 14px; transition: background 180ms ease, color 180ms ease, transform 180ms ease; }
+.seller-nav-item > span:not(.seller-nav-badge) { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .seller-nav-item:hover { color: #fff; background: rgba(255,255,255,.06); transform: translateX(2px); }
 .seller-nav-item.active { color: #fff; background: rgba(145,178,154,.18); box-shadow: inset 3px 0 0 var(--seller-jade); }
 .seller-nav-badge { min-width: 22px; height: 22px; padding: 0 6px; display: grid; place-items: center; border-radius: 999px; background: #e8d4b8; color: #3d3021; font: 700 11px/1 ui-monospace, SFMono-Regular, Menlo, monospace; }

@@ -2141,7 +2141,7 @@ watch(
   }
 }
 
-:global(.seller-shell) .cdk-modal {
+.cdk-modal {
   max-width: 720px;
   border: 1px solid var(--seller-border);
   border-radius: 14px;
@@ -2149,28 +2149,28 @@ watch(
   box-shadow: var(--seller-shadow-md);
 }
 
-:global(.seller-shell) .cdk-modal .modal-header {
+.cdk-modal .modal-header {
   padding: 18px 20px 14px;
   border-top: 4px solid var(--seller-jade);
   border-bottom-color: var(--seller-border);
   background: var(--seller-surface);
 }
 
-:global(.seller-shell) .cdk-modal .modal-title {
+.cdk-modal .modal-title {
   color: var(--seller-ink);
   font-family: "Noto Serif SC", "Source Han Serif SC", "Songti SC", STSong, serif;
 }
 
-:global(.seller-shell) .cdk-modal .modal-subtitle { color: var(--seller-muted); }
-:global(.seller-shell) .cdk-modal .modal-close { color: var(--seller-muted); background: var(--seller-surface-muted); }
-:global(.seller-shell) .cdk-modal .cdk-stats,
-:global(.seller-shell) .cdk-modal .cdk-item,
-:global(.seller-shell) .cdk-modal .cdk-add { border-color: var(--seller-border); background: var(--seller-surface-muted); }
-:global(.seller-shell) .cdk-modal .filter-select,
-:global(.seller-shell) .cdk-modal .cdk-input { border-color: var(--seller-border); background: var(--seller-surface-strong); color: var(--seller-ink); }
-:global(.seller-shell) .cdk-modal .add-btn-primary { border-radius: 9px; background: var(--seller-navy); }
+.cdk-modal .modal-subtitle { color: var(--seller-muted); }
+.cdk-modal .modal-close { color: var(--seller-muted); background: var(--seller-surface-muted); }
+.cdk-modal .cdk-stats,
+.cdk-modal .cdk-item,
+.cdk-modal .cdk-add { border-color: var(--seller-border); background: var(--seller-surface-muted); }
+.cdk-modal .filter-select,
+.cdk-modal .cdk-input { border-color: var(--seller-border); background: var(--seller-surface-strong); color: var(--seller-ink); }
+.cdk-modal .add-btn-primary { border-radius: 9px; background: var(--seller-navy); }
 
 @media (max-width: 767px) {
-  :global(.seller-shell) .cdk-modal { max-width: 100%; max-height: 92dvh; }
+  .cdk-modal { max-width: 100%; max-height: 92dvh; }
 }
 </style>
