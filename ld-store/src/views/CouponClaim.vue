@@ -47,9 +47,9 @@
           <template v-if="coupon.claimed">
             <div class="claimed-status" role="status">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6" /></svg>
-              已领取到你的账户
+              {{ claimedStatusText }}
             </div>
-            <router-link class="primary-button" :to="usePath">立即使用</router-link>
+            <router-link class="primary-button" :to="claimedActionPath">{{ claimedActionText }}</router-link>
             <router-link class="text-button" to="/user/coupons">查看我的优惠券</router-link>
           </template>
           <button v-else-if="userStore.isLoggedIn" type="button" class="primary-button" :disabled="claiming || !coupon.claimable" @click="claimCoupon">
@@ -83,6 +83,26 @@ const scopeText = computed(() => coupon.value?.scopeType === 'product'
   : `${coupon.value?.sellerUsername || '该卖家'}店铺内平台商品`)
 const usePath = computed(() => getCouponUsePath(coupon.value))
 const loginPath = computed(() => ({ name: 'Login', query: { redirect: route.fullPath } }))
+const claimUsable = computed(() => coupon.value?.claim?.status === 'available' && ['active', 'closed', 'sold_out'].includes(coupon.value?.state))
+const claimedStatusText = computed(() => {
+  if (coupon.value?.claim?.status === 'reserved') return '这张优惠券正被待支付订单占用'
+  if (coupon.value?.claim?.status === 'used') return '这张优惠券已使用'
+  if (coupon.value?.state === 'scheduled') return '已领取，优惠券尚未生效'
+  if (coupon.value?.state === 'disabled') return '已领取，优惠券已被平台停用'
+  if (coupon.value?.state === 'expired') return '已领取，优惠券已过期'
+  return '已领取到你的账户'
+})
+const claimedActionText = computed(() => {
+  if (coupon.value?.claim?.status === 'reserved') return '查看占用订单'
+  if (coupon.value?.claim?.status === 'used') return '查看使用订单'
+  return claimUsable.value ? '立即使用' : '查看我的优惠券'
+})
+const claimedActionPath = computed(() => {
+  const claim = coupon.value?.claim
+  if (claim?.status === 'reserved' && claim.reservedOrderNo) return `/order/${claim.reservedOrderNo}`
+  if (claim?.status === 'used' && claim.usedOrderNo) return `/order/${claim.usedOrderNo}`
+  return claimUsable.value ? usePath.value : '/user/coupons'
+})
 const claimButtonText = computed(() => {
   const state = coupon.value?.state
   if (state === 'scheduled') return '尚未开始领取'
