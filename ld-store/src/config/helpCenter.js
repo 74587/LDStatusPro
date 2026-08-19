@@ -1,4 +1,4 @@
-export const HELP_UPDATED_AT = '2026-08-19'
+export const HELP_UPDATED_AT = '2026-08-20'
 
 export const HELP_GROUPS = Object.freeze([
   { id: 'start', title: '快速开始' },
@@ -50,7 +50,18 @@ export const HELP_ARTICLES = Object.freeze([
     keywords: ['购买', '兑换', '支付', '订单', '普通物品', '自动发卡', 'CDK', '联系卖家', '发货'],
     icon: 'ShoppingBag',
     loader: () => import('@/components/docs/DocBuyGuide.vue'),
-    related: ['buyer-coupons', 'product-types', 'account-safety']
+    related: ['buyer-coupons', 'collections-blocks', 'product-types']
+  },
+  {
+    id: 'collections-blocks',
+    group: 'buyer',
+    title: '收藏与不感兴趣',
+    summary: '收藏想稍后查看的物品，隐藏不感兴趣的物品，并随时恢复展示。',
+    audience: ['买家'],
+    keywords: ['收藏', '拉黑', '不感兴趣', '隐藏物品', '恢复展示', '取消拉黑', '屏蔽商品'],
+    icon: 'EyeOff',
+    loader: () => import('@/components/docs/DocCollectionsBlocks.vue'),
+    related: ['buy-guide', 'account-safety', 'faq']
   },
   {
     id: 'buyer-coupons',
@@ -78,12 +89,12 @@ export const HELP_ARTICLES = Object.freeze([
     id: 'account-safety',
     group: 'buyer',
     title: '账号功能与交易保障',
-    summary: '管理收藏、消息、评论和举报，并在发生纠纷时保留记录。',
+    summary: '管理收藏与拉黑、消息、评论和举报，并在发生纠纷时保留记录。',
     audience: ['所有用户'],
-    keywords: ['个人中心', '收藏', '评论', '回复', '评分', '消息', '举报', '纠纷', '争议', '安全'],
+    keywords: ['个人中心', '收藏', '拉黑', '不感兴趣', '评论', '回复', '评分', '消息', '举报', '纠纷', '争议', '安全'],
     icon: 'ShieldCheck',
     loader: () => import('@/components/docs/DocAccountSafety.vue'),
-    related: ['buy-guide', 'buy-request', 'faq']
+    related: ['collections-blocks', 'buy-request', 'faq']
   },
   {
     id: 'seller-center',
@@ -198,6 +209,8 @@ export const HELP_ARTICLES = Object.freeze([
 ])
 
 export const HELP_SEARCH_ENTRIES = Object.freeze([
+  { articleId: 'collections-blocks', anchor: 'block-product', title: '将物品标记为不感兴趣', keywords: ['拉黑商品', '隐藏商品', '屏蔽物品', '二次确认'] },
+  { articleId: 'collections-blocks', anchor: 'restore-product', title: '恢复已隐藏的物品', keywords: ['取消拉黑', '恢复展示', '找回商品'] },
   { articleId: 'product-types', anchor: 'independent-cdk', title: '独立卡密如何发货', keywords: ['独立库存', '一单一码', '卡密库存'] },
   { articleId: 'product-types', anchor: 'shared-cdk', title: '共享卡密与共享库存', keywords: ['同一个卡密', '无限库存', '库存9999', '共享CDK'] },
   { articleId: 'inventory-management', anchor: 'switch-cdk-mode', title: '切换独立卡密与共享卡密', keywords: ['迁移卡密', '暂停库存', '恢复库存', '重新审核'] },

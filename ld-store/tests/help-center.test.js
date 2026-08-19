@@ -62,7 +62,8 @@ describe('帮助搜索', () => {
     ['卖家后台', ['seller-center']],
     ['待发货', ['seller-orders']],
     ['通知地址', ['payment-settings']],
-    ['求购订单', ['buy-request']]
+    ['求购订单', ['buy-request']],
+    ['不感兴趣', ['collections-blocks']]
   ])('“%s”的正确答案位于前三项', (query, expectedArticleIds) => {
     const topThreeIds = searchHelpCenter(query, 3).map(result => result.articleId)
     expect(expectedArticleIds.some(id => topThreeIds.includes(id))).toBe(true)

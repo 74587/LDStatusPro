@@ -1,7 +1,7 @@
 <template>
   <div class="doc-content">
     <h2 id="purpose">集中管理账号内的交易线索</h2>
-    <p class="lead">个人中心保存订单、优惠券、求购、消息、收藏和举报入口。发生问题时，先回到对应记录，而不是只依赖站外聊天。</p>
+    <p class="lead">个人中心保存订单、优惠券、求购、消息、收藏与拉黑、举报等入口。发生问题时，先回到对应记录，而不是只依赖站外聊天。</p>
 
     <HelpPath :items="[{ label: '右上角头像' }, { label: '个人中心', to: '/user' }]" />
 
@@ -10,9 +10,10 @@
       <template #cell-entry="{ row }"><router-link :to="row.to">{{ row.entry }}</router-link></template>
     </HelpTable>
 
-    <h2 id="favorites-comments">收藏、评论和消息</h2>
+    <h2 id="favorites-comments">收藏与拉黑、评论和消息</h2>
     <ul>
       <li><strong>收藏：</strong>用于保存感兴趣的物品，价格、库存和可见状态仍以再次打开详情时为准。</li>
+      <li><strong>不感兴趣：</strong>隐藏不想再看到的物品，并可在“收藏与拉黑”中恢复展示。</li>
       <li><strong>评论与回复：</strong>围绕真实体验说明事实，不公开卡密、密钥、联系方式或他人隐私。</li>
       <li><strong>站内消息：</strong>求购洽谈和重要约定尽量保留在站内，便于双方复核。</li>
       <li><strong>评分：</strong>交易结束后按实际交付评价，不用差评威胁对方接受额外条件。</li>
@@ -57,7 +58,7 @@ const toolColumns = [
 const toolRows = [
   { tool: '购买订单', entry: '我的订单', to: '/user/orders', use: '查看支付、发货和交付信息' },
   { tool: '优惠券', entry: '我的优惠券', to: '/user/coupons', use: '查看未使用、占用、已使用和已过期状态' },
-  { tool: '收藏', entry: '我的收藏', to: '/user/favorites', use: '保存物品并稍后查看' },
+  { tool: '收藏与拉黑', entry: '收藏与拉黑', to: '/user/favorites', use: '保存感兴趣的物品，或隐藏不感兴趣的物品' },
   { tool: '消息', entry: '我的消息', to: '/user/messages', use: '查看求购洽谈和站内沟通' },
   { tool: '举报', entry: '我的举报', to: '/user/reports', use: '提交并跟进违规或争议问题' }
 ]

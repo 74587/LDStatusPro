@@ -58,6 +58,7 @@ LD 士多 Web 版是 [LDStatus Pro](https://ldspro.qzz.io) 客户端脚本中「
 - Linux.do OAuth 登录
 - LDC 余额查询
 - 订单历史查看
+- 收藏与不感兴趣管理（全局过滤已隐藏物品）
 - 个人信息管理
 
 ### 🏪 小店集市
@@ -68,6 +69,7 @@ LD 士多 Web 版是 [LDStatus Pro](https://ldspro.qzz.io) 客户端脚本中「
 ### 📚 帮助文档
 - 快速入门指南
 - 商品类型说明（链接/CDK）
+- 收藏、不感兴趣与恢复展示说明
 - 发布流程详解
 - 常见问题解答
 
