@@ -2279,6 +2279,15 @@ onUnmounted(() => {
   .seller-delivery-form > div:last-child { justify-content: flex-end; }
 }
 @media (max-width: 767px) {
+  .seller-status-tabs {
+    width: 100%;
+    min-height: 54px;
+    flex: 0 0 auto;
+    align-self: stretch;
+  }
+  .seller-status-tabs :deep(.liquid-tab) {
+    min-height: 44px;
+  }
   .seller-order-search, .seller-order-select { width: 100%; }
   .seller-order-total { margin-left: 0; }
   .seller-delivery-form { margin-top: 15px; padding: 14px; }
