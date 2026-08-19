@@ -100,17 +100,19 @@ npm install
 复制并按需调整：
 
 ```bash
-cp .env.example .env
+cp .env.example .env.local
 ```
 
 关键变量：
 
 - `VITE_API_BASE`：LD 士多后端地址，同时用于商家收款配置页展示回调地址
-- `VITE_AUTH_API_BASE`：登录认证接口地址（生产建议 `https://api1.ldspro.qzz.io`，本地开发建议留空走 Vite 代理）
-- `VITE_IMAGE_API_BASE`：图床接口地址（当前仍使用旧后端可保持 `https://api.ldspro.qzz.io`）
+- `VITE_AUTH_API_BASE`：登录认证接口地址
+- `VITE_IMAGE_API_BASE`：图床接口地址
 - `VITE_MAINTENANCE_MODE`：维护模式开关（`1` 开启，`0` 关闭）
 - `VITE_MAINTENANCE_TITLE`、`VITE_MAINTENANCE_MESSAGE`、`VITE_MAINTENANCE_ETA`：维护页文案
 - `VITE_MAINTENANCE_STATUS_URL`：维护状态页地址
+
+本地开发时请保持三个 API 地址为空，`/api/*` 会由 Vite 同源代理到对应服务，不会触发浏览器 CORS。生产构建在未配置时会使用代码内置的公网地址。
 
 ### 开发模式
 
@@ -119,6 +121,8 @@ npm run dev
 ```
 
 访问 http://localhost:3001 查看应用。
+
+`3001` 端口被占用时 Vite 会直接报错，请先关闭占用该端口的进程，避免本地 Origin 发生静默变化。
 
 ### 代码检查
 

@@ -28,6 +28,9 @@ export default defineConfig({
   },
   server: {
     port: 3001,
+    // api2 的本地 CORS 白名单以端口为精确 Origin。端口被占用时直接报错，
+    // 避免 Vite 静默切换到 3002 后产生难以识别的跨域问题。
+    strictPort: true,
     open: true,
     proxy: {
       '/api/auth': proxyOptions('https://api1.ldspro.qzz.io'),
