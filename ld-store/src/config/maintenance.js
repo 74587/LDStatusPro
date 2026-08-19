@@ -155,7 +155,11 @@ const FEATURE_MESSAGE_MAP = Object.freeze({
 
 const REQUEST_RULES = [
   { feature: 'couponClaim', methods: ['POST'], test: (path) => /^\/api\/shop\/coupons\/[^/]+\/claim$/.test(path) },
+  { feature: 'couponClaim', methods: ['POST'], test: (path) => path === '/api/shop/orders/quote' },
   { feature: 'couponManage', methods: ['POST', 'PATCH'], test: (path) => path.startsWith('/api/shop/merchant/coupons') },
+  { feature: 'couponRead', methods: ['GET'], test: (path) => /^\/api\/shop\/coupons\/[^/]+$/.test(path) },
+  { feature: 'couponRead', methods: ['GET'], test: (path) => path === '/api/shop/my-coupons' || path.startsWith('/api/shop/my-coupons?') },
+  { feature: 'couponRead', methods: ['GET'], test: (path) => path === '/api/shop/merchant/coupons' || path.startsWith('/api/shop/merchant/coupons?') || /^\/api\/shop\/merchant\/coupons\/\d+$/.test(path) },
   { feature: 'orderCreate', methods: ['POST'], test: (path) => path === '/api/shop/orders' },
   { feature: 'orderPayment', methods: ['GET'], test: (path) => /^\/api\/shop\/orders\/[^/]+\/payment-url$/.test(path) },
   { feature: 'orderPayment', methods: ['POST'], test: (path) => /^\/api\/shop\/orders\/[^/]+\/refresh$/.test(path) },
