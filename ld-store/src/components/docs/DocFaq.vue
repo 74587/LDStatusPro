@@ -149,7 +149,7 @@
           <ol>
             <li>在 <a href="https://credit.linux.do/merchant" target="_blank" rel="noopener">LDC 集市</a> 创建应用</li>
             <li>配置正确的通知地址和回调地址</li>
-            <li>在 LD士多「收款设置」中填入凭证</li>
+            <li>在 LD士多「卖家后台 → 收款设置」中填入凭证</li>
           </ol>
           <p>详见 <router-link to="/docs/publish-cdk">发布 CDK 物品</router-link></p>
         </div>

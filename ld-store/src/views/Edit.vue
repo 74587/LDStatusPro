@@ -39,11 +39,11 @@
       <!-- 物品不存在 -->
       <EmptyState
         v-else-if="!product"
-        icon="🔍"
+        icon=""
         title="物品不存在"
         description="无法找到该物品信息"
       >
-        <router-link to="/user/products" class="back-btn">
+        <router-link to="/seller/products" class="back-btn">
           ← 返回
         </router-link>
       </EmptyState>
@@ -74,12 +74,12 @@
                   type="button"
                   :class="['desc-mode-tab', { active: descMode === 'write' }]"
                   @click="descMode = 'write'"
-                >✏️ 编辑</button>
+                >编辑</button>
                 <button
                   type="button"
                   :class="['desc-mode-tab', { active: descMode === 'preview' }]"
                   @click="descMode = 'preview'"
-                >👁️ 预览</button>
+                >预览</button>
               </div>
             </div>
             <textarea
@@ -110,7 +110,7 @@
                 :class="['category-btn', { active: form.categoryId === cat.id }]"
                 @click="form.categoryId = cat.id"
               >
-                {{ cat.icon }} {{ cat.name }}
+                {{ cat.name }}
               </button>
             </div>
           </div>
@@ -156,8 +156,8 @@
             />
             <p v-if="imageUrlError" class="form-error">{{ imageUrlError }}</p>
             <p v-else-if="imageLoadError" class="form-error">{{ imageLoadError }}</p>
-            <p v-else-if="imageValidating" class="form-hint loading-hint">⚙️ 正在验证图片...</p>
-            <p v-else-if="imageValidated" class="form-hint success-hint">✅ 图片验证通过</p>
+            <p v-else-if="imageValidating" class="form-hint loading-hint">正在验证图片...</p>
+            <p v-else-if="imageValidated" class="form-hint success-hint">图片验证通过</p>
             <p v-else class="form-hint">推荐尺寸 16:9，必须使用 HTTPS 链接，不支持 linux.do 图床</p>
             
             <!-- 图片预览 -->
@@ -172,7 +172,6 @@
           <h3 class="card-title">物品类型</h3>
           
           <div class="type-readonly">
-            <div class="type-icon">{{ getTypeIcon(getProductType(product)) }}</div>
             <div class="type-info">
               <h4 class="type-name">{{ getTypeName(getProductType(product)) }}</h4>
               <p class="type-desc">物品类型创建后无法修改</p>
@@ -302,7 +301,7 @@
               开启时仅您自己可以购买此物品，用于测试 LDC 通知回调是否正常工作。
             </p>
             <p v-if="form.isTestMode" class="form-hint test-mode-auto-offline-note">
-              ⚠️ 测试模式商品审核通过并上架后，30 分钟会自动下架；如需继续售卖，请关闭测试模式后保存。
+              测试模式商品审核通过并上架后，30 分钟会自动下架；如需继续售卖，请关闭测试模式后保存。
             </p>
             <p v-else class="form-hint success-hint">
               关闭后将恢复普通可售状态，不再受“仅自己可购买”和“30 分钟自动下架”限制。
@@ -312,7 +311,7 @@
           <p class="cdk-hint">
             {{ form.sharedCdkEnabled ? '共享卡密模式下，请在当前页面直接维护共享 CDK。' : '请在「我的物品」页面管理 CDK 库存' }}
           </p>
-          <router-link v-if="!form.sharedCdkEnabled" to="/user/products" class="manage-link">
+          <router-link v-if="!form.sharedCdkEnabled" to="/seller/products" class="manage-link">
             前往管理 →
           </router-link>
         </div>
@@ -339,7 +338,6 @@ import { renderProductDescription } from '@/utils/renderProductDescription'
 import EmptyState from '@/components/common/EmptyState.vue'
 import {
   getProductType as resolveProductType,
-  getProductTypeIcon,
   getProductTypeText,
   isLegacyLinkProduct,
   isNormalProduct
@@ -372,10 +370,10 @@ const EDIT_SAVE_STATUS_MAX_RETRIES = 8
 const EDIT_SAVE_STATUS_RETRY_INTERVAL_MS = 2000
 // 分类 - 从API获取或使用默认
 const categories = ref([
-  { id: 1, name: 'AI', icon: '🤖' },
-  { id: 2, name: '存储', icon: '💾' },
-  { id: 3, name: '小鸡', icon: '🐔' },
-  { id: 4, name: '咨询', icon: '💬' }
+  { id: 1, name: 'AI', icon: '' },
+  { id: 2, name: '存储', icon: '' },
+  { id: 3, name: '小鸡', icon: '' },
+  { id: 4, name: '咨询', icon: '' }
 ])
 
 // 表单数据
@@ -426,7 +424,7 @@ async function loadCategories() {
         .map(cat => ({
           id: cat.id,
           name: cat.name,
-          icon: cat.icon || '📦'
+          icon: cat.icon || ''
         }))
     }
   } catch (error) {
@@ -661,7 +659,7 @@ async function confirmUpdateAfterUncertainResult(productId, expectedData, expect
     const confirmed = await pollUpdateResult(productId, expectedData, expectedType)
     if (confirmed.confirmed) {
       toast.success('物品已更新，已自动确认保存结果')
-      router.push('/user/products')
+      router.push('/seller/products')
       return true
     }
     toast.warning('暂未确认保存结果。请稍后在“我的物品”中查看，避免重复修改。')
@@ -698,11 +696,6 @@ const canSubmit = computed(() => {
 
   return true
 })
-
-// 获取类型图标
-function getTypeIcon(type) {
-  return getProductTypeIcon(type)
-}
 
 // 获取类型名称
 function getTypeName(type) {
@@ -894,7 +887,7 @@ async function submitForm() {
     }
     
     toast.success('物品已更新')
-    router.push('/user/products')
+    router.push('/seller/products')
   } catch (error) {
     toast.error(error.message || '更新失败')
   } finally {
@@ -1472,4 +1465,3 @@ watch(
   }
 }
 </style>
-

@@ -3,8 +3,8 @@
     <div class="page-container">
       <div class="page-header">
         <h1 class="page-title">我的物品</h1>
-        <router-link to="/publish" class="add-btn">
-          ➕ 发布
+        <router-link to="/seller/products/new" class="add-btn">
+          发布
         </router-link>
       </div>
       
@@ -23,25 +23,42 @@
       <!-- 空状态 -->
       <EmptyState
         v-else-if="products.length === 0"
-        icon="📦"
-        title="暂无物品"
-        description="您还没有发布任何物品"
+        icon=""
+        text="暂无物品"
+        hint="您还没有发布任何物品"
       >
-        <router-link to="/publish" class="publish-btn">
-          发布物品
-        </router-link>
+        <template #action>
+          <router-link to="/seller/products/new" class="publish-btn">
+            发布物品
+          </router-link>
+        </template>
+      </EmptyState>
+
+      <div v-else-if="activeProductFilter" class="product-filter-banner" role="status">
+        <span>正在查看：{{ activeProductFilter.label }}</span>
+        <button type="button" @click="clearProductFilter">查看全部物品</button>
+      </div>
+
+      <EmptyState
+        v-if="products.length > 0 && visibleProducts.length === 0"
+        icon=""
+        text="当前筛选下没有物品"
+        hint="可以返回全部物品继续管理。"
+      >
+        <template #action>
+          <button type="button" class="publish-btn" @click="clearProductFilter">清除筛选</button>
+        </template>
       </EmptyState>
       
       <!-- 物品列表 -->
-      <div class="products-list" v-else>
+      <div class="products-list" v-else-if="visibleProducts.length">
         <div
-          v-for="product in products"
+          v-for="product in visibleProducts"
           :key="product.id"
           :class="['product-card', getProductStatus(product)]"
         >
           <!-- 状态标签（右上角） -->
           <div :class="['status-badge', getProductStatus(product)]">
-            <span class="status-icon">{{ getStatusIcon(getProductStatus(product)) }}</span>
             <span class="status-text">{{ getStatusText(getProductStatus(product)) }}</span>
           </div>
           
@@ -55,10 +72,10 @@
                 :alt="product.name"
                 @error="handleImageError"
               />
-              <span v-else class="image-placeholder">{{ product.category_icon || '📦' }}</span>
+              <span v-else class="image-placeholder">物品</span>
               <!-- 类型角标 -->
               <span :class="['type-badge', getProductType(product)]">
-                {{ getTypeIcon(getProductType(product)) }}
+                {{ getProductType(product) === 'cdk' ? 'CDK' : '普通' }}
               </span>
             </div>
             
@@ -72,7 +89,7 @@
                   <span class="id-value">{{ product.id }}</span>
                 </span>
                 <button class="copy-id-btn" title="复制物品 ID" @click.stop="copyProductId(product)">
-                  📋
+                  复制
                 </button>
               </div>
               <p class="product-desc">{{ stripMarkdown(product.description) || '暂无描述' }}</p>
@@ -84,20 +101,20 @@
                   <span class="price-unit">LDC</span>
                 </span>
                 <span class="meta-divider">·</span>
-                <span class="product-views">👁 {{ product.view_count || 0 }}</span>
+                <span class="product-views">浏览 {{ product.view_count || 0 }}</span>
                 <template v-if="isPlatformOrderProductItem(product)">
                   <span class="meta-divider">·</span>
                   <span :class="['product-stock', { low: isLowStock(product) }]">
-                    📦 {{ getStockDisplay(product) }}
+                    库存 {{ getStockDisplay(product) }}
                   </span>
                   <span class="meta-divider">·</span>
-                  <span class="product-sold">🔥 {{ product.sold_count || 0 }}</span>
+                  <span class="product-sold">售出 {{ product.sold_count || 0 }}</span>
                 </template>
               </div>
               
               <!-- 分类标签 -->
               <div class="product-tags">
-                <span class="tag category">{{ product.category_icon || '📦' }} {{ product.category_name || '其他' }}</span>
+                <span class="tag category">{{ product.category_name || '其他' }}</span>
                 <span :class="['tag', 'type', getProductType(product)]">{{ getTypeText(getProductType(product)) }}</span>
               </div>
             </div>
@@ -105,14 +122,14 @@
           
           <!-- 被拒绝/下架原因 -->
           <div v-if="getRejectReason(product)" class="reject-reason">
-            <span class="reason-icon">⚠️</span>
+            <span class="reason-icon">!</span>
             <span class="reason-text">{{ getRejectReason(product) }}</span>
           </div>
           
           <!-- 操作按钮 -->
           <div class="product-actions">
             <button class="action-btn edit" @click.stop="editProduct(product)" :disabled="isProductBusy(product) || isRestrictedProductManagement">
-              ✏️ 编辑
+              编辑
             </button>
               <button
                 v-if="isCdkItem(product)"
@@ -120,7 +137,7 @@
                 @click.stop="manageCdk(product)"
                 :disabled="isProductBusy(product)"
             >
-              🔑 CDK
+              CDK
             </button>
               <button
                 v-if="canToggleStatus(product)"
@@ -150,7 +167,7 @@
     <div v-if="showCdkModal" class="modal-overlay" @click.self="closeCdkModal">
       <div class="modal-content cdk-modal">
         <div class="modal-header">
-          <h3 class="modal-title">🔑 CDK 管理</h3>
+          <h3 class="modal-title">CDK 管理</h3>
           <span class="modal-subtitle">{{ currentProduct?.name }}</span>
           <button class="modal-close" @click="closeCdkModal">✕</button>
         </div>
@@ -225,7 +242,7 @@
               @click="clearAllCdks"
               :disabled="clearingAllCdks || (cdkStats.available || 0) === 0"
             >
-              {{ clearingAllCdks ? '清空中...' : '🗑️ 一键清空全部可删CDK' }}
+              {{ clearingAllCdks ? '清空中...' : '一键清空全部可删 CDK' }}
             </button>
           </div>
 
@@ -248,7 +265,7 @@
                     class="cdk-delete-btn"
                     @click="deleteCdkItem(cdk)"
                     :disabled="isDeletingCdk(cdk)"
-                  >{{ isDeletingCdk(cdk) ? '...' : '🗑️' }}</button>
+                  >{{ isDeletingCdk(cdk) ? '...' : '删除' }}</button>
                 </div>
               </div>
             </div>
@@ -259,7 +276,7 @@
 
           <!-- 添加 CDK -->
           <div class="cdk-add">
-            <h4 class="add-title">➕ 添加 CDK</h4>
+            <h4 class="add-title">添加 CDK</h4>
             <textarea
               v-model="newCdkText"
               class="cdk-input"
@@ -289,7 +306,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useShopStore } from '@/stores/shop'
 import { isMaintenanceFeatureEnabled, isRestrictedMaintenanceMode } from '@/config/maintenance'
 import { useToast } from '@/composables/useToast'
@@ -301,7 +318,6 @@ import { storage } from '@/utils/storage'
 import { CDK_UPLOAD_LIMITS } from '@/config/cdkQuota'
 import {
   getProductType as resolveProductType,
-  getProductTypeIcon,
   getProductTypeText,
   getStockDisplay as resolveStockDisplay,
   isCdkProduct,
@@ -311,6 +327,7 @@ import {
 } from '@/utils/shopProduct'
 
 const router = useRouter()
+const route = useRoute()
 const shopStore = useShopStore()
 const toast = useToast()
 const dialog = useDialog()
@@ -337,6 +354,33 @@ const productAction = ref({ id: null, type: '' })
 const isRestrictedProductManagement = computed(() =>
   isRestrictedMaintenanceMode() && !isMaintenanceFeatureEnabled('productManage')
 )
+
+const activeProductFilter = computed(() => {
+  const stock = String(route.query.stock || '')
+  const status = String(route.query.status || '')
+  if (stock === 'out') return { type: 'stock', value: 'out', label: '已售罄' }
+  if (stock === 'low') return { type: 'stock', value: 'low', label: '低库存（1–5）' }
+  if (status === 'pending') return { type: 'status', value: 'pending', label: '审核中' }
+  if (status === 'rejected') return { type: 'status', value: 'rejected', label: '审核未通过' }
+  return null
+})
+
+const visibleProducts = computed(() => {
+  const filter = activeProductFilter.value
+  if (!filter) return products.value
+  return products.value.filter(product => {
+    if (filter.type === 'status') {
+      return getProductStatus(product).includes(filter.value)
+    }
+    if (!isPlatformOrderProductItem(product) || product.sharedCdkEnabled || product.shared_cdk_enabled) return false
+    const stock = Number(product.stock || 0)
+    return filter.value === 'out' ? stock === 0 : stock >= 1 && stock <= 5
+  })
+})
+
+function clearProductFilter() {
+  router.replace({ path: '/seller/products' })
+}
 
 // 计算即将添加的 CDK 数量
 const newCdkCount = computed(() => {
@@ -449,7 +493,7 @@ function editProduct(product) {
     toast.warning('受限维护中，当前仅开放商品 CDK 管理')
     return
   }
-  router.push(`/edit/${product.id}`)
+  router.push(`/seller/products/${product.id}/edit`)
 }
 
 // 判断是否为上架状态
@@ -537,7 +581,7 @@ async function deleteProduct(product) {
 
   const confirmed = await dialog.confirm(confirmMsg, {
     title: '删除物品',
-    icon: '🗑️',
+    icon: '',
     danger: true
   })
 
@@ -746,26 +790,6 @@ function getTypeText(type) {
   return getProductTypeText(type)
 }
 
-// 状态图标
-function getStatusIcon(status) {
-  const normalized = normalizeProductStatus(status)
-  const map = {
-    pending_ai: '⏳',
-    pending_manual: '🧑‍⚖️',
-    ai_approved: '✅',
-    manual_approved: '✅',
-    ai_rejected: '❌',
-    manual_rejected: '❌',
-    offline_manual: '⏸️'
-  }
-  return map[normalized] || '❓'
-}
-
-// 类型图标
-function getTypeIcon(type) {
-  return getProductTypeIcon(type)
-}
-
 // 格式化价格
 function formatPrice(product) {
   const price = product.price || 0
@@ -917,7 +941,7 @@ async function deleteCdkItem(cdk) {
   if (isDeletingCdk(cdk)) return
   const confirmed = await dialog.confirm('确定要删除这个 CDK 吗？', {
     title: '删除 CDK',
-    icon: '🗑️',
+    icon: '',
     danger: true
   })
 
@@ -965,8 +989,8 @@ async function clearAllCdks() {
   const confirmed = await dialog.confirm(
     `确定要删除全部 ${availableCount} 个可用的 CDK 吗？\n\n此操作不可恢复！已锁定和已售出的 CDK 不会被删除。`,
     {
-      title: '⚠️ 一键清空 CDK',
-      icon: '🗑️',
+      title: '一键清空 CDK',
+      icon: '',
       danger: true
     }
   )
@@ -1014,7 +1038,7 @@ function getToggleLabel(product) {
 }
 
 function getDeleteLabel(product) {
-  return isProcessingProduct(product, 'delete') ? '🗑️ 删除中...' : '🗑️ 删除'
+  return isProcessingProduct(product, 'delete') ? '删除中...' : '删除'
 }
 
 onMounted(() => {
@@ -1023,6 +1047,29 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.product-filter-banner {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding: 8px 12px 8px 16px;
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  color: var(--text-secondary);
+  background: var(--bg-card);
+  font-size: 13px;
+}
+
+.product-filter-banner button {
+  min-height: 44px;
+  padding: 0 12px;
+  border-radius: 8px;
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
 .my-products-page {
   min-height: 100vh;
   padding-bottom: 80px;

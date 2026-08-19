@@ -9,7 +9,7 @@
     <AnnouncementPopup v-if="showAnnouncementBar" />
 
     <!-- 主内容区域 -->
-    <main class="main-content">
+    <component :is="isSellerRoute ? 'div' : 'main'" class="main-content">
       <section
         v-if="showRestrictedMaintenanceBanner"
         :class="['maintenance-banner', { 'maintenance-banner--standalone': isRestrictedHomeRoute }]"
@@ -26,7 +26,7 @@
           <router-link v-if="userStore.isLoggedIn" to="/user/orders" class="maintenance-banner__link">
             我的订单
           </router-link>
-          <router-link v-if="userStore.isLoggedIn" to="/user/products" class="maintenance-banner__link secondary">
+          <router-link v-if="userStore.isLoggedIn" to="/seller/products" class="maintenance-banner__link secondary">
             我的商品
           </router-link>
           <a :href="MAINTENANCE_STATE.statusUrl" target="_blank" rel="noreferrer" class="maintenance-banner__link tertiary">
@@ -41,7 +41,7 @@
           </keep-alive>
         </transition>
       </router-view>
-    </main>
+    </component>
 
     <!-- 底部导航栏（移动端） -->
     <AppFooter v-if="showDecorativeShell" />
@@ -86,15 +86,16 @@ const route = useRoute()
 const userStore = useUserStore()
 const { announcementLoaded, fetchAnnouncements } = useAnnouncement()
 const isMaintenanceRoute = computed(() => route.name === 'Maintenance')
+const isSellerRoute = computed(() => route.meta.layout === 'seller')
 const isRestrictedHomeRoute = computed(() => false)
 const showRestrictedMaintenanceBanner = computed(() =>
-  !isMaintenanceRoute.value && isRestrictedMaintenanceMode()
+  !isMaintenanceRoute.value && !isSellerRoute.value && isRestrictedMaintenanceMode()
 )
-const hideRouteContent = computed(() => false)
-const showDecorativeShell = computed(() => !isMaintenanceRoute.value)
-const showHeader = computed(() => !isMaintenanceRoute.value && userStore.sessionReady)
+const showDecorativeShell = computed(() => !isMaintenanceRoute.value && !isSellerRoute.value)
+const showHeader = computed(() => !isMaintenanceRoute.value && !isSellerRoute.value && userStore.sessionReady)
 const showAnnouncementBar = computed(() => (
   !isMaintenanceRoute.value
+  && !isSellerRoute.value
   && announcementLoaded.value
 ))
 const showRouterView = computed(() => userStore.sessionReady)

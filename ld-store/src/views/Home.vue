@@ -169,7 +169,7 @@
           :hint="isProductListHiddenByMaintenance ? maintenanceCatalogHint : '快来发布第一个物品吧~'"
         >
           <template v-if="!isProductListHiddenByMaintenance" #action>
-            <router-link to="/publish" class="btn btn-primary mt-4">
+            <router-link to="/seller/products/new" class="btn btn-primary mt-4">
               ➕ 发布物品
             </router-link>
           </template>
@@ -255,7 +255,7 @@
           hint="快来入驻开设你的第一家小店吧~"
         >
           <template #action>
-            <router-link to="/user/my-shop" class="btn btn-primary mt-4">
+            <router-link to="/seller/store" class="btn btn-primary mt-4">
               🏪 小店入驻
             </router-link>
           </template>
@@ -1062,10 +1062,10 @@ function goBuyPage(page) {
 
 function publishBuyRequest() {
   if (!userStore.isLoggedIn) {
-    router.push({ name: 'Login', query: { redirect: '/publish?type=buy' } })
+    router.push({ name: 'Login', query: { redirect: '/buy-requests/new' } })
     return
   }
-  router.push('/publish?type=buy')
+  router.push('/buy-requests/new')
 }
 
 function goBuyRequestDetail(id) {

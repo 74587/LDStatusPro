@@ -52,7 +52,7 @@
 
         <div v-if="dashboardLoading" class="loading-wrap">
           <div class="stats-grid">
-            <div v-for="item in 6" :key="item" class="stat-card loading-card">
+            <div v-for="item in 4" :key="item" class="stat-card loading-card">
               <span class="skeleton pill short" />
               <span class="skeleton line tall" />
               <span class="skeleton pill mid" />
@@ -219,19 +219,15 @@ import { useToast } from '@/composables/useToast'
 
 const EMPTY_OVERVIEW = Object.freeze({ daysOnStore: 0, firstActivityAt: '', latestActivityAt: '', totalPurchaseOrders: 0, totalPurchaseQuantity: 0, totalSpent: 0, totalSellOrders: 0, totalSellQuantity: 0, totalRevenue: 0, publishedProductCount: 0, approvedProductCount: 0, activeProductCount: 0, favoriteCount: 0, distinctPurchasedProducts: 0, distinctBuyers: 0, purchasedCategoryCount: 0 })
 const EMPTY_DISTRIBUTION = Object.freeze({ categories: [], totals: { orderCount: 0, quantity: 0, amount: 0 } })
-const EMPTY_MERCHANT = Object.freeze({ configured: false })
 
 const serviceLinks = [
   { icon: '📦', label: '我的订单', to: '/user/orders' },
   { icon: '⭐', label: '我的收藏', to: '/user/favorites' },
   { icon: '券', label: '我的优惠券', to: '/user/coupons' },
-  { icon: '券+', label: '优惠券管理', to: '/user/coupons/manage' },
   { icon: '🧾', label: '我的求购', to: '/user/buy-requests' },
   { icon: '💬', label: '我的消息', to: '/user/messages' },
-  { icon: '🛍️', label: '我的物品', to: '/user/products' },
-  { icon: '➕', label: '发布物品', to: '/publish' },
-  { icon: '⚙️', label: '收款设置', to: '/user/settings' },
-  { icon: '🏪', label: '小店入驻', to: '/user/my-shop' }
+  { icon: '🚩', label: '我的举报', to: '/user/reports' },
+  { icon: '🏪', label: '卖家后台', to: '/seller' }
 ]
 
 const otherLinks = [
@@ -275,23 +271,19 @@ const avatarSeed = computed(() => user.value?.name || user.value?.username || us
 const avatar = computed(() => userStore.avatar)
 const ldcInfo = computed(() => userStore.ldcInfo)
 const overview = computed(() => dashboard.value?.overview || EMPTY_OVERVIEW)
-const merchant = computed(() => dashboard.value?.merchant || EMPTY_MERCHANT)
 const spendingDistribution = computed(() => dashboard.value?.spendingDistribution || EMPTY_DISTRIBUTION)
-const incomeDistribution = computed(() => dashboard.value?.incomeDistribution || EMPTY_DISTRIBUTION)
-const canShowIncomeDistribution = computed(() => merchant.value.configured === true || incomeDistribution.value.categories.length > 0)
-const activeDistributionScope = computed(() => distributionScope.value === 'income' && canShowIncomeDistribution.value ? 'income' : 'expense')
-const activeDistribution = computed(() => activeDistributionScope.value === 'income' ? incomeDistribution.value : spendingDistribution.value)
-const activeDistributionTitle = computed(() => activeDistributionScope.value === 'income' ? '收入分布' : '支出分布')
-const activeDistributionSubtitle = computed(() => activeDistributionScope.value === 'income' ? '按分类查看你卖出的已成交订单数、售出数量与积分收入' : '按分类查看你买入的已成交订单数、购买数量与积分花费')
-const distributionJumpHint = computed(() => activeDistributionScope.value === 'income' ? '点击查看该分类我卖的已成交订单' : '点击查看该分类我买的已成交订单')
-const activeDistributionEmptyText = computed(() => activeDistributionScope.value === 'income' ? '暂时还没有可展示的收入分布，后续成交后会自动出现在这里。' : '还没有已成交的购买记录，后续消费会自动出现在这里。')
+const canShowIncomeDistribution = computed(() => false)
+const activeDistributionScope = computed(() => 'expense')
+const activeDistribution = computed(() => spendingDistribution.value)
+const activeDistributionTitle = computed(() => '支出分布')
+const activeDistributionSubtitle = computed(() => '按分类查看你买入的已成交订单数、购买数量与积分花费')
+const distributionJumpHint = computed(() => '点击查看该分类我买的已成交订单')
+const activeDistributionEmptyText = computed(() => '还没有已成交的购买记录，后续消费会自动出现在这里。')
 
 const statCards = computed(() => ([
   { label: '累计购买订单', value: formatNumber(overview.value.totalPurchaseOrders), meta: `共买入 ${formatNumber(overview.value.totalPurchaseQuantity)} 件`, tone: 'tone-sage' },
-  { label: '累计卖出订单', value: formatNumber(overview.value.totalSellOrders), meta: `共卖出 ${formatNumber(overview.value.totalSellQuantity)} 件`, tone: 'tone-stone' },
   { label: '累计花费积分', value: formatAmount(overview.value.totalSpent), unit: 'LDC', meta: `覆盖 ${formatNumber(overview.value.purchasedCategoryCount)} 个分类`, tone: 'tone-gold' },
-  { label: '累计收入积分', value: formatAmount(overview.value.totalRevenue), unit: 'LDC', meta: `服务过 ${formatNumber(overview.value.distinctBuyers)} 位买家`, tone: 'tone-moss' },
-  { label: '在售物品', value: formatNumber(overview.value.activeProductCount), meta: `累计发布 ${formatNumber(overview.value.publishedProductCount)} 件`, tone: 'tone-plain' },
+  { label: '买过的物品', value: formatNumber(overview.value.distinctPurchasedProducts), meta: `来自 ${formatNumber(overview.value.purchasedCategoryCount)} 个分类`, tone: 'tone-stone' },
   { label: '收藏夹', value: formatNumber(overview.value.favoriteCount), meta: `买过 ${formatNumber(overview.value.distinctPurchasedProducts)} 个物品`, tone: 'tone-plain' }
 ]))
 
@@ -349,7 +341,7 @@ function jumpToDistributionOrders(item) {
   router.push({
     path: '/user/orders',
     query: {
-      tab: activeDistributionScope.value === 'income' ? 'seller' : 'buyer',
+      tab: 'buyer',
       categoryId: String(categoryId),
       categoryName: item.categoryName || `分类 #${categoryId}`,
       dealOnly: '1'

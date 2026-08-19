@@ -83,8 +83,8 @@
       class="corner-action action-merchant"
       :style="actionStyle(2)"
       @click.stop="openMerchantServices"
-      title="商家服务"
-      aria-label="商家服务"
+      title="卖家后台"
+      aria-label="卖家后台"
     >
       <svg
         class="action-icon"
@@ -114,7 +114,7 @@
           stroke-linecap="round"
         />
       </svg>
-      <span class="action-label">商家服务</span>
+      <span class="action-label">卖家后台</span>
     </button>
 
     <Transition name="backtop-fade">
@@ -229,7 +229,7 @@ function openSupport() {
 
 function openMerchantServices() {
   isOpen.value = false
-  router.push('/merchant-services')
+  router.push('/seller')
 }
 
 function updateBackToTopVisibility() {

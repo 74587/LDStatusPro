@@ -35,7 +35,7 @@
                 首次发布物品？建议先阅读<strong>物品类型说明</strong>，了解「普通物品」与「自动发卡」的区别及适用场景，助您选择最合适的发布方式。
               </p>
               <p class="guide-modal-warning">
-                ⚠️ <strong>禁止发布</strong>：违法违规、色情低俗、侵权盗版、虚假欺诈等内容，违者将被封禁处理。
+                <strong>禁止发布</strong>：违法违规、色情低俗、侵权盗版、虚假欺诈等内容，违者将被封禁处理。
               </p>
             </div>
             <div class="guide-modal-footer">
@@ -60,7 +60,7 @@
           <div class="guide-modal test-mode-modal">
             <div class="guide-modal-header">
               <div class="guide-modal-icon test-icon">
-                🧪
+                测试模式
               </div>
               <h3 class="guide-modal-title">开启测试模式</h3>
             </div>
@@ -69,14 +69,14 @@
                 测试模式下，<strong>只有您自己可以购买此物品</strong>，其他用户将无法购买。
               </p>
               <div class="test-mode-tips">
-                <p class="tip-item">✅ 用于测试 LDC 支付回调通知是否正常</p>
-                <p class="tip-item">✅ 购买后会正常扣款和发放 CDK</p>
-                <p class="tip-item">✅ 测试完成后请及时下架或删除测试物品</p>
-                <p class="tip-item">✅ 测试完成请务必在 <a href="https://credit.linux.do/merchant" target="_blank" style="color: #007bff;">LDC集市</a> 中关闭应用的测试模式</p>
+                <p class="tip-item">用于测试 LDC 支付回调通知是否正常</p>
+                <p class="tip-item">购买后会正常扣款和发放 CDK</p>
+                <p class="tip-item">测试完成后请及时下架或删除测试物品</p>
+                <p class="tip-item">测试完成请务必在 <a href="https://credit.linux.do/merchant" target="_blank" style="color: #007bff;">LDC集市</a> 中关闭应用的测试模式</p>
                 <p class="tip-item warning">⏱️ 测试模式商品上架 30 分钟后会自动下架</p>
               </div>
               <p class="guide-modal-warning test-warning">
-                ⚠️ <strong>请确保已在 LDC 应用中开启测试模式</strong>，否则可能无法收到回调通知。
+                <strong>请确保已在 LDC 应用中开启测试模式</strong>，否则可能无法收到回调通知。
               </p>
             </div>
             <div class="guide-modal-footer">
@@ -97,7 +97,7 @@
         <h1 class="page-title">{{ publishMode === 'product' ? '发布物品' : '发布求购' }}</h1>
       </div>
       
-      <div class="publish-mode-switch">
+      <div v-if="!lockedMode" class="publish-mode-switch">
         <button
           type="button"
           class="mode-btn"
@@ -145,12 +145,12 @@
                   type="button"
                   :class="['desc-mode-tab', { active: descMode === 'write' }]"
                   @click="descMode = 'write'"
-                >✏️ 编辑</button>
+                >编辑</button>
                 <button
                   type="button"
                   :class="['desc-mode-tab', { active: descMode === 'preview' }]"
                   @click="descMode = 'preview'"
-                >👁️ 预览</button>
+                >预览</button>
               </div>
             </div>
             <textarea
@@ -185,12 +185,12 @@
                 :class="['category-btn', { active: form.categoryId === cat.id }]"
                 @click="form.categoryId = cat.id"
               >
-                {{ cat.icon }} {{ cat.name }}
+                {{ cat.name }}
               </button>
             </div>
             <!-- 入站分类价格提示 -->
             <div v-if="isRuzhanCategory" class="category-price-notice">
-              <span class="notice-icon">⚠️</span>
+              <span class="notice-icon">注意</span>
               <span class="notice-text">始皇指导价：入站分类物品<strong>折后价格不得低于 500 LDC</strong></span>
             </div>
           </div>
@@ -255,12 +255,12 @@
             />
             <p v-if="showError('image', imageDisplayError)" class="form-error">{{ imageDisplayError }}</p>
             <p v-else-if="imageLoadError" class="form-error">{{ imageLoadError }}</p>
-            <p v-else-if="imageValidating" class="form-hint loading-hint">⚙️ 正在验证图片...</p>
-            <p v-else-if="imageValidated" class="form-hint success-hint">✅ 图片验证通过</p>
+            <p v-else-if="imageValidating" class="form-hint loading-hint">正在验证图片...</p>
+            <p v-else-if="imageValidated" class="form-hint success-hint">图片验证通过</p>
             <div v-else class="form-hint-with-link">
               <p class="form-hint">推荐尺寸 16:9，必须使用 HTTPS 链接，不支持 linux.do 图床</p>
               <router-link to="/ld-image" target="_blank" class="image-bed-link">
-                🖼️ 没有图床？试试 <strong>士多图床</strong>🎉即刻上传图片🔗获取在线链接
+                没有图床？试试 <strong>士多图床</strong>，即刻上传图片并获取在线链接
               </router-link>
             </div>
             
@@ -282,7 +282,7 @@
               :class="['type-card', { active: form.productType === type.id }]"
               @click="form.productType = type.id"
             >
-              <div class="type-icon">{{ type.icon }}</div>
+              <div v-if="type.icon" class="type-icon">{{ type.icon }}</div>
               <div class="type-info">
                 <h4 class="type-name">{{ type.name }}</h4>
                 <p class="type-desc">{{ type.desc }}</p>
@@ -298,14 +298,14 @@
 
           <div class="cdk-config-notice">
             <div class="notice-header">
-              <span class="notice-icon">📦</span>
+              <span class="notice-icon" aria-hidden="true"></span>
               <strong>普通物品会在平台内支付并保留订单记录，卖家需人工履约。</strong>
             </div>
             <div class="notice-content">
               <div class="notice-item">
                 <span class="item-num">1</span>
                 <div class="item-text">
-                  <strong>请先在<a href="/user/settings" target="_blank" style="color: #007bff;"> LD士多 </a>配置 LDC 收款信息</strong>，否则买家无法完成平台内支付。
+                  <strong>请先在<a href="/seller/payment" target="_blank" style="color: #007bff;">卖家后台</a>配置 LDC 收款信息</strong>，否则买家无法完成平台内支付。
                 </div>
               </div>
               <div class="notice-item highlight">
@@ -367,20 +367,20 @@
           <!-- LDC 配置提醒 -->
           <div class="cdk-config-notice">
             <div class="notice-header">
-              <span class="notice-icon">⚠️</span>
+              <span class="notice-icon">注意</span>
               <strong>发布 CDK 物品前，请确保已完成以下配置：</strong>
             </div>
             <div class="notice-content">
               <div class="notice-item">
                 <span class="item-num">1</span>
                 <div class="item-text">
-                  <strong>在<a href="/user/settings" target="_blank" style="color: #007bff;"> LD士多 </a>配置 LDC 收款信息</strong>：在「收款设置」中填写 Client ID 和 Client Key
+                  <strong>在<a href="/seller/payment" target="_blank" style="color: #007bff;">卖家后台</a>配置 LDC 收款信息</strong>：在「收款设置」中填写 Client ID 和 Client Key
                 </div>
               </div>
               <div class="notice-item highlight">
                 <span class="item-num">2</span>
                 <div class="item-text">
-                  <strong>在<a href="https://credit.linux.do/merchant" target="_blank" style="color: #007bff;"> LDC集市 </a>配置通知地址（最重要⚠️）</strong>：这是支付成功后自动发货的关键！
+                  <strong>在<a href="https://credit.linux.do/merchant" target="_blank" style="color: #007bff;"> LDC集市 </a>配置通知地址（最重要）</strong>：这是支付成功后自动发货的关键！
                   <code class="notice-url">https://api.ldspro.qzz.io/api/shop/ldc/notify</code>
                 </div>
               </div>
@@ -393,7 +393,7 @@
               </div>
             </div>
             <div class="notice-footer">
-              📖 <a href="https://ldcstore.com/docs/publish-cdk" target="_blank" rel="noopener">查看详细配置教程</a>
+              <a href="https://ldcstore.com/docs/publish-cdk" target="_blank" rel="noopener">查看详细配置教程</a>
             </div>
           </div>
           
@@ -478,7 +478,7 @@
                 <span class="toggle-thumb"></span>
               </span>
               <span class="toggle-label">
-                🧪 测试模式
+                测试模式
                 <span class="toggle-help" v-if="form.isTestMode">（仅自己可购买）</span>
               </span>
             </label>
@@ -486,12 +486,12 @@
               开启后仅您自己可以购买此物品，用于测试 LDC 通知回调是否正常工作。
             </p>
             <p v-if="form.isTestMode" class="test-mode-auto-offline-note">
-              ⚠️ 测试模式商品审核通过并上架后，30 分钟会自动下架；如需继续售卖，请关闭测试模式后重新上架。
+              测试模式商品审核通过并上架后，30 分钟会自动下架；如需继续售卖，请关闭测试模式后重新上架。
             </p>
           </div>
           
           <div class="cdk-note">
-            <p class="note-text">📝 CDK 使用说明请写在上方「物品描述」中，买家购买后可在订单详情中查看。</p>
+            <p class="note-text">CDK 使用说明请写在上方「物品描述」中，买家购买后可在订单详情中查看。</p>
           </div>
         </div>
         
@@ -584,6 +584,17 @@ import { renderProductDescription } from '@/utils/renderProductDescription'
 import { api } from '@/utils/api'
 import { CDK_UPLOAD_LIMITS } from '@/config/cdkQuota'
 
+const props = defineProps({
+  initialMode: {
+    type: String,
+    default: 'product'
+  },
+  lockedMode: {
+    type: Boolean,
+    default: false
+  }
+})
+
 const router = useRouter()
 const route = useRoute()
 const shopStore = useShopStore()
@@ -595,7 +606,8 @@ const descMode = ref('write')
 const merchantConfigured = ref(false) // 是否已配置商家收款
 const showGuideModal = ref(false)
 const dontShowAgain = ref(false)
-const publishMode = ref('product')
+const lockedMode = computed(() => props.lockedMode)
+const publishMode = ref(props.initialMode === 'buy' ? 'buy' : 'product')
 const buySubmitting = ref(false)
 const buySubmitAttempted = ref(false)
 
@@ -752,10 +764,10 @@ function cancelTestMode() {
 
 // 分类 - 从API获取或使用默认
 const categories = ref([
-  { id: 1, name: 'AI', icon: '🤖' },
-  { id: 2, name: '存储', icon: '💾' },
-  { id: 3, name: '小鸡', icon: '🐔' },
-  { id: 4, name: '咨询', icon: '💬' }
+  { id: 1, name: 'AI', icon: '' },
+  { id: 2, name: '存储', icon: '' },
+  { id: 3, name: '小鸡', icon: '' },
+  { id: 4, name: '咨询', icon: '' }
 ])
 
 // 加载分类
@@ -769,7 +781,7 @@ async function loadCategories() {
         .map(cat => ({
           id: cat.id,
           name: cat.name,
-          icon: cat.icon || '📦'
+          icon: cat.icon || ''
         }))
       // 设置默认分类
       if (categories.value.length > 0 && !form.value.categoryId) {
@@ -786,8 +798,8 @@ async function loadCategories() {
 
 // 物品类型
 const productTypes = [
-  { id: 'normal', name: '普通物品', desc: '平台内支付、记录订单、卖家手动履约', icon: '📦' },
-  { id: 'cdk', name: '自动发卡', desc: '平台内支付+自动发放 CDK', icon: '🎫' }
+  { id: 'normal', name: '普通物品', desc: '平台内支付、记录订单、卖家手动履约', icon: '' },
+  { id: 'cdk', name: '自动发卡', desc: '平台内支付+自动发放 CDK', icon: '' }
 ]
 const purchaseTrustLevelOptions = [0, 1, 2, 3, 4]
 const isSharedCdkMode = computed(() => form.value.productType === 'cdk' && !!form.value.sharedCdkEnabled)
@@ -1171,7 +1183,7 @@ async function confirmSubmitAfterUncertainResult(submissionToken) {
     if (confirmed.confirmed) {
       clearSubmissionTokenState()
       toast.success('物品提交成功，已自动确认结果')
-      router.push('/user/products')
+      router.push('/seller/products')
       return true
     }
 
@@ -1222,7 +1234,7 @@ async function submitForm() {
   if (form.value.productType === 'normal' || form.value.productType === 'cdk') {
     if (!merchantConfigured.value) {
       toast.warning('请先在「收款设置」中配置 LDC 收款信息')
-      router.push('/user/settings')
+      router.push('/seller/payment')
       return
     }
   }
@@ -1348,7 +1360,7 @@ async function submitForm() {
     } else {
       toast.success(`物品提交成功，等待管理员审核${cdkInfo}`)
     }
-    router.push('/user/products')
+    router.push('/seller/products')
   } catch (error) {
     clearSubmissionTokenState()
     toast.error(error.message || '发布失败')
@@ -1428,7 +1440,7 @@ watch(
 
 onMounted(async () => {
   const queryType = String(route.query.type || '').toLowerCase()
-  if (queryType === 'buy' || queryType === 'request') {
+  if (!props.lockedMode && (queryType === 'buy' || queryType === 'request')) {
     publishMode.value = 'buy'
   }
 

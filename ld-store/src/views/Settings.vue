@@ -19,7 +19,7 @@
       <div v-else class="settings-form">
         <!-- 统计信息（已配置时显示）-->
         <div v-if="isConfigured" class="stats-card">
-          <h3 class="card-title">📊 CDK 分发收入统计</h3>
+          <h3 class="card-title">CDK 分发收入统计</h3>
           <div class="stats-grid">
             <div class="stat-item">
               <div class="stat-value">{{ stats.totalOrders || 0 }}</div>
@@ -43,10 +43,10 @@
         <!-- 配置表单 -->
         <div class="form-card">
           <div class="form-header">
-            <h3 class="card-title">💳 LDC 收款配置</h3>
+            <h3 class="card-title">LDC 收款配置</h3>
             <div v-if="isConfigured" class="config-status">
               <span :class="['status-badge', config.isVerified ? 'verified' : 'pending']">
-                {{ config.isVerified ? '✓ 已验证' : '⏳ 待验证' }}
+                {{ config.isVerified ? '已验证' : '待验证' }}
               </span>
               <span :class="['status-badge', config.isActive ? 'active' : 'inactive']">
                 {{ config.isActive ? '已启用' : '已禁用' }}
@@ -55,7 +55,7 @@
           </div>
           
           <p v-if="!isConfigured" class="card-desc">
-            💡 配置 LDC 收款后，您发布的 CDK 物品可支持平台内支付和自动发货。
+            配置 LDC 收款后，您发布的 CDK 物品可支持平台内支付和自动发货。
           </p>
           
           <div class="form-group">
@@ -85,11 +85,11 @@
           
           <div class="form-actions">
             <template v-if="isConfigured && !isEditing">
-              <button class="edit-btn" @click="startEdit">✏️ 编辑配置</button>
+              <button class="edit-btn" @click="startEdit">编辑配置</button>
               <button class="test-btn" @click="testCallback" :disabled="testing">
-                {{ testing ? '测试中...' : '🔔 测试通知' }}
+                {{ testing ? '测试中...' : '测试通知' }}
               </button>
-              <button class="delete-btn" @click="deleteConfig">🗑️ 删除配置</button>
+              <button class="delete-btn" @click="deleteConfig">删除配置</button>
             </template>
             <template v-else>
               <button
@@ -97,7 +97,7 @@
                 @click="saveSettings"
                 :disabled="saving || !canSave"
               >
-                {{ saving ? '验证中...' : '💾 保存配置' }}
+                {{ saving ? '验证中...' : '保存配置' }}
               </button>
               <button v-if="isConfigured" class="cancel-btn" @click="cancelEdit">取消</button>
             </template>
@@ -106,7 +106,7 @@
         
         <!-- 使用说明 -->
         <div class="help-card">
-          <h3 class="card-title">❓ 如何获取 LDC 收款凭证</h3>
+          <h3 class="card-title">如何获取 LDC 收款凭证</h3>
           
           <div class="help-content">
             <div class="help-step">
@@ -125,7 +125,7 @@
               <div class="step-content">
                 <h4 class="step-title">配置通知地址（必填）</h4>
                 <p class="step-desc">
-                  <strong>通知URL（服务器异步通知⚠️最最最重要⚠️）：</strong>
+                  <strong>通知 URL（服务器异步通知，必须正确配置）：</strong>
                 </p>
                 <code class="url-code">{{ ldcNotifyUrl }}</code>
                 <p class="step-desc" style="margin-top: 8px;">
@@ -149,9 +149,9 @@
         
         <!-- 注意事项 -->
         <div class="warning-card">
-          <h3 class="card-title">⚠️ 注意事项</h3>
+          <h3 class="card-title">注意事项</h3>
           <ul class="warning-list">
-            <li><strong>通知地址</strong>是支付成功后自动发货的关键，请务必正确配置。配置错误会导致用户支付但订单无法正常完成❗️</li>
+            <li><strong>通知地址</strong>是支付成功后自动发货的关键，请务必正确配置。配置错误会导致用户支付但订单无法正常完成。</li>
             <li>系统会在待支付期间每 30 秒主动补查一次订单状态，但这只是兜底，不能替代正确的通知地址和回调地址配置</li>
             <li>Client Key 将安全加密存储，不会明文显示</li>
             <li>修改配置不会影响已有订单</li>
@@ -299,7 +299,7 @@ async function testCallback() {
 async function deleteConfig() {
   const confirmed = await dialog.confirm('确定要删除 LDC 收款配置吗？删除后将无法自动发货。', {
     title: '删除配置',
-    icon: '🗑️',
+    icon: '',
     danger: true
   })
   

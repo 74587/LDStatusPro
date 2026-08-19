@@ -3,13 +3,13 @@
     <div class="page-container">
       <!-- 返回按钮 -->
       <div class="back-nav">
-        <router-link to="/user" class="back-link">
+        <router-link to="/seller" class="back-link">
           <span class="back-icon">←</span>
-          <span>返回个人中心</span>
+          <span>返回经营概览</span>
         </router-link>
       </div>
 
-      <h1 class="page-title">🏪 小店入驻</h1>
+      <h1 class="page-title">小店管理</h1>
 
       <!-- 加载状态 -->
       <div v-if="loading" class="loading-state">
@@ -21,7 +21,6 @@
       <div v-else-if="myShop" class="my-shop-section">
         <!-- 状态提示 -->
         <div class="status-banner" :class="statusClass">
-          <span class="status-icon">{{ statusIcon }}</span>
           <div class="status-content">
             <span class="status-text">{{ statusText }}</span>
             <span v-if="myShop.reject_reason" class="reject-reason">
@@ -36,7 +35,7 @@
             <img :src="myShop.image_url" :alt="myShop.name" class="shop-image" />
           </div>
           <div class="shop-image-placeholder" v-else>
-            <span>🏪</span>
+            <span aria-hidden="true"></span>
           </div>
 
           <div class="shop-info">
@@ -62,7 +61,7 @@
               rel="noopener noreferrer"
               class="shop-url"
             >
-              🔗 {{ myShop.shop_url }}
+              {{ myShop.shop_url }}
             </a>
 
             <div class="shop-tags" v-if="parsedTags.length > 0">
@@ -77,14 +76,14 @@
             </div>
 
             <div class="shop-stats" v-if="myShop.status === 'active'">
-              <span class="stat">👀 {{ myShop.view_count || 0 }} 浏览</span>
+              <span class="stat">{{ myShop.view_count || 0 }} 浏览</span>
             </div>
           </div>
         </div>
 
         <!-- 编辑表单 -->
         <div class="edit-section" v-if="showEditForm">
-          <h3 class="section-title">📝 编辑小店信息</h3>
+          <h3 class="section-title">编辑小店信息</h3>
           <ShopForm 
             :initial-data="myShop"
             :submitting="submitting"
@@ -100,14 +99,14 @@
             class="btn btn-secondary"
             @click="showEditForm = true"
           >
-            ✏️ 编辑信息
+            编辑信息
           </button>
           <button
             v-if="myShop.status === 'offline'"
             class="btn btn-secondary"
             @click="showEditForm = true"
           >
-            ✏️ 编辑并重新提交
+            编辑并重新提交
           </button>
           <button
             v-if="myShop.status === 'active'"
@@ -115,7 +114,7 @@
             @click="handleOffline"
             :disabled="submitting"
           >
-            {{ submitting ? '下架中...' : '📤 下架小店' }}
+            {{ submitting ? '下架中...' : '下架小店' }}
           </button>
           <a
             v-if="myShop.status === 'active'"
@@ -124,7 +123,7 @@
             rel="noopener noreferrer"
             class="btn btn-primary"
           >
-            🔗 访问小店
+            访问小店
           </a>
         </div>
       </div>
@@ -132,17 +131,17 @@
       <!-- 未入驻，显示入驻表单 -->
       <div v-else class="apply-section">
         <div class="intro-card">
-          <h2>📢 欢迎入驻小店集市</h2>
+          <h2>欢迎入驻小店集市</h2>
           <p>小店集市是 LD士多 为论坛用户提供的友情链接展示平台。</p>
           <ul class="intro-list">
             <li>🆓 完全免费入驻</li>
-            <li>🏷️ 支持添加分类标签</li>
-            <li>👤 展示店主 LinuxDo 身份</li>
-            <li>📊 浏览量统计</li>
+            <li>支持添加分类标签</li>
+            <li>展示店主 LinuxDo 身份</li>
+            <li>提供浏览量统计</li>
           </ul>
         </div>
 
-        <h3 class="section-title">📝 填写入驻信息</h3>
+        <h3 class="section-title">填写入驻信息</h3>
         <ShopForm 
           :submitting="submitting"
           @submit="handleSubmit"
@@ -200,17 +199,6 @@ const statusClass = computed(() => {
     offline: 'status-offline'
   }
   return classMap[myShop.value.status] || ''
-})
-
-const statusIcon = computed(() => {
-  if (!myShop.value) return ''
-  const iconMap = {
-    pending: '⏳',
-    active: '✅',
-    rejected: '❌',
-    offline: '📤'
-  }
-  return iconMap[myShop.value.status] || ''
 })
 
 const statusText = computed(() => {

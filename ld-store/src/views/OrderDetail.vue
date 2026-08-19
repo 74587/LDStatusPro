@@ -6,7 +6,6 @@
           ← 返回
         </button>
         <router-link to="/support" class="support-btn top-support-btn">
-          <span class="support-heart">💖</span>
           <span>支持 LD 士多</span>
         </router-link>
       </div>
@@ -23,7 +22,7 @@
       <!-- 订单不存在 -->
       <EmptyState
         v-else-if="!order"
-        icon="🔍"
+        icon=""
         text="订单不存在"
         hint="无法找到该订单信息"
       >
@@ -39,7 +38,7 @@
         <!-- 订单状态卡片 -->
         <div :class="['status-card', getStatusClass(order.status)]">
           <div class="status-card__main">
-            <div class="status-icon">{{ getStatusIcon(order.status) }}</div>
+            <div class="status-icon" aria-hidden="true"></div>
             <div>
               <div class="status-text">{{ getStatusText(order.status) }}</div>
               <div class="status-time" v-if="order.created_at || order.createdAt">
@@ -144,12 +143,12 @@
           
           <div class="info-row" v-if="order.delivery_type">
             <span class="info-label">发货方式</span>
-            <span class="info-value">{{ order.delivery_type === 'auto' ? '🤖 自动发货' : '👤 手动发货' }}</span>
+            <span class="info-value">{{ order.delivery_type === 'auto' ? '自动发货' : '手动发货' }}</span>
           </div>
         </div>
         
         <div class="info-card" v-if="requiresBuyerContactOrder(order)">
-          <h3 class="card-title">📨 履约提醒</h3>
+          <h3 class="card-title">履约提醒</h3>
           <div class="description-content">
             {{ currentRole === 'buyer' ? '支付完成后请主动联系卖家获取服务，订单会保留在平台内等待卖家手动履约。' : '该订单为普通物品订单，买家支付后需要您主动处理交付并填写发货内容。' }}
           </div>
@@ -157,7 +156,7 @@
 
         <!-- CDK 信息 -->
         <div class="info-card" v-if="isCdkOrder(order) && getDeliveryContent(order)">
-          <h3 class="card-title">🔑 CDK 密钥</h3>
+          <h3 class="card-title">CDK 密钥</h3>
           
           <div class="cdk-box">
             <div class="cdk-head">
@@ -181,22 +180,22 @@
                 :title="showCdk ? '隐藏密钥' : '显示密钥'"
                 @click="showCdk = !showCdk"
               >
-                {{ showCdk ? '🙈' : '👁️' }}
+                {{ showCdk ? '隐藏' : '显示' }}
               </button>
-              <button class="icon-btn" title="复制密钥" @click="copyCdk">📋</button>
-              <button class="icon-btn" title="导出为 TXT" @click="downloadCdk">💾</button>
+              <button class="icon-btn" title="复制密钥" @click="copyCdk">复制</button>
+              <button class="icon-btn" title="导出为 TXT" @click="downloadCdk">导出</button>
             </div>
           </div>
         </div>
         
         <div class="info-card" v-if="isNormalOrder(order) && getDeliveryContent(order)">
-          <h3 class="card-title">📦 发货内容</h3>
+          <h3 class="card-title">发货内容</h3>
           <div class="description-content preserve-line-breaks">{{ getDeliveryContent(order) }}</div>
         </div>
 
         <!-- 使用说明（显示物品描述） -->
         <div class="info-card" v-if="(isCdkOrder(order) || isNormalOrder(order)) && getProductDescription(order)">
-          <h3 class="card-title">📝 使用说明</h3>
+          <h3 class="card-title">使用说明</h3>
           <div class="description-content markdown-content" v-html="renderedProductDescription"></div>
         </div>
         
@@ -222,7 +221,7 @@
           
           <div class="order-logs">
             <div class="log-item" v-for="(log, index) in sortedOrderLogs" :key="index">
-              <div class="log-icon">{{ getLogIcon(log.action) }}</div>
+              <div class="log-icon" aria-hidden="true"></div>
               <div class="log-content">
                 <div class="log-action">{{ getLogText(log) }}</div>
                 <div class="log-time">{{ formatDateTime(log.created_at || log.createdAt || log.time) }}</div>
@@ -341,8 +340,8 @@ const couponRuleText = computed(() => {
 })
 
 // 当前用户角色（买家/卖家）
-const currentRole = computed(() => route.query.role || 'buyer')
-const backTarget = computed(() => currentRole.value === 'seller' ? '/user/orders?tab=seller' : '/user/orders?tab=buyer')
+const currentRole = computed(() => route.meta.orderRole || route.query.role || 'buyer')
+const backTarget = computed(() => currentRole.value === 'seller' ? '/seller/orders?source=product' : '/user/orders?tab=buyer')
 
 // 是否显示操作按钮区域（买家和卖家都可以取消待支付订单）
 const showActions = computed(() => {
@@ -485,7 +484,7 @@ async function loadOrder(options = {}) {
       loading.value = true
     }
     const orderId = route.params.id
-    const role = route.query.role || 'buyer'
+    const role = currentRole.value
     const result = await shopStore.fetchOrderDetail(orderId, role)
     // 解包可能嵌套的数据
     order.value = result?.order || result?.data?.order || result
@@ -516,22 +515,6 @@ function startPendingOrderAutoRefresh() {
   pendingOrderAutoRefreshTimer = setInterval(() => {
     loadOrder({ silent: true }).catch(() => {})
   }, 30000)
-}
-
-// 日志图标
-function getLogIcon(action) {
-  const map = {
-    create: '📝',
-    pay: '💰',
-    repay: '🔄',
-    deliver: '📦',
-    refund: '↩️',
-    cancel: '❌',
-    expire: '⏰',
-    lock_cdk: '🔒',
-    unlock_cdk: '🔓'
-  }
-  return map[action] || '📋'
 }
 
 // 日志文字
@@ -626,21 +609,6 @@ function getStatusText(status) {
     expired: '已过期'
   }
   return map[status] || status || '未知'
-}
-
-// 状态图标
-function getStatusIcon(status) {
-  const map = {
-    pending: '⏳',
-    paying: '💳',
-    paid: '✅',
-    completed: '🎉',
-    cancelled: '❌',
-    refunded: '↩️',
-    delivered: '📦',
-    expired: '⌛'
-  }
-  return map[status] || '📋'
 }
 
 // 状态样式

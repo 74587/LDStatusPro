@@ -8,7 +8,7 @@
         </div>
         <div class="header-actions">
           <router-link to="/user/messages" class="header-link">我的消息</router-link>
-          <router-link to="/publish?type=buy" class="create-btn">+ 发布求购</router-link>
+          <router-link to="/buy-requests/new" class="create-btn">+ 发布求购</router-link>
         </div>
       </div>
 

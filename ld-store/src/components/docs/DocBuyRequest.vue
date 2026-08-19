@@ -18,12 +18,12 @@
       <li><strong>求购方</strong>：发布需求、调价、创建支付订单、刷新订单状态。</li>
       <li><strong>服务方</strong>：发起洽谈、沟通交付方案、在完成后通过私信交付。</li>
       <li><strong>管理员</strong>：审核求购、管理会话、查看日志与违禁词。</li>
-      <li><strong>入口页面</strong>：<code>/publish</code>、<code>/buy-request/:id</code>、<code>/user/buy-requests</code>、<code>/user/messages</code>、<code>/user/orders?tab=buy</code>。</li>
+      <li><strong>入口页面</strong>：<code>/buy-requests/new</code>、<code>/buy-request/:id</code>、<code>/user/buy-requests</code>、<code>/user/messages</code>、<code>/user/orders?tab=buy</code>。</li>
     </ul>
 
     <h2>二、发布与审核</h2>
     <ol class="numbered-list">
-      <li>进入 <code>/publish</code>，切换到“发布求购”。</li>
+      <li>进入 <code>/buy-requests/new</code> 发布求购。</li>
       <li>填写标题、详细需求、预算价格并提交。</li>
       <li>新求购状态为 <code>pending_review</code>，需要管理员人工审核。</li>
       <li>审核通过后状态进入开放，其他用户才能发起洽谈。</li>

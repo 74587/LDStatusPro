@@ -330,7 +330,7 @@
                 >
                   <div class="category-quota-head">
                     <span class="category-quota-title">
-                      <span class="category-quota-icon">🗂️</span>
+                      <span class="category-quota-icon" aria-hidden="true"></span>
                       全部分类
                     </span>
                     <span class="category-quota-pill">{{ quotaBoard.activeRecords?.length || 0 }} 条</span>
@@ -352,7 +352,7 @@
                 >
                   <div class="category-quota-head">
                     <span class="category-quota-title">
-                      <span class="category-quota-icon">{{ category.categoryIcon || '📦' }}</span>
+                      <span class="category-quota-icon" aria-hidden="true"></span>
                       {{ category.categoryName }}
                     </span>
                     <span class="category-quota-pill">优选 {{ category.categoryRemaining }} / {{ category.categoryLimit }}</span>
@@ -410,7 +410,7 @@
                             {{ record.globalPoolName }}
                           </span>
                           <span class="active-service-category">
-                            {{ record.categoryIcon || '📦' }} {{ record.categoryName || '未分类' }}
+                            {{ record.categoryName || '未分类' }}
                           </span>
                         </div>
                         <h3 class="active-service-title">{{ record.productName }}</h3>
@@ -546,9 +546,9 @@ const toast = useToast()
 const dialog = useDialog()
 
 const tabs = [
-  { value: 'service', label: '置顶服务', icon: '🏅' },
-  { value: 'board', label: '名额看板', icon: '📡' },
-  { value: 'orders', label: '我的订单', icon: '📋' }
+  { value: 'service', label: '置顶服务' },
+  { value: 'board', label: '名额看板' },
+  { value: 'orders', label: '我的订单' }
 ]
 
 function normalizeMerchantTab(value = '') {
@@ -629,7 +629,7 @@ const productOptions = computed(() => products.value.map((item) => ({
   value: String(item.id),
   label: item.name,
   description: getProductOptionDescription(item),
-  icon: item.categoryIcon || '📦',
+  icon: '',
   disabled: false
 })))
 const showPackageLoading = computed(() => optionsLoading.value && packages.value.length === 0)
@@ -659,13 +659,13 @@ const quotaBoardCategoryOptions = computed(() => [
     value: 'all',
     label: '全部分类',
     description: `查看全部分类的 ${Array.isArray(quotaBoard.value.activeRecords) ? quotaBoard.value.activeRecords.length : 0} 条生效服务`,
-    icon: '🗂️'
+    icon: ''
   },
   ...quotaBoardCategories.value.map((item) => ({
     value: String(item.categoryId),
     label: item.categoryName || '未分类',
     description: `优选 ${formatQuotaValue(item.categoryRemaining, item.categoryLimit)} · ${getGlobalPoolLabel(item.globalPoolName)} ${formatQuotaValue(item.globalRemaining, item.globalLimit)}`,
-    icon: item.categoryIcon || '📦'
+    icon: ''
   }))
 ])
 const selectedQuotaCategory = computed(() => (

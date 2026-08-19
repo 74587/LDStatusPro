@@ -8,6 +8,7 @@ import {
 } from '@/config/maintenance'
 import { storage } from '@/utils/storage'
 import HomeView from '@/views/Home.vue'
+import { resolveLegacyPublishTarget } from '@/utils/sellerNavigation'
 
 // 路由配置
 const routes = [
@@ -79,9 +80,7 @@ const routes = [
   },
   {
     path: '/user/coupons/manage',
-    name: 'CouponManage',
-    component: () => import('@/views/CouponManage.vue'),
-    meta: { title: '优惠券管理 - LD士多', requiresAuth: true }
+    redirect: { name: 'SellerCoupons' }
   },
   {
     path: '/user/buy-orders/:orderNo',
@@ -103,9 +102,7 @@ const routes = [
   },
   {
     path: '/user/products',
-    name: 'MyProducts',
-    component: () => import('@/views/MyProducts.vue'),
-    meta: { title: '我的商品 - LD士多', requiresAuth: true }
+    redirect: { name: 'SellerProducts' }
   },
   {
     path: '/user/buy-requests',
@@ -125,9 +122,7 @@ const routes = [
   },
   {
     path: '/user/settings',
-    name: 'Settings',
-    component: () => import('@/views/Settings.vue'),
-    meta: { title: 'LDC收款配置 - LD士多', requiresAuth: true }
+    redirect: { name: 'SellerPayment' }
   },
   {
     path: '/shop/:id',
@@ -137,21 +132,22 @@ const routes = [
   },
   {
     path: '/user/my-shop',
-    name: 'MyShop',
-    component: () => import('@/views/MyShop.vue'),
-    meta: { title: '小店入驻 - LD士多', requiresAuth: true }
+    redirect: { name: 'SellerStore' }
   },
   {
     path: '/publish',
-    name: 'Publish',
+    redirect: to => resolveLegacyPublishTarget(to.query)
+  },
+  {
+    path: '/buy-requests/new',
+    name: 'BuyRequestPublish',
     component: () => import('@/views/Publish.vue'),
-    meta: { title: '发布商品 - LD士多', requiresAuth: true }
+    props: { initialMode: 'buy', lockedMode: true },
+    meta: { title: '发布求购 - LD士多', requiresAuth: true }
   },
   {
     path: '/edit/:id',
-    name: 'Edit',
-    component: () => import('@/views/Edit.vue'),
-    meta: { title: '编辑商品 - LD士多', requiresAuth: true }
+    redirect: to => ({ name: 'SellerEdit', params: to.params, query: to.query })
   },
   {
     path: '/order/:id',
@@ -198,9 +194,76 @@ const routes = [
   },
   {
     path: '/merchant-services',
-    name: 'MerchantServices',
-    component: () => import('@/views/MerchantServices.vue'),
-    meta: { title: '商家服务 - LD士多', requiresAuth: true }
+    redirect: { name: 'SellerServices' }
+  },
+  {
+    path: '/seller',
+    component: () => import('@/layouts/SellerLayout.vue'),
+    meta: { requiresAuth: true, layout: 'seller' },
+    children: [
+      {
+        path: '',
+        name: 'SellerDashboard',
+        component: () => import('@/views/seller/SellerDashboard.vue'),
+        meta: { title: '经营概览 - LD士多卖家后台' }
+      },
+      {
+        path: 'orders',
+        name: 'SellerOrders',
+        component: () => import('@/views/Orders.vue'),
+        props: { sellerMode: true },
+        meta: { title: '订单管理 - LD士多卖家后台' }
+      },
+      {
+        path: 'orders/:id',
+        name: 'SellerOrderDetail',
+        component: () => import('@/views/seller/SellerOrderDetail.vue'),
+        meta: { title: '订单详情 - LD士多卖家后台', orderRole: 'seller' }
+      },
+      {
+        path: 'products',
+        name: 'SellerProducts',
+        component: () => import('@/views/MyProducts.vue'),
+        meta: { title: '我的物品 - LD士多卖家后台' }
+      },
+      {
+        path: 'products/new',
+        name: 'SellerPublish',
+        component: () => import('@/views/Publish.vue'),
+        props: { initialMode: 'product', lockedMode: true },
+        meta: { title: '发布物品 - LD士多卖家后台' }
+      },
+      {
+        path: 'products/:id/edit',
+        name: 'SellerEdit',
+        component: () => import('@/views/Edit.vue'),
+        meta: { title: '编辑物品 - LD士多卖家后台' }
+      },
+      {
+        path: 'coupons',
+        name: 'SellerCoupons',
+        component: () => import('@/views/CouponManage.vue'),
+        meta: { title: '优惠券管理 - LD士多卖家后台' }
+      },
+      {
+        path: 'services',
+        name: 'SellerServices',
+        component: () => import('@/views/MerchantServices.vue'),
+        meta: { title: '商家服务 - LD士多卖家后台' }
+      },
+      {
+        path: 'store',
+        name: 'SellerStore',
+        component: () => import('@/views/MyShop.vue'),
+        meta: { title: '小店管理 - LD士多卖家后台' }
+      },
+      {
+        path: 'payment',
+        name: 'SellerPayment',
+        component: () => import('@/views/Settings.vue'),
+        meta: { title: '收款设置 - LD士多卖家后台' }
+      }
+    ]
   },
   {
     path: '/maintenance',
@@ -232,7 +295,10 @@ const restrictedMaintenanceAllowedRoutes = new Set([
   'Login',
   'AuthCallback',
   'Orders',
-  'MyProducts',
+  'SellerDashboard',
+  'SellerOrders',
+  'SellerProducts',
+  'SellerOrderDetail',
   'OrderDetail',
   'BuyOrderDetail',
   'CouponClaim',
@@ -265,6 +331,20 @@ const router = createRouter({
 
 // 路由守卫
 router.beforeEach(async (to, from, next) => {
+  if (to.name === 'Orders' && String(to.query.tab || '').toLowerCase() === 'seller') {
+    const query = { ...to.query }
+    delete query.tab
+    next({ name: 'SellerOrders', query: { ...query, source: 'product' }, replace: true })
+    return
+  }
+
+  if (to.name === 'OrderDetail' && String(to.query.role || '').toLowerCase() === 'seller') {
+    const query = { ...to.query, source: 'product' }
+    delete query.role
+    next({ name: 'SellerOrderDetail', params: { id: to.params.id }, query, replace: true })
+    return
+  }
+
   await ensureMaintenanceStatusLoaded()
 
   const routeName = String(to.name || '')

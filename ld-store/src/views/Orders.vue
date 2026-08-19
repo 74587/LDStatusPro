@@ -2,7 +2,7 @@
   <div class="orders-page">
     <div class="page-container">
       <div class="page-header">
-        <h1 class="page-title">我的订单</h1>
+        <h1 class="page-title">{{ sellerMode ? '订单管理' : '我的订单' }}</h1>
       </div>
       
       <!-- 角色切换 -->
@@ -47,7 +47,7 @@
       
       <!-- 加载中 -->
       <div v-if="hasDirectFilters" class="direct-filter-bar">
-        <span class="direct-filter-chip strong">{{ currentRole === 'seller' ? '我卖的' : '我买的' }}</span>
+        <span class="direct-filter-chip strong">{{ currentRole === 'seller' ? '商品订单' : (sellerMode ? '求购服务' : '我买的') }}</span>
         <span v-if="onlyDealOrders" class="direct-filter-chip">已成交</span>
         <span v-if="activeCategoryName" class="direct-filter-chip">{{ activeCategoryName }}</span>
         <button class="direct-filter-clear" @click="clearDirectFilters">
@@ -69,9 +69,9 @@
       <!-- 空状态 -->
       <EmptyState
         v-else-if="orders.length === 0"
-        icon="📋"
+        :icon="sellerMode ? '' : '📋'"
         :text="currentRole === 'buy' ? '暂无求购订单' : '暂无订单'"
-        :hint="currentRole === 'buyer' ? '您还没有购买任何物品' : (currentRole === 'seller' ? '您还没有收到任何订单' : '您还没有求购订单')"
+        :hint="currentRole === 'buyer' ? '您还没有购买任何物品' : (currentRole === 'seller' ? '您还没有收到任何商品订单' : (sellerMode ? '您还没有作为服务方完成求购交易' : '您还没有求购订单'))"
       >
         <template #action>
           <router-link to="/" class="browse-btn">
@@ -304,6 +304,7 @@ import {
   readOrderScrollSnapshot,
   clearOrderScrollState
 } from '@/utils/orderListScroll'
+import { resolveOrderArea } from '@/utils/sellerNavigation'
 
 const router = useRouter()
 const route = useRoute()
@@ -311,18 +312,30 @@ const shopStore = useShopStore()
 const toast = useToast()
 const dialog = useDialog()
 
+const props = defineProps({
+  sellerMode: {
+    type: Boolean,
+    default: false
+  }
+})
+const sellerMode = computed(() => props.sellerMode)
+
 const loading = ref(true)
 const loadingMore = ref(false)
 const orders = ref([])
 const page = ref(1)
 const hasMore = ref(false)
 const pageSize = 20
-const currentRole = ref('buyer')
-const roleTabs = [
-  { value: 'buyer', label: '我买的', icon: '🛒' },
-  { value: 'seller', label: '我卖的', icon: '📦' },
-  { value: 'buy', label: '求购订单', icon: '🌱' }
-]
+const currentRole = ref(props.sellerMode ? 'seller' : 'buyer')
+const roleTabs = computed(() => props.sellerMode
+  ? [
+      { value: 'seller', label: '商品订单' },
+      { value: 'buy', label: '求购服务' }
+    ]
+  : [
+      { value: 'buyer', label: '我买的', icon: '🛒' },
+      { value: 'buy', label: '求购订单', icon: '🌱' }
+    ])
 const orderSearch = ref('')
 const timeRange = ref('1m')
 const statusFilter = ref('')
@@ -335,13 +348,13 @@ const timeRangeOptions = [
   { value: '1y', label: '最近一年' }
 ]
 const VALID_STATUS_FILTERS = ['paid', 'delivered', 'cancelled', 'refunded']
-const statusTabs = [
-  { value: '', label: '全部', icon: '📋' },
-  { value: 'paid', label: '待发货', icon: '📦' },
-  { value: 'delivered', label: '已发货', icon: '🚚' },
-  { value: 'cancelled', label: '已取消', icon: '❌' },
-  { value: 'refunded', label: '已退款', icon: '↩️' }
-]
+const statusTabs = computed(() => [
+  { value: '', label: '全部', icon: props.sellerMode ? '' : '📋' },
+  { value: 'paid', label: '待发货', icon: props.sellerMode ? '' : '📦' },
+  { value: 'delivered', label: '已发货', icon: props.sellerMode ? '' : '🚚' },
+  { value: 'cancelled', label: '已取消', icon: props.sellerMode ? '' : '❌' },
+  { value: 'refunded', label: '已退款', icon: props.sellerMode ? '' : '↩️' }
+])
 const cancellingOrderId = ref(null)
 const deliverFormOrderId = ref(null)
 const deliverContent = ref('')
@@ -360,14 +373,6 @@ const hasDirectFilters = computed(() =>
   currentRole.value !== 'buy' && (activeCategoryId.value > 0 || onlyDealOrders.value)
 )
 
-function normalizeOrderTab(value) {
-  const safeValue = String(value || '').trim().toLowerCase()
-  if (['buyer', 'seller', 'buy'].includes(safeValue)) {
-    return safeValue
-  }
-  return 'buyer'
-}
-
 function parsePositiveInt(value) {
   const parsed = Number.parseInt(value, 10)
   return Number.isInteger(parsed) && parsed > 0 ? parsed : 0
@@ -378,7 +383,7 @@ function parseRouteBoolean(value) {
 }
 
 function syncRouteState() {
-  currentRole.value = normalizeOrderTab(route.query.tab)
+  currentRole.value = resolveOrderArea(route.query, props.sellerMode)
   activeCategoryId.value = currentRole.value === 'buy' ? 0 : parsePositiveInt(route.query.categoryId)
   activeCategoryName.value = activeCategoryId.value > 0
     ? String(route.query.categoryName || `分类 #${activeCategoryId.value}`).trim()
@@ -459,9 +464,15 @@ async function restoreScrollState() {
 // 切换角色
 async function switchRole(role) {
   const nextQuery = { ...route.query }
-  if (role === currentRole.value && normalizeOrderTab(route.query.tab) === role) return
+  if (role === currentRole.value) return
 
-  nextQuery.tab = role
+  if (props.sellerMode) {
+    nextQuery.source = role === 'buy' ? 'service' : 'product'
+    delete nextQuery.tab
+  } else {
+    nextQuery.tab = role
+    delete nextQuery.source
+  }
   if (role === 'buy') {
     delete nextQuery.categoryId
     delete nextQuery.categoryName
@@ -495,6 +506,9 @@ function buildOrderQueryOptions() {
   }
   if (currentRole.value !== 'buy' && statusFilter.value) {
     options.status = statusFilter.value
+  }
+  if (currentRole.value === 'buy') {
+    options.role = props.sellerMode ? 'provider' : 'requester'
   }
   return options
 }
@@ -572,7 +586,9 @@ async function clearSearch() {
 }
 
 async function clearDirectFilters() {
-  const nextQuery = { ...route.query, tab: currentRole.value }
+  const nextQuery = { ...route.query }
+  if (props.sellerMode) nextQuery.source = currentRole.value === 'buy' ? 'service' : 'product'
+  else nextQuery.tab = currentRole.value
   delete nextQuery.categoryId
   delete nextQuery.categoryName
   delete nextQuery.dealOnly
@@ -726,12 +742,14 @@ function getOrderDetailTarget(order) {
 
   if (isBuyRequestOrder(order)) {
     const orderNo = getOrderKey(order)
-    if (!orderNo) return '/user/orders?tab=buy'
+    if (!orderNo) return props.sellerMode ? '/seller/orders?source=service' : '/user/orders?tab=buy'
+    if (props.sellerMode) return `/seller/orders/${encodeURIComponent(orderNo)}?source=service`
     return `/user/buy-orders/${encodeURIComponent(orderNo)}`
   }
 
   const orderNo = getOrderKey(order)
-  if (!orderNo) return '/user/orders'
+  if (!orderNo) return props.sellerMode ? '/seller/orders' : '/user/orders'
+  if (props.sellerMode) return { path: `/seller/orders/${orderNo}`, query: { source: 'product' } }
   return { path: `/order/${orderNo}`, query: { role: currentRole.value } }
 }
 
@@ -753,15 +771,19 @@ function viewOrderDetail(order) {
   if (isBuyRequestOrder(order)) {
     const orderNo = getOrderKey(order)
     if (!orderNo) {
-      router.push('/user/orders?tab=buy')
+      router.push(props.sellerMode ? '/seller/orders?source=service' : '/user/orders?tab=buy')
       return
     }
-    router.push(`/user/buy-orders/${encodeURIComponent(orderNo)}`)
+    router.push(props.sellerMode
+      ? `/seller/orders/${encodeURIComponent(orderNo)}?source=service`
+      : `/user/buy-orders/${encodeURIComponent(orderNo)}`)
     return
   }
 
   const orderNo = getOrderKey(order)
-  router.push(`/order/${orderNo}?role=${currentRole.value}`)
+  router.push(props.sellerMode
+    ? `/seller/orders/${orderNo}?source=product`
+    : `/order/${orderNo}?role=${currentRole.value}`)
 }
 
 // 状态文字（求购订单状态体系不同，paid 语义为「已支付」；商城/图床订单 paid 即「待发货」）
@@ -1115,6 +1137,7 @@ onMounted(() => {
 watch(
   () => [
     route.query.tab,
+    route.query.source,
     route.query.categoryId,
     route.query.categoryName,
     route.query.dealOnly,

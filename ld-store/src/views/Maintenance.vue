@@ -57,7 +57,7 @@
             <router-link
               v-if="userStore.isLoggedIn && isRestricted"
               class="action-btn action-btn--secondary"
-              to="/user/products"
+              to="/seller/products"
             >
               管理商品 CDK
             </router-link>

@@ -7,7 +7,7 @@
           <h1>我的优惠券</h1>
           <p class="subtitle">结算时由你主动选择，每笔订单最多使用一张。</p>
         </div>
-        <router-link to="/user/coupons/manage" class="manage-link">卖家优惠券管理</router-link>
+        <router-link to="/seller/coupons" class="manage-link">卖家优惠券管理</router-link>
       </header>
 
       <nav class="status-tabs" role="tablist" aria-label="优惠券分类">

@@ -227,6 +227,7 @@ import AvatarImage from '@/components/common/AvatarImage.vue'
 import { storage } from '@/utils/storage'
 import { api } from '@/utils/api'
 import { DEFAULT_SEARCH_KEYWORDS, loadSearchHistory, saveSearchHistory, clearSearchHistory } from '@/utils/search'
+import { buildUserDropdownMenuGroups } from '@/config/userMenu'
 
 const route = useRoute()
 const router = useRouter()
@@ -274,98 +275,10 @@ const userAlertText = computed(() => {
   }
   return ''
 })
-const dropdownMenuGroups = computed(() => ([
-  [
-    {
-      path: '/user/messages',
-      icon: '💬',
-      label: '我的消息',
-      withUnread: messageUnread.value > 0,
-      badge: messageUnread.value > 0 ? unreadDisplay.value : ''
-    },
-    {
-      path: '/user/favorites',
-      icon: '⭐',
-      label: '我的收藏',
-      withUnread: false,
-      badge: ''
-    },
-    {
-      path: '/user/coupons',
-      icon: '🎫',
-      label: '我的优惠券',
-      withUnread: false,
-      badge: ''
-    }
-  ],
-  [
-    {
-      path: '/user/orders',
-      icon: '📋',
-      label: '我的订单',
-      withUnread: sellerPendingDeliveryCount.value > 0,
-      badge: sellerPendingDeliveryCount.value > 0 ? pendingDeliveryDisplay.value : ''
-    },
-    {
-      path: '/user/reports',
-      icon: '🚩',
-      label: '我的举报',
-      withUnread: false,
-      badge: ''
-    },
-    {
-      path: '/user/products',
-      icon: '📦',
-      label: '我的物品',
-      withUnread: false,
-      badge: ''
-    },
-    {
-      path: '/user/buy-requests',
-      icon: '🌱',
-      label: '我的求购',
-      withUnread: false,
-      badge: ''
-    }
-  ],
-  [
-    {
-      path: '/user/settings',
-      icon: '💳',
-      label: '收款设置',
-      withUnread: false,
-      badge: ''
-    },
-    {
-      path: '/user/coupons/manage',
-      icon: '🎫',
-      label: '优惠券管理',
-      withUnread: false,
-      badge: ''
-    },
-    {
-      path: '/user/my-shop',
-      icon: '🏪',
-      label: '小店入驻',
-      withUnread: false,
-      badge: ''
-    },
-    {
-      path: '/ld-image',
-      icon: '🖼️',
-      label: '士多图床',
-      withUnread: false,
-      badge: ''
-    },
-    {
-      path: '/merchant-services',
-      icon: '🧰',
-      label: '商家服务',
-      withUnread: false,
-      badge: ''
-    }
-  ]
-]))
+const dropdownMenuGroups = computed(() => buildUserDropdownMenuGroups({
+  messageUnread: messageUnread.value,
+  sellerPendingDeliveryCount: sellerPendingDeliveryCount.value
+}))
 const shouldPollMessageUnread = computed(() => (
   isLoggedIn.value
   && String(route.name || '') !== 'MyMessages'
@@ -489,7 +402,7 @@ function goToSearch() {
 
 function goToPublish() {
   closeSearchPanel()
-  router.push({ name: 'Publish' })
+  router.push({ name: 'SellerPublish' })
 }
 
 function checkMobile() {

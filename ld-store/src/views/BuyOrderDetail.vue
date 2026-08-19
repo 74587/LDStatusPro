@@ -109,7 +109,8 @@ const isPaymentMaintenanceBlocked = computed(() =>
   isRestrictedMaintenanceMode() && !isMaintenanceFeatureEnabled('orderPayment')
 )
 
-const orderNo = computed(() => String(route.params.orderNo || '').trim())
+const isSellerView = computed(() => route.meta.orderRole === 'seller' || route.meta.layout === 'seller')
+const orderNo = computed(() => String(route.params.orderNo || route.params.id || '').trim())
 const canRepay = computed(() => {
   return !isPaymentMaintenanceBlocked.value
     && order.value?.status === 'pending'
@@ -127,7 +128,7 @@ function goBack() {
     router.back()
     return
   }
-  router.push('/user/orders?tab=buy')
+  router.push(isSellerView.value ? '/seller/orders?source=service' : '/user/orders?tab=buy')
 }
 
 function goChat() {

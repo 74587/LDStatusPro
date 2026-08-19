@@ -26,7 +26,7 @@
       <div class="box-icon">⚠️</div>
       <div class="box-content">
         <strong>卖家须知</strong>
-        <p>发布普通物品或 CDK 物品都需要先配置 LDC 收款信息，请在「个人中心 → 收款设置」中完成配置。</p>
+        <p>发布普通物品或 CDK 物品都需要先配置 LDC 收款信息，请在「卖家后台 → 收款设置」中完成配置。</p>
       </div>
     </div>
     

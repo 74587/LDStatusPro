@@ -1,0 +1,66 @@
+.seller-shell .page-container {
+  width: 100%;
+  max-width: 1200px;
+  padding: 0;
+}
+
+.seller-shell .page-header {
+  margin-bottom: 22px;
+}
+
+.seller-shell .page-title,
+.seller-shell .hero-title,
+.seller-shell .order-title {
+  color: var(--seller-ink);
+  font-family: "Noto Serif SC", "Source Han Serif SC", "Songti SC", STSong, serif;
+  letter-spacing: 0.01em;
+}
+
+.seller-shell .form-card,
+.seller-shell .help-card,
+.seller-shell .warning-card,
+.seller-shell .stats-card,
+.seller-shell .product-card,
+.seller-shell .order-card,
+.seller-shell .shop-card,
+.seller-shell .intro-card,
+.seller-shell .settings-form,
+.seller-shell .panel-shell {
+  border-color: var(--seller-border);
+  box-shadow: var(--seller-shadow-sm);
+}
+
+.seller-shell .my-products-page,
+.seller-shell .orders-page,
+.seller-shell .publish-page,
+.seller-shell .settings-page,
+.seller-shell .my-shop-page,
+.seller-shell .merchant-services-page,
+.seller-shell .coupon-manage-page,
+.seller-shell .order-detail-page,
+.seller-shell .buy-order-detail-page {
+  min-height: auto;
+  padding-bottom: 24px;
+  background: transparent;
+}
+
+.seller-shell button:focus-visible,
+.seller-shell a:focus-visible,
+.seller-shell input:focus-visible,
+.seller-shell textarea:focus-visible,
+.seller-shell select:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--seller-jade) 72%, transparent);
+  outline-offset: 2px;
+}
+
+.seller-shell .stat-value,
+.seller-shell .order-amount,
+.seller-shell .price-value,
+.seller-shell code {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 640px) {
+  .seller-shell .page-header { margin-bottom: 16px; }
+  .seller-shell .page-title { font-size: 24px; }
+}
