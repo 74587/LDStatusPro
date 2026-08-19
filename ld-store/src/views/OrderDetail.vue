@@ -3,9 +3,11 @@
     <div class="page-container">
       <div class="top-nav">
         <button class="top-back-btn" type="button" @click="goBack">
-          ← 返回
+          <ArrowLeft :size="16" aria-hidden="true" />
+          <span>返回</span>
         </button>
         <router-link to="/support" class="support-btn top-support-btn">
+          <Heart class="support-heart" :size="16" aria-hidden="true" />
           <span>支持 LD 士多</span>
         </router-link>
       </div>
@@ -22,13 +24,16 @@
       <!-- 订单不存在 -->
       <EmptyState
         v-else-if="!order"
-        icon=""
         text="订单不存在"
         hint="无法找到该订单信息"
       >
+        <template #icon>
+          <SearchX :size="48" :stroke-width="1.6" aria-hidden="true" />
+        </template>
         <template #action>
           <router-link to="/user/orders" class="back-btn">
-            ← 返回
+            <ArrowLeft :size="16" aria-hidden="true" />
+            <span>返回</span>
           </router-link>
         </template>
       </EmptyState>
@@ -38,7 +43,9 @@
         <!-- 订单状态卡片 -->
         <div :class="['status-card', getStatusClass(order.status)]">
           <div class="status-card__main">
-            <div class="status-icon" aria-hidden="true"></div>
+            <div class="status-icon" aria-hidden="true">
+              <component :is="getStatusIcon(order.status)" :size="28" :stroke-width="1.8" />
+            </div>
             <div>
               <div class="status-text">{{ getStatusText(order.status) }}</div>
               <div class="status-time" v-if="order.created_at || order.createdAt">
@@ -59,7 +66,10 @@
         
         <!-- 物品信息 -->
         <div class="info-card">
-          <h3 class="card-title">物品信息</h3>
+          <h3 class="card-title">
+            <ShoppingBag :size="17" aria-hidden="true" />
+            物品信息
+          </h3>
           
           <div class="info-row">
             <span class="info-label">物品名称</span>
@@ -121,7 +131,10 @@
         
         <!-- 交易双方信息 -->
         <div class="info-card">
-          <h3 class="card-title">交易信息</h3>
+          <h3 class="card-title">
+            <UsersRound :size="17" aria-hidden="true" />
+            交易信息
+          </h3>
           
           <div class="info-row">
             <span class="info-label">卖家</span>
@@ -143,12 +156,19 @@
           
           <div class="info-row" v-if="order.delivery_type">
             <span class="info-label">发货方式</span>
-            <span class="info-value">{{ order.delivery_type === 'auto' ? '自动发货' : '手动发货' }}</span>
+            <span class="info-value delivery-value">
+              <PackageCheck v-if="order.delivery_type === 'auto'" :size="16" aria-hidden="true" />
+              <UserRound v-else :size="16" aria-hidden="true" />
+              {{ order.delivery_type === 'auto' ? '自动发货' : '手动发货' }}
+            </span>
           </div>
         </div>
         
         <div class="info-card" v-if="requiresBuyerContactOrder(order)">
-          <h3 class="card-title">履约提醒</h3>
+          <h3 class="card-title">
+            <BellRing :size="17" aria-hidden="true" />
+            履约提醒
+          </h3>
           <div class="description-content">
             {{ currentRole === 'buyer' ? '支付完成后请主动联系卖家获取服务，订单会保留在平台内等待卖家手动履约。' : '该订单为普通物品订单，买家支付后需要您主动处理交付并填写发货内容。' }}
           </div>
@@ -156,7 +176,10 @@
 
         <!-- CDK 信息 -->
         <div class="info-card" v-if="isCdkOrder(order) && getDeliveryContent(order)">
-          <h3 class="card-title">CDK 密钥</h3>
+          <h3 class="card-title">
+            <KeyRound :size="17" aria-hidden="true" />
+            CDK 密钥
+          </h3>
           
           <div class="cdk-box">
             <div class="cdk-head">
@@ -176,32 +199,48 @@
             </code>
             <div class="cdk-actions">
               <button
+                type="button"
                 class="icon-btn"
                 :title="showCdk ? '隐藏密钥' : '显示密钥'"
+                :aria-label="showCdk ? '隐藏密钥' : '显示密钥'"
                 @click="showCdk = !showCdk"
               >
-                {{ showCdk ? '隐藏' : '显示' }}
+                <EyeOff v-if="showCdk" :size="17" aria-hidden="true" />
+                <Eye v-else :size="17" aria-hidden="true" />
               </button>
-              <button class="icon-btn" title="复制密钥" @click="copyCdk">复制</button>
-              <button class="icon-btn" title="导出为 TXT" @click="downloadCdk">导出</button>
+              <button type="button" class="icon-btn" title="复制密钥" aria-label="复制密钥" @click="copyCdk">
+                <Copy :size="17" aria-hidden="true" />
+              </button>
+              <button type="button" class="icon-btn" title="导出为 TXT" aria-label="导出为 TXT" @click="downloadCdk">
+                <Download :size="17" aria-hidden="true" />
+              </button>
             </div>
           </div>
         </div>
         
         <div class="info-card" v-if="isNormalOrder(order) && getDeliveryContent(order)">
-          <h3 class="card-title">发货内容</h3>
+          <h3 class="card-title">
+            <PackageCheck :size="17" aria-hidden="true" />
+            发货内容
+          </h3>
           <div class="description-content preserve-line-breaks">{{ getDeliveryContent(order) }}</div>
         </div>
 
         <!-- 使用说明（显示物品描述） -->
         <div class="info-card" v-if="(isCdkOrder(order) || isNormalOrder(order)) && getProductDescription(order)">
-          <h3 class="card-title">使用说明</h3>
+          <h3 class="card-title">
+            <FileText :size="17" aria-hidden="true" />
+            使用说明
+          </h3>
           <div class="description-content markdown-content" v-html="renderedProductDescription"></div>
         </div>
         
         <!-- 订单信息 -->
         <div class="info-card">
-          <h3 class="card-title">订单信息</h3>
+          <h3 class="card-title">
+            <ReceiptText :size="17" aria-hidden="true" />
+            订单信息
+          </h3>
 
           <div class="order-summary-grid">
             <div class="summary-item">
@@ -217,11 +256,16 @@
         
         <!-- 订单日志 -->
         <div class="info-card" v-if="orderLogs && orderLogs.length > 0">
-          <h3 class="card-title">订单动态</h3>
+          <h3 class="card-title">
+            <History :size="17" aria-hidden="true" />
+            订单动态
+          </h3>
           
           <div class="order-logs">
             <div class="log-item" v-for="(log, index) in sortedOrderLogs" :key="index">
-              <div class="log-icon" aria-hidden="true"></div>
+              <div class="log-icon" aria-hidden="true">
+                <component :is="getLogIcon(log.action)" :size="16" :stroke-width="1.9" />
+              </div>
               <div class="log-content">
                 <div class="log-action">{{ getLogText(log) }}</div>
                 <div class="log-time">{{ formatDateTime(log.created_at || log.createdAt || log.time) }}</div>
@@ -271,6 +315,37 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import {
+  ArrowLeft,
+  BadgeCheck,
+  BellRing,
+  CircleCheck,
+  CircleDollarSign,
+  CircleX,
+  ClipboardList,
+  Clock,
+  Copy,
+  CreditCard,
+  Download,
+  Eye,
+  EyeOff,
+  FilePlus2,
+  FileText,
+  Heart,
+  History,
+  KeyRound,
+  LockKeyhole,
+  LockOpen,
+  PackageCheck,
+  ReceiptText,
+  RefreshCw,
+  RotateCcw,
+  SearchX,
+  ShoppingBag,
+  TimerOff,
+  UserRound,
+  UsersRound
+} from '@lucide/vue'
 import { useShopStore } from '@/stores/shop'
 import { useToast } from '@/composables/useToast'
 import { useDialog } from '@/composables/useDialog'
@@ -517,6 +592,22 @@ function startPendingOrderAutoRefresh() {
   }, 30000)
 }
 
+// 订单动态图标
+function getLogIcon(action) {
+  const map = {
+    create: FilePlus2,
+    pay: CircleDollarSign,
+    repay: RefreshCw,
+    deliver: PackageCheck,
+    refund: RotateCcw,
+    cancel: CircleX,
+    expire: TimerOff,
+    lock_cdk: LockKeyhole,
+    unlock_cdk: LockOpen
+  }
+  return map[String(action || '').toLowerCase()] || ClipboardList
+}
+
 // 日志文字
 function getLogText(log) {
   const actionMap = {
@@ -609,6 +700,21 @@ function getStatusText(status) {
     expired: '已过期'
   }
   return map[status] || status || '未知'
+}
+
+// 订单状态图标
+function getStatusIcon(status) {
+  const map = {
+    pending: Clock,
+    paying: CreditCard,
+    paid: CircleCheck,
+    completed: BadgeCheck,
+    cancelled: CircleX,
+    refunded: RotateCcw,
+    delivered: PackageCheck,
+    expired: TimerOff
+  }
+  return map[String(status || '').toLowerCase()] || ClipboardList
 }
 
 // 状态样式
@@ -817,6 +923,11 @@ onUnmounted(() => {
 }
 
 .top-back-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
   padding: 10px 16px;
   background: var(--bg-card);
   border: 1px solid var(--border-light);
@@ -894,7 +1005,11 @@ onUnmounted(() => {
 
 /* 返回按钮 */
 .back-btn {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
   padding: 10px 16px;
   background: var(--bg-card);
   border: 1px solid var(--border-light);
@@ -954,6 +1069,26 @@ onUnmounted(() => {
   background: var(--bg-card);
 }
 
+.status-card.status-pending .status-icon {
+  color: var(--color-warning);
+}
+
+.status-card.status-success .status-icon {
+  color: var(--color-success);
+}
+
+.status-card.status-info .status-icon {
+  color: var(--color-info);
+}
+
+.status-card.status-cancelled .status-icon {
+  color: var(--text-tertiary);
+}
+
+.status-card.status-refunded .status-icon {
+  color: var(--color-danger);
+}
+
 .status-card__main {
   display: flex;
   align-items: center;
@@ -1011,10 +1146,18 @@ onUnmounted(() => {
 }
 
 .card-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 14px;
   font-weight: 600;
   color: var(--text-tertiary);
   margin: 0 0 16px;
+}
+
+.card-title svg {
+  flex: 0 0 auto;
+  color: var(--color-primary);
 }
 
 .info-row {
@@ -1053,9 +1196,9 @@ onUnmounted(() => {
 }
 
 .support-heart {
-  display: inline-block;
-  animation: heart-beat 1.4s ease-in-out infinite;
-  filter: drop-shadow(0 0 6px rgba(239, 122, 122, 0.5));
+  flex: 0 0 auto;
+  color: var(--color-danger);
+  fill: currentColor;
 }
 
 .info-label {
@@ -1070,6 +1213,13 @@ onUnmounted(() => {
   text-align: right;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.delivery-value {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
 }
 
 .info-link {
@@ -1199,8 +1349,8 @@ onUnmounted(() => {
 }
 
 .icon-btn {
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1208,6 +1358,7 @@ onUnmounted(() => {
   border: 1px solid var(--border-light);
   border-radius: 10px;
   font-size: 16px;
+  color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -1467,13 +1618,13 @@ onUnmounted(() => {
 }
 
 .log-icon {
-  font-size: 18px;
   width: 28px;
   height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: var(--bg-secondary);
+  color: var(--text-secondary);
   border-radius: 8px;
   flex-shrink: 0;
 }

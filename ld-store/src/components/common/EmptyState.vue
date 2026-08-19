@@ -1,6 +1,8 @@
 <template>
   <div class="empty-state">
-    <span class="empty-icon">{{ icon }}</span>
+    <span class="empty-icon">
+      <slot name="icon">{{ icon }}</slot>
+    </span>
     <p class="empty-text">{{ text }}</p>
     <p v-if="hint" class="empty-hint">{{ hint }}</p>
     <slot name="action"></slot>
@@ -35,6 +37,9 @@ defineProps({
 }
 
 .empty-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   font-size: 48px;
   margin-bottom: 16px;
   opacity: 0.8;
