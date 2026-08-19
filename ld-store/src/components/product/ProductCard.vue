@@ -1,5 +1,6 @@
 <template>
   <router-link
+    v-if="!isBlocked"
     ref="cardRef"
     :to="`/product/${product.id}`"
     :class="[
@@ -102,6 +103,7 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import { useShopStore } from '@/stores/shop'
 import AvatarImage from '@/components/common/AvatarImage.vue'
 import { formatRelativeTime, formatPrice } from '@/utils/format'
 import { buildAvatarCandidates } from '@/utils/avatar'
@@ -127,6 +129,9 @@ const props = defineProps({
     default: () => []
   }
 })
+
+const shopStore = useShopStore()
+const isBlocked = computed(() => shopStore.isProductBlocked(props.product.id))
 
 
 // 图片加载状态

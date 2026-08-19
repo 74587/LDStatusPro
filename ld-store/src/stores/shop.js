@@ -4,11 +4,13 @@ import { useUserStore } from '@/stores/user'
 import { storage } from '@/utils/storage'
 import {
   addFavoriteRequest,
+  blockProductRequest,
   createProductCommentReplyRequest,
   createProductCommentRequest,
   deleteProductCommentRequest,
   fetchCategoriesRequest,
   fetchFavoritesRequest,
+  fetchBlockedProductsRequest,
   fetchMerchantProfileRequest,
   fetchProductCommentRepliesRequest,
   fetchProductCommentsRequest,
@@ -24,6 +26,7 @@ import {
   reportProductCommentRequest,
   reportProductRequest,
   subscribeProductRestockRequest,
+  unblockProductRequest,
   voteProductCommentRequest
 } from '@/services/shop/catalogService'
 import {
@@ -127,7 +130,10 @@ export const useShopStore = defineStore('shop', () => {
   const sellerOrders = ref([])
   const myBuyOrders = ref([])
   const myFavorites = ref([])
+  const blockedProducts = ref([])
+  const blockedProductIds = ref(new Set())
   const favoritesLoading = ref(false)
+  const blocksLoading = ref(false)
   const ordersLoading = ref(false)
   const lastError = ref('')
 
@@ -412,6 +418,33 @@ export const useShopStore = defineStore('shop', () => {
     }
   }
 
+  function setProductBlockedState(productId, blocked) {
+    const id = String(productId)
+    const nextIds = new Set(blockedProductIds.value)
+
+    if (blocked) {
+      nextIds.add(id)
+      const previousLength = products.value.length
+      products.value = products.value.filter(item => String(item.id) !== id)
+      searchResults.value = searchResults.value.filter(item => String(item.id) !== id)
+      myFavorites.value = myFavorites.value.filter(item => String(item.id) !== id)
+      if (products.value.length < previousLength) {
+        total.value = Math.max(0, Number(total.value || 0) - 1)
+      }
+    } else {
+      nextIds.delete(id)
+      blockedProducts.value = blockedProducts.value.filter(item => String(item.id) !== id)
+    }
+
+    blockedProductIds.value = nextIds
+    productCache.delete(productId)
+    productCache.delete(id)
+  }
+
+  function isProductBlocked(productId) {
+    return blockedProductIds.value.has(String(productId))
+  }
+
   async function reportProduct(id, payload) {
     return reportProductRequest(id, payload)
   }
@@ -469,6 +502,23 @@ export const useShopStore = defineStore('shop', () => {
     return result
   }
 
+  async function blockProduct(productId) {
+    const result = await blockProductRequest(productId)
+    if (result?.success) {
+      setProductFavoriteState(productId, false)
+      setProductBlockedState(productId, true)
+    }
+    return result
+  }
+
+  async function unblockProduct(productId) {
+    const result = await unblockProductRequest(productId)
+    if (result?.success) {
+      setProductBlockedState(productId, false)
+    }
+    return result
+  }
+
   async function getProductRestockSubscriptionStatus(productId) {
     return getProductRestockSubscriptionStatusRequest(productId)
   }
@@ -494,6 +544,31 @@ export const useShopStore = defineStore('shop', () => {
       return createEmptyListState(normalized.page, normalized.pageSize)
     } finally {
       favoritesLoading.value = false
+    }
+  }
+
+  async function fetchBlockedProducts(options = {}) {
+    blocksLoading.value = true
+
+    try {
+      const { result, page: blockedPage, pageSize: blockedPageSize } = await fetchBlockedProductsRequest(options)
+      if (result.success && result.data) {
+        const list = result.data.products || []
+        blockedProducts.value = list
+        blockedProductIds.value = new Set([
+          ...blockedProductIds.value,
+          ...list.map(item => String(item.id))
+        ])
+        return result.data
+      }
+
+      return createEmptyListState(blockedPage, blockedPageSize)
+    } catch (error) {
+      console.error('Fetch blocked products failed:', error)
+      const normalized = normalizeFavoritesOptions(options)
+      return createEmptyListState(normalized.page, normalized.pageSize)
+    } finally {
+      blocksLoading.value = false
     }
   }
 
@@ -918,7 +993,10 @@ export const useShopStore = defineStore('shop', () => {
     sellerOrders,
     myBuyOrders,
     myFavorites,
+    blockedProducts,
+    blockedProductIds,
     favoritesLoading,
+    blocksLoading,
     ordersLoading,
     lastError,
     // 计算属性
@@ -961,9 +1039,13 @@ export const useShopStore = defineStore('shop', () => {
     createProductCommentReply,
     addFavorite,
     removeFavorite,
+    blockProduct,
+    unblockProduct,
+    isProductBlocked,
     getProductRestockSubscriptionStatus,
     subscribeProductRestock,
     fetchMyFavorites,
+    fetchBlockedProducts,
     fetchMyProductDetail,
     fetchProductCdks,
     addProductCdks,

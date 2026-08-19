@@ -38,6 +38,19 @@
               <span>{{ isFavorited ? '已收藏' : '收藏' }}</span>
             </button>
             <button
+              class="nav-block-btn"
+              :disabled="favoriteSubmitting"
+              title="以后不再向我展示这件商品"
+              aria-label="将这件商品标记为不感兴趣"
+              @click="markNotInterested"
+            >
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" aria-hidden="true">
+                <path d="M3 3l18 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                <path d="M10.6 10.7a2 2 0 0 0 2.7 2.7M9.9 4.2A10.9 10.9 0 0 1 12 4c5.4 0 9 5 9 5s-1.2 1.7-3.2 3.1M6.2 6.3C4.2 7.6 3 9 3 9s3.6 5 9 5c.7 0 1.4-.1 2-.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+              <span>不感兴趣</span>
+            </button>
+            <button
               class="nav-report-btn"
               :disabled="reportSubmitting"
               @click="openReportModal"
@@ -2114,6 +2127,52 @@ async function toggleFavorite() {
   }
 }
 
+async function markNotInterested() {
+  if (!product.value?.id || favoriteSubmitting.value) return
+
+  if (!userStore.isLoggedIn) {
+    const confirmed = await dialog.confirm('登录后才能管理不感兴趣的商品，是否前往登录？', {
+      title: '需要登录',
+      icon: '🔐',
+      confirmText: '去登录',
+      cancelText: '取消'
+    })
+    if (confirmed) {
+      router.push({ name: 'Login', query: { redirect: route.fullPath } })
+    }
+    return
+  }
+
+  const confirmed = await dialog.confirmDanger(
+    '确认将这件商品标记为不感兴趣吗？<br><strong>确认后，它会从商品广场、搜索、分类、商家主页和热榜中隐藏；如已收藏也会同时取消。</strong>',
+    {
+      title: '标记为不感兴趣',
+      confirmText: '确认隐藏',
+      cancelText: '暂不处理'
+    }
+  )
+  if (!confirmed) return
+
+  favoriteSubmitting.value = true
+  try {
+    const result = await shopStore.blockProduct(product.value.id)
+    if (!result?.success) {
+      const message = typeof result?.error === 'object'
+        ? (result.error?.message || result.error?.code || '设置不感兴趣失败，请稍后重试')
+        : (result?.error || '设置不感兴趣失败，请稍后重试')
+      toast.error(message)
+      return
+    }
+
+    toast.success(result?.message || result?.data?.message || '已标记为不感兴趣')
+    await router.replace({ name: 'Home' })
+  } catch (error) {
+    toast.error(error.message || '设置不感兴趣失败，请稍后重试')
+  } finally {
+    favoriteSubmitting.value = false
+  }
+}
+
 function handleImageError(e) {
   coverAspectRatio.value = null
   e.target.style.display = 'none'
@@ -2565,6 +2624,38 @@ async function handleOpenStore() {
 
 .nav-favorite-btn:disabled {
   opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.nav-block-btn {
+  min-height: 44px;
+  padding: 8px 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  background: var(--bg-card);
+  color: var(--text-tertiary);
+  font-size: 13px;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.nav-block-btn:hover {
+  background: rgba(220, 38, 38, 0.08);
+  border-color: rgba(220, 38, 38, 0.3);
+  color: var(--color-danger);
+}
+
+.nav-block-btn:focus-visible {
+  outline: 3px solid rgba(220, 38, 38, 0.22);
+  outline-offset: 2px;
+}
+
+.nav-block-btn:disabled {
+  opacity: 0.6;
   cursor: not-allowed;
 }
 

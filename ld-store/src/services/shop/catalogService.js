@@ -206,6 +206,22 @@ export async function removeFavoriteRequest(productId) {
   }
 }
 
+export async function blockProductRequest(productId) {
+  try {
+    return await api.post(`/api/shop/products/${productId}/block`)
+  } catch (error) {
+    return toRequestError(error, '设置不感兴趣失败，请稍后重试')
+  }
+}
+
+export async function unblockProductRequest(productId) {
+  try {
+    return await api.delete(`/api/shop/products/${productId}/block`)
+  } catch (error) {
+    return toRequestError(error, '恢复商品展示失败，请稍后重试')
+  }
+}
+
 export async function getProductRestockSubscriptionStatusRequest(productId) {
   try {
     return await api.get(`/api/shop/products/${productId}/restock-subscription`)
@@ -242,6 +258,21 @@ export async function fetchFavoritesRequest(options = {}) {
   return {
     ...normalized,
     result: await api.get(`/api/shop/favorites?${params.toString()}`)
+  }
+}
+
+export async function fetchBlockedProductsRequest(options = {}) {
+  const normalized = normalizeFavoritesOptions(options)
+  const params = new URLSearchParams()
+  params.set('page', String(normalized.page))
+  params.set('pageSize', String(normalized.pageSize))
+  if (normalized.search) {
+    params.set('search', normalized.search)
+  }
+
+  return {
+    ...normalized,
+    result: await api.get(`/api/shop/blocked-products?${params.toString()}`)
   }
 }
 
