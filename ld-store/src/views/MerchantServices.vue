@@ -1,48 +1,80 @@
 <template>
   <div class="merchant-services-page">
     <div class="page-shell">
-      <section class="hero-card">
-        <div class="hero-copy">
-          <p class="hero-eyebrow">Merchant Services</p>
-          <h1 class="hero-title">商家服务</h1>
-          <p class="hero-desc">
-            士多服务支持自助购买士多甄选与士多优选。支付成功后立即生效，到期自动释放位置，并同步发送系统提醒。所有付费置顶都会绑定下单时的所属分类，切换到其他分类会暂停展示，切回原分类后在有效期内恢复。
-          </p>
+      <section class="service-overview" aria-labelledby="services-overview-title">
+        <div class="service-overview-copy">
+          <p class="hero-eyebrow">经营推广</p>
+          <h2 id="services-overview-title" class="hero-title">让合适的物品被更多买家看见</h2>
+          <p class="hero-desc">选择物品与推广周期后即可开通，支付成功立即生效。服务会绑定开通时的分类，到期后自动释放名额并发送提醒。</p>
+          <button type="button" class="overview-link" @click="activeTab = 'board'">
+            查看实时名额
+            <ArrowRight :size="16" aria-hidden="true" />
+          </button>
         </div>
-        <div class="hero-badge">
-          <span class="hero-badge-label">当前开放</span>
-          <strong>士多甄选 | 士多优选</strong>
-          <span>金色传说！额外曝光！物超所值！</span>
-        </div>
+        <dl class="service-metrics" aria-label="商家服务概况">
+          <div v-for="item in serviceMetrics" :key="item.label" class="service-metric">
+            <dt>{{ item.label }}</dt>
+            <dd>{{ item.value }}</dd>
+            <small>{{ item.hint }}</small>
+          </div>
+        </dl>
       </section>
 
       <section class="content-card">
-        <LiquidTabs v-model="activeTab" :tabs="tabs" />
+        <nav class="service-tabs" role="tablist" aria-label="商家服务功能">
+          <button
+            v-for="tab in tabs"
+            :id="`merchant-tab-${tab.value}`"
+            :key="tab.value"
+            type="button"
+            role="tab"
+            :aria-selected="activeTab === tab.value"
+            :aria-controls="`merchant-panel-${tab.value}`"
+            :class="{ active: activeTab === tab.value }"
+            @click="activeTab = tab.value"
+          >
+            <span class="service-tab-icon"><component :is="tab.icon" :size="18" :stroke-width="1.8" aria-hidden="true" /></span>
+            <span class="service-tab-copy">
+              <strong>{{ tab.label }}</strong>
+              <small>{{ tab.description }}</small>
+            </span>
+          </button>
+        </nav>
+        <p class="active-tab-note">{{ activeTabMeta.note }}</p>
 
-        <div v-if="activeTab === 'service'" class="panel-body">
+        <div
+          v-if="activeTab === 'service'"
+          id="merchant-panel-service"
+          class="panel-body"
+          role="tabpanel"
+          aria-labelledby="merchant-tab-service"
+          tabindex="0"
+        >
           <div class="service-grid">
             <div class="config-panel">
               <div class="panel-title-row">
                 <div>
-                  <h2 class="panel-title">选择服务</h2>
-                  <p class="panel-subtitle">先选商品，再选套餐与天数。士多甄选按池管理：进入“全部”的分类共享 4 个甄选名额，入站与卡券各自拥有独立的 6 个甄选名额；士多优选按分类独立管理，入站与卡券为 6 个，其余分类为 4 个。付费服务会绑定下单时的所属分类，管理员手动设置的非有偿置顶不受这条规则影响，也不占用这些付费名额。</p>
+                  <p class="panel-eyebrow">开通设置</p>
+                  <h2 class="panel-title">选择物品与推广方案</h2>
+                  <p class="panel-subtitle">先选择需要推广的已上架物品，再根据对应分类的可用名额选择服务与周期。</p>
                 </div>
                 <button class="ghost-btn" :disabled="optionsLoading" @click="loadOptions">
+                  <RefreshCw :size="16" aria-hidden="true" />
                   {{ optionsLoading ? '刷新中...' : '刷新额度' }}
                 </button>
               </div>
 
-              <div class="field-block">
-                <label class="field-label">要置顶的物品</label>
+              <div class="field-block product-field">
+                <label class="field-label">要推广的物品</label>
                 <AppSelect
                   v-model="selectedProductId"
                   full-width
                   :options="productOptions"
                   :disabled="showPackageLoading"
-                  :placeholder="showPackageLoading ? '正在加载可置顶物品...' : '请选择自己已上架的物品'"
+                  :placeholder="showPackageLoading ? '正在加载可推广物品...' : '请选择自己已上架的物品'"
                   @change="handleProductChange"
                 />
-                <p class="field-hint">只展示你自己发布且当前处于已上架状态的物品。</p>
+                <p class="field-hint">仅展示由你发布、当前已上架且符合服务条件的物品。</p>
               </div>
 
               <div class="package-grid">
@@ -107,69 +139,67 @@
                 </template>
 
                 <div v-else class="package-empty-state">
-                  <strong>当前暂无可用套餐</strong>
-                  <p>可能是额度已满或服务暂未开放，可稍后点击“刷新额度”再试。</p>
+                  <strong>当前暂无可用方案</strong>
+                  <p>可能是名额已满或服务暂未开放，可稍后刷新名额再试。</p>
                 </div>
               </div>
 
               <button class="submit-btn" :disabled="showPackageLoading || !canSubmit || submitting" @click="submitOrder">
-                {{ submitting ? '创建订单中...' : showPackageLoading ? '套餐加载中...' : '确认提交' }}
+                {{ submitting ? '创建订单中...' : showPackageLoading ? '方案加载中...' : '确认开通并支付' }}
               </button>
             </div>
 
             <aside class="summary-panel">
-              <h2 class="panel-title">服务说明</h2>
+              <div class="summary-heading">
+                <p class="panel-eyebrow">订单摘要</p>
+                <h2 class="panel-title">确认本次推广</h2>
+              </div>
+              <div class="summary-card purchase-summary">
+                <div class="summary-line">
+                  <span>已选物品</span>
+                  <strong>{{ selectedProduct?.name || '尚未选择' }}</strong>
+                </div>
+                <div class="summary-line">
+                  <span>推广服务</span>
+                  <strong>{{ selectedConfig?.groupName || '尚未选择' }}</strong>
+                </div>
+                <div class="summary-line">
+                  <span>服务周期</span>
+                  <strong>{{ selectedConfig ? `${selectedConfig.durationDays} 天` : '尚未选择' }}</strong>
+                </div>
+                <div class="summary-line summary-line--price">
+                  <span>应付积分</span>
+                  <strong>{{ selectedConfig ? `${Number(selectedConfig.price || 0).toFixed(2)} LDC` : '—' }}</strong>
+                </div>
+              </div>
+
               <div class="summary-card summary-card--intro">
                 <div class="summary-intro">
                   <span class="summary-kicker">服务权益</span>
-                  <strong>置顶曝光之外，还有专属卡片效果和铭牌</strong>
-                  <p>根据你的推广目标选择合适的套餐，页面会同步展示对应的尊享标识和视觉强化。</p>
+                  <strong>优先展示与专属标识同步生效</strong>
+                  <p>根据推广目标选择方案，物品将获得对应展示位置、卡片效果和服务铭牌。</p>
                 </div>
                 <div class="summary-points">
                   <div class="summary-point">
                     <span class="summary-point-index">01</span>
-                    <div class="summary-point-copy">
-                      <strong>优先展示，获得更多曝光</strong>
-                      <p>置顶服务生效后，物品会展示在对应的置顶位，更容易被买家看到、点击和咨询。</p>
-                    </div>
+                    <div class="summary-point-copy"><strong>增加物品曝光</strong><p>在对应置顶位优先展示，更容易被买家看到。</p></div>
                   </div>
                   <div class="summary-point">
                     <span class="summary-point-index">02</span>
-                    <div class="summary-point-copy">
-                      <strong>专属铭牌，提升辨识度</strong>
-                      <p>付费士多甄选显示“士多甄选”，付费士多优选显示“士多优选”，并附带额外的物品卡片效果；管理员非有偿置顶仅保留排序能力，不附带专属样式。</p>
-                    </div>
+                    <div class="summary-point-copy"><strong>强化物品辨识度</strong><p>付费服务附带“士多甄选”或“士多优选”铭牌与卡片效果。</p></div>
                   </div>
                   <div class="summary-point">
                     <span class="summary-point-index">03</span>
-                    <div class="summary-point-copy">
-                      <strong>支付成功立即生效</strong>
-                      <p>请根据预算和推广周期选择套餐与时长。订单支付成功后立即生效，到期自动失效；若中途把物品切到其他分类，付费服务会暂停，切回开通分类后恢复。</p>
-                    </div>
+                    <div class="summary-point-copy"><strong>支付后自动生效</strong><p>到期自动释放位置，并通过系统消息提醒你。</p></div>
                   </div>
                 </div>
               </div>
-              <div class="summary-card">
-                <div class="summary-line">
-                  <span>已选商品</span>
-                  <strong>{{ selectedProduct?.name || '未选择' }}</strong>
-                </div>
-                <div class="summary-line">
-                  <span>套餐</span>
-                  <strong>{{ selectedConfig?.groupName || '未选择' }}</strong>
-                </div>
-                <div class="summary-line">
-                  <span>天数</span>
-                  <strong>{{ selectedConfig ? `${selectedConfig.durationDays} 天` : '未选择' }}</strong>
-                </div>
-                <div class="summary-line">
-                  <span>价格</span>
-                  <strong>{{ selectedConfig ? `${Number(selectedConfig.price || 0).toFixed(2)} LDC` : '-' }}</strong>
-                </div>
-              </div>
 
-              <div class="notice-card">
-                <h3>购买须知</h3>
+              <details class="notice-card">
+                <summary>
+                  <span><CircleHelp :size="17" aria-hidden="true" /> 购买与名额规则</span>
+                  <small>展开查看</small>
+                </summary>
                 <ul>
                   <li>为保证服务质量，付费置顶套餐名额有限。</li>
                   <li>士多甄选会优先展示在对应甄选位中；进入“全部”的分类共用 4 个共享甄选名额，入站与卡券各自拥有 6 个独立甄选名额。</li>
@@ -183,14 +213,14 @@
                   <li>管理员手动设置的非有偿置顶不占用付费名额，会排在付费置顶之后、普通物品之前。</li>
                   <li class="notice-card-highlight">「士多优选」支持包年服务，如有需要请联系管理员。</li>
                 </ul>
-              </div>
+              </details>
 
               <div
                 v-if="selectedProduct?.currentTopOrder"
                 class="current-top-card"
                 :class="{ 'current-top-card--warning': isCurrentTopOrderSuspended(selectedProduct.currentTopOrder) }"
               >
-                <h3>当前状态</h3>
+                <h3>当前服务状态</h3>
                 <p>该物品已存在 {{ selectedProduct.currentTopOrder.packageName }} 订单。</p>
                 <p>订单状态：{{ getOrderStatusText(selectedProduct.currentTopOrder.status) }}</p>
                 <p v-if="selectedProduct.currentTopOrder.categoryBindingApplies">开通分类：{{ selectedProduct.currentTopOrder.boundCategoryName || '未分类' }}</p>
@@ -205,12 +235,20 @@
           </div>
         </div>
 
-        <div v-else-if="activeTab === 'board'" class="panel-body">
+        <div
+          v-else-if="activeTab === 'board'"
+          id="merchant-panel-board"
+          class="panel-body"
+          role="tabpanel"
+          aria-labelledby="merchant-tab-board"
+          tabindex="0"
+        >
           <div class="board-panel">
             <div class="board-toolbar">
               <div>
+                <p class="panel-eyebrow">容量与占用</p>
                 <h2 class="panel-title">名额看板</h2>
-                <p class="panel-subtitle">查看各个甄选池与优选池的真实剩余名额。上方名额已包含待支付占位；若付费置顶切换到了非开通分类，它仍占用原名额，但不会出现在下方“生效服务”列表中。</p>
+                <p class="panel-subtitle">查看各甄选池与优选池的实时余量、占用情况及预计释放时间。</p>
               </div>
               <div class="board-actions">
                 <div class="board-filter-select">
@@ -223,6 +261,7 @@
                   />
                 </div>
                 <button class="ghost-btn" :disabled="quotaBoardLoading" @click="loadQuotaBoard">
+                  <RefreshCw :size="16" aria-hidden="true" />
                   {{ quotaBoardLoading ? '刷新中...' : '刷新看板' }}
                 </button>
               </div>
@@ -450,79 +489,83 @@
           </div>
         </div>
 
-        <div v-else-if="activeTab === 'orders'" class="panel-body">
-          <div class="orders-toolbar">
-            <AppSelect v-model="orderFilterStatus" :options="orderStatusOptions" placeholder="全部状态" @change="loadOrders(1)" />
-            <button class="ghost-btn" :disabled="ordersLoading" @click="loadOrders(1)">
-              {{ ordersLoading ? '刷新中...' : '刷新订单' }}
-            </button>
-          </div>
-
-          <div class="orders-list">
-            <article v-for="order in orders" :key="order.id" class="order-card">
-              <div class="order-head">
-                <div>
-                  <h3>{{ order.productName }}</h3>
-                  <p>{{ order.orderNo }}</p>
-                </div>
-                <span class="order-status" :class="order.status">{{ getOrderStatusText(order.status) }}</span>
+        <div
+          v-else-if="activeTab === 'orders'"
+          id="merchant-panel-orders"
+          class="panel-body"
+          role="tabpanel"
+          aria-labelledby="merchant-tab-orders"
+          tabindex="0"
+        >
+          <div class="orders-panel">
+            <div class="orders-toolbar">
+              <div>
+                <p class="panel-eyebrow">购买记录</p>
+                <h2 class="panel-title">推广服务订单</h2>
+                <p class="panel-subtitle">查看支付、生效与到期状态，待支付订单可在这里继续处理。</p>
               </div>
-
-              <div class="order-meta-grid">
-                <div>
-                  <span>套餐</span>
-                  <strong>{{ order.packageName }}</strong>
-                </div>
-                <div>
-                  <span>时长</span>
-                  <strong>{{ order.durationDays ? `${order.durationDays} 天` : '永久置顶' }}</strong>
-                </div>
-                <div>
-                  <span>金额</span>
-                  <strong>{{ Number(order.amount || 0).toFixed(2) }} LDC</strong>
-                </div>
-                <div>
-                  <span>创建时间</span>
-                  <strong>{{ order.createdAt || '-' }}</strong>
-                </div>
-                <div>
-                  <span>生效时间</span>
-                  <strong>{{ order.effectiveAt || '待支付成功' }}</strong>
-                </div>
-                <div>
-                  <span>到期时间</span>
-                  <strong>{{ order.expiredAt || '永久置顶' }}</strong>
-                </div>
-                <div v-if="order.categoryBindingApplies">
-                  <span>开通分类</span>
-                  <strong>{{ order.boundCategoryName || '未分类' }}</strong>
-                </div>
-                <div v-if="order.categoryBindingApplies">
-                  <span>当前分类</span>
-                  <strong>{{ order.currentCategoryName || order.boundCategoryName || '未分类' }}</strong>
-                </div>
-                <div>
-                  <span>展示状态</span>
-                  <strong :class="{ 'order-meta-warning': order.isSuspendedForCategory }">{{ getTopEffectivenessText(order) }}</strong>
-                </div>
-              </div>
-              <p v-if="getTopOrderBindingHint(order)" :class="['order-binding-hint', { 'order-binding-hint--warning': order.isSuspendedForCategory }]">
-                {{ getTopOrderBindingHint(order) }}
-              </p>
-
-              <div class="order-actions">
-                <button v-if="order.status === 'pending'" class="action-btn primary" @click="repayOrder(order)">
-                  继续支付
-                </button>
-                <button v-if="order.status === 'pending'" class="action-btn" @click="refreshOrder(order)">
-                  刷新状态
+              <div class="orders-actions">
+                <div class="orders-filter"><AppSelect v-model="orderFilterStatus" full-width :options="orderStatusOptions" placeholder="全部状态" @change="loadOrders(1)" /></div>
+                <button class="ghost-btn" :disabled="ordersLoading" @click="loadOrders(1)">
+                  <RefreshCw :size="16" aria-hidden="true" />
+                  {{ ordersLoading ? '刷新中...' : '刷新订单' }}
                 </button>
               </div>
-            </article>
-
-            <div v-if="!ordersLoading && !orders.length" class="empty-state">
-              暂无置顶服务订单
             </div>
+
+            <div v-if="ordersLoading && !orders.length" class="empty-state orders-loading-state" role="status">
+              <RefreshCw :size="20" aria-hidden="true" /> 正在读取推广订单…
+            </div>
+            <div v-else-if="!orders.length" class="empty-state">
+              <ReceiptText :size="28" aria-hidden="true" />
+              <strong>暂无推广服务订单</strong>
+              <span>开通服务后，订单记录会显示在这里。</span>
+            </div>
+            <template v-else>
+              <div class="orders-table-wrap">
+                <table class="orders-table">
+                  <caption>推广服务订单列表</caption>
+                  <thead><tr><th scope="col">订单与物品</th><th scope="col">服务方案</th><th scope="col">金额与时间</th><th scope="col">状态</th><th scope="col">有效期</th><th scope="col">操作</th></tr></thead>
+                  <tbody>
+                    <tr v-for="order in orders" :key="`desktop-${order.id}`">
+                      <td><strong class="table-product" :title="order.productName">{{ order.productName }}</strong><span class="table-order-no" :title="order.orderNo">{{ order.orderNo }}</span></td>
+                      <td><strong>{{ order.packageName }}</strong><span>{{ order.durationDays ? `${order.durationDays} 天` : '永久置顶' }}</span></td>
+                      <td><strong class="table-amount">{{ Number(order.amount || 0).toFixed(2) }} LDC</strong><span>{{ order.createdAt || '—' }}</span></td>
+                      <td><SellerStatusBadge :label="getOrderStatusText(order.status)" :tone="getOrderStatusTone(order.status)" /><span :class="{ 'order-meta-warning': order.isSuspendedForCategory }">{{ getTopEffectivenessText(order) }}</span></td>
+                      <td><span>生效 {{ order.effectiveAt || '待支付' }}</span><span>到期 {{ order.expiredAt || '永久' }}</span></td>
+                      <td>
+                        <div v-if="order.status === 'pending'" class="table-actions">
+                          <button class="action-btn primary" @click="repayOrder(order)">继续支付</button>
+                          <button class="action-btn" @click="refreshOrder(order)">刷新</button>
+                        </div>
+                        <span v-else class="table-no-action">—</span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="orders-mobile-list">
+                <article v-for="order in orders" :key="`mobile-${order.id}`" class="order-card">
+                  <div class="order-head">
+                    <div><h3>{{ order.productName }}</h3><p :title="order.orderNo">{{ order.orderNo }}</p></div>
+                    <SellerStatusBadge :label="getOrderStatusText(order.status)" :tone="getOrderStatusTone(order.status)" />
+                  </div>
+                  <div class="order-meta-grid">
+                    <div><span>服务方案</span><strong>{{ order.packageName }} · {{ order.durationDays ? `${order.durationDays} 天` : '永久' }}</strong></div>
+                    <div><span>支付金额</span><strong>{{ Number(order.amount || 0).toFixed(2) }} LDC</strong></div>
+                    <div><span>创建时间</span><strong>{{ order.createdAt || '—' }}</strong></div>
+                    <div><span>到期时间</span><strong>{{ order.expiredAt || '永久置顶' }}</strong></div>
+                    <div class="order-meta-wide"><span>展示状态</span><strong :class="{ 'order-meta-warning': order.isSuspendedForCategory }">{{ getTopEffectivenessText(order) }}</strong></div>
+                  </div>
+                  <p v-if="getTopOrderBindingHint(order)" :class="['order-binding-hint', { 'order-binding-hint--warning': order.isSuspendedForCategory }]">{{ getTopOrderBindingHint(order) }}</p>
+                  <div v-if="order.status === 'pending'" class="order-actions">
+                    <button class="action-btn primary" @click="repayOrder(order)">继续支付</button>
+                    <button class="action-btn" @click="refreshOrder(order)">刷新状态</button>
+                  </div>
+                </article>
+              </div>
+            </template>
           </div>
         </div>
       </section>
@@ -533,8 +576,9 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import LiquidTabs from '@/components/common/LiquidTabs.vue'
 import AppSelect from '@/components/common/AppSelect.vue'
+import SellerStatusBadge from '@/components/seller/SellerStatusBadge.vue'
+import { ArrowRight, CircleHelp, LayoutGrid, Megaphone, ReceiptText, RefreshCw } from '@lucide/vue'
 import { api } from '@/utils/api'
 import { useToast } from '@/composables/useToast'
 import { useDialog } from '@/composables/useDialog'
@@ -546,9 +590,9 @@ const toast = useToast()
 const dialog = useDialog()
 
 const tabs = [
-  { value: 'service', label: '置顶服务' },
-  { value: 'board', label: '名额看板' },
-  { value: 'orders', label: '我的订单' }
+  { value: 'service', label: '置顶服务', description: '选择物品并开通推广', note: '按物品所属分类显示可购买方案，选择后可直接发起支付。', icon: Megaphone },
+  { value: 'board', label: '名额看板', description: '查看实时余量与占用', note: '名额包含待支付占位；分类变更导致暂停的服务仍会占用原分类名额。', icon: LayoutGrid },
+  { value: 'orders', label: '购买记录', description: '跟踪支付与生效状态', note: '推广订单独立于商品订单，可在这里继续支付或刷新服务状态。', icon: ReceiptText }
 ]
 
 function normalizeMerchantTab(value = '') {
@@ -556,6 +600,7 @@ function normalizeMerchantTab(value = '') {
 }
 
 const activeTab = ref(normalizeMerchantTab(route.query.tab))
+const activeTabMeta = computed(() => tabs.find((tab) => tab.value === activeTab.value) || tabs[0])
 const optionsLoading = ref(false)
 const submitting = ref(false)
 const packages = ref([])
@@ -576,6 +621,21 @@ const selectedPackageType = ref('')
 const selectedDurationDays = ref(0)
 const orderFilterStatus = ref('')
 const quotaBoardCategoryId = ref('all')
+
+const serviceMetrics = computed(() => {
+  const currentOrders = products.value.map((item) => item.currentTopOrder).filter(Boolean)
+  const activeCount = currentOrders.filter((order) => order.status === 'active').length
+  const pendingCount = currentOrders.filter((order) => order.status === 'pending').length
+  const enabledOptions = packages.value.reduce((count, group) => (
+    count + (Array.isArray(group.options) ? group.options.filter((option) => option.isEnabled).length : 0)
+  ), 0)
+  return [
+    { label: '可推广物品', value: String(products.value.length), hint: '当前已上架' },
+    { label: '生效服务', value: String(activeCount), hint: '正在获得曝光' },
+    { label: '待支付', value: String(pendingCount), hint: '仍在占用名额' },
+    { label: '可选方案', value: String(enabledOptions), hint: '按服务与周期计' }
+  ]
+})
 
 const orderStatusOptions = [
   { value: '', label: '全部状态' },
@@ -802,6 +862,15 @@ function getOrderStatusText(status = '') {
     expired: '已过期',
     cancelled: '已取消'
   }[status] || status
+}
+
+function getOrderStatusTone(status = '') {
+  return {
+    pending: 'warning',
+    active: 'success',
+    expired: 'neutral',
+    cancelled: 'neutral'
+  }[status] || 'neutral'
 }
 
 function isCurrentTopOrderSuspended(order = null) {
@@ -2671,5 +2740,834 @@ onMounted(async () => {
   .order-meta-grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* Seller workspace refresh: a quiet ledger surface with a compact mobile hierarchy. */
+.merchant-services-page {
+  min-height: auto;
+  padding: 0;
+  color-scheme: inherit;
+  --services-panel-border: var(--seller-border);
+  --services-panel-bg: var(--seller-surface);
+  --services-panel-shadow: var(--seller-shadow-sm);
+  --services-card-border: var(--seller-border);
+  --services-card-bg: var(--seller-surface);
+  --services-card-bg-strong: var(--seller-surface-strong);
+  --services-card-shadow: var(--seller-shadow-sm);
+  --services-title: var(--seller-ink);
+  --services-title-strong: var(--seller-ink);
+  --services-copy-strong: var(--seller-muted);
+  --services-copy: var(--seller-muted);
+  --services-accent: var(--seller-jade-strong);
+  --services-accent-strong: var(--seller-jade);
+  --services-accent-deep: var(--seller-jade-strong);
+  --services-success-bg: color-mix(in srgb, var(--seller-success) 13%, var(--seller-surface));
+  --services-success-text: var(--seller-success);
+  --services-muted-chip-bg: var(--seller-surface-soft);
+  --services-muted-chip-text: var(--seller-muted);
+  --services-category-chip-bg: var(--seller-jade-soft);
+  --services-category-chip-text: var(--seller-jade-strong);
+  --services-category-type-bg: var(--seller-jade-soft);
+  --services-category-type-text: var(--seller-jade-strong);
+  --services-accent-soft: var(--seller-jade-soft);
+  --services-accent-soft-strong: color-mix(in srgb, var(--seller-jade) 18%, var(--seller-surface));
+  --services-accent-border: color-mix(in srgb, var(--seller-jade) 48%, var(--seller-border));
+  --services-accent-border-soft: color-mix(in srgb, var(--seller-jade) 24%, var(--seller-border));
+  --services-accent-shadow: color-mix(in srgb, var(--seller-jade) 18%, transparent);
+  --services-badge-bg: var(--seller-navy);
+  --services-badge-color: #f4f1e8;
+  --services-btn-bg: var(--seller-navy);
+  --services-btn-shadow: 0 8px 20px color-mix(in srgb, var(--seller-navy) 22%, transparent);
+  --services-hover-border: var(--seller-jade);
+  --services-hover-shadow: 0 10px 24px color-mix(in srgb, var(--seller-ink) 8%, transparent);
+  --services-muted-bg: var(--seller-surface-muted);
+  --services-muted-border: var(--seller-border);
+  --services-highlight-bg: var(--seller-jade-soft);
+  --services-highlight-shadow: var(--seller-shadow-sm);
+  --services-highlight-overlay: none;
+  --app-select-trigger-border: var(--seller-border);
+  --app-select-trigger-bg: var(--seller-surface-strong);
+  --app-select-trigger-shadow: none;
+  --app-select-trigger-hover-border: var(--seller-jade);
+  --app-select-trigger-hover-shadow: 0 0 0 3px color-mix(in srgb, var(--seller-jade) 14%, transparent);
+  --app-select-panel-border: var(--seller-border);
+  --app-select-panel-bg: var(--seller-surface-strong);
+  --app-select-panel-shadow: var(--seller-shadow-md);
+  --app-select-option-divider: var(--seller-border);
+  --app-select-option-hover-bg: var(--seller-jade-soft);
+}
+
+:global(html.dark .merchant-services-page) {
+  --services-panel-border: var(--seller-border);
+  --services-panel-bg: var(--seller-surface);
+  --services-panel-shadow: var(--seller-shadow-sm);
+  --services-card-border: var(--seller-border);
+  --services-card-bg: var(--seller-surface);
+  --services-card-bg-strong: var(--seller-surface-strong);
+  --services-card-shadow: var(--seller-shadow-sm);
+  --services-title: var(--seller-ink);
+  --services-title-strong: var(--seller-ink);
+  --services-copy-strong: var(--seller-muted);
+  --services-copy: var(--seller-muted);
+  --services-accent: var(--seller-jade-strong);
+  --services-accent-strong: var(--seller-jade);
+  --services-accent-deep: var(--seller-jade-strong);
+  --services-muted-bg: var(--seller-surface-muted);
+  --services-muted-border: var(--seller-border);
+  --services-highlight-bg: var(--seller-jade-soft);
+  --services-highlight-shadow: var(--seller-shadow-sm);
+  --services-highlight-overlay: none;
+  --services-btn-bg: var(--seller-navy-soft);
+  --services-btn-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  --services-hover-border: var(--seller-jade);
+  --services-hover-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
+  --services-badge-bg: var(--seller-navy);
+  --app-select-trigger-border: var(--seller-border);
+  --app-select-trigger-bg: var(--seller-surface-strong);
+  --app-select-trigger-shadow: none;
+  --app-select-trigger-hover-border: var(--seller-jade);
+  --app-select-trigger-hover-shadow: 0 0 0 3px color-mix(in srgb, var(--seller-jade) 14%, transparent);
+  --app-select-panel-border: var(--seller-border);
+  --app-select-panel-bg: var(--seller-surface-strong);
+  --app-select-panel-shadow: var(--seller-shadow-md);
+  --app-select-option-divider: var(--seller-border);
+  --app-select-option-hover-bg: var(--seller-jade-soft);
+}
+
+.page-shell {
+  width: 100%;
+  max-width: none;
+  gap: 18px;
+}
+
+.service-overview {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(440px, 0.8fr);
+  gap: 28px;
+  overflow: hidden;
+  padding: 26px 28px 26px 32px;
+  border: 1px solid var(--seller-border);
+  border-radius: 14px;
+  background: var(--seller-surface);
+  box-shadow: var(--seller-shadow-sm);
+}
+
+.service-overview::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: var(--seller-jade);
+}
+
+.service-overview-copy {
+  min-width: 0;
+  align-self: center;
+}
+
+.hero-eyebrow,
+.panel-eyebrow {
+  margin: 0 0 7px;
+  color: var(--seller-jade-strong);
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.14em;
+}
+
+.hero-title {
+  max-width: 650px;
+  color: var(--seller-ink);
+  font-family: "Noto Serif SC", "Source Han Serif SC", "Songti SC", STSong, serif;
+  font-size: clamp(24px, 2.5vw, 34px);
+  font-weight: 600;
+  line-height: 1.28;
+}
+
+.hero-desc {
+  max-width: 700px;
+  margin-top: 10px;
+  color: var(--seller-muted);
+  font-size: 14px;
+  line-height: 1.75;
+}
+
+.overview-link {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 12px;
+  color: var(--seller-jade-strong);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.overview-link:hover { color: var(--seller-ink); }
+
+.service-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid var(--seller-border);
+  border-radius: 12px;
+  background: var(--seller-border);
+}
+
+.service-metric {
+  min-width: 0;
+  padding: 16px 18px;
+  background: var(--seller-surface-muted);
+}
+
+.service-metric dt {
+  color: var(--seller-muted);
+  font-size: 12px;
+}
+
+.service-metric dd {
+  margin: 6px 0 2px;
+  color: var(--seller-ink);
+  font: 650 25px/1.1 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.service-metric small {
+  display: block;
+  overflow: hidden;
+  color: var(--seller-muted);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.content-card {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.service-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  padding: 7px;
+  border: 1px solid var(--seller-border);
+  border-radius: 14px;
+  background: var(--seller-surface-soft);
+}
+
+.service-tabs > button {
+  min-width: 0;
+  min-height: 64px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 10px 13px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  color: var(--seller-muted);
+  text-align: left;
+  transition: color 180ms ease, border-color 180ms ease, background 180ms ease, box-shadow 180ms ease;
+}
+
+.service-tabs > button:hover {
+  color: var(--seller-ink);
+  background: color-mix(in srgb, var(--seller-surface) 70%, transparent);
+}
+
+.service-tabs > button.active {
+  color: var(--seller-ink);
+  border-color: var(--seller-border);
+  background: var(--seller-surface);
+  box-shadow: var(--seller-shadow-sm), inset 3px 0 0 var(--seller-jade);
+}
+
+.service-tab-icon {
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  color: var(--seller-jade-strong);
+  background: var(--seller-jade-soft);
+}
+
+.service-tab-copy {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.service-tab-copy strong {
+  color: inherit;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.service-tab-copy small {
+  overflow: hidden;
+  color: var(--seller-muted);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.active-tab-note {
+  margin: 9px 2px 0;
+  color: var(--seller-muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.panel-body {
+  margin-top: 16px;
+  outline: none;
+}
+
+.service-grid {
+  grid-template-columns: minmax(0, 2fr) minmax(320px, 0.86fr);
+  gap: 18px;
+}
+
+.config-panel,
+.board-panel,
+.orders-panel {
+  padding: 24px;
+  border: 1px solid var(--seller-border);
+  border-radius: 14px;
+  background: var(--seller-surface);
+  box-shadow: var(--seller-shadow-sm);
+}
+
+.config-panel { gap: 20px; }
+
+.summary-panel {
+  position: sticky;
+  top: 94px;
+  gap: 12px;
+}
+
+.summary-heading { padding: 2px 2px 0; }
+
+.panel-title {
+  color: var(--seller-ink);
+  font-family: "Noto Serif SC", "Source Han Serif SC", "Songti SC", STSong, serif;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.panel-subtitle,
+.field-hint {
+  color: var(--seller-muted);
+}
+
+.product-field {
+  padding: 16px;
+  border: 1px solid var(--seller-border);
+  border-radius: 12px;
+  background: var(--seller-surface-muted);
+}
+
+.package-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
+}
+
+.package-card,
+.summary-card,
+.notice-card,
+.current-top-card,
+.order-card,
+.board-summary-card,
+.category-quota-card,
+.active-service-card {
+  border-radius: 12px;
+  box-shadow: none;
+}
+
+.package-card {
+  min-width: 0;
+  padding: 17px;
+}
+
+.package-card:not(.disabled):has(.duration-btn.active) {
+  border-color: var(--seller-jade);
+  box-shadow: inset 0 0 0 1px var(--seller-jade);
+}
+
+.package-desc {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+}
+
+.package-quota-line {
+  border-radius: 9px;
+  background: var(--seller-surface-muted);
+}
+
+.duration-btn {
+  min-height: 46px;
+  border-radius: 10px;
+  padding: 11px 13px;
+  box-shadow: none;
+}
+
+.duration-btn:hover:not(:disabled),
+.duration-btn.active {
+  transform: none;
+  border-color: var(--seller-jade);
+  box-shadow: inset 0 0 0 1px var(--seller-jade);
+}
+
+.duration-btn.active {
+  background: var(--seller-jade-soft);
+}
+
+.duration-price,
+.table-amount {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.submit-btn,
+.ghost-btn,
+.action-btn {
+  min-height: 44px;
+  border-radius: 10px;
+}
+
+.submit-btn {
+  justify-self: end;
+  min-width: 190px;
+  padding: 0 20px;
+  background: var(--seller-navy);
+}
+
+:global(html.dark .merchant-services-page .submit-btn),
+:global(html.dark .merchant-services-page .action-btn.primary) {
+  color: #f4f1e8;
+}
+
+.ghost-btn,
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 14px;
+}
+
+.ghost-btn:hover,
+.action-btn:hover { border-color: var(--seller-jade); }
+
+.purchase-summary {
+  overflow: hidden;
+  border-left: 4px solid var(--seller-jade);
+}
+
+.summary-line--price {
+  margin: 4px -2px -2px;
+  padding: 14px 2px 4px;
+  border-top: 1px solid var(--seller-border);
+  border-bottom: 0;
+}
+
+.summary-line--price strong {
+  color: var(--seller-ink);
+  font: 700 17px/1 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.summary-card--intro {
+  border-color: var(--seller-border);
+  background: var(--seller-surface);
+}
+
+.summary-point-index {
+  color: var(--seller-jade-strong);
+  background: var(--seller-jade-soft);
+  box-shadow: none;
+}
+
+.notice-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+.notice-card summary {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 16px;
+  color: var(--seller-ink);
+  cursor: pointer;
+  list-style: none;
+}
+
+.notice-card summary::-webkit-details-marker { display: none; }
+.notice-card summary span { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; }
+.notice-card summary small { color: var(--seller-muted); font-size: 11px; }
+.notice-card[open] summary { border-bottom: 1px solid var(--seller-border); }
+.notice-card[open] summary small { font-size: 0; }
+.notice-card[open] summary small::after { content: '收起'; font-size: 11px; }
+.notice-card ul { padding: 4px 18px 16px 34px; }
+
+.board-panel { gap: 20px; }
+.board-actions { align-items: stretch; }
+.board-filter-select { min-width: 300px; }
+
+.board-summary-grid {
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 12px;
+}
+
+.board-summary-card,
+.active-service-card { padding: 17px; }
+
+.board-summary-card--global,
+.board-summary-card--special,
+.board-summary-card--focus,
+.category-quota-card--all {
+  background: var(--seller-surface-muted);
+}
+
+.board-summary-card--global { border-left: 4px solid var(--seller-jade); }
+.board-summary-card--special { border-color: var(--seller-border); }
+
+.board-summary-value {
+  color: var(--seller-ink);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: clamp(26px, 3vw, 34px);
+  font-variant-numeric: tabular-nums;
+}
+
+.board-summary-meta span,
+.category-quota-meta span {
+  border: 1px solid var(--seller-border);
+  border-radius: 7px;
+  color: var(--seller-muted);
+  background: var(--seller-surface);
+}
+
+.category-quota-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.category-quota-card {
+  border-color: var(--seller-border);
+  background: var(--seller-surface);
+}
+
+.category-quota-card:hover,
+.category-quota-card.active {
+  transform: none;
+  border-color: var(--seller-jade);
+  box-shadow: inset 0 0 0 1px var(--seller-jade);
+}
+
+.category-quota-card.active { background: var(--seller-jade-soft); }
+.category-quota-icon { width: 8px; height: 8px; border-radius: 50%; background: var(--seller-jade); }
+
+.category-quota-stat {
+  border-radius: 9px;
+  background: var(--seller-surface-muted);
+}
+
+.board-list-panel {
+  padding-top: 20px;
+  border-top: 1px solid var(--seller-border);
+}
+
+.active-service-card {
+  border-left: 3px solid var(--seller-jade);
+  background: var(--seller-surface-strong);
+}
+
+.orders-panel { min-width: 0; }
+.orders-toolbar { align-items: flex-end; }
+
+.orders-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.orders-filter { width: 210px; }
+
+.orders-table-wrap {
+  margin-top: 20px;
+  overflow-x: auto;
+  border: 1px solid var(--seller-border);
+  border-radius: 12px;
+  background: var(--seller-surface);
+}
+
+.orders-table {
+  width: 100%;
+  min-width: 940px;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.orders-table caption {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.orders-table th {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--seller-border);
+  color: var(--seller-muted);
+  background: var(--seller-surface-muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-align: left;
+}
+
+.orders-table th:nth-child(1) { width: 23%; }
+.orders-table th:nth-child(2) { width: 14%; }
+.orders-table th:nth-child(3) { width: 17%; }
+.orders-table th:nth-child(4) { width: 16%; }
+.orders-table th:nth-child(5) { width: 19%; }
+.orders-table th:nth-child(6) { width: 11%; }
+
+.orders-table td {
+  padding: 15px 14px;
+  border-bottom: 1px solid var(--seller-border);
+  color: var(--seller-ink);
+  font-size: 13px;
+  line-height: 1.45;
+  vertical-align: top;
+}
+
+.orders-table tbody tr:last-child td { border-bottom: 0; }
+.orders-table tbody tr:hover { background: color-mix(in srgb, var(--seller-jade-soft) 45%, transparent); }
+.orders-table td > strong,
+.orders-table td > span { display: block; }
+.orders-table td > span { margin-top: 5px; color: var(--seller-muted); font-size: 11px; }
+
+.table-product,
+.table-order-no {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.table-order-no { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+
+.table-actions { display: grid; gap: 7px; }
+.table-actions .action-btn { min-height: 36px; padding: 0 10px; font-size: 12px; }
+.table-no-action { text-align: center; }
+.orders-mobile-list { display: none; }
+
+.empty-state {
+  min-height: 220px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 18px;
+  border: 1px dashed var(--seller-border);
+  border-radius: 12px;
+  background: var(--seller-surface-muted);
+}
+
+.empty-state strong { color: var(--seller-ink); font-size: 15px; }
+.empty-state span { color: var(--seller-muted); font-size: 12px; }
+.orders-loading-state svg { animation: merchant-services-spin 900ms linear infinite; }
+
+.service-tabs > button:focus-visible,
+.overview-link:focus-visible,
+.ghost-btn:focus-visible,
+.submit-btn:focus-visible,
+.action-btn:focus-visible,
+.duration-btn:focus-visible,
+.category-quota-card:focus-visible,
+.notice-card summary:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--seller-jade) 65%, transparent);
+  outline-offset: 2px;
+}
+
+@keyframes merchant-services-spin { to { transform: rotate(360deg); } }
+
+@media (max-width: 1180px) {
+  .service-overview { grid-template-columns: minmax(0, 1fr) minmax(380px, 0.75fr); }
+  .service-grid { grid-template-columns: minmax(0, 1.45fr) minmax(300px, 0.72fr); }
+  .package-grid { grid-template-columns: 1fr; }
+  .category-quota-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 900px) {
+  .service-overview { grid-template-columns: 1fr; gap: 18px; }
+  .service-metrics { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .service-grid { grid-template-columns: 1fr; }
+  .summary-panel { position: static; }
+  .service-tab-copy small { display: none; }
+  .service-tabs > button { min-height: 54px; }
+  .active-tab-note { margin-top: 8px; }
+  .category-quota-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 767px) {
+  .page-shell { width: 100%; gap: 14px; }
+
+  .service-overview {
+    gap: 16px;
+    padding: 19px 17px 17px 20px;
+    border-radius: 12px;
+  }
+
+  .hero-title { font-size: clamp(22px, 6.5vw, 27px); }
+  .hero-desc { font-size: 13px; line-height: 1.65; }
+  .overview-link { margin-top: 8px; }
+
+  .service-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    border-radius: 10px;
+  }
+
+  .service-metric { padding: 12px; }
+  .service-metric dt { font-size: 11px; }
+  .service-metric dd { margin-top: 5px; font-size: 21px; }
+  .service-metric small { font-size: 10px; }
+
+  .service-tabs {
+    gap: 4px;
+    padding: 4px;
+    border-radius: 12px;
+  }
+
+  .service-tabs > button {
+    min-height: 52px;
+    justify-content: center;
+    gap: 6px;
+    padding: 7px 5px;
+    text-align: center;
+  }
+
+  .service-tabs > button.active { box-shadow: inset 0 -3px 0 var(--seller-jade); }
+  .service-tab-icon { width: 28px; height: 28px; flex-basis: 28px; border-radius: 8px; }
+  .service-tab-copy strong { font-size: 12px; white-space: nowrap; }
+  .active-tab-note { padding: 0 2px; font-size: 11px; }
+
+  .panel-body { margin-top: 13px; }
+
+  .config-panel,
+  .board-panel,
+  .orders-panel {
+    padding: 16px;
+    border-radius: 12px;
+  }
+
+  .config-panel,
+  .summary-panel,
+  .board-panel,
+  .board-loading,
+  .board-list-panel { gap: 13px; }
+
+  .panel-title-row,
+  .board-toolbar,
+  .board-list-head,
+  .orders-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .panel-title { font-size: 18px; }
+  .panel-subtitle { margin-top: 5px; line-height: 1.6; }
+  .ghost-btn { width: 100%; }
+  .product-field { padding: 13px; }
+  .package-grid { grid-template-columns: 1fr; }
+  .package-card { padding: 14px; }
+  .package-desc { -webkit-line-clamp: 3; }
+  .submit-btn { width: 100%; min-width: 0; justify-self: stretch; }
+
+  .summary-heading { margin-top: 3px; }
+  .summary-card,
+  .notice-card,
+  .current-top-card { border-radius: 11px; }
+
+  .board-actions,
+  .orders-actions {
+    width: 100%;
+    align-items: stretch;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .board-filter-select,
+  .orders-filter { width: 100%; min-width: 0; }
+
+  .board-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 9px;
+  }
+
+  .board-summary-card { min-width: 0; padding: 12px; }
+  .board-summary-card--focus { grid-column: 1 / -1; }
+  .board-summary-value { font-size: 23px; }
+  .board-summary-copy { font-size: 11px; line-height: 1.55; }
+  .board-summary-meta { gap: 5px; }
+  .board-summary-meta span { padding: 5px 7px; font-size: 10px; }
+
+  .category-quota-grid { grid-template-columns: 1fr; gap: 9px; }
+  .category-quota-card { padding: 13px; }
+  .category-quota-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .category-quota-stat { padding: 10px; }
+  .category-quota-meta span { padding: 5px 7px; font-size: 10px; }
+
+  .board-list-head { gap: 9px; }
+  .board-generated-at { width: fit-content; }
+  .active-service-head { grid-template-columns: minmax(0, 1fr) auto; }
+  .active-service-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+  .orders-table-wrap { display: none; }
+  .orders-mobile-list { display: grid; gap: 10px; margin-top: 14px; }
+  .order-card { padding: 14px; }
+  .order-head { grid-template-columns: minmax(0, 1fr) auto; }
+  .order-head h3,
+  .order-head p { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .order-meta-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .order-meta-wide { grid-column: 1 / -1; }
+  .order-actions .action-btn { flex: 1; }
+  .empty-state { min-height: 190px; margin-top: 14px; }
+}
+
+@media (max-width: 420px) {
+  .service-tabs > button { flex-direction: column; gap: 4px; min-height: 66px; }
+  .service-tab-icon { width: 26px; height: 26px; flex-basis: 26px; }
+  .service-metric { padding: 11px; }
+  .package-head { grid-template-columns: 1fr; }
+  .quota-pill { width: fit-content; }
+  .category-quota-head { grid-template-columns: minmax(0, 1fr) auto; }
+  .category-quota-stats,
+  .active-service-grid,
+  .order-meta-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .order-meta-wide { grid-column: 1 / -1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .service-tabs > button,
+  .duration-btn,
+  .category-quota-card { transition: none; }
+  .orders-loading-state svg { animation: none; }
 }
 </style>
