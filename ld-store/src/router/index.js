@@ -81,7 +81,7 @@ const routes = [
     path: '/user/favorites',
     name: 'MyFavorites',
     component: () => import('@/views/MyFavorites.vue'),
-    meta: { title: '我的收藏 - LD士多', requiresAuth: true }
+    meta: { title: '收藏与拉黑 - LD士多', requiresAuth: true }
   },
   {
     path: '/coupon/:token',

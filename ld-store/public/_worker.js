@@ -13,7 +13,7 @@ const STATIC_ROUTE_TITLES = [
   [/^\/buy-request\/[^/]+\/?$/, '求购详情 - LD士多'],
   [/^\/user\/?$/, '个人中心 - LD士多'],
   [/^\/user\/orders\/?$/, '我的订单 - LD士多'],
-  [/^\/user\/favorites\/?$/, '我的收藏 - LD士多'],
+  [/^\/user\/favorites\/?$/, '收藏与拉黑 - LD士多'],
   [/^\/user\/buy-orders\/[^/]+\/?$/, '求购订单详情 - LD士多'],
   [/^\/user\/products\/?$/, '我的商品 - LD士多'],
   [/^\/user\/buy-requests\/?$/, '我的求购 - LD士多'],

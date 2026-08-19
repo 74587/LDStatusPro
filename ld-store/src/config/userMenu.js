@@ -13,7 +13,7 @@ export function buildUserDropdownMenuGroups({ messageUnread = 0, sellerPendingDe
   return [
     [
       item('/user/messages', '💬', '我的消息', unread),
-      item('/user/favorites', '⭐', '我的收藏')
+      item('/user/favorites', '⭐', '收藏与拉黑')
     ],
     [
       item('/user/orders', '📋', '我的订单'),
