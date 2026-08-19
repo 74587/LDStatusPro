@@ -2902,13 +2902,13 @@ async function handleOpenStore() {
 }
 
 .report-select:hover {
-  border-color: color-mix(in srgb, var(--color-primary, #b91c1c) 35%, var(--border-light));
+  border-color: color-mix(in srgb, var(--color-primary, #C4612F) 35%, var(--border-light));
 }
 
 .report-select:focus {
   outline: none;
-  border-color: var(--color-primary, #b91c1c);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary, #b91c1c) 18%, transparent);
+  border-color: var(--color-primary, #C4612F);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary, #C4612F) 18%, transparent);
 }
 
 .report-textarea {
@@ -2930,13 +2930,13 @@ async function handleOpenStore() {
 }
 
 .report-textarea:hover {
-  border-color: color-mix(in srgb, var(--color-primary, #b91c1c) 24%, var(--border-light));
+  border-color: color-mix(in srgb, var(--color-primary, #C4612F) 24%, var(--border-light));
 }
 
 .report-textarea:focus {
   outline: none;
-  border-color: var(--color-primary, #b91c1c);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary, #b91c1c) 14%, transparent);
+  border-color: var(--color-primary, #C4612F);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary, #C4612F) 14%, transparent);
 }
 
 .report-quick-section {
@@ -2974,8 +2974,8 @@ async function handleOpenStore() {
 
 .report-quick-item:hover {
   transform: translateY(-1px);
-  border-color: color-mix(in srgb, var(--color-primary, #b91c1c) 28%, var(--border-light));
-  background: color-mix(in srgb, var(--color-primary, #b91c1c) 8%, var(--bg-card));
+  border-color: color-mix(in srgb, var(--color-primary, #C4612F) 28%, var(--border-light));
+  background: color-mix(in srgb, var(--color-primary, #C4612F) 8%, var(--bg-card));
   color: var(--text-primary);
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
 }
@@ -2997,7 +2997,7 @@ async function handleOpenStore() {
 }
 
 .report-count.is-invalid {
-  color: #b91c1c;
+  color: #C4612F;
 }
 
 .report-actions {
@@ -3031,7 +3031,7 @@ async function handleOpenStore() {
 
 .report-submit-btn {
   border: 1px solid transparent;
-  background: linear-gradient(135deg, #b91c1c 0%, #991b1b 100%);
+  background: linear-gradient(135deg, #C4612F 0%, #991b1b 100%);
   color: #fff;
   box-shadow: 0 10px 24px rgba(185, 28, 28, 0.24);
 }
@@ -3566,7 +3566,7 @@ async function handleOpenStore() {
 .seller-trust-badge--1 { background: linear-gradient(135deg, #edf4ff, #dbeafe); color: #1d4ed8; }
 .seller-trust-badge--2 { background: linear-gradient(135deg, #edf9f1, #dcfce7); color: #15803d; }
 .seller-trust-badge--3 { background: linear-gradient(135deg, #fbf4e6, #fef3c7); color: #a16207; }
-.seller-trust-badge--4 { background: linear-gradient(135deg, #fbecec, #fee2e2); color: #b91c1c; }
+.seller-trust-badge--4 { background: linear-gradient(135deg, #fbecec, #fee2e2); color: #C4612F; }
 
 :global(html.dark .detail-page .seller-trust-badge) {
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
@@ -3984,7 +3984,7 @@ async function handleOpenStore() {
 
 .comment-inline-status-tag--rejected {
   background: rgba(220, 38, 38, 0.1);
-  color: #b91c1c;
+  color: #C4612F;
 }
 
 .comment-footer {
