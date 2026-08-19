@@ -73,7 +73,7 @@
                 <p class="tip-item">购买后会正常扣款和发放 CDK</p>
                 <p class="tip-item">测试完成后请及时下架或删除测试物品</p>
                 <p class="tip-item">测试完成请务必在 <a href="https://credit.linux.do/merchant" target="_blank" style="color: #007bff;">LDC集市</a> 中关闭应用的测试模式</p>
-                <p class="tip-item warning">⏱️ 测试模式商品上架 30 分钟后会自动下架</p>
+                <p class="tip-item warning">测试模式商品上架 30 分钟后会自动下架</p>
               </div>
               <p class="guide-modal-warning test-warning">
                 <strong>请确保已在 LDC 应用中开启测试模式</strong>，否则可能无法收到回调通知。
@@ -93,7 +93,7 @@
     </Teleport>
 
     <div class="page-container">
-      <div class="page-header">
+      <div v-if="publishMode !== 'product' || !lockedMode" class="page-header">
         <h1 class="page-title">{{ publishMode === 'product' ? '发布物品' : '发布求购' }}</h1>
       </div>
       
@@ -116,10 +116,10 @@
         </button>
       </div>
 
-      <form v-if="publishMode === 'product'" class="publish-form" @submit.prevent="submitForm">
+      <form v-if="publishMode === 'product'" class="publish-form seller-product-form" @submit.prevent="submitForm">
         <!-- 基本信息 -->
         <div class="form-card">
-          <h3 class="card-title">基本信息</h3>
+          <h2 class="card-title">基本信息</h2>
           
           <div class="form-group">
             <label class="form-label required">物品名称</label>
@@ -273,7 +273,7 @@
         
         <!-- 物品类型 -->
         <div class="form-card">
-          <h3 class="card-title">物品类型</h3>
+          <h2 class="card-title">物品类型</h2>
           
           <div class="type-select">
             <div
@@ -294,7 +294,7 @@
         
         <!-- 普通物品设置 -->
         <div class="form-card" v-if="form.productType === 'normal'">
-          <h3 class="card-title">普通物品设置</h3>
+          <h2 class="card-title">普通物品设置</h2>
 
           <div class="cdk-config-notice">
             <div class="notice-header">
@@ -345,7 +345,7 @@
         </div>
 
         <div class="form-card">
-          <h3 class="card-title">兑换门槛</h3>
+          <h2 class="card-title">兑换门槛</h2>
 
           <div class="form-group">
             <label class="form-label">商品购买信任等级门槛</label>
@@ -362,7 +362,7 @@
         
         <!-- CDK 类型设置 -->
         <div class="form-card" v-if="form.productType === 'cdk'">
-          <h3 class="card-title">CDK 设置</h3>
+          <h2 class="card-title">CDK 设置</h2>
           
           <!-- LDC 配置提醒 -->
           <div class="cdk-config-notice">
@@ -495,12 +495,17 @@
           </div>
         </div>
         
-        <!-- 提交按钮 -->
-        <div class="form-actions">
-          <button type="submit" class="submit-btn" :disabled="!canSubmit || productSubmittingBusy">
-            {{ submitButtonText }}
-          </button>
-        </div>
+        <SellerStickySummary class="seller-product-summary" eyebrow="发布校对" title="物品摘要">
+          <div class="seller-summary-preview" :class="{ empty: !imagePreviewUrl }">
+            <img v-if="imagePreviewUrl" :src="imagePreviewUrl" :alt="form.name || '物品预览'" />
+            <Image v-else :size="26" aria-hidden="true" />
+          </div>
+          <h3 class="seller-summary-name">{{ form.name || '尚未填写物品名称' }}</h3>
+          <p class="seller-summary-meta">{{ selectedCategoryName }} · {{ form.productType === 'cdk' ? '自动发卡' : '普通物品' }}</p>
+          <dl class="seller-summary-facts"><div><dt>成交价</dt><dd>{{ finalPrice > 0 ? finalPrice.toFixed(2) : '—' }} LDC</dd></div><div><dt>{{ form.productType === 'cdk' ? '卡密' : '库存' }}</dt><dd>{{ form.productType === 'cdk' ? (form.sharedCdkEnabled ? '共享模式' : `${cdkCount} 个`) : (form.stock || '—') }}</dd></div></dl>
+          <ul class="seller-readiness-list"><li :class="{ ready: merchantConfigured }"><span></span>{{ merchantConfigured ? '收款配置已完成' : '需要先配置收款' }}</li><li :class="{ ready: !!form.name.trim() }"><span></span>物品名称</li><li :class="{ ready: !!form.categoryId }"><span></span>物品分类</li><li :class="{ ready: !!imageValidated }"><span></span>图片验证</li></ul>
+          <template #action><button type="submit" class="submit-btn" :disabled="!canSubmit || productSubmittingBusy">{{ submitButtonText }}</button></template>
+        </SellerStickySummary>
       </form>
 
       <form v-else class="publish-form" @submit.prevent="submitBuyRequest">
@@ -576,6 +581,7 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
+import { Image } from '@lucide/vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useShopStore } from '@/stores/shop'
 import { useToast } from '@/composables/useToast'
@@ -583,6 +589,7 @@ import { validateProductName, validateProductDescription, validatePrice } from '
 import { renderProductDescription } from '@/utils/renderProductDescription'
 import { api } from '@/utils/api'
 import { CDK_UPLOAD_LIMITS } from '@/config/cdkQuota'
+import SellerStickySummary from '@/components/seller/SellerStickySummary.vue'
 
 const props = defineProps({
   initialMode: {
@@ -825,6 +832,7 @@ const finalPrice = computed(() => {
   const discount = parseFloat(form.value.discount) || 1
   return price * discount
 })
+const selectedCategoryName = computed(() => categories.value.find(category => Number(category.id) === Number(form.value.categoryId))?.name || '未选择分类')
 
 // 入站分类价格错误提示
 const ruzhanPriceError = computed(() => {

@@ -1,167 +1,53 @@
 <template>
   <div class="my-products-page">
-    <div class="page-container">
-      <div class="page-header">
-        <h1 class="page-title">我的物品</h1>
-        <router-link to="/seller/products/new" class="add-btn">
-          发布
-        </router-link>
-      </div>
-      
-      <!-- 加载中 -->
-      <div v-if="loading" class="loading-state">
-        <div class="skeleton-card" v-for="i in 3" :key="i">
-          <div class="skeleton-img"></div>
-          <div class="skeleton-info">
-            <div class="skeleton skeleton-line w-48"></div>
-            <div class="skeleton skeleton-line w-full mt-3"></div>
-            <div class="skeleton skeleton-line w-32 mt-2"></div>
-          </div>
-        </div>
-      </div>
-      
-      <!-- 空状态 -->
-      <EmptyState
-        v-else-if="products.length === 0"
-        icon=""
-        text="暂无物品"
-        hint="您还没有发布任何物品"
-      >
-        <template #action>
-          <router-link to="/seller/products/new" class="publish-btn">
-            发布物品
-          </router-link>
-        </template>
-      </EmptyState>
+    <SellerPageToolbar eyebrow="商品台账" description="集中查看物品状态、价格、库存与经营数据。筛选条件会保留在地址中，返回时仍能继续处理。">
+      <template #actions>
+        <router-link to="/seller/products/new" class="seller-primary-button"><Plus :size="17" aria-hidden="true" />发布物品</router-link>
+      </template>
+      <form class="product-search" role="search" @submit.prevent="applyProductFilters({ resetPage: true })">
+        <Search :size="17" aria-hidden="true" />
+        <label class="seller-sr-only" for="seller-product-search">搜索物品</label>
+        <input id="seller-product-search" v-model.trim="productSearch" type="search" placeholder="搜索名称或物品 ID" />
+      </form>
+      <label class="seller-filter-field"><span>状态</span><select v-model="productStatusFilter" @change="applyProductFilters({ resetPage: true })"><option value="">全部状态</option><option value="approved">已上架</option><option value="pending">审核中</option><option value="rejected">未通过</option><option value="offline">已下架</option></select></label>
+      <label class="seller-filter-field"><span>类型</span><select v-model="productTypeFilter" @change="applyProductFilters({ resetPage: true })"><option value="">全部类型</option><option value="normal">普通物品</option><option value="cdk">自动发卡</option></select></label>
+      <label class="seller-filter-field"><span>库存</span><select v-model="productStockFilter" @change="applyProductFilters({ resetPage: true })"><option value="">全部库存</option><option value="out">已售罄</option><option value="low">低库存</option><option value="available">库存充足</option></select></label>
+      <label class="seller-filter-field"><span>排序</span><select v-model="productSort" @change="applyProductFilters({ resetPage: true })"><option value="priority">待处理优先</option><option value="updated">最近更新</option><option value="sold">售出最多</option><option value="views">浏览最多</option><option value="price-desc">价格从高到低</option><option value="price-asc">价格从低到高</option></select></label>
+      <button v-if="hasProductFilters" type="button" class="seller-secondary-button" @click="clearProductFilters">清除筛选</button>
+      <template #summary>
+        <span v-if="productStatusFilter" class="seller-filter-chip">状态：{{ productStatusFilterLabel }}</span>
+        <span v-if="productStockFilter" class="seller-filter-chip">库存：{{ productStockFilterLabel }}</span>
+        <span class="seller-result-count">{{ productPagination.total }} 件物品</span>
+      </template>
+    </SellerPageToolbar>
 
-      <div v-else-if="activeProductFilter" class="product-filter-banner" role="status">
-        <span>正在查看：{{ activeProductFilter.label }}</span>
-        <button type="button" @click="clearProductFilter">查看全部物品</button>
-      </div>
-
-      <EmptyState
-        v-if="products.length > 0 && visibleProducts.length === 0"
-        icon=""
-        text="当前筛选下没有物品"
-        hint="可以返回全部物品继续管理。"
-      >
-        <template #action>
-          <button type="button" class="publish-btn" @click="clearProductFilter">清除筛选</button>
-        </template>
-      </EmptyState>
-      
-      <!-- 物品列表 -->
-      <div class="products-list" v-else-if="visibleProducts.length">
-        <div
-          v-for="product in visibleProducts"
-          :key="product.id"
-          :class="['product-card', getProductStatus(product)]"
-        >
-          <!-- 状态标签（右上角） -->
-          <div :class="['status-badge', getProductStatus(product)]">
-            <span class="status-text">{{ getStatusText(getProductStatus(product)) }}</span>
-          </div>
-          
-          <!-- 主体内容 -->
-          <div class="product-main" @click="viewProduct(product)">
-            <!-- 物品图片 -->
-            <div class="product-image" :style="getImageStyle(product)">
-              <img
-                v-if="product.image_url"
-                :src="product.image_url"
-                :alt="product.name"
-                @error="handleImageError"
-              />
-              <span v-else class="image-placeholder">物品</span>
-              <!-- 类型角标 -->
-              <span :class="['type-badge', getProductType(product)]">
-                {{ getProductType(product) === 'cdk' ? 'CDK' : '普通' }}
-              </span>
-            </div>
-            
-            <!-- 物品信息 -->
-            <div class="product-info">
-              <h3 class="product-name">{{ product.name }}</h3>
-              <!-- 物品 ID（卖家需要知道自己的物品 ID） -->
-              <div v-if="product.id" class="product-id-row">
-                <span class="product-id">
-                  <span class="id-label">ID</span>
-                  <span class="id-value">{{ product.id }}</span>
-                </span>
-                <button class="copy-id-btn" title="复制物品 ID" @click.stop="copyProductId(product)">
-                  复制
-                </button>
-              </div>
-              <p class="product-desc">{{ stripMarkdown(product.description) || '暂无描述' }}</p>
-              
-              <!-- 价格和数据 -->
-              <div class="product-meta">
-                <span class="product-price">
-                  <span class="price-value">{{ formatPrice(product) }}</span>
-                  <span class="price-unit">LDC</span>
-                </span>
-                <span class="meta-divider">·</span>
-                <span class="product-views">浏览 {{ product.view_count || 0 }}</span>
-                <template v-if="isPlatformOrderProductItem(product)">
-                  <span class="meta-divider">·</span>
-                  <span :class="['product-stock', { low: isLowStock(product) }]">
-                    库存 {{ getStockDisplay(product) }}
-                  </span>
-                  <span class="meta-divider">·</span>
-                  <span class="product-sold">售出 {{ product.sold_count || 0 }}</span>
-                </template>
-              </div>
-              
-              <!-- 分类标签 -->
-              <div class="product-tags">
-                <span class="tag category">{{ product.category_name || '其他' }}</span>
-                <span :class="['tag', 'type', getProductType(product)]">{{ getTypeText(getProductType(product)) }}</span>
-              </div>
-            </div>
-          </div>
-          
-          <!-- 被拒绝/下架原因 -->
-          <div v-if="getRejectReason(product)" class="reject-reason">
-            <span class="reason-icon">!</span>
-            <span class="reason-text">{{ getRejectReason(product) }}</span>
-          </div>
-          
-          <!-- 操作按钮 -->
-          <div class="product-actions">
-            <button class="action-btn edit" @click.stop="editProduct(product)" :disabled="isProductBusy(product) || isRestrictedProductManagement">
-              编辑
-            </button>
-              <button
-                v-if="isCdkItem(product)"
-                class="action-btn cdk"
-                @click.stop="manageCdk(product)"
-                :disabled="isProductBusy(product)"
-            >
-              CDK
-            </button>
-              <button
-                v-if="canToggleStatus(product)"
-                class="action-btn"
-                :class="isProductActive(product) ? 'offline' : 'online'"
-                @click.stop="toggleStatus(product)"
-              :disabled="isProductBusy(product) || isRestrictedProductManagement"
-            >
-              {{ getToggleLabel(product) }}
-            </button>
-            <button class="action-btn delete" @click.stop="deleteProduct(product)" :disabled="isProductBusy(product) || isRestrictedProductManagement">
-              {{ getDeleteLabel(product) }}
-            </button>
-          </div>
-        </div>
-      </div>
-      
-      <!-- 加载更多 -->
-      <div v-if="hasMore && !loading" class="load-more">
-        <button class="load-more-btn" @click="loadMore" :disabled="loadingMore">
-          {{ loadingMore ? '加载中...' : '加载更多' }}
+    <SellerDataTable
+      caption="我的物品经营列表"
+      :columns="productColumns"
+      :rows="productPagination.rows"
+      :loading="loading"
+      row-key="id"
+    >
+      <template #cell-product="{ row: product }">
+        <button type="button" class="product-ledger-main" @click="viewProduct(product)">
+          <span class="product-ledger-image" :style="getImageStyle(product)"><img v-if="product.image_url" :src="product.image_url" :alt="product.name" loading="lazy" @error="handleImageError" /><Package v-else :size="20" aria-hidden="true" /></span>
+          <span class="product-ledger-copy"><strong :title="product.name">{{ product.name }}</strong><small><span>#{{ product.id }}</span> · {{ product.category_name || '其他' }} · {{ getTypeText(getProductType(product)) }}</small></span>
         </button>
-      </div>
-    </div>
+      </template>
+      <template #cell-status="{ row: product }"><SellerStatusBadge :tone="resolveSellerStatusTone(getProductStatus(product))" :label="getStatusText(getProductStatus(product))" /><p v-if="getRejectReason(product)" class="ledger-reason" :title="getRejectReason(product)">{{ getRejectReason(product) }}</p></template>
+      <template #cell-price="{ row: product }"><strong class="ledger-number">{{ formatPrice(product) }}</strong><small class="ledger-unit">LDC</small></template>
+      <template #cell-stock="{ row: product }"><template v-if="isPlatformOrderProductItem(product)"><strong :class="['ledger-number', { 'is-warning': isLowStock(product) }]">{{ getStockDisplay(product) }}</strong><small class="ledger-unit">库存 · 售出 {{ product.sold_count || 0 }}</small></template><span v-else class="ledger-muted">不适用</span></template>
+      <template #cell-views="{ row: product }"><strong class="ledger-number">{{ product.view_count || 0 }}</strong><small class="ledger-unit">次浏览</small></template>
+      <template #cell-actions="{ row: product }"><ProductRowActions :product="product" :can-manage-cdk="isCdkItem(product)" :can-toggle="canToggleStatus(product)" :busy="isProductBusy(product)" :restricted="isRestrictedProductManagement" :toggle-label="getToggleLabel(product)" :delete-label="getDeleteLabel(product)" @edit="editProduct" @cdk="manageCdk" @toggle="toggleStatus" @delete="deleteProduct" /></template>
+      <template #mobile-row="{ row: product }">
+        <div class="product-mobile-head"><button type="button" class="product-ledger-main" @click="viewProduct(product)"><span class="product-ledger-image" :style="getImageStyle(product)"><img v-if="product.image_url" :src="product.image_url" :alt="product.name" loading="lazy" @error="handleImageError" /><Package v-else :size="20" aria-hidden="true" /></span><span class="product-ledger-copy"><strong>{{ product.name }}</strong><small>#{{ product.id }} · {{ getTypeText(getProductType(product)) }}</small></span></button><SellerStatusBadge :tone="resolveSellerStatusTone(getProductStatus(product))" :label="getStatusText(getProductStatus(product))" /></div>
+        <p v-if="getRejectReason(product)" class="product-mobile-reason">{{ getRejectReason(product) }}</p>
+        <dl class="product-mobile-metrics"><div><dt>价格</dt><dd>{{ formatPrice(product) }} LDC</dd></div><div><dt>库存 / 售出</dt><dd>{{ isPlatformOrderProductItem(product) ? `${getStockDisplay(product)} / ${product.sold_count || 0}` : '不适用' }}</dd></div><div><dt>浏览</dt><dd>{{ product.view_count || 0 }}</dd></div></dl>
+        <ProductRowActions :product="product" mobile :can-manage-cdk="isCdkItem(product)" :can-toggle="canToggleStatus(product)" :busy="isProductBusy(product)" :restricted="isRestrictedProductManagement" :toggle-label="getToggleLabel(product)" :delete-label="getDeleteLabel(product)" @edit="editProduct" @cdk="manageCdk" @toggle="toggleStatus" @delete="deleteProduct" />
+      </template>
+      <template #empty><div class="seller-empty-ledger"><PackageOpen :size="32" aria-hidden="true" /><strong>{{ products.length ? '当前筛选下没有物品' : '还没有发布物品' }}</strong><p>{{ products.length ? '调整或清除筛选条件后再试。' : '发布第一件物品，开始建立你的经营台账。' }}</p><button v-if="products.length" type="button" class="seller-secondary-button" @click="clearProductFilters">清除筛选</button><router-link v-else to="/seller/products/new" class="seller-primary-button">发布物品</router-link></div></template>
+      <template #footer><SellerPagination :page="productPagination.page" :total-pages="productPagination.totalPages" :total="productPagination.total" @change="changeProductPage" /></template>
+    </SellerDataTable>
     
     <!-- CDK 管理弹窗 -->
     <div v-if="showCdkModal" class="modal-overlay" @click.self="closeCdkModal">
@@ -169,7 +55,7 @@
         <div class="modal-header">
           <h3 class="modal-title">CDK 管理</h3>
           <span class="modal-subtitle">{{ currentProduct?.name }}</span>
-          <button class="modal-close" @click="closeCdkModal">✕</button>
+            <button class="modal-close" aria-label="关闭 CDK 管理" @click="closeCdkModal"><X :size="19" aria-hidden="true" /></button>
         </div>
         
         <div class="modal-body">
@@ -235,7 +121,7 @@
               <option value="sold">已售</option>
             </select>
             <button class="export-btn" @click="exportCdks" :disabled="exportingCdks || !currentProduct?.id">
-              {{ exportingCdks ? '导出中...' : '⬇️ 导出 TXT' }}
+              <Download :size="15" aria-hidden="true" />{{ exportingCdks ? '导出中...' : '导出 TXT' }}
             </button>
             <button
               class="clear-all-btn"
@@ -305,17 +191,22 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
+import { Download, Package, PackageOpen, Plus, Search, X } from '@lucide/vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useShopStore } from '@/stores/shop'
 import { isMaintenanceFeatureEnabled, isRestrictedMaintenanceMode } from '@/config/maintenance'
 import { useToast } from '@/composables/useToast'
 import { useDialog } from '@/composables/useDialog'
-import EmptyState from '@/components/common/EmptyState.vue'
-import { stripMarkdown } from '@/utils/renderProductDescription'
+import ProductRowActions from '@/components/seller/ProductRowActions.vue'
+import SellerDataTable from '@/components/seller/SellerDataTable.vue'
+import SellerPageToolbar from '@/components/seller/SellerPageToolbar.vue'
+import SellerPagination from '@/components/seller/SellerPagination.vue'
+import SellerStatusBadge from '@/components/seller/SellerStatusBadge.vue'
 import { api } from '@/utils/api'
 import { storage } from '@/utils/storage'
 import { CDK_UPLOAD_LIMITS } from '@/config/cdkQuota'
+import { filterAndSortSellerProducts, paginateSellerRows, resolveSellerStatusTone } from '@/utils/sellerTables'
 import {
   getProductType as resolveProductType,
   getProductTypeText,
@@ -333,10 +224,20 @@ const toast = useToast()
 const dialog = useDialog()
 
 const loading = ref(true)
-const loadingMore = ref(false)
 const products = ref([])
-const page = ref(1)
-const hasMore = ref(false)
+const productSearch = ref('')
+const productStatusFilter = ref('')
+const productTypeFilter = ref('')
+const productStockFilter = ref('')
+const productSort = ref('priority')
+const productColumns = [
+  { key: 'product', label: '物品', width: '34%' },
+  { key: 'status', label: '状态', width: '15%' },
+  { key: 'price', label: '价格', width: '12%' },
+  { key: 'stock', label: '库存 / 售出', width: '14%' },
+  { key: 'views', label: '浏览', width: '9%' },
+  { key: 'actions', label: '操作', width: '16%', align: 'right' }
+]
 
 // CDK 管理
 const showCdkModal = ref(false)
@@ -355,31 +256,66 @@ const isRestrictedProductManagement = computed(() =>
   isRestrictedMaintenanceMode() && !isMaintenanceFeatureEnabled('productManage')
 )
 
-const activeProductFilter = computed(() => {
-  const stock = String(route.query.stock || '')
-  const status = String(route.query.status || '')
-  if (stock === 'out') return { type: 'stock', value: 'out', label: '已售罄' }
-  if (stock === 'low') return { type: 'stock', value: 'low', label: '低库存（1–5）' }
-  if (status === 'pending') return { type: 'status', value: 'pending', label: '审核中' }
-  if (status === 'rejected') return { type: 'status', value: 'rejected', label: '审核未通过' }
-  return null
-})
+const productStatusFilterLabel = computed(() => ({ approved: '已上架', pending: '审核中', rejected: '未通过', offline: '已下架' })[productStatusFilter.value] || productStatusFilter.value)
+const productStockFilterLabel = computed(() => ({ out: '已售罄', low: '低库存', available: '库存充足' })[productStockFilter.value] || productStockFilter.value)
+const hasProductFilters = computed(() => Boolean(productSearch.value || productStatusFilter.value || productTypeFilter.value || productStockFilter.value || productSort.value !== 'priority'))
 
-const visibleProducts = computed(() => {
-  const filter = activeProductFilter.value
-  if (!filter) return products.value
-  return products.value.filter(product => {
-    if (filter.type === 'status') {
-      return getProductStatus(product).includes(filter.value)
-    }
-    if (!isPlatformOrderProductItem(product) || product.sharedCdkEnabled || product.shared_cdk_enabled) return false
-    const stock = Number(product.stock || 0)
-    return filter.value === 'out' ? stock === 0 : stock >= 1 && stock <= 5
+const filteredProducts = computed(() => filterAndSortSellerProducts(products.value, {
+  search: productSearch.value,
+  status: productStatusFilter.value,
+  type: productTypeFilter.value,
+  stock: productStockFilter.value,
+  sort: productSort.value
+}, {
+  getStatus: getProductStatus,
+  getType: getProductType,
+  getPrice: product => Number(product.price || 0) * Number(product.discount || 1),
+  getStock: product => Number(product.stock || 0),
+  isStockManaged: product => isPlatformOrderProductItem(product) && !isSharedCdkProduct(product),
+  priority: getProductStatusPriority
+}))
+
+const productPagination = computed(() => paginateSellerRows(filteredProducts.value, route.query.page, 20))
+
+function syncProductFiltersFromRoute() {
+  productSearch.value = String(route.query.search || '').trim()
+  productStatusFilter.value = String(route.query.status || '').trim()
+  productTypeFilter.value = String(route.query.type || '').trim()
+  productStockFilter.value = String(route.query.stock || '').trim()
+  productSort.value = String(route.query.sort || 'priority').trim() || 'priority'
+}
+
+async function applyProductFilters({ resetPage = false } = {}) {
+  const nextQuery = { ...route.query }
+  const values = {
+    search: productSearch.value.trim(),
+    status: productStatusFilter.value,
+    type: productTypeFilter.value,
+    stock: productStockFilter.value,
+    sort: productSort.value === 'priority' ? '' : productSort.value
+  }
+  Object.entries(values).forEach(([key, value]) => {
+    if (value) nextQuery[key] = value
+    else delete nextQuery[key]
   })
-})
+  if (resetPage) delete nextQuery.page
+  await router.replace({ query: nextQuery }).catch(() => {})
+}
 
-function clearProductFilter() {
-  router.replace({ path: '/seller/products' })
+function clearProductFilters() {
+  productSearch.value = ''
+  productStatusFilter.value = ''
+  productTypeFilter.value = ''
+  productStockFilter.value = ''
+  productSort.value = 'priority'
+  router.replace({ path: '/seller/products' }).catch(() => {})
+}
+
+function changeProductPage(nextPage) {
+  const nextQuery = { ...route.query }
+  if (nextPage > 1) nextQuery.page = String(nextPage)
+  else delete nextQuery.page
+  router.replace({ query: nextQuery }).then(() => window.scrollTo({ top: 0, behavior: 'smooth' })).catch(() => {})
 }
 
 // 计算即将添加的 CDK 数量
@@ -395,96 +331,45 @@ const unsoldCdkCount = computed(() => (cdkStats.value.available || 0) + (cdkStat
 const cdkExceedsBatchLimit = computed(() => newCdkCount.value > CDK_UPLOAD_LIMITS.perBatch)
 
 // 加载物品
-async function loadProducts(append = false) {
+async function loadProducts() {
   try {
-    if (!append) {
-      loading.value = true
-    } else {
-      loadingMore.value = true
-    }
+    loading.value = true
     
     const result = await shopStore.fetchMyProducts()
     
     // result 可能是数组或者包含 products 的对象
     let productList = Array.isArray(result) ? result : (result?.products || result || [])
     
-    // 应用排序规则
-    productList = sortProducts(productList)
-    
-    if (append) {
-      products.value.push(...productList)
-    } else {
-      products.value = productList
-    }
-    
-    // 目前 API 一次返回所有数据，暂不支持分页
-    hasMore.value = false
+    products.value = productList
   } catch (error) {
     toast.error('加载物品失败')
   } finally {
     loading.value = false
-    loadingMore.value = false
   }
 }
 
-// 排序物品
-// 规则1: 已拒绝(含 AI/人工) → 待人工审核 → 待AI审核 → 已上架(AI/人工) → 已下架（需要处理的在前）
-// 规则2: 按修改时间排序（新的在前）
-function sortProducts(productList) {
-  return [...productList].sort((a, b) => {
-    const statusA = getProductStatus(a)
-    const statusB = getProductStatus(b)
-    
-    // 定义状态优先级（更小的数字优先级更高）
-    // 已拒绝最需要关注，放最前面
-    const statusPriority = {
-      'ai_rejected': 0,
-      'manual_rejected': 0,
-      'rejected': 0,      // 旧状态兼容
-      'pending_manual': 1,
-      'pending_ai': 2,
-      'pending': 2,       // 旧状态兼容
-      'ai_approved': 3,
-      'manual_approved': 3,
-      'approved': 3,      // 旧状态兼容
-      'active': 3,
-      'offline_manual': 4,
-      'offline': 4,       // 旧状态兼容
-      'inactive': 4
-    }
-    
-    const priorityA = statusPriority[statusA] ?? 999
-    const priorityB = statusPriority[statusB] ?? 999
-    
-    if (priorityA !== priorityB) {
-      return priorityA - priorityB
-    }
-    
-    // 规则2: 同状态下，按修改时间排序（新的在前）
-    const timeA = new Date(a.updated_at || a.updatedAt || a.created_at || 0).getTime()
-    const timeB = new Date(b.updated_at || b.updatedAt || b.created_at || 0).getTime()
-    
-    return timeB - timeA
-  })
-}
-
-// 加载更多
-function loadMore() {
-  page.value++
-  loadProducts(true)
+function getProductStatusPriority(product) {
+  const priority = {
+    ai_rejected: 0,
+    manual_rejected: 0,
+    rejected: 0,
+    pending_manual: 1,
+    pending_ai: 2,
+    pending: 2,
+    ai_approved: 3,
+    manual_approved: 3,
+    approved: 3,
+    active: 3,
+    offline_manual: 4,
+    offline: 4,
+    inactive: 4
+  }
+  return priority[getProductStatus(product)] ?? 999
 }
 
 // 查看物品
 function viewProduct(product) {
   router.push(`/product/${product.id}`)
-}
-
-// 复制物品 ID
-function copyProductId(product) {
-  if (product.id == null) return
-  navigator.clipboard.writeText(String(product.id))
-    .then(() => toast.success('物品 ID 已复制'))
-    .catch(() => toast.error('复制失败，请长按手动复制'))
 }
 
 // 编辑物品
@@ -519,7 +404,7 @@ async function toggleStatus(product) {
 
   const confirmed = await dialog.confirm(`确定要${action}该物品吗？${!isActive ? '\n将重新提交审核' : ''}`, {
     title: `${action}物品`,
-    icon: isActive ? '⏸️' : '▶️'
+    icon: ''
   })
 
   if (!confirmed) return
@@ -1032,9 +917,9 @@ function isProcessingProduct(product, type) {
 }
 
 function getToggleLabel(product) {
-  if (isProcessingProduct(product, 'offline')) return '⏸️ 下架中...'
-  if (isProcessingProduct(product, 'online')) return '▶️ 上架中...'
-  return isProductActive(product) ? '⏸️ 下架' : '▶️ 重新上架'
+  if (isProcessingProduct(product, 'offline')) return '下架中...'
+  if (isProcessingProduct(product, 'online')) return '上架中...'
+  return isProductActive(product) ? '下架' : '重新上架'
 }
 
 function getDeleteLabel(product) {
@@ -1044,6 +929,12 @@ function getDeleteLabel(product) {
 onMounted(() => {
   loadProducts()
 })
+
+watch(
+  () => [route.query.search, route.query.status, route.query.type, route.query.stock, route.query.sort].join('|'),
+  syncProductFiltersFromRoute,
+  { immediate: true }
+)
 </script>
 
 <style scoped>
@@ -2024,6 +1915,61 @@ onMounted(() => {
   cursor: not-allowed;
 }
 
+.seller-primary-button,
+.seller-secondary-button {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 15px;
+  border: 1px solid var(--seller-border);
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+}
+.seller-primary-button { color: #fff; border-color: var(--seller-navy); background: var(--seller-navy); }
+.seller-secondary-button { color: var(--seller-muted); background: var(--seller-surface); }
+.product-search { min-width: min(100%, 280px); height: 44px; display: flex; align-items: center; gap: 8px; padding: 0 12px; border: 1px solid var(--seller-border); border-radius: 10px; color: var(--seller-muted); background: var(--seller-surface); }
+.product-search:focus-within { border-color: var(--seller-jade); box-shadow: 0 0 0 3px color-mix(in srgb, var(--seller-jade) 18%, transparent); }
+.product-search input { min-width: 0; width: 100%; border: 0; outline: 0; color: var(--seller-ink); background: transparent; font-size: 14px; }
+.seller-filter-field { min-height: 44px; display: flex; align-items: center; gap: 7px; padding: 0 10px; border: 1px solid var(--seller-border); border-radius: 10px; color: var(--seller-muted); background: var(--seller-surface); font-size: 12px; }
+.seller-filter-field select { min-width: 88px; border: 0; outline: 0; color: var(--seller-ink); background: transparent; font-size: 13px; }
+.seller-filter-chip, .seller-result-count { min-height: 30px; display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 999px; color: var(--seller-muted); background: var(--seller-jade-soft); font-size: 12px; }
+.seller-result-count { margin-left: auto; background: transparent; font-variant-numeric: tabular-nums; }
+.seller-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+.product-ledger-main { min-width: 0; width: 100%; display: flex; align-items: center; gap: 11px; color: inherit; text-align: left; }
+.product-ledger-image { flex: 0 0 54px; width: 54px; height: 42px; display: grid; place-items: center; overflow: hidden; border: 1px solid var(--seller-border); border-radius: 9px; color: var(--seller-muted); background-color: var(--seller-surface-soft); background-size: cover; background-position: center; }
+.product-ledger-image img { width: 100%; height: 100%; object-fit: cover; }
+.product-ledger-copy { min-width: 0; }
+.product-ledger-copy strong, .product-ledger-copy small { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.product-ledger-copy strong { color: var(--seller-ink); font-size: 13px; }
+.product-ledger-copy small { margin-top: 5px; color: var(--seller-muted); font-size: 11px; }
+.product-ledger-copy small span { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-variant-numeric: tabular-nums; }
+.ledger-reason { max-width: 150px; margin: 6px 0 0; overflow: hidden; color: var(--seller-danger); font-size: 11px; line-height: 1.4; text-overflow: ellipsis; white-space: nowrap; }
+.ledger-number, .ledger-unit { display: block; font-variant-numeric: tabular-nums; }
+.ledger-number { color: var(--seller-ink); font: 700 14px/1.3 ui-monospace, SFMono-Regular, Menlo, monospace; }
+.ledger-number.is-warning { color: var(--seller-warning); }
+.ledger-unit { margin-top: 5px; color: var(--seller-muted); font-size: 10px; }
+.ledger-muted { color: var(--seller-muted); font-size: 12px; }
+.product-mobile-head { display: flex; align-items: flex-start; gap: 10px; justify-content: space-between; }
+.product-mobile-head .product-ledger-main { flex: 1; }
+.product-mobile-reason { margin: 12px 0 0; padding: 10px 12px; border-left: 3px solid var(--seller-danger); color: var(--seller-danger); background: color-mix(in srgb, var(--seller-danger) 7%, transparent); font-size: 12px; line-height: 1.55; }
+.product-mobile-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 15px 0 0; }
+.product-mobile-metrics div { padding: 10px; border-radius: 9px; background: var(--seller-surface-soft); }
+.product-mobile-metrics dt { color: var(--seller-muted); font-size: 10px; }
+.product-mobile-metrics dd { margin: 4px 0 0; color: var(--seller-ink); font: 650 12px/1.3 ui-monospace, SFMono-Regular, Menlo, monospace; }
+.seller-empty-ledger { display: grid; justify-items: center; gap: 8px; color: var(--seller-muted); }
+.seller-empty-ledger strong { color: var(--seller-ink); font-family: "Noto Serif SC", "Source Han Serif SC", "Songti SC", STSong, serif; font-size: 18px; }
+.seller-empty-ledger p { margin: 0 0 8px; font-size: 13px; }
+.export-btn { display: inline-flex; align-items: center; gap: 6px; }
+
+@media (max-width: 767px) {
+  .product-search, .seller-filter-field { width: 100%; }
+  .seller-filter-field select { flex: 1; }
+  .seller-result-count { margin-left: 0; }
+}
+
 /* Mobile */
 @media (max-width: 640px) {
   .page-header {
@@ -2193,5 +2139,38 @@ onMounted(() => {
   .clear-all-btn {
     flex: 0 0 100%;
   }
+}
+
+:global(.seller-shell) .cdk-modal {
+  max-width: 720px;
+  border: 1px solid var(--seller-border);
+  border-radius: 14px;
+  background: var(--seller-surface);
+  box-shadow: var(--seller-shadow-md);
+}
+
+:global(.seller-shell) .cdk-modal .modal-header {
+  padding: 18px 20px 14px;
+  border-top: 4px solid var(--seller-jade);
+  border-bottom-color: var(--seller-border);
+  background: var(--seller-surface);
+}
+
+:global(.seller-shell) .cdk-modal .modal-title {
+  color: var(--seller-ink);
+  font-family: "Noto Serif SC", "Source Han Serif SC", "Songti SC", STSong, serif;
+}
+
+:global(.seller-shell) .cdk-modal .modal-subtitle { color: var(--seller-muted); }
+:global(.seller-shell) .cdk-modal .modal-close { color: var(--seller-muted); background: var(--seller-surface-muted); }
+:global(.seller-shell) .cdk-modal .cdk-stats,
+:global(.seller-shell) .cdk-modal .cdk-item,
+:global(.seller-shell) .cdk-modal .cdk-add { border-color: var(--seller-border); background: var(--seller-surface-muted); }
+:global(.seller-shell) .cdk-modal .filter-select,
+:global(.seller-shell) .cdk-modal .cdk-input { border-color: var(--seller-border); background: var(--seller-surface-strong); color: var(--seller-ink); }
+:global(.seller-shell) .cdk-modal .add-btn-primary { border-radius: 9px; background: var(--seller-navy); }
+
+@media (max-width: 767px) {
+  :global(.seller-shell) .cdk-modal { max-width: 100%; max-height: 92dvh; }
 }
 </style>

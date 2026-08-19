@@ -17,12 +17,8 @@
     </Transition>
 
     <div class="page-container">
-      <div class="page-header">
-        <h1 class="page-title">编辑物品</h1>
-      </div>
-
       <div class="edit-notice">
-        <span class="notice-icon">⏳</span>
+        <Clock3 class="notice-icon" :size="17" aria-hidden="true" />
         <span class="notice-text">为避免刷位，1 小时内最多修改 3 次，24 小时内最多修改 10 次，超过将无法保存。</span>
       </div>
       
@@ -49,10 +45,10 @@
       </EmptyState>
       
       <!-- 编辑表单 -->
-      <form v-else class="edit-form" @submit.prevent="submitForm">
+      <form v-else class="edit-form seller-edit-form" @submit.prevent="submitForm">
         <!-- 基本信息 -->
         <div class="form-card">
-          <h3 class="card-title">基本信息</h3>
+          <h2 class="card-title">基本信息</h2>
           
           <div class="form-group">
             <label class="form-label required">物品名称</label>
@@ -169,7 +165,7 @@
         
         <!-- 物品类型（只读） -->
         <div class="form-card">
-          <h3 class="card-title">物品类型</h3>
+          <h2 class="card-title">物品类型</h2>
           
           <div class="type-readonly">
             <div class="type-info">
@@ -181,7 +177,7 @@
         
         <!-- 普通物品设置 -->
         <div class="form-card" v-if="getProductType(product) === 'normal'">
-          <h3 class="card-title">普通物品设置</h3>
+          <h2 class="card-title">普通物品设置</h2>
 
           <div class="form-group">
             <label class="form-label required">库存数量</label>
@@ -204,14 +200,14 @@
         </div>
 
         <div class="form-card" v-else-if="getProductType(product) === 'link'">
-          <h3 class="card-title">外链物品已停用</h3>
+          <h2 class="card-title">外链物品已停用</h2>
           <p class="form-hint">
             外链物品已不再支持编辑和重新上架。请重新发布为普通物品，以便平台保留完整订单记录。
           </p>
         </div>
 
         <div class="form-card">
-          <h3 class="card-title">兑换门槛</h3>
+          <h2 class="card-title">兑换门槛</h2>
 
           <div class="form-group">
             <label class="form-label">商品购买信任等级门槛</label>
@@ -228,7 +224,7 @@
         
         <!-- CDK 类型提示 -->
         <div class="form-card" v-if="getProductType(product) === 'cdk'">
-          <h3 class="card-title">CDK 管理</h3>
+          <h2 class="card-title">CDK 管理</h2>
           <div class="form-group">
             <label class="toggle-switch limit-toggle" @click.prevent="toggleSharedCdkMode()">
               <span class="toggle-track" :class="{ active: form.sharedCdkEnabled }">
@@ -316,12 +312,27 @@
           </router-link>
         </div>
         
-        <!-- 提交按钮 -->
-        <div class="form-actions">
-          <button type="submit" class="submit-btn" :disabled="!canSubmit || updateBusy">
-            {{ submitButtonText }}
-          </button>
-        </div>
+        <SellerStickySummary class="seller-product-summary" eyebrow="编辑校对" title="物品摘要">
+          <div class="seller-summary-preview" :class="{ empty: !imagePreviewUrl }">
+            <img v-if="imagePreviewUrl" :src="imagePreviewUrl" :alt="form.name || '物品预览'" />
+            <Image v-else :size="26" aria-hidden="true" />
+          </div>
+          <h3 class="seller-summary-name">{{ form.name || '尚未填写物品名称' }}</h3>
+          <p class="seller-summary-meta">{{ selectedCategoryName }} · {{ getTypeName(getProductType(product)) }}</p>
+          <dl class="seller-summary-facts">
+            <div><dt>成交价</dt><dd>{{ editFinalPrice > 0 ? editFinalPrice.toFixed(2) : '—' }} LDC</dd></div>
+            <div><dt>库存</dt><dd>{{ getProductType(product) === 'normal' ? (form.stock || '0') : (form.sharedCdkEnabled ? '共享模式' : '在物品页管理') }}</dd></div>
+          </dl>
+          <ul class="seller-readiness-list">
+            <li :class="{ ready: !!form.name.trim() }"><span></span>物品名称</li>
+            <li :class="{ ready: !!form.categoryId }"><span></span>物品分类</li>
+            <li :class="{ ready: !imageUrlError && !!form.imageUrl }"><span></span>图片地址</li>
+            <li :class="{ ready: canSubmit }"><span></span>保存前检查</li>
+          </ul>
+          <template #action>
+            <button type="submit" class="submit-btn" :disabled="!canSubmit || updateBusy">{{ submitButtonText }}</button>
+          </template>
+        </SellerStickySummary>
       </form>
     </div>
   </div>
@@ -336,6 +347,8 @@ import { useDialog } from '@/composables/useDialog'
 import { validateProductName, validateProductDescription, validatePrice } from '@/utils/security'
 import { renderProductDescription } from '@/utils/renderProductDescription'
 import EmptyState from '@/components/common/EmptyState.vue'
+import SellerStickySummary from '@/components/seller/SellerStickySummary.vue'
+import { Clock3, Image } from '@lucide/vue'
 import {
   getProductType as resolveProductType,
   getProductTypeText,
@@ -405,6 +418,8 @@ const editOverlayDescription = computed(() => {
 })
 
 const descriptionPreview = computed(() => renderProductDescription(form.value.description))
+const editFinalPrice = computed(() => Number(form.value.price || 0) * Number(form.value.discount || 1))
+const selectedCategoryName = computed(() => categories.value.find(category => Number(category.id) === Number(form.value.categoryId))?.name || '未选择分类')
 const submitButtonText = computed(() => {
   if (updateConfirming.value) return '正在确认保存结果...'
   if (submitting.value) return '保存中...'

@@ -37,7 +37,7 @@
       <router-view v-if="showRouterView" v-slot="{ Component, route }">
         <transition name="fade" mode="out-in">
           <keep-alive :include="cachedViews">
-            <component :is="Component" :key="route.path" />
+            <component :is="Component" :key="resolveAppViewKey(route)" />
           </keep-alive>
         </transition>
       </router-view>
@@ -75,6 +75,7 @@ import Dialog from '@/components/common/Dialog.vue'
 import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
 import DoodleBackground from '@/components/common/DoodleBackground.vue'
 import CornerActionMenu from '@/components/common/CornerActionMenu.vue'
+import { resolveAppViewKey } from '@/utils/sellerNavigation'
 import {
   MAINTENANCE_STATE,
   ensureMaintenanceStatusLoaded,

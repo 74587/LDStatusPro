@@ -62,8 +62,8 @@
       />
       <p v-if="imageUrlError" class="form-error">{{ imageUrlError }}</p>
       <p v-else-if="imageLoadError" class="form-error">{{ imageLoadError }}</p>
-      <p v-else-if="imageValidating" class="form-hint loading-hint">⚙️ 正在验证图片...</p>
-      <p v-else-if="imageValidated" class="form-hint success-hint">✅ 图片验证通过</p>
+      <p v-else-if="imageValidating" class="form-hint loading-hint">正在验证图片…</p>
+      <p v-else-if="imageValidated" class="form-hint success-hint">图片验证通过</p>
       <p v-else class="form-hint">推荐尺寸 16:9，必须使用 HTTPS 链接，不支持 linux.do 图床</p>
       
       <!-- 图片预览 -->
@@ -544,6 +544,45 @@ async function handleSubmit() {
 
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+:global(.seller-shell) .shop-form {
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+:global(.seller-shell) .form-input,
+:global(.seller-shell) .form-textarea {
+  min-height: 44px;
+  border-color: var(--seller-border);
+  border-radius: 10px;
+  background: var(--seller-surface-strong);
+  color: var(--seller-ink);
+}
+
+:global(.seller-shell) .form-input:focus,
+:global(.seller-shell) .form-textarea:focus {
+  border-color: var(--seller-jade);
+  background: var(--seller-surface);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--seller-jade) 14%, transparent);
+}
+
+:global(.seller-shell) .btn-primary {
+  border-radius: 10px;
+  background: var(--seller-navy);
+}
+
+@media (min-width: 1024px) {
+  :global(.seller-shell) .shop-form {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 16px;
+  }
+
+  :global(.seller-shell) .shop-form > :nth-child(n + 4) {
+    grid-column: 1 / -1;
+  }
 }
 
 /* 移动端适配 */

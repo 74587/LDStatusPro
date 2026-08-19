@@ -1,11 +1,6 @@
 <template>
   <div class="settings-page">
     <div class="page-container">
-      <div class="page-header">
-        <h1 class="page-title">LDC 收款配置</h1>
-      </div>
-      
-      <!-- 加载中 -->
       <div v-if="loading" class="loading-state">
         <div class="skeleton-card">
           <div class="skeleton skeleton-line w-32"></div>
@@ -14,44 +9,42 @@
           <div class="skeleton skeleton-line w-48 mt-4"></div>
         </div>
       </div>
+
+      <div v-else-if="loadError" class="settings-error-state" role="alert">
+        <CircleAlert :size="24" aria-hidden="true" />
+        <h2>收款配置加载失败</h2>
+        <p>{{ loadError }}</p>
+        <button type="button" class="save-btn compact" @click="loadSettings">重新加载</button>
+      </div>
       
-      <!-- 设置表单 -->
       <div v-else class="settings-form">
-        <!-- 统计信息（已配置时显示）-->
-        <div v-if="isConfigured" class="stats-card">
-          <h3 class="card-title">CDK 分发收入统计</h3>
+        <section class="payment-status-strip" aria-labelledby="payment-status-title">
+          <div class="status-lead">
+            <p>收款状态</p>
+            <h2 id="payment-status-title">{{ isConfigured ? '凭证已配置' : '等待接入 LDC 收款' }}</h2>
+            <div class="config-status">
+              <SellerStatusBadge :label="config.isVerified ? '已验证' : (isConfigured ? '待验证' : '未配置')" :tone="config.isVerified ? 'success' : 'warning'" />
+              <SellerStatusBadge :label="config.isActive ? '已启用' : '未启用'" :tone="config.isActive ? 'success' : 'neutral'" />
+            </div>
+          </div>
           <div class="stats-grid">
             <div class="stat-item">
               <div class="stat-value">{{ stats.totalOrders || 0 }}</div>
-              <div class="stat-label">总订单</div>
+              <div class="stat-label">累计订单</div>
             </div>
             <div class="stat-item">
               <div class="stat-value">{{ formatMoney(stats.totalRevenue) }}</div>
-              <div class="stat-label">总收入 (LDC)</div>
-            </div>
-            <div class="stat-item">
-              <div class="stat-value">{{ stats.thisMonthOrders || 0 }}</div>
-              <div class="stat-label">本月订单</div>
-            </div>
-            <div class="stat-item">
-              <div class="stat-value">{{ formatMoney(stats.thisMonthRevenue) }}</div>
-              <div class="stat-label">本月收入 (LDC)</div>
+              <div class="stat-label">累计收入 · LDC</div>
             </div>
           </div>
-        </div>
+        </section>
+
+        <div class="payment-workspace">
+          <section class="credential-panel" aria-labelledby="credential-title">
         
-        <!-- 配置表单 -->
         <div class="form-card">
           <div class="form-header">
-            <h3 class="card-title">LDC 收款配置</h3>
-            <div v-if="isConfigured" class="config-status">
-              <span :class="['status-badge', config.isVerified ? 'verified' : 'pending']">
-                {{ config.isVerified ? '已验证' : '待验证' }}
-              </span>
-              <span :class="['status-badge', config.isActive ? 'active' : 'inactive']">
-                {{ config.isActive ? '已启用' : '已禁用' }}
-              </span>
-            </div>
+            <div><p class="panel-eyebrow">凭证配置</p><h2 id="credential-title" class="card-title">LDC 应用凭证</h2></div>
           </div>
           
           <p v-if="!isConfigured" class="card-desc">
@@ -60,24 +53,27 @@
           
           <div class="form-group">
             <label class="form-label">Client ID (PID)</label>
+            <div v-if="isConfigured && !isEditing" class="credential-value mono">{{ ldcPid }}</div>
             <input
+              v-else
               v-model="ldcPid"
               type="text"
               class="form-input"
-              :placeholder="isConfigured ? '' : '请输入您的 LDC Client ID'"
-              :disabled="isConfigured && !isEditing"
+              placeholder="请输入您的 LDC Client ID"
             />
           </div>
           
           <div class="form-group">
             <label class="form-label">Client Key</label>
-            <input
-              v-model="ldcKey"
-              type="password"
-              class="form-input"
-              :placeholder="isConfigured && !isEditing ? '' : '请输入您的 LDC Client Key'"
-              :disabled="isConfigured && !isEditing"
-            />
+            <div v-if="isConfigured && !isEditing" class="credential-value secret-value"><LockKeyhole :size="16" aria-hidden="true" /> 已安全加密存储</div>
+            <div v-else class="secret-input-wrap">
+              <input v-model="ldcKey" :type="showKey ? 'text' : 'password'" class="form-input" placeholder="请输入您的 LDC Client Key" />
+              <button type="button" class="secret-toggle" :aria-label="showKey ? '隐藏 Client Key' : '显示 Client Key'" @click="showKey = !showKey">
+                <EyeOff v-if="showKey" :size="17" aria-hidden="true" />
+                <Eye v-else :size="17" aria-hidden="true" />
+              </button>
+            </div>
+            <p v-if="saveError" class="form-error" role="alert">{{ saveError }}</p>
             <p class="form-hint">
               {{ isConfigured ? '密钥已安全存储，修改时需重新输入' : '密钥将安全加密存储，不会明文显示' }}
             </p>
@@ -86,10 +82,6 @@
           <div class="form-actions">
             <template v-if="isConfigured && !isEditing">
               <button class="edit-btn" @click="startEdit">编辑配置</button>
-              <button class="test-btn" @click="testCallback" :disabled="testing">
-                {{ testing ? '测试中...' : '测试通知' }}
-              </button>
-              <button class="delete-btn" @click="deleteConfig">删除配置</button>
             </template>
             <template v-else>
               <button
@@ -103,10 +95,30 @@
             </template>
           </div>
         </div>
-        
-        <!-- 使用说明 -->
+          </section>
+
+          <section class="integration-panel" aria-labelledby="integration-title">
         <div class="help-card">
-          <h3 class="card-title">如何获取 LDC 收款凭证</h3>
+          <div class="form-header"><div><p class="panel-eyebrow">接入检查</p><h2 id="integration-title" class="card-title">通知与回调</h2></div></div>
+
+          <div class="endpoint-list">
+            <div class="endpoint-row">
+              <div><span>通知 URL</span><code>{{ ldcNotifyUrl }}</code></div>
+              <button type="button" class="copy-btn" @click="copyEndpoint(ldcNotifyUrl, '通知 URL')"><Copy :size="15" aria-hidden="true" />复制</button>
+            </div>
+            <div class="endpoint-row">
+              <div><span>回调 URL</span><code>{{ ldcReturnUrl }}</code></div>
+              <button type="button" class="copy-btn" @click="copyEndpoint(ldcReturnUrl, '回调 URL')"><Copy :size="15" aria-hidden="true" />复制</button>
+            </div>
+          </div>
+
+          <div class="callback-test">
+            <button type="button" class="test-btn" @click="testCallback" :disabled="testing || !isConfigured">
+              <Send :size="16" aria-hidden="true" />{{ testing ? '正在测试…' : '测试通知' }}
+            </button>
+            <p v-if="testResult" class="test-result" :class="testResult.tone" role="status">{{ testResult.message }}</p>
+            <p v-else class="test-hint">保存凭证后可发送一次测试通知，结果会显示在这里。</p>
+          </div>
           
           <div class="help-content">
             <div class="help-step">
@@ -123,15 +135,8 @@
             <div class="help-step">
               <span class="step-num">2</span>
               <div class="step-content">
-                <h4 class="step-title">配置通知地址（必填）</h4>
-                <p class="step-desc">
-                  <strong>通知 URL（服务器异步通知，必须正确配置）：</strong>
-                </p>
-                <code class="url-code">{{ ldcNotifyUrl }}</code>
-                <p class="step-desc" style="margin-top: 8px;">
-                  <strong>回调URL（支付后浏览器跳转）：</strong>
-                </p>
-                <code class="url-code">{{ ldcReturnUrl }}</code>
+                <h4 class="step-title">填写通知与回调地址</h4>
+                <p class="step-desc">将上方两个地址分别填写至应用设置，通知 URL 为自动履约的必要配置。</p>
               </div>
             </div>
             
@@ -147,7 +152,6 @@
           </div>
         </div>
         
-        <!-- 注意事项 -->
         <div class="warning-card">
           <h3 class="card-title">注意事项</h3>
           <ul class="warning-list">
@@ -158,6 +162,13 @@
             <li>如遇收款问题，请联系@JackyLiii</li>
           </ul>
         </div>
+          </section>
+        </div>
+
+        <section v-if="isConfigured" class="payment-danger-zone" aria-labelledby="delete-config-title">
+          <div><h2 id="delete-config-title">删除收款配置</h2><p>删除后新订单将无法使用当前凭证收款，已有订单记录不受影响。</p></div>
+          <button type="button" class="delete-btn" @click="deleteConfig">删除配置</button>
+        </section>
       </div>
     </div>
   </div>
@@ -169,6 +180,8 @@ import { useShopStore } from '@/stores/shop'
 import { useToast } from '@/composables/useToast'
 import { useDialog } from '@/composables/useDialog'
 import { api } from '@/utils/api'
+import SellerStatusBadge from '@/components/seller/SellerStatusBadge.vue'
+import { CircleAlert, Copy, Eye, EyeOff, LockKeyhole, Send } from '@lucide/vue'
 
 const shopStore = useShopStore()
 const toast = useToast()
@@ -190,6 +203,10 @@ const config = ref({})
 const stats = ref({})
 const ldcPid = ref('')
 const ldcKey = ref('')
+const showKey = ref(false)
+const loadError = ref('')
+const saveError = ref('')
+const testResult = ref(null)
 
 // 是否已配置
 const isConfigured = computed(() => !!config.value.configured)
@@ -211,6 +228,7 @@ function formatMoney(value) {
 async function loadSettings() {
   try {
     loading.value = true
+    loadError.value = ''
     const result = await shopStore.fetchMerchantConfig()
     // 解包嵌套 data
     const data = result?.data?.data || result?.data || result || {}
@@ -219,6 +237,7 @@ async function loadSettings() {
     ldcPid.value = data.ldcPid || ''
     ldcKey.value = data.configured ? '••••••••••••••••' : ''
   } catch (error) {
+    loadError.value = error?.message || '网络异常，请稍后重试。'
     toast.error('加载设置失败')
   } finally {
     loading.value = false
@@ -229,6 +248,8 @@ async function loadSettings() {
 function startEdit() {
   isEditing.value = true
   ldcKey.value = ''
+  saveError.value = ''
+  showKey.value = false
 }
 
 // 取消编辑
@@ -236,6 +257,17 @@ function cancelEdit() {
   isEditing.value = false
   ldcPid.value = config.value.ldcPid || ''
   ldcKey.value = config.value.configured ? '••••••••••••••••' : ''
+  saveError.value = ''
+  showKey.value = false
+}
+
+async function copyEndpoint(value, label) {
+  try {
+    await navigator.clipboard.writeText(value)
+    toast.success(`${label}已复制`)
+  } catch {
+    toast.error('复制失败，请手动选择地址复制')
+  }
 }
 
 // 保存设置
@@ -246,6 +278,7 @@ async function saveSettings() {
   }
   
   saving.value = true
+  saveError.value = ''
   try {
     // Base64 编码 Key 避免 WAF 拦截
     const encodedKey = btoa(ldcKey.value)
@@ -264,9 +297,11 @@ async function saveSettings() {
       isEditing.value = false
       await loadSettings()
     } else {
-      toast.error(result.error || '保存失败')
+      saveError.value = result.error?.message || result.error || '保存失败，请检查凭证后重试。'
+      toast.error(saveError.value)
     }
   } catch (error) {
+    saveError.value = error?.message || '保存失败，请检查网络后重试。'
     toast.error('保存失败')
   } finally {
     saving.value = false
@@ -276,19 +311,24 @@ async function saveSettings() {
 // 测试通知
 async function testCallback() {
   testing.value = true
+  testResult.value = null
   try {
     const result = await api.post('/api/shop/merchant/test-callback')
     if (result.success) {
       const data = result.data?.data || result.data || {}
       if (data.status === 'ok') {
+        testResult.value = { tone: 'success', message: '测试成功，通知地址可以正常接收请求。' }
         toast.success('通知测试成功！您的通知地址配置正确')
       } else {
+        testResult.value = { tone: 'warning', message: data.message || '测试已完成，请核对 LDC 应用中的通知地址。' }
         toast.warning(data.message || '通知测试完成，请检查配置')
       }
     } else {
+      testResult.value = { tone: 'danger', message: result.error?.message || result.error || '测试失败，请稍后重试。' }
       toast.error(result.error || '测试失败')
     }
   } catch (error) {
+    testResult.value = { tone: 'danger', message: error?.message || '测试失败，请检查网络后重试。' }
     toast.error('测试失败')
   } finally {
     testing.value = false
@@ -732,5 +772,199 @@ html.dark .settings-page {
 
 .warning-list li:last-child {
   margin-bottom: 0;
+}
+
+/* Seller ledger layout */
+.payment-status-strip {
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 18px;
+  padding: 18px 20px;
+  border: 1px solid var(--seller-border);
+  border-left: 4px solid var(--seller-jade);
+  border-radius: 14px;
+  background: var(--seller-surface);
+  box-shadow: var(--seller-shadow-sm);
+}
+
+.status-lead > p,
+.panel-eyebrow {
+  margin: 0 0 4px;
+  color: var(--seller-jade);
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: .14em;
+}
+
+.status-lead h2 {
+  margin: 0 0 12px;
+  color: var(--seller-ink);
+  font-family: "Noto Serif SC", "Source Han Serif SC", "Songti SC", STSong, serif;
+  font-size: 19px;
+}
+
+.config-status { display: flex; flex-wrap: wrap; gap: 7px; }
+.payment-status-strip .stats-grid { width: min(100%, 360px); gap: 1px; background: var(--seller-border); }
+.payment-status-strip .stat-item { display: grid; align-content: center; min-width: 150px; border-radius: 0; background: var(--seller-surface); }
+.payment-status-strip .stat-value { color: var(--seller-ink); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 21px; font-variant-numeric: tabular-nums; }
+.payment-status-strip .stat-label { color: var(--seller-muted); }
+
+.payment-workspace {
+  display: grid;
+  gap: 18px;
+  align-items: start;
+}
+
+.credential-panel,
+.integration-panel,
+.payment-danger-zone,
+.settings-error-state {
+  min-width: 0;
+  border: 1px solid var(--seller-border);
+  border-radius: 14px;
+  background: var(--seller-surface);
+  box-shadow: var(--seller-shadow-sm);
+}
+
+.credential-panel,
+.integration-panel { padding: clamp(20px, 2vw, 28px); }
+.form-card,
+.help-card,
+.warning-card { padding: 0; margin: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+.form-header { margin-bottom: 20px; padding-bottom: 14px; border-bottom: 1px solid var(--seller-border); }
+.card-title { margin: 0; color: var(--seller-ink); font-family: "Noto Serif SC", "Source Han Serif SC", serif; font-size: 19px; }
+.card-desc { color: var(--seller-muted); }
+
+.form-label { color: var(--seller-ink); font-size: 13px; font-weight: 650; }
+.form-input {
+  min-height: 46px;
+  border-color: var(--seller-border);
+  border-radius: 10px;
+  background: var(--seller-surface-strong);
+  color: var(--seller-ink);
+}
+.form-input:focus { border-color: var(--seller-jade); box-shadow: 0 0 0 3px color-mix(in srgb, var(--seller-jade) 14%, transparent); }
+.credential-value {
+  display: flex;
+  min-height: 46px;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 14px;
+  border: 1px solid var(--seller-border);
+  border-radius: 10px;
+  background: var(--seller-surface-muted);
+  color: var(--seller-ink);
+}
+.credential-value.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-variant-numeric: tabular-nums; }
+.secret-value { color: var(--seller-muted); }
+.secret-input-wrap { position: relative; }
+.secret-input-wrap .form-input { padding-right: 48px; }
+.secret-toggle {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--seller-muted);
+  cursor: pointer;
+}
+.form-error { margin: 7px 0 0; color: var(--seller-danger); font-size: 12px; line-height: 1.5; }
+
+.save-btn,
+.edit-btn,
+.test-btn,
+.cancel-btn { min-height: 44px; border-radius: 10px; }
+.save-btn { background: var(--seller-navy); box-shadow: none; }
+.save-btn.compact { width: auto; min-width: 0; flex: none; padding: 10px 16px; }
+.edit-btn,
+.test-btn,
+.cancel-btn { border: 1px solid var(--seller-border); background: var(--seller-surface-muted); color: var(--seller-ink); }
+
+.endpoint-list { display: grid; gap: 10px; }
+.endpoint-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--seller-border);
+  border-radius: 10px;
+  background: var(--seller-surface-muted);
+}
+.endpoint-row > div { min-width: 0; flex: 1; }
+.endpoint-row span { display: block; margin-bottom: 4px; color: var(--seller-muted); font-size: 11px; }
+.endpoint-row code { display: block; overflow: hidden; color: var(--seller-ink); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.copy-btn {
+  display: inline-flex;
+  min-height: 38px;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 10px;
+  border: 1px solid var(--seller-border);
+  border-radius: 8px;
+  background: var(--seller-surface);
+  color: var(--seller-ink);
+  cursor: pointer;
+}
+
+.callback-test { margin: 14px 0 22px; padding-bottom: 20px; border-bottom: 1px solid var(--seller-border); }
+.callback-test .test-btn { display: inline-flex; align-items: center; gap: 7px; }
+.test-result,
+.test-hint { margin: 10px 0 0; font-size: 12px; line-height: 1.55; }
+.test-hint { color: var(--seller-muted); }
+.test-result.success { color: var(--seller-success); }
+.test-result.warning { color: var(--seller-warning); }
+.test-result.danger { color: var(--seller-danger); }
+
+.help-content { padding-bottom: 20px; border-bottom: 1px solid var(--seller-border); }
+.step-num { background: var(--seller-jade); }
+.step-title { color: var(--seller-ink); }
+.step-desc { color: var(--seller-muted); }
+.warning-card { padding-top: 20px; }
+.warning-card .card-title { color: var(--seller-ink); font-family: inherit; font-size: 14px; }
+.warning-list { margin-top: 10px; color: var(--seller-muted); font-size: 12px; line-height: 1.7; }
+
+.payment-danger-zone {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-top: 18px;
+  padding: 20px;
+  border-color: color-mix(in srgb, var(--seller-danger) 32%, var(--seller-border));
+}
+.payment-danger-zone h2 { margin: 0 0 4px; color: var(--seller-ink); font-size: 14px; }
+.payment-danger-zone p { margin: 0; color: var(--seller-muted); font-size: 12px; }
+.payment-danger-zone .delete-btn { flex: 0 0 auto; min-height: 42px; }
+
+.settings-error-state {
+  display: grid;
+  justify-items: start;
+  gap: 10px;
+  padding: 28px;
+  color: var(--seller-muted);
+}
+.settings-error-state h2 { margin: 0; color: var(--seller-ink); font-size: 18px; }
+.settings-error-state p { margin: 0 0 6px; }
+
+@media (min-width: 980px) {
+  .payment-workspace { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+}
+
+@media (max-width: 700px) {
+  .payment-status-strip,
+  .payment-danger-zone { align-items: stretch; flex-direction: column; }
+  .payment-status-strip .stats-grid { width: 100%; }
+  .payment-status-strip .stat-item { min-width: 0; padding-inline: 8px; }
+  .endpoint-row { align-items: stretch; flex-direction: column; }
+  .copy-btn { align-self: flex-start; }
+  .payment-danger-zone .delete-btn { width: 100%; }
 }
 </style>

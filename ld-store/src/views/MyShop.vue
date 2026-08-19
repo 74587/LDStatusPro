@@ -1,45 +1,49 @@
 <template>
   <div class="my-shop-page">
     <div class="page-container">
-      <!-- 返回按钮 -->
-      <div class="back-nav">
-        <router-link to="/seller" class="back-link">
-          <span class="back-icon">←</span>
-          <span>返回经营概览</span>
-        </router-link>
-      </div>
-
-      <h1 class="page-title">小店管理</h1>
-
-      <!-- 加载状态 -->
       <div v-if="loading" class="loading-state">
         <div class="spinner"></div>
-        <p>加载中...</p>
+        <p>正在读取小店资料…</p>
       </div>
 
-      <!-- 已有小店 -->
+      <div v-else-if="loadError" class="shop-error-state" role="alert">
+        <Store :size="24" aria-hidden="true" />
+        <h2>小店资料加载失败</h2>
+        <p>{{ loadError }}</p>
+        <button type="button" class="btn btn-primary" @click="loadMyShop">重新加载</button>
+      </div>
+
       <div v-else-if="myShop" class="my-shop-section">
-        <!-- 状态提示 -->
         <div class="status-banner" :class="statusClass">
           <div class="status-content">
-            <span class="status-text">{{ statusText }}</span>
+            <SellerStatusBadge :label="statusText" :tone="statusTone" />
             <span v-if="myShop.reject_reason" class="reject-reason">
-              原因: {{ myShop.reject_reason }}
+              审核意见：{{ myShop.reject_reason }}
             </span>
           </div>
+          <button
+            v-if="myShop.status === 'rejected' || myShop.status === 'offline'"
+            type="button"
+            class="banner-action"
+            @click="showEditForm = true"
+          >编辑并重新提交</button>
         </div>
 
-        <!-- 小店信息卡片 -->
-        <div class="shop-card">
+        <div class="shop-management-grid">
+          <section class="shop-preview-panel" aria-labelledby="shop-preview-title">
+            <div class="panel-heading">
+              <div><p class="panel-eyebrow">商城展示</p><h2 id="shop-preview-title">小店预览</h2></div>
+              <span class="view-count"><Eye :size="15" aria-hidden="true" /> {{ myShop.view_count || 0 }} 次浏览</span>
+            </div>
+
+            <div class="shop-card">
           <div class="shop-image-wrapper" v-if="myShop.image_url">
             <img :src="myShop.image_url" :alt="myShop.name" class="shop-image" />
           </div>
-          <div class="shop-image-placeholder" v-else>
-            <span aria-hidden="true"></span>
-          </div>
+              <div class="shop-image-placeholder" v-else><Store :size="34" aria-hidden="true" /></div>
 
           <div class="shop-info">
-            <h2 class="shop-name">{{ myShop.name }}</h2>
+            <h3 class="shop-name">{{ myShop.name }}</h3>
 
             <div class="shop-owner">
               <AvatarImage
@@ -75,77 +79,68 @@
               </span>
             </div>
 
-            <div class="shop-stats" v-if="myShop.status === 'active'">
-              <span class="stat">{{ myShop.view_count || 0 }} 浏览</span>
-            </div>
           </div>
-        </div>
+            </div>
+          </section>
 
-        <!-- 编辑表单 -->
-        <div class="edit-section" v-if="showEditForm">
-          <h3 class="section-title">编辑小店信息</h3>
-          <ShopForm 
-            :initial-data="myShop"
-            :submitting="submitting"
-            @submit="handleUpdate"
-            @cancel="showEditForm = false"
-          />
-        </div>
+          <section class="shop-editor-panel" aria-labelledby="shop-editor-title">
+            <div class="panel-heading">
+              <div>
+                <p class="panel-eyebrow">{{ showEditForm ? '资料维护' : '经营资料' }}</p>
+                <h2 id="shop-editor-title">{{ showEditForm ? '编辑小店信息' : '当前配置' }}</h2>
+              </div>
+            </div>
 
-        <!-- 操作按钮 -->
-        <div class="action-buttons" v-if="!showEditForm">
-          <button
-            v-if="myShop.status !== 'offline'"
-            class="btn btn-secondary"
-            @click="showEditForm = true"
-          >
-            编辑信息
-          </button>
-          <button
-            v-if="myShop.status === 'offline'"
-            class="btn btn-secondary"
-            @click="showEditForm = true"
-          >
-            编辑并重新提交
-          </button>
-          <button
-            v-if="myShop.status === 'active'"
-            class="btn btn-danger"
-            @click="handleOffline"
-            :disabled="submitting"
-          >
-            {{ submitting ? '下架中...' : '下架小店' }}
-          </button>
-          <a
-            v-if="myShop.status === 'active'"
-            :href="myShop.shop_url"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="btn btn-primary"
-          >
-            访问小店
-          </a>
+            <div class="edit-section" v-if="showEditForm">
+              <ShopForm
+                :initial-data="myShop"
+                :submitting="submitting"
+                @submit="handleUpdate"
+                @cancel="showEditForm = false"
+              />
+            </div>
+
+            <template v-else>
+              <dl class="shop-facts">
+                <div><dt>审核状态</dt><dd>{{ statusText }}</dd></div>
+                <div><dt>展示标签</dt><dd>{{ parsedTags.length ? parsedTags.join('、') : '暂无标签' }}</dd></div>
+                <div><dt>访问地址</dt><dd class="truncate-value">{{ myShop.shop_url || '尚未填写' }}</dd></div>
+                <div><dt>累计浏览</dt><dd>{{ myShop.view_count || 0 }}</dd></div>
+              </dl>
+              <p class="panel-note">修改资料后将按照现有规则重新进入审核；审核期间请保持访问地址可用。</p>
+            </template>
+
+            <div class="action-buttons" v-if="!showEditForm">
+              <button class="btn btn-secondary" @click="showEditForm = true">{{ myShop.status === 'offline' ? '编辑并重新提交' : '编辑信息' }}</button>
+              <a v-if="myShop.status === 'active'" :href="myShop.shop_url" target="_blank" rel="noopener noreferrer" class="btn btn-primary">
+                访问小店 <ArrowUpRight :size="16" aria-hidden="true" />
+              </a>
+            </div>
+
+            <div v-if="myShop.status === 'active'" class="danger-zone">
+              <div><h3>下架小店</h3><p>下架后不再显示于小店集市，资料会继续保留。</p></div>
+              <button type="button" class="btn btn-danger" @click="handleOffline" :disabled="submitting">{{ submitting ? '下架中…' : '下架小店' }}</button>
+            </div>
+          </section>
         </div>
       </div>
 
-      <!-- 未入驻，显示入驻表单 -->
-      <div v-else class="apply-section">
-        <div class="intro-card">
-          <h2>欢迎入驻小店集市</h2>
-          <p>小店集市是 LD士多 为论坛用户提供的友情链接展示平台。</p>
-          <ul class="intro-list">
-            <li>🆓 完全免费入驻</li>
-            <li>支持添加分类标签</li>
-            <li>展示店主 LinuxDo 身份</li>
-            <li>提供浏览量统计</li>
-          </ul>
-        </div>
-
-        <h3 class="section-title">填写入驻信息</h3>
-        <ShopForm 
-          :submitting="submitting"
-          @submit="handleSubmit"
-        />
+      <div v-else class="shop-application-grid">
+        <section class="application-form-panel" aria-labelledby="application-title">
+          <div class="panel-heading"><div><p class="panel-eyebrow">免费入驻</p><h2 id="application-title">填写小店资料</h2></div></div>
+          <ShopForm :submitting="submitting" @submit="handleSubmit" />
+        </section>
+        <aside class="intro-card">
+          <Store :size="24" aria-hidden="true" />
+          <h2>入驻说明</h2>
+          <p>小店集市面向社区用户提供友情链接展示，提交后由管理员审核。</p>
+          <ol class="intro-list">
+            <li><span>01</span>免费提交小店资料</li>
+            <li><span>02</span>使用分类标签说明业务</li>
+            <li><span>03</span>展示店主社区身份</li>
+            <li><span>04</span>查看累计浏览数据</li>
+          </ol>
+        </aside>
       </div>
     </div>
   </div>
@@ -156,6 +151,8 @@ import { ref, computed, onMounted } from 'vue'
 import { api } from '@/utils/api'
 import AvatarImage from '@/components/common/AvatarImage.vue'
 import ShopForm from '@/components/shop/ShopForm.vue'
+import SellerStatusBadge from '@/components/seller/SellerStatusBadge.vue'
+import { ArrowUpRight, Eye, Store } from '@lucide/vue'
 import { buildAvatarCandidates } from '@/utils/avatar'
 import { useToast } from '@/composables/useToast'
 import { useDialog } from '@/composables/useDialog'
@@ -167,6 +164,7 @@ const loading = ref(true)
 const submitting = ref(false)
 const myShop = ref(null)
 const showEditForm = ref(false)
+const loadError = ref('')
 
 // 解析标签
 const parsedTags = computed(() => {
@@ -212,6 +210,13 @@ const statusText = computed(() => {
   return textMap[myShop.value.status] || ''
 })
 
+const statusTone = computed(() => ({
+  pending: 'warning',
+  active: 'success',
+  rejected: 'danger',
+  offline: 'neutral'
+})[myShop.value?.status] || 'neutral')
+
 // 标签样式类
 const getTagClass = (tag) => {
   const tagClassMap = {
@@ -227,13 +232,20 @@ const getTagClass = (tag) => {
 
 // 加载我的小店
 async function loadMyShop() {
+  loading.value = true
+  loadError.value = ''
   try {
     const result = await api.get('/api/shops/my')
     if (result.success && result.data) {
       myShop.value = result.data
+    } else if (result.success) {
+      myShop.value = null
+    } else {
+      throw new Error(result.error?.message || result.error || '无法读取小店资料')
     }
   } catch (e) {
     console.error('Load my shop failed:', e)
+    loadError.value = e?.message || '网络异常，请稍后重试。'
   } finally {
     loading.value = false
   }
@@ -657,6 +669,213 @@ onMounted(() => {
   margin-bottom: 20px;
 }
 
+/* Seller ledger layout */
+.shop-management-grid,
+.shop-application-grid {
+  display: grid;
+  gap: 18px;
+  align-items: start;
+}
+
+.shop-preview-panel,
+.shop-editor-panel,
+.application-form-panel,
+.intro-card,
+.shop-error-state {
+  border: 1px solid var(--seller-border);
+  border-radius: 14px;
+  background: var(--seller-surface);
+  box-shadow: var(--seller-shadow-sm);
+}
+
+.shop-preview-panel,
+.shop-editor-panel,
+.application-form-panel {
+  min-width: 0;
+  padding: clamp(18px, 2vw, 26px);
+}
+
+.panel-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--seller-border);
+}
+
+.panel-heading h2 {
+  margin: 0;
+  color: var(--seller-ink);
+  font-family: "Noto Serif SC", "Source Han Serif SC", "Songti SC", STSong, serif;
+  font-size: 19px;
+}
+
+.panel-eyebrow {
+  margin: 0 0 4px;
+  color: var(--seller-jade);
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: .14em;
+}
+
+.view-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--seller-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.status-banner {
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border: 1px solid var(--seller-border);
+  background: var(--seller-surface-muted) !important;
+  color: var(--seller-ink) !important;
+}
+
+.status-content {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 12px;
+}
+
+.reject-reason {
+  overflow: hidden;
+  margin: 0;
+  color: var(--seller-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.banner-action {
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 1px solid var(--seller-border-strong);
+  border-radius: 9px;
+  background: transparent;
+  color: var(--seller-ink);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.shop-card {
+  margin: 0;
+  border: 1px solid var(--seller-border);
+  border-radius: 12px;
+  background: var(--seller-surface-strong);
+  box-shadow: none;
+}
+
+.shop-name { color: var(--seller-ink); }
+.shop-description,
+.owner-name { color: var(--seller-muted); }
+.shop-url { color: var(--seller-jade-strong); }
+
+.shop-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0;
+  border-block: 1px solid var(--seller-border);
+}
+
+.shop-facts div {
+  min-width: 0;
+  padding: 15px 0;
+}
+
+.shop-facts div:nth-child(odd) { padding-right: 14px; }
+.shop-facts div:nth-child(even) { padding-left: 14px; border-left: 1px solid var(--seller-border); }
+.shop-facts dt { margin-bottom: 5px; color: var(--seller-muted); font-size: 11px; }
+.shop-facts dd { margin: 0; color: var(--seller-ink); font-size: 13px; font-weight: 650; }
+.truncate-value { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.panel-note {
+  margin: 18px 0;
+  padding: 12px 14px;
+  border-left: 3px solid var(--seller-jade);
+  background: var(--seller-surface-muted);
+  color: var(--seller-muted);
+  font-size: 12px;
+  line-height: 1.65;
+}
+
+.action-buttons { margin-top: 18px; }
+.btn { min-height: 44px; border-radius: 10px; }
+.btn-primary { background: var(--seller-navy); box-shadow: none; }
+.btn-secondary { border-color: var(--seller-border); background: var(--seller-surface); color: var(--seller-ink); }
+
+.edit-section {
+  padding: 0;
+  margin: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.danger-zone {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1px solid color-mix(in srgb, var(--seller-danger) 32%, var(--seller-border));
+}
+
+.danger-zone h3 { margin: 0 0 4px; color: var(--seller-ink); font-size: 14px; }
+.danger-zone p { margin: 0; color: var(--seller-muted); font-size: 12px; }
+.danger-zone .btn-danger { flex: 0 0 auto; }
+
+.shop-application-grid .intro-card {
+  position: sticky;
+  top: 94px;
+  margin: 0;
+  padding: 24px;
+  border-top: 4px solid var(--seller-jade);
+  background: var(--seller-surface);
+}
+
+.intro-card > svg { color: var(--seller-jade); }
+.intro-card h2 { margin-top: 14px; color: var(--seller-ink); font-family: "Noto Serif SC", "Source Han Serif SC", serif; }
+.intro-card p { color: var(--seller-muted); line-height: 1.65; }
+.intro-list { display: grid; grid-template-columns: 1fr; gap: 0; }
+.intro-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 0;
+  border-top: 1px solid var(--seller-border);
+  color: var(--seller-ink);
+}
+.intro-list li span { color: var(--seller-jade); font-family: ui-monospace, monospace; font-size: 11px; }
+
+.shop-error-state {
+  display: grid;
+  justify-items: start;
+  gap: 10px;
+  padding: 28px;
+  color: var(--seller-muted);
+}
+.shop-error-state h2 { margin: 0; color: var(--seller-ink); font-size: 18px; }
+.shop-error-state p { margin: 0 0 6px; }
+
+@media (min-width: 980px) {
+  .shop-management-grid { grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); }
+  .shop-application-grid { grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr); }
+}
+
+@media (max-width: 979px) {
+  .shop-editor-panel { order: -1; }
+}
+
 /* 移动端适配 */
 @media (max-width: 640px) {
   .page-container {
@@ -678,5 +897,18 @@ onMounted(() => {
   .btn {
     width: 100%;
   }
+
+  .status-banner,
+  .status-content,
+  .danger-zone { align-items: stretch; flex-direction: column; }
+
+  .reject-reason { white-space: normal; }
+
+  .shop-facts { grid-template-columns: 1fr; }
+  .shop-facts div:nth-child(odd),
+  .shop-facts div:nth-child(even) { padding-inline: 0; border-left: 0; }
+  .shop-facts div + div { border-top: 1px solid var(--seller-border); }
+
+  .shop-application-grid .intro-card { position: static; order: 2; }
 }
 </style>

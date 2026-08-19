@@ -1,4 +1,4 @@
-.seller-shell .page-container {
+.seller-shell .seller-main .page-container {
   width: 100%;
   max-width: 1200px;
   padding: 0;
@@ -60,7 +60,212 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Shared wide form framework for publishing and editing. */
+.seller-shell .seller-product-form,
+.seller-shell .seller-edit-form {
+  display: grid;
+  gap: 18px;
+  align-items: start;
+}
+
+.seller-shell .seller-product-form > .form-card,
+.seller-shell .seller-edit-form > .form-card {
+  grid-column: 1;
+  margin: 0;
+  padding: clamp(20px, 2.3vw, 28px);
+  border: 1px solid var(--seller-border);
+  border-radius: 14px;
+  background: var(--seller-surface);
+  box-shadow: var(--seller-shadow-sm);
+}
+
+.seller-shell .seller-product-form .card-title,
+.seller-shell .seller-edit-form .card-title {
+  margin: 0 0 22px;
+  color: var(--seller-ink);
+  font-family: "Noto Serif SC", "Source Han Serif SC", "Songti SC", STSong, serif;
+  font-size: 19px;
+  line-height: 1.4;
+}
+
+.seller-shell .seller-product-form .form-row,
+.seller-shell .seller-edit-form .form-row {
+  gap: 18px;
+}
+
+.seller-shell .seller-product-form .form-input,
+.seller-shell .seller-product-form .form-textarea,
+.seller-shell .seller-edit-form .form-input,
+.seller-shell .seller-edit-form .form-textarea {
+  border-color: var(--seller-border);
+  border-radius: 10px;
+  background: var(--seller-surface-strong);
+  color: var(--seller-ink);
+}
+
+.seller-shell .seller-product-form .form-input:focus,
+.seller-shell .seller-product-form .form-textarea:focus,
+.seller-shell .seller-edit-form .form-input:focus,
+.seller-shell .seller-edit-form .form-textarea:focus {
+  border-color: var(--seller-jade);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--seller-jade) 14%, transparent);
+}
+
+.seller-shell .seller-product-summary {
+  grid-column: 1;
+}
+
+.seller-shell .seller-summary-preview {
+  display: grid;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  place-items: center;
+  margin-bottom: 16px;
+  border: 1px solid var(--seller-border);
+  border-radius: 11px;
+  background: var(--seller-surface-muted);
+  color: var(--seller-muted);
+}
+
+.seller-shell .seller-summary-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.seller-shell .seller-summary-name {
+  overflow: hidden;
+  margin: 0 0 5px;
+  color: var(--seller-ink);
+  font-size: 15px;
+  font-weight: 750;
+  line-height: 1.45;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.seller-shell .seller-summary-meta {
+  margin: 0 0 18px;
+  color: var(--seller-muted);
+  font-size: 12px;
+}
+
+.seller-shell .seller-summary-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0;
+  padding: 14px 0;
+  border-block: 1px solid var(--seller-border);
+}
+
+.seller-shell .seller-summary-facts div + div {
+  padding-left: 14px;
+  border-left: 1px solid var(--seller-border);
+}
+
+.seller-shell .seller-summary-facts dt {
+  margin-bottom: 5px;
+  color: var(--seller-muted);
+  font-size: 11px;
+}
+
+.seller-shell .seller-summary-facts dd {
+  margin: 0;
+  color: var(--seller-ink);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.seller-shell .seller-readiness-list {
+  display: grid;
+  gap: 9px;
+  margin: 16px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.seller-shell .seller-readiness-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--seller-muted);
+  font-size: 12px;
+}
+
+.seller-shell .seller-readiness-list li > span {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  border: 1px solid var(--seller-border-strong);
+  border-radius: 50%;
+  background: transparent;
+}
+
+.seller-shell .seller-readiness-list li.ready {
+  color: var(--seller-ink);
+}
+
+.seller-shell .seller-readiness-list li.ready > span {
+  border-color: var(--seller-jade);
+  background: var(--seller-jade);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--seller-jade) 12%, transparent);
+}
+
+.seller-shell .seller-product-summary .submit-btn {
+  max-width: none;
+  min-height: 46px;
+  margin: 0;
+  padding: 11px 18px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--seller-navy);
+  box-shadow: none;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 750;
+}
+
+.seller-shell .seller-product-summary .submit-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px color-mix(in srgb, var(--seller-navy) 18%, transparent);
+}
+
+@media (min-width: 1200px) {
+  .seller-shell .seller-product-form,
+  .seller-shell .seller-edit-form {
+    grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+  }
+
+  .seller-shell .seller-product-summary {
+    grid-column: 2;
+    grid-row: 1 / span 20;
+  }
+}
+
 @media (max-width: 640px) {
   .seller-shell .page-header { margin-bottom: 16px; }
   .seller-shell .page-title { font-size: 24px; }
+
+  .seller-shell .seller-product-form,
+  .seller-shell .seller-edit-form { gap: 14px; }
+
+  .seller-shell .seller-product-form > .form-card,
+  .seller-shell .seller-edit-form > .form-card { padding: 18px 16px; }
+
+  .seller-shell .seller-product-summary.seller-sticky-summary { overflow: visible; }
+
+  .seller-shell .seller-product-summary .seller-summary-action {
+    position: fixed;
+    z-index: 45;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    padding: 12px 14px max(12px, env(safe-area-inset-bottom));
+    border-top: 1px solid var(--seller-border);
+    background: color-mix(in srgb, var(--seller-bg) 94%, transparent);
+    backdrop-filter: blur(12px);
+  }
 }

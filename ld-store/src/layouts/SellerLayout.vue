@@ -107,11 +107,13 @@
       </section>
 
       <main id="seller-main" ref="sellerMain" class="seller-main" tabindex="-1">
-        <router-view v-slot="{ Component, route: childRoute }">
-          <transition name="seller-route" mode="out-in">
-            <component :is="Component" :key="childRoute.fullPath" />
-          </transition>
-        </router-view>
+        <div class="seller-view-stage">
+          <router-view v-slot="{ Component, route: childRoute }">
+            <transition name="seller-route">
+              <component :is="Component" :key="resolveSellerViewKey(childRoute)" />
+            </transition>
+          </router-view>
+        </div>
       </main>
     </div>
   </div>
@@ -140,6 +142,7 @@ import { api } from '@/utils/api'
 import ThemeToggle from '@/components/common/ThemeToggle.vue'
 import AvatarImage from '@/components/common/AvatarImage.vue'
 import { MAINTENANCE_STATE, isRestrictedMaintenanceMode } from '@/config/maintenance'
+import { resolveSellerViewKey } from '@/utils/sellerNavigation'
 
 const route = useRoute()
 const router = useRouter()
@@ -255,15 +258,21 @@ onUnmounted(() => {
 <style scoped>
 .seller-shell {
   --seller-paper: #f4f1e8;
+  --seller-bg: var(--seller-paper);
   --seller-surface: #fcfbf7;
   --seller-surface-soft: #eeebe2;
+  --seller-surface-muted: #f5f2ea;
+  --seller-surface-strong: #fffefa;
   --seller-navy: #10243e;
   --seller-navy-soft: #193451;
   --seller-ink: #1f2a34;
   --seller-muted: #68737c;
   --seller-jade: #718d7a;
+  --seller-jade-strong: #5f7968;
   --seller-jade-soft: #e5ece5;
   --seller-border: #d8d2c7;
+  --seller-border-strong: #c5beb1;
+  --seller-success: #54745e;
   --seller-danger: #a5534d;
   --seller-warning: #a7773f;
   --seller-shadow-sm: 0 3px 12px rgba(31, 42, 52, 0.05);
@@ -295,15 +304,21 @@ onUnmounted(() => {
 
 html.dark .seller-shell {
   --seller-paper: #0d151d;
+  --seller-bg: var(--seller-paper);
   --seller-surface: #16212a;
   --seller-surface-soft: #1c2933;
+  --seller-surface-muted: #192630;
+  --seller-surface-strong: #1b2832;
   --seller-navy: #0a1b2c;
   --seller-navy-soft: #122c42;
   --seller-ink: #e8e3d8;
   --seller-muted: #aab2b5;
   --seller-jade: #91b29a;
+  --seller-jade-strong: #a4c4ac;
   --seller-jade-soft: #20382e;
   --seller-border: #2b3943;
+  --seller-border-strong: #3a4a55;
+  --seller-success: #a4c8ad;
   --seller-danger: #d4867f;
   --seller-warning: #d5a76f;
   --seller-shadow-sm: 0 3px 12px rgba(0, 0, 0, 0.18);
@@ -406,6 +421,8 @@ html.dark .seller-shell {
 .seller-maintenance { gap: 10px; margin: 18px clamp(18px, 3vw, 38px) 0; padding: 13px 16px; border: 1px solid color-mix(in srgb, var(--seller-warning) 45%, var(--seller-border)); border-radius: 12px; color: var(--seller-warning); background: color-mix(in srgb, var(--seller-warning) 9%, var(--seller-surface)); }
 .seller-maintenance p { margin: 2px 0 0; color: var(--seller-muted); font-size: 13px; }
 .seller-main { width: min(100%, 1480px); margin: 0 auto; padding: clamp(20px, 3vw, 38px); outline: none; }
+.seller-view-stage { min-height: calc(100dvh - 148px); display: grid; isolation: isolate; }
+.seller-view-stage > * { min-width: 0; grid-area: 1 / 1; }
 .seller-route-enter-active { transition: opacity 180ms ease, transform 180ms ease; }
 .seller-route-leave-active { transition: opacity 120ms ease; }
 .seller-route-enter-from { opacity: 0; transform: translateY(6px); }
@@ -427,6 +444,7 @@ html.dark .seller-shell {
   .seller-topbar-market { width: 44px; padding: 0; justify-content: center; }
   .seller-topbar-title p { display: none; }
   .seller-main { padding: 18px 14px 32px; }
+  .seller-view-stage { min-height: calc(100dvh - 114px); }
   .seller-maintenance { margin: 14px 14px 0; }
 }
 
