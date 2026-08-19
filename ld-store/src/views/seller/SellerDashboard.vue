@@ -87,12 +87,15 @@
             <span>{{ item.label }}</span>
             <component :is="item.icon" :size="19" :stroke-width="1.7" aria-hidden="true" />
           </div>
-          <strong>{{ item.value }}<small>{{ item.unit }}</small></strong>
+          <strong :class="{ 'is-compact': String(item.value).length > 6 }">
+            <span class="kpi-value">{{ item.value }}</span>
+            <small>{{ item.unit }}</small>
+          </strong>
           <div class="kpi-compare" :class="item.direction">
             <TrendingUp v-if="item.direction === 'up'" :size="14" aria-hidden="true" />
             <TrendingDown v-else-if="item.direction === 'down'" :size="14" aria-hidden="true" />
             <Minus v-else :size="14" aria-hidden="true" />
-            {{ item.changeCopy }}
+            <span>{{ item.changeCopy }}</span>
           </div>
         </article>
       </section>
@@ -459,8 +462,11 @@ html.dark .range-switch button.active, html.dark .chart-view-switch button.activ
 .kpi-head { display: flex; justify-content: space-between; align-items: center; color: var(--seller-muted); font-size: 13px; }
 .kpi-head svg { color: var(--seller-jade); }
 .kpi-card > strong { display: flex; align-items: baseline; gap: 7px; margin: 17px 0 12px; overflow: hidden; color: var(--seller-ink); font: 650 clamp(25px,3vw,34px)/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; letter-spacing: -.04em; }
+.kpi-value { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .kpi-card > strong small { color: var(--seller-muted); font: 500 11px/1 system-ui, sans-serif; letter-spacing: 0; }
 .kpi-compare { display: flex; align-items: center; gap: 5px; color: var(--seller-muted); font-size: 11px; }
+.kpi-compare svg { flex: 0 0 auto; }
+.kpi-compare span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .kpi-compare.up { color: var(--seller-jade); }
 .kpi-compare.down { color: var(--seller-danger); }
 
@@ -563,7 +569,17 @@ html.dark .range-switch button.active, html.dark .chart-view-switch button.activ
   .note-date small { grid-column: 2; margin-left: 0; }
   .primary-action { width: 100%; }
   .opening-checklist { padding: 17px; }
-  .opening-checklist ol, .kpi-grid { grid-template-columns: minmax(0,1fr); }
+  .opening-checklist ol { grid-template-columns: minmax(0,1fr); }
+  .kpi-grid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; }
+  .kpi-card { min-height: 132px; padding: 14px 13px; }
+  .kpi-head { gap: 8px; font-size: 12px; }
+  .kpi-head svg { width: 17px; height: 17px; flex: 0 0 auto; }
+  .kpi-card > strong { gap: 4px; margin: 14px 0 11px; font-size: clamp(21px,6.2vw,25px); }
+  .kpi-card > strong.is-compact { align-items: flex-start; flex-direction: column; gap: 5px; font-size: clamp(16px,4.8vw,20px); }
+  .kpi-card > strong.is-compact .kpi-value { width: 100%; }
+  .kpi-card > strong small { flex: 0 0 auto; font-size: 10px; }
+  .kpi-compare { gap: 4px; font-size: 10px; }
+  .kpi-compare svg { width: 12px; height: 12px; }
   .opening-checklist li { min-height: 86px; }
   .dashboard-toolbar { align-items: flex-start; flex-direction: column; }
   .range-switch { width: 100%; }
@@ -575,7 +591,8 @@ html.dark .range-switch button.active, html.dark .chart-view-switch button.activ
   .performance-row { grid-template-columns: 28px minmax(0,1fr) auto 16px; }
   .performance-metric { display: none; }
   .performance-revenue { min-width: 82px; }
-  .skeleton-row { grid-template-columns: 1fr; }
+  .skeleton-row { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; }
+  .kpi-skeleton { height: 132px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .skeleton { animation: none; }
