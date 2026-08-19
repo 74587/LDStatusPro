@@ -222,7 +222,7 @@ const EMPTY_DISTRIBUTION = Object.freeze({ categories: [], totals: { orderCount:
 
 const serviceLinks = [
   { icon: '📦', label: '我的订单', to: '/user/orders' },
-  { icon: '⭐', label: '我的收藏', to: '/user/favorites' },
+  { icon: '⭐', label: '收藏与拉黑', to: '/user/favorites' },
   { icon: '券', label: '我的优惠券', to: '/user/coupons' },
   { icon: '🧾', label: '我的求购', to: '/user/buy-requests' },
   { icon: '💬', label: '我的消息', to: '/user/messages' },
