@@ -292,7 +292,7 @@ const dropdownMenuGroups = computed(() => ([
     },
     {
       path: '/user/coupons',
-      icon: '券',
+      icon: '🎫',
       label: '我的优惠券',
       withUnread: false,
       badge: ''
@@ -338,7 +338,7 @@ const dropdownMenuGroups = computed(() => ([
     },
     {
       path: '/user/coupons/manage',
-      icon: '券+',
+      icon: '🎫',
       label: '优惠券管理',
       withUnread: false,
       badge: ''
