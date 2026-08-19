@@ -337,6 +337,13 @@ const dropdownMenuGroups = computed(() => ([
       badge: ''
     },
     {
+      path: '/user/coupons/manage',
+      icon: '券+',
+      label: '优惠券管理',
+      withUnread: false,
+      badge: ''
+    },
+    {
       path: '/user/my-shop',
       icon: '🏪',
       label: '小店入驻',

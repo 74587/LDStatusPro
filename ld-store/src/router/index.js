@@ -78,6 +78,12 @@ const routes = [
     meta: { title: '我的优惠券 - LD士多', requiresAuth: true }
   },
   {
+    path: '/user/coupons/manage',
+    name: 'CouponManage',
+    component: () => import('@/views/CouponManage.vue'),
+    meta: { title: '优惠券管理 - LD士多', requiresAuth: true }
+  },
+  {
     path: '/user/buy-orders/:orderNo',
     name: 'BuyOrderDetail',
     component: () => import('@/views/BuyOrderDetail.vue'),

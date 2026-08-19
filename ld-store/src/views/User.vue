@@ -225,6 +225,7 @@ const serviceLinks = [
   { icon: '📦', label: '我的订单', to: '/user/orders' },
   { icon: '⭐', label: '我的收藏', to: '/user/favorites' },
   { icon: '券', label: '我的优惠券', to: '/user/coupons' },
+  { icon: '券+', label: '优惠券管理', to: '/user/coupons/manage' },
   { icon: '🧾', label: '我的求购', to: '/user/buy-requests' },
   { icon: '💬', label: '我的消息', to: '/user/messages' },
   { icon: '🛍️', label: '我的物品', to: '/user/products' },

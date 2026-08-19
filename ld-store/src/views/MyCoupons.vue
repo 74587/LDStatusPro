@@ -7,6 +7,7 @@
           <h1>我的优惠券</h1>
           <p class="subtitle">结算时由你主动选择，每笔订单最多使用一张。</p>
         </div>
+        <router-link to="/user/coupons/manage" class="manage-link">卖家优惠券管理</router-link>
       </header>
 
       <nav class="status-tabs" role="tablist" aria-label="优惠券分类">
@@ -142,6 +143,7 @@ onMounted(() => loadCoupons(1))
 .page-header { display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; margin-bottom: 26px; }
 .eyebrow { margin: 0 0 6px; color: var(--text-tertiary); font-size: 12px; font-weight: 700; letter-spacing: .14em; }
 h1 { margin: 0; font-size: clamp(28px, 5vw, 40px); line-height: 1.2; }.subtitle { margin: 10px 0 0; color: var(--text-secondary); }
+.manage-link { min-height: 44px; display: inline-flex; align-items: center; padding: 0 18px; border: 1px solid var(--border-medium); border-radius: 13px; background: var(--glass-bg); color: var(--text-primary); font-size: 14px; white-space: nowrap; }
 .status-tabs { width: fit-content; display: flex; gap: 4px; padding: 5px; margin-bottom: 24px; border: 1px solid var(--border-light); border-radius: 16px; background: var(--glass-bg-medium); }
 .status-tabs button { min-width: 92px; min-height: 44px; padding: 0 18px; border-radius: 12px; color: var(--text-secondary); font-weight: 600; transition: background .2s ease, color .2s ease, box-shadow .2s ease; }
 .status-tabs button.active { color: var(--text-primary); background: var(--bg-card); box-shadow: var(--shadow-sm); }
@@ -158,6 +160,6 @@ h1 { margin: 0; font-size: clamp(28px, 5vw, 40px); line-height: 1.2; }.subtitle 
 .pagination { display: flex; align-items: center; justify-content: center; gap: 18px; margin-top: 26px; color: var(--text-secondary); font-size: 13px; }.pagination button { min-height: 44px; padding: 0 16px; border: 1px solid var(--border-medium); border-radius: 12px; color: var(--text-primary); }.pagination button:disabled { opacity: .4; cursor: not-allowed; }
 .skeleton-card { min-height: 290px; }.skeleton { display: block; background: var(--skeleton-gradient); background-size: 200% 100%; animation: shimmer 1.4s infinite; }.skeleton.line { width: 100%; height: 15px; margin-top: 16px; border-radius: 7px; }.skeleton.short { width: 28%; margin-top: 0; }.skeleton.title { width: 65%; height: 24px; }.skeleton.button { height: 44px; margin-top: 58px; border-radius: 13px; }
 @keyframes shimmer { to { background-position: -200% 0; } }
-@media (max-width: 720px) { .wallet-page { padding-top: 26px; }.page-header { align-items: flex-start; flex-direction: column; }.coupon-grid { grid-template-columns: 1fr; }.status-tabs { width: 100%; }.status-tabs button { flex: 1; min-width: 0; padding-inline: 8px; } }
+@media (max-width: 720px) { .wallet-page { padding-top: 26px; }.page-header { align-items: flex-start; flex-direction: column; }.coupon-grid { grid-template-columns: 1fr; }.status-tabs { width: 100%; }.status-tabs button { flex: 1; min-width: 0; padding-inline: 8px; }.manage-link { width: 100%; justify-content: center; } }
 @media (prefers-reduced-motion: reduce) { .status-tabs button, .skeleton { transition: none; animation: none; } }
 </style>
