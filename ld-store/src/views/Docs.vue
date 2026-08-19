@@ -1,480 +1,531 @@
 <template>
-  <div class="docs-page">
-    <div class="docs-container">
-      <button v-if="isMobile" class="mobile-menu-btn" @click="showSidebar = !showSidebar">
-        <span v-if="!showSidebar">☰ 目录</span>
-        <span v-else>✕ 关闭</span>
+  <div class="help-page">
+    <a class="help-skip" href="#help-article">跳到正文</a>
+
+    <div class="help-mobile-toolbar">
+      <button ref="menuButtonRef" type="button" class="help-mobile-toolbar__button" @click="openDrawer(false)">
+        <Menu :size="20" aria-hidden="true" />
+        <span>目录</span>
       </button>
+      <router-link to="/docs" class="help-mobile-toolbar__brand">LD 士多帮助中心</router-link>
+      <button type="button" class="help-mobile-toolbar__button help-mobile-toolbar__button--icon" aria-label="搜索帮助" @click="openDrawer(true)">
+        <Search :size="20" aria-hidden="true" />
+      </button>
+    </div>
 
-      <aside :class="['docs-sidebar', { show: showSidebar || !isMobile }]">
-        <div class="sidebar-header">
-          <router-link to="/docs" class="sidebar-logo">
-            <span class="logo-icon">📚</span>
-            <span class="logo-text">使用文档</span>
-          </router-link>
-        </div>
+    <div class="help-layout">
+      <aside class="help-sidebar" aria-label="帮助中心目录">
+        <router-link to="/docs" class="help-brand">
+          <span class="help-brand__mark"><BookOpen :size="22" aria-hidden="true" /></span>
+          <span><strong>帮助中心</strong><small>LD 士多使用指南</small></span>
+        </router-link>
 
-        <nav class="sidebar-nav">
-          <div v-for="group in navGroups" :key="group.title" class="nav-group">
-            <div class="nav-group-title">{{ group.title }}</div>
+        <HelpSearchBox input-id="help-search-desktop" />
+
+        <nav class="help-nav" aria-label="文章目录">
+          <section v-for="group in groupedArticles" :key="group.id" class="help-nav__group">
+            <h2>{{ group.title }}</h2>
             <router-link
-              v-for="item in group.items"
-              :key="item.id"
-              :to="`/docs/${item.id}`"
-              :class="['nav-item', { active: currentSection === item.id }]"
-              @click="handleNavClick"
+              v-for="article in group.articles"
+              :key="article.id"
+              :to="getHelpPath(article.id)"
+              :class="['help-nav__item', { 'is-active': article.id === currentArticle.id }]"
+              :aria-current="article.id === currentArticle.id ? 'page' : undefined"
             >
-              <span class="nav-icon">{{ item.icon }}</span>
-              <span class="nav-text">{{ item.title }}</span>
+              <component :is="iconMap[article.icon]" :size="17" aria-hidden="true" />
+              <span>{{ article.title }}</span>
             </router-link>
-          </div>
+          </section>
         </nav>
 
-        <div class="sidebar-footer">
-          <router-link to="/" class="back-home">← 返回首页</router-link>
+        <div class="help-sidebar__footer">
+          <router-link to="/support"><MessageCircleQuestion :size="17" /> 联系与反馈</router-link>
+          <router-link to="/"><ArrowLeft :size="17" /> 返回物品广场</router-link>
         </div>
       </aside>
 
-      <div
-        v-if="showSidebar && isMobile"
-        class="sidebar-overlay"
-        @click="showSidebar = false"
-      ></div>
-
-      <main class="docs-content">
-        <div class="breadcrumb">
+      <main class="help-main">
+        <nav class="help-breadcrumb" aria-label="面包屑">
           <router-link to="/">首页</router-link>
-          <span class="sep">/</span>
-          <router-link to="/docs">文档</router-link>
-          <template v-if="currentSection && currentSection !== 'quick-start'">
-            <span class="sep">/</span>
-            <span class="current">{{ currentTitle }}</span>
+          <ChevronRight :size="14" aria-hidden="true" />
+          <router-link to="/docs">帮助中心</router-link>
+          <template v-if="currentArticle.id !== 'quick-start'">
+            <ChevronRight :size="14" aria-hidden="true" />
+            <span aria-current="page">{{ currentArticle.title }}</span>
           </template>
-        </div>
+        </nav>
 
-        <article class="doc-article">
-          <component :is="currentComponent" />
+        <section v-if="isLanding" class="help-hero" aria-labelledby="help-hero-title">
+          <div class="help-hero__copy">
+            <p class="help-eyebrow">LD 士多 · 任务式帮助</p>
+            <h1 id="help-hero-title">你现在想完成什么？</h1>
+            <p>从购买、经营或问题处理开始，跟着页面入口一步步完成。</p>
+          </div>
+          <HelpSearchBox input-id="help-search-hero" hero />
+          <div class="help-routes" aria-label="快速路线">
+            <router-link to="/docs/buy-guide" class="help-route help-route--buyer">
+              <span class="help-route__icon"><ShoppingBag :size="22" /></span>
+              <span><strong>我是买家</strong><small>找物品、用券、查订单</small></span>
+              <ArrowUpRight :size="18" aria-hidden="true" />
+            </router-link>
+            <router-link to="/docs/seller-center" class="help-route help-route--seller">
+              <span class="help-route__icon"><Store :size="22" /></span>
+              <span><strong>我是卖家</strong><small>配置收款、发布、经营</small></span>
+              <ArrowUpRight :size="18" aria-hidden="true" />
+            </router-link>
+            <router-link to="/docs/faq" class="help-route help-route--support">
+              <span class="help-route__icon"><Wrench :size="22" /></span>
+              <span><strong>遇到问题</strong><small>按支付、发货和库存排查</small></span>
+              <ArrowUpRight :size="18" aria-hidden="true" />
+            </router-link>
+          </div>
+        </section>
+
+        <article id="help-article" ref="articleRef" class="help-article" tabindex="-1">
+          <header v-if="!isLanding" class="help-article-header">
+            <div class="help-article-header__icon">
+              <component :is="iconMap[currentArticle.icon]" :size="26" aria-hidden="true" />
+            </div>
+            <div>
+              <p class="help-eyebrow">{{ currentGroupTitle }}</p>
+              <h1>{{ currentArticle.title }}</h1>
+              <p class="help-article-header__summary">{{ currentArticle.summary }}</p>
+              <div class="help-article-header__meta">
+                <span v-for="audience in currentArticle.audience" :key="audience">适用：{{ audience }}</span>
+                <span>更新：{{ updatedAtLabel }}</span>
+              </div>
+            </div>
+          </header>
+
+          <Suspense>
+            <component :is="currentComponent" />
+            <template #fallback>
+              <div class="help-loading" role="status">正在加载文章…</div>
+            </template>
+          </Suspense>
         </article>
 
-        <div v-if="prevDoc || nextDoc" class="doc-pagination">
-          <router-link
-            v-if="prevDoc"
-            :to="`/docs/${prevDoc.id}`"
-            class="pagination-item prev"
-          >
-            <span class="pagination-label">上一篇</span>
-            <span class="pagination-title">{{ prevDoc.icon }} {{ prevDoc.title }}</span>
-          </router-link>
-          <div v-else class="pagination-placeholder"></div>
+        <section v-if="relatedArticles.length" class="help-related" aria-labelledby="related-title">
+          <div>
+            <p class="help-eyebrow">继续完成任务</p>
+            <h2 id="related-title">相关文章</h2>
+          </div>
+          <div class="help-related__grid">
+            <router-link v-for="article in relatedArticles" :key="article.id" :to="getHelpPath(article.id)">
+              <component :is="iconMap[article.icon]" :size="19" aria-hidden="true" />
+              <span><strong>{{ article.title }}</strong><small>{{ article.summary }}</small></span>
+              <ArrowRight :size="17" aria-hidden="true" />
+            </router-link>
+          </div>
+        </section>
 
-          <router-link
-            v-if="nextDoc"
-            :to="`/docs/${nextDoc.id}`"
-            class="pagination-item next"
-          >
-            <span class="pagination-label">下一篇</span>
-            <span class="pagination-title">{{ nextDoc.icon }} {{ nextDoc.title }}</span>
+        <nav class="help-pagination" aria-label="上一篇和下一篇">
+          <router-link v-if="previousArticle" :to="getHelpPath(previousArticle.id)" rel="prev">
+            <ArrowLeft :size="17" />
+            <span><small>上一篇</small><strong>{{ previousArticle.title }}</strong></span>
           </router-link>
-        </div>
+          <span v-else></span>
+          <router-link v-if="nextArticle" :to="getHelpPath(nextArticle.id)" rel="next">
+            <span><small>下一篇</small><strong>{{ nextArticle.title }}</strong></span>
+            <ArrowRight :size="17" />
+          </router-link>
+        </nav>
       </main>
+
+      <aside v-if="tableOfContents.length" class="help-toc" aria-label="本页目录">
+        <p>本页目录</p>
+        <nav>
+          <a
+            v-for="heading in tableOfContents"
+            :key="heading.id"
+            :href="`#${heading.id}`"
+            :class="[`is-level-${heading.level}`, { 'is-active': activeHeading === heading.id }]"
+            :aria-current="activeHeading === heading.id ? 'location' : undefined"
+            @click="handleTocClick($event, heading.id)"
+          >{{ heading.text }}</a>
+        </nav>
+        <router-link to="/support" class="help-toc__feedback">这篇内容没解决问题？</router-link>
+      </aside>
     </div>
+
+    <Teleport to="body">
+      <div v-if="drawerOpen" class="help-drawer-layer">
+        <button class="help-drawer-backdrop" type="button" aria-label="关闭目录" @click="closeDrawer()" />
+        <aside
+          ref="drawerRef"
+          class="help-drawer"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="help-drawer-title"
+          @keydown="handleDrawerKeydown"
+        >
+          <header class="help-drawer__header">
+            <div><small>LD 士多</small><strong id="help-drawer-title">帮助中心目录</strong></div>
+            <button type="button" aria-label="关闭目录" @click="closeDrawer()"><X :size="22" /></button>
+          </header>
+          <HelpSearchBox input-id="help-search-drawer" drawer />
+          <nav class="help-nav help-nav--drawer" aria-label="移动端文章目录">
+            <section v-for="group in groupedArticles" :key="group.id" class="help-nav__group">
+              <h2>{{ group.title }}</h2>
+              <router-link
+                v-for="article in group.articles"
+                :key="article.id"
+                :to="getHelpPath(article.id)"
+                :class="['help-nav__item', { 'is-active': article.id === currentArticle.id }]"
+                @click="closeDrawer()"
+              >
+                <component :is="iconMap[article.icon]" :size="18" aria-hidden="true" />
+                <span>{{ article.title }}</span>
+              </router-link>
+            </section>
+          </nav>
+          <div class="help-sidebar__footer">
+            <router-link to="/support" @click="closeDrawer()"><MessageCircleQuestion :size="17" /> 联系与反馈</router-link>
+            <router-link to="/" @click="closeDrawer()"><ArrowLeft :size="17" /> 返回物品广场</router-link>
+          </div>
+        </aside>
+      </div>
+    </Teleport>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, onUnmounted, defineAsyncComponent } from 'vue'
+import {
+  computed,
+  defineAsyncComponent,
+  defineComponent,
+  h,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  watch
+} from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import {
+  ArrowLeft,
+  ArrowRight,
+  ArrowUpRight,
+  BadgePercent,
+  BookOpen,
+  Boxes,
+  ChevronRight,
+  CircleHelp,
+  ClipboardCheck,
+  Compass,
+  CreditCard,
+  Image,
+  LayoutDashboard,
+  Map as MapIcon,
+  Menu,
+  MessageCircleQuestion,
+  MessagesSquare,
+  PackagePlus,
+  PackageSearch,
+  ScrollText,
+  Search,
+  ShieldCheck,
+  ShoppingBag,
+  Store,
+  TicketPercent,
+  Wrench,
+  X
+} from '@lucide/vue'
+import {
+  HELP_ARTICLES,
+  HELP_GROUPS,
+  HELP_UPDATED_AT,
+  getHelpArticle,
+  getHelpArticlesByGroup,
+  getHelpPath,
+  resolveHelpArticleId,
+  searchHelpCenter
+} from '@/config/helpCenter'
 
 const route = useRoute()
 const router = useRouter()
 
-const showSidebar = ref(false)
-const isMobile = ref(false)
-
-const navGroups = [
-  {
-    title: '入门指南',
-    items: [
-      { id: 'quick-start', title: '快速开始', icon: '🚀' },
-      { id: 'concepts', title: '基本概念', icon: '📚' }
-    ]
-  },
-  {
-    title: '物品管理',
-    items: [
-      { id: 'product-types', title: '物品类型', icon: '🧩' },
-      { id: 'publish-link', title: '发布普通物品', icon: '📦' },
-      { id: 'publish-cdk', title: '发布 CDK 物品', icon: '🎟️' }
-    ]
-  },
-  {
-    title: '小店运营',
-    items: [
-      { id: 'shop-register', title: '小店入驻', icon: '🏪' }
-    ]
-  },
-  {
-    title: '交易流程',
-    items: [
-      { id: 'buy-guide', title: '购买指南', icon: '🛒' },
-      { id: 'buy-request', title: '求购操作指南', icon: '🌱' }
-    ]
-  },
-  {
-    title: '常见问题',
-    items: [
-      { id: 'faq', title: 'FAQ', icon: '❓' }
-    ]
-  },
-  {
-    title: '规则与协议',
-    items: [
-      { id: 'terms', title: '服务条款', icon: '📜' }
-    ]
-  }
-]
-
-const flatNavItems = computed(() => navGroups.flatMap((group) => group.items))
-
-const currentSection = computed(() => route.params.section || 'quick-start')
-
-const currentTitle = computed(() => {
-  const item = flatNavItems.value.find((i) => i.id === currentSection.value)
-  return item?.title || '文档'
-})
-
-const docComponents = {
-  'quick-start': defineAsyncComponent(() => import('@/components/docs/DocQuickStart.vue')),
-  'concepts': defineAsyncComponent(() => import('@/components/docs/DocConcepts.vue')),
-  'product-types': defineAsyncComponent(() => import('@/components/docs/DocProductTypes.vue')),
-  'publish-link': defineAsyncComponent(() => import('@/components/docs/DocPublishLink.vue')),
-  'publish-cdk': defineAsyncComponent(() => import('@/components/docs/DocPublishCdk.vue')),
-  'shop-register': defineAsyncComponent(() => import('@/components/docs/DocShopRegister.vue')),
-  'buy-guide': defineAsyncComponent(() => import('@/components/docs/DocBuyGuide.vue')),
-  'buy-request': defineAsyncComponent(() => import('@/components/docs/DocBuyRequest.vue')),
-  'faq': defineAsyncComponent(() => import('@/components/docs/DocFaq.vue')),
-  'terms': defineAsyncComponent(() => import('@/components/docs/DocTerms.vue'))
+const iconMap = {
+  BadgePercent,
+  Boxes,
+  CircleHelp,
+  ClipboardCheck,
+  Compass,
+  CreditCard,
+  Image,
+  LayoutDashboard,
+  Map: MapIcon,
+  MessagesSquare,
+  PackagePlus,
+  PackageSearch,
+  ScrollText,
+  ShieldCheck,
+  ShoppingBag,
+  Store,
+  TicketPercent
 }
 
-const currentComponent = computed(() => {
-  return docComponents[currentSection.value] || docComponents['quick-start']
-})
+const componentMap = new Map(HELP_ARTICLES.map(article => [article.id, defineAsyncComponent(article.loader)]))
+const groupedArticles = HELP_GROUPS.map(group => ({ ...group, articles: getHelpArticlesByGroup(group.id) }))
+const searchQuery = ref(String(route.query.q || ''))
+const searchOpen = ref(false)
+const activeResultIndex = ref(0)
+const drawerOpen = ref(false)
+const drawerRef = ref(null)
+const drawerSearchRequested = ref(false)
+const menuButtonRef = ref(null)
+const articleRef = ref(null)
+const tableOfContents = ref([])
+const activeHeading = ref('')
+let searchTimer
+let headingObserver
+let mutationObserver
+let previousBodyOverflow = ''
+let drawerReturnFocus = null
 
-const currentIndex = computed(() => {
-  return flatNavItems.value.findIndex((i) => i.id === currentSection.value)
-})
+const currentArticleId = computed(() => resolveHelpArticleId(route.params.section))
+const currentArticle = computed(() => getHelpArticle(currentArticleId.value))
+const currentComponent = computed(() => componentMap.get(currentArticleId.value))
+const isLanding = computed(() => currentArticleId.value === 'quick-start')
+const currentGroupTitle = computed(() => HELP_GROUPS.find(group => group.id === currentArticle.value.group)?.title || '帮助中心')
+const updatedAtLabel = new Intl.DateTimeFormat('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' }).format(new Date(`${HELP_UPDATED_AT}T00:00:00`))
+const searchResults = computed(() => searchHelpCenter(searchQuery.value, 8))
+const relatedArticles = computed(() => currentArticle.value.related.map(getHelpArticle).filter(Boolean))
+const currentIndex = computed(() => HELP_ARTICLES.findIndex(article => article.id === currentArticleId.value))
+const previousArticle = computed(() => HELP_ARTICLES[currentIndex.value - 1] || null)
+const nextArticle = computed(() => HELP_ARTICLES[currentIndex.value + 1] || null)
 
-const prevDoc = computed(() => {
-  if (currentIndex.value > 0) return flatNavItems.value[currentIndex.value - 1]
-  return null
-})
-
-const nextDoc = computed(() => {
-  if (currentIndex.value < flatNavItems.value.length - 1) {
-    return flatNavItems.value[currentIndex.value + 1]
-  }
-  return null
-})
-
-function handleNavClick() {
-  if (isMobile.value) showSidebar.value = false
-}
-
-function checkMobile() {
-  isMobile.value = window.innerWidth < 768
-}
-
-watch(
-  () => route.params.section,
-  (newSection) => {
-    const item = flatNavItems.value.find((i) => i.id === newSection)
-    if (item) {
-      document.title = `${item.title} - 使用文档 - LD士多`
-    } else {
-      document.title = '使用文档 - LD士多'
+const HelpSearchBox = defineComponent({
+  name: 'HelpSearchBox',
+  props: {
+    inputId: { type: String, required: true },
+    hero: Boolean,
+    drawer: Boolean
+  },
+  setup(props) {
+    const inputRef = ref(null)
+    if (props.drawer) {
+      watch(drawerSearchRequested, async requested => {
+        if (requested) {
+          await nextTick()
+          inputRef.value?.focus()
+          drawerSearchRequested.value = false
+        }
+      }, { immediate: true })
     }
-  },
-  { immediate: true }
-)
+
+    return () => h('div', {
+      class: ['help-search', { 'help-search--hero': props.hero }]
+    }, [
+      h('label', { class: 'sr-only', for: props.inputId }, '搜索帮助文章'),
+      h('div', { class: 'help-search__field' }, [
+        h(Search, { size: props.hero ? 22 : 18, 'aria-hidden': 'true' }),
+        h('input', {
+          ref: inputRef,
+          id: props.inputId,
+          value: searchQuery.value,
+          type: 'search',
+          placeholder: '搜索共享库存、优惠券占用、待发货…',
+          autocomplete: 'off',
+          role: 'combobox',
+          'aria-autocomplete': 'list',
+          'aria-controls': `${props.inputId}-results`,
+          'aria-expanded': searchOpen.value && Boolean(searchQuery.value),
+          'aria-activedescendant': searchResults.value[activeResultIndex.value]?.key ? `${props.inputId}-${searchResults.value[activeResultIndex.value].key}` : undefined,
+          onInput: event => {
+            searchQuery.value = event.target.value
+            searchOpen.value = true
+            activeResultIndex.value = 0
+          },
+          onFocus: () => { searchOpen.value = true },
+          onKeydown: handleSearchKeydown
+        }),
+        searchQuery.value ? h('button', {
+          type: 'button',
+          class: 'help-search__clear',
+          'aria-label': '清除搜索',
+          onClick: () => { searchQuery.value = ''; inputRef.value?.focus() }
+        }, [h(X, { size: 17 })]) : h('kbd', '⌘ K')
+      ]),
+      searchOpen.value && searchQuery.value ? h('div', {
+        id: `${props.inputId}-results`,
+        class: 'help-search__results',
+        role: 'listbox'
+      }, searchResults.value.length ? searchResults.value.map((result, index) => h('button', {
+        id: `${props.inputId}-${result.key}`,
+        key: result.key,
+        type: 'button',
+        role: 'option',
+        'aria-selected': index === activeResultIndex.value,
+        class: { 'is-active': index === activeResultIndex.value },
+        onMouseenter: () => { activeResultIndex.value = index },
+        onMousedown: event => event.preventDefault(),
+        onClick: () => navigateToResult(result)
+      }, [
+        h(Search, { size: 16, 'aria-hidden': 'true' }),
+        h('span', [h('strong', result.title), h('small', result.kind === 'section' ? `位于「${result.articleTitle}」` : result.summary)]),
+        h(ArrowRight, { size: 15, 'aria-hidden': 'true' })
+      ])) : [
+        h('div', { class: 'help-search__empty' }, [
+          h('strong', `没有找到“${searchQuery.value}”`),
+          h('p', '试试“共享卡密”“优惠券占用”“收款配置”或“待发货”。'),
+          h('div', [
+            h('a', { href: '/docs/faq', onClick: handleInternalLink }, '查看常见问题'),
+            h('a', { href: '/support', onClick: handleInternalLink }, '提交反馈')
+          ])
+        ])
+      ]) : null
+    ])
+  }
+})
+
+function handleInternalLink(event) {
+  event.preventDefault()
+  searchOpen.value = false
+  router.push(event.currentTarget.getAttribute('href'))
+}
+
+function handleSearchKeydown(event) {
+  if (event.key === 'Escape') {
+    searchOpen.value = false
+    event.currentTarget.blur()
+    return
+  }
+  if (!searchResults.value.length) return
+  if (event.key === 'ArrowDown') {
+    event.preventDefault()
+    searchOpen.value = true
+    activeResultIndex.value = (activeResultIndex.value + 1) % searchResults.value.length
+  } else if (event.key === 'ArrowUp') {
+    event.preventDefault()
+    activeResultIndex.value = (activeResultIndex.value - 1 + searchResults.value.length) % searchResults.value.length
+  } else if (event.key === 'Enter') {
+    event.preventDefault()
+    navigateToResult(searchResults.value[activeResultIndex.value])
+  }
+}
+
+function navigateToResult(result) {
+  if (!result) return
+  searchOpen.value = false
+  if (drawerOpen.value) closeDrawer(false)
+  router.push(result.path)
+}
+
+function openDrawer(focusSearch = false) {
+  drawerReturnFocus = document.activeElement
+  previousBodyOverflow = document.body.style.overflow
+  document.body.style.overflow = 'hidden'
+  drawerOpen.value = true
+  drawerSearchRequested.value = focusSearch
+  nextTick(() => {
+    if (!focusSearch) drawerRef.value?.querySelector('button')?.focus()
+  })
+}
+
+function closeDrawer(restoreFocus = true) {
+  drawerOpen.value = false
+  document.body.style.overflow = previousBodyOverflow
+  if (restoreFocus) nextTick(() => drawerReturnFocus?.focus?.())
+}
+
+function handleDrawerKeydown(event) {
+  if (event.key === 'Escape') {
+    event.preventDefault()
+    closeDrawer()
+    return
+  }
+  if (event.key !== 'Tab') return
+  const focusables = Array.from(drawerRef.value?.querySelectorAll('a[href], button:not([disabled]), input:not([disabled])') || [])
+  if (!focusables.length) return
+  const first = focusables[0]
+  const last = focusables[focusables.length - 1]
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault()
+    last.focus()
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault()
+    first.focus()
+  }
+}
+
+function rebuildTableOfContents() {
+  if (!articleRef.value) return
+  const headings = Array.from(articleRef.value.querySelectorAll('.doc-content h2[id], .doc-content h3[id]'))
+  tableOfContents.value = headings.map(heading => ({ id: heading.id, text: heading.textContent.trim(), level: heading.tagName === 'H2' ? 2 : 3 }))
+  activeHeading.value = headings[0]?.id || ''
+  headingObserver?.disconnect()
+  headingObserver = new IntersectionObserver(entries => {
+    const visible = entries.filter(entry => entry.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)
+    if (visible[0]) activeHeading.value = visible[0].target.id
+  }, { rootMargin: '-96px 0px -68% 0px', threshold: [0, 1] })
+  headings.forEach(heading => headingObserver.observe(heading))
+}
+
+function handleTocClick(event, id) {
+  event.preventDefault()
+  document.getElementById(id)?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' })
+  history.replaceState(history.state, '', `${route.path}${route.query.q ? `?q=${encodeURIComponent(route.query.q)}` : ''}#${id}`)
+  activeHeading.value = id
+}
+
+function scrollToRouteHash() {
+  if (!route.hash) return
+  window.setTimeout(() => document.getElementById(route.hash.slice(1))?.scrollIntoView({ block: 'start' }), 80)
+}
+
+watch(searchQuery, value => {
+  window.clearTimeout(searchTimer)
+  searchTimer = window.setTimeout(() => {
+    const query = { ...route.query }
+    if (value.trim()) query.q = value.trim()
+    else delete query.q
+    if (String(route.query.q || '') !== String(query.q || '')) router.replace({ query, hash: route.hash })
+  }, 180)
+})
+
+watch(() => route.query.q, value => {
+  if (String(value || '') !== searchQuery.value) searchQuery.value = String(value || '')
+})
+
+watch(() => [route.params.section, route.hash], async () => {
+  if (drawerOpen.value) closeDrawer(false)
+  document.title = `${currentArticle.value.title} - LD 士多帮助中心`
+  await nextTick()
+  rebuildTableOfContents()
+  scrollToRouteHash()
+}, { immediate: true })
+
+function handleGlobalKeydown(event) {
+  if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+    event.preventDefault()
+    const target = window.innerWidth < 900 ? document.getElementById('help-search-drawer') : document.getElementById(isLanding.value ? 'help-search-hero' : 'help-search-desktop')
+    if (target) target.focus()
+    else openDrawer(true)
+  }
+}
+
+function handleDocumentPointer(event) {
+  if (!event.target.closest('.help-search')) searchOpen.value = false
+}
 
 onMounted(() => {
-  checkMobile()
-  window.addEventListener('resize', checkMobile)
-  if (!route.params.section) {
-    router.replace('/docs/quick-start')
-  }
+  document.addEventListener('keydown', handleGlobalKeydown)
+  document.addEventListener('pointerdown', handleDocumentPointer)
+  mutationObserver = new MutationObserver(() => rebuildTableOfContents())
+  if (articleRef.value) mutationObserver.observe(articleRef.value, { childList: true, subtree: true })
+  rebuildTableOfContents()
+  scrollToRouteHash()
 })
 
-onUnmounted(() => {
-  window.removeEventListener('resize', checkMobile)
+onBeforeUnmount(() => {
+  window.clearTimeout(searchTimer)
+  document.removeEventListener('keydown', handleGlobalKeydown)
+  document.removeEventListener('pointerdown', handleDocumentPointer)
+  headingObserver?.disconnect()
+  mutationObserver?.disconnect()
+  if (drawerOpen.value) document.body.style.overflow = previousBodyOverflow
 })
 </script>
 
-<style scoped>
-.docs-page {
-  min-height: 100vh;
-}
-
-.docs-container {
-  display: flex;
-  max-width: 1400px;
-  margin: 0 auto;
-  min-height: 100vh;
-}
-
-.mobile-menu-btn {
-  position: fixed;
-  top: 70px;
-  left: 12px;
-  z-index: 200;
-  padding: 10px 16px;
-  background: var(--bg-card);
-  border: 1px solid var(--border-light);
-  border-radius: 10px;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text-secondary);
-  cursor: pointer;
-  box-shadow: var(--shadow-sm);
-  transition: all 0.2s;
-}
-
-.mobile-menu-btn:hover {
-  background: var(--bg-secondary);
-}
-
-.docs-sidebar {
-  position: sticky;
-  top: 60px;
-  width: 260px;
-  height: calc(100vh - 60px);
-  flex-shrink: 0;
-  background: var(--bg-card);
-  border-right: 1px solid var(--border-light);
-  display: flex;
-  flex-direction: column;
-  overflow-y: auto;
-}
-
-.sidebar-header {
-  padding: 20px;
-  border-bottom: 1px solid var(--border-light);
-}
-
-.sidebar-logo {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  text-decoration: none;
-}
-
-.logo-icon {
-  font-size: 24px;
-}
-
-.logo-text {
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--text-primary);
-}
-
-.sidebar-nav {
-  flex: 1;
-  padding: 16px 12px;
-  overflow-y: auto;
-}
-
-.nav-group {
-  margin-bottom: 20px;
-}
-
-.nav-group-title {
-  padding: 8px 12px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-tertiary);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.nav-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  margin: 2px 0;
-  border-radius: 10px;
-  text-decoration: none;
-  color: var(--text-secondary);
-  font-size: 14px;
-  transition: all 0.2s;
-}
-
-.nav-item:hover {
-  background: var(--bg-secondary);
-  color: var(--text-primary);
-}
-
-.nav-item.active {
-  background: var(--color-success-bg);
-  color: var(--color-success);
-  font-weight: 500;
-}
-
-.nav-icon {
-  font-size: 16px;
-}
-
-.sidebar-footer {
-  padding: 16px 20px;
-  border-top: 1px solid var(--border-light);
-}
-
-.back-home {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  color: var(--text-tertiary);
-  text-decoration: none;
-  transition: color 0.2s;
-}
-
-.back-home:hover {
-  color: var(--text-secondary);
-}
-
-.sidebar-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: var(--overlay-bg);
-  z-index: 149;
-}
-
-.docs-content {
-  flex: 1;
-  padding: 24px 40px 60px;
-  max-width: 900px;
-  min-width: 0;
-}
-
-.breadcrumb {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 24px;
-  font-size: 13px;
-  color: var(--text-tertiary);
-}
-
-.breadcrumb a {
-  color: var(--color-info);
-  text-decoration: none;
-}
-
-.breadcrumb a:hover {
-  color: var(--color-success);
-}
-
-.breadcrumb .sep {
-  color: var(--border-medium);
-}
-
-.breadcrumb .current {
-  color: var(--text-secondary);
-}
-
-.doc-article {
-  background: var(--bg-card);
-  border-radius: 16px;
-  padding: 32px;
-  box-shadow: var(--shadow-sm);
-  border: 1px solid var(--border-light);
-}
-
-.doc-pagination {
-  display: flex;
-  gap: 16px;
-  margin-top: 32px;
-}
-
-.pagination-item {
-  flex: 1;
-  padding: 20px;
-  background: var(--bg-card);
-  border: 1px solid var(--border-light);
-  border-radius: 14px;
-  text-decoration: none;
-  transition: all 0.2s;
-}
-
-.pagination-item:hover {
-  border-color: var(--color-primary);
-  box-shadow: var(--shadow-sm);
-}
-
-.pagination-item.prev {
-  text-align: left;
-}
-
-.pagination-item.next {
-  text-align: right;
-}
-
-.pagination-label {
-  display: block;
-  font-size: 12px;
-  color: var(--text-tertiary);
-  margin-bottom: 4px;
-}
-
-.pagination-title {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.pagination-placeholder {
-  flex: 1;
-}
-
-@media (max-width: 768px) {
-  .docs-sidebar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    z-index: 150;
-    width: 280px;
-    transform: translateX(-100%);
-    transition: transform 0.3s ease;
-    height: 100vh;
-    background: var(--bg-card);
-  }
-
-  .docs-sidebar.show {
-    transform: translateX(0);
-  }
-
-  .docs-content {
-    padding: 80px 16px 60px;
-  }
-
-  .doc-article {
-    padding: 20px;
-  }
-
-  .doc-pagination {
-    flex-direction: column;
-  }
-}
-
-@media (min-width: 769px) {
-  .mobile-menu-btn {
-    display: none;
-  }
-}
-</style>
+<style src="@/components/docs/doc-styles.css"></style>

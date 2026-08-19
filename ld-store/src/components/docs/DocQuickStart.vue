@@ -1,115 +1,77 @@
 <template>
   <div class="doc-content">
-    <h1>🚀 快速开始</h1>
-    <p class="lead">欢迎来到 LD士多！这是一个基于 <a href="https://linux.do" target="_blank" rel="noopener">LinuxDo 论坛</a> 社区积分（LDC）的虚拟物品和服务兑换平台。</p>
-    
-    <!-- 文档访问统计 -->
-    <div class="doc-stats">
-      <span class="stat-item">
-        <span class="stat-icon">👁️</span>
-        <span id="busuanzi_value_page_pv">-</span> 次阅读
-      </span>
-      <span class="stat-divider">·</span>
-      <span class="stat-item">
-        <span class="stat-icon">👤</span>
-        <span id="busuanzi_value_site_uv">-</span> 位访客
-      </span>
+    <h2 id="choose-route">先选一条路线</h2>
+    <p class="lead">不必从头读完全部文档。选择眼前的任务，完成后再按相关文章继续。</p>
+
+    <div class="task-grid">
+      <router-link to="/docs/buy-guide" class="task-card">
+        <span class="card-kicker">买家路线</span>
+        <h3>找到物品并完成购买</h3>
+        <p>浏览详情、选择优惠券、在平台内支付，然后到订单页查看交付。</p>
+      </router-link>
+      <router-link to="/docs/seller-center" class="task-card">
+        <span class="card-kicker">卖家路线</span>
+        <h3>配置收款并发布物品</h3>
+        <p>进入独立卖家后台，先接入 LDC 收款，再发布普通物品或自动发卡物品。</p>
+      </router-link>
+      <router-link to="/docs/buy-request" class="task-card">
+        <span class="card-kicker">求购路线</span>
+        <h3>发布需求或承接服务</h3>
+        <p>公开需求、在线洽谈，确认方案后通过求购订单支付并解锁联系入口。</p>
+      </router-link>
+      <router-link to="/docs/faq" class="task-card">
+        <span class="card-kicker">问题处理路线</span>
+        <h3>快速定位异常</h3>
+        <p>按支付、优惠券、发货、库存、审核和收款场景逐项排查。</p>
+      </router-link>
     </div>
-    
-    <div class="highlight-box tip">
-      <div class="box-icon">💡</div>
-      <div class="box-content">
-        <strong>什么是 LDC？</strong>
-        <p>LDC（Linux.do Credit）是 LinuxDo 论坛的社区积分，可以在 <a href="https://credit.linux.do" target="_blank" rel="noopener">credit.linux.do</a> 查看和使用。</p>
-      </div>
-    </div>
-    
-    <h2>一、登录平台</h2>
-    <p>LD士多使用 LinuxDo 论坛账号登录，只需几步即可开始：</p>
-    
-    <div class="steps">
-      <div class="step">
-        <div class="step-num">1</div>
-        <div class="step-content">
-          <h4>点击登录</h4>
-          <p>在网站右上角点击「登录」按钮</p>
-        </div>
-      </div>
-      <div class="step">
-        <div class="step-num">2</div>
-        <div class="step-content">
-          <h4>LinuxDo 授权</h4>
-          <p>使用你的 LinuxDo 账号进行 OAuth 授权登录</p>
-        </div>
-      </div>
-      <div class="step">
-        <div class="step-num">3</div>
-        <div class="step-content">
-          <h4>开始使用</h4>
-          <p>登录成功后即可浏览、购买商品或发布自己的商品</p>
-        </div>
-      </div>
-    </div>
-    
-    <h2>二、购买商品</h2>
-    <p>在 LD士多 购买商品非常简单：</p>
-    
-    <ol class="numbered-list">
-      <li><strong>浏览商品</strong>：在首页或通过分类筛选找到心仪的商品</li>
-      <li><strong>查看详情</strong>：点击商品卡片查看详细信息和卖家说明</li>
-      <li><strong>下单支付</strong>：点击购买按钮，根据商品类型完成支付</li>
-      <li><strong>获取商品</strong>：支付成功后，CDK 会自动发放；普通物品请主动联系卖家获取服务</li>
-    </ol>
-    
-    <h2>三、发布商品</h2>
-    <p>想要出售商品或服务？登录后点击右上角的「+」按钮，或进入「卖家后台 → 发布物品」。</p>
-    
-    <div class="feature-cards">
-      <div class="feature-card">
-        <div class="card-icon">📦</div>
-        <h4>普通物品</h4>
-        <p>平台内支付并保留订单记录，卖家根据库存手动履约，适合服务类和非自动发货商品</p>
-      </div>
-      <div class="feature-card">
-        <div class="card-icon">🎫</div>
-        <h4>CDK 物品</h4>
-        <p>平台内支付+自动发货，适合卡密、激活码等数字商品</p>
-      </div>
-    </div>
-    
-    <div class="highlight-box info">
-      <div class="box-icon">📖</div>
-      <div class="box-content">
-        <strong>了解更多</strong>
-        <p>查看 <router-link to="/docs/product-types">物品类型</router-link> 了解两种商品类型的详细区别。</p>
-      </div>
-    </div>
-    
-    <h2>四、小店入驻</h2>
-    <p>如果你有自己的网站或服务，可以申请入驻小店集市，获得更多曝光机会。</p>
-    
-    <ul class="check-list">
-      <li>🆓 完全免费入驻</li>
-      <li>🏷️ 支持添加分类标签</li>
-      <li>👤 展示店主 LinuxDo 身份</li>
-      <li>📊 浏览量统计</li>
-    </ul>
-    
-    <p>在网站首页点击「小店集市」，然后点击「小店入驻」即可开始申请。</p>
-    
-    <h2>五、联系我们</h2>
-    <p>如遇到任何问题，可以通过以下方式联系：</p>
+
+    <h2 id="shortest-path">最短上手路径</h2>
+    <HelpTable :columns="routeColumns" :rows="routeRows" caption="从当前目标直达对应页面">
+      <template #cell-path="{ row }">
+        <router-link :to="row.to">{{ row.path }}</router-link>
+      </template>
+    </HelpTable>
+
+    <HelpCallout title="平台内支付是完整订单流程的一部分" tone="info">
+      普通物品和自动发卡物品都在 LD 士多内使用 LDC 支付；两者都要求卖家先配置收款。区别只在交付方式，不在支付位置。
+    </HelpCallout>
+
+    <h2 id="before-you-start">开始前准备</h2>
     <ul>
-      <li>在 <a href="https://linux.do" target="_blank" rel="noopener">LinuxDo 论坛</a> 私信 <code>@JackyLiii</code></li>
-      <li>在相关帖子下方留言反馈</li>
+      <li>使用 LinuxDo 账号完成登录。</li>
+      <li>买家在支付前确认 LDC 余额、物品说明和交付方式。</li>
+      <li>卖家准备 LDC 收款应用凭证；发布图片可先使用士多图床。</li>
+      <li>涉及卡密时，先决定使用逐条发放的独立卡密，还是重复发放同一内容的共享卡密。</li>
     </ul>
+
+    <h2 id="do-it-now">现在就开始</h2>
+    <div class="help-actions">
+      <router-link to="/">去物品广场</router-link>
+      <router-link to="/seller/products/new">发布物品</router-link>
+      <router-link to="/buy-requests/new" class="secondary">发布求购</router-link>
+      <router-link to="/ld-image" class="secondary">打开士多图床</router-link>
+    </div>
+
+    <h2 id="when-stuck">遇到异常时</h2>
+    <p>先记录订单号、物品名称和页面显示的中文状态，再到 <router-link to="/docs/faq">常见问题与排查</router-link> 搜索同一状态。需要人工协助时，通过 <router-link to="/support">联系与反馈</router-link> 提交必要信息，不要公开卡密或收款密钥。</p>
   </div>
 </template>
 
 <script setup>
-// 快速开始文档
-</script>
+import HelpCallout from './HelpCallout.vue'
+import HelpTable from './HelpTable.vue'
 
-<style scoped>
-@import './doc-styles.css';
-</style>
+const routeColumns = [
+  { key: 'goal', label: '我想要' },
+  { key: 'path', label: '页面入口' },
+  { key: 'result', label: '到达后完成' }
+]
+
+const routeRows = [
+  { goal: '购买现有物品', path: '首页 → 选择物品', to: '/', result: '查看详情、用券和支付' },
+  { goal: '发布并经营物品', path: '卖家后台 → 发布物品', to: '/seller/products/new', result: '配置交付方式并提交审核' },
+  { goal: '提出定制需求', path: '发布求购', to: '/buy-requests/new', result: '写明预算、期限和要求' },
+  { goal: '查看自己的交易', path: '个人中心 → 我的订单', to: '/user/orders', result: '查看支付和交付状态' }
+]
+</script>

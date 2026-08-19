@@ -1,97 +1,61 @@
 <template>
   <div class="doc-content">
-    <h1>🌱 求购操作指南</h1>
-    <p class="lead">
-      求购广场用于“我有需求，但市场暂时没有合适商品”的场景。你可以发布需求、在线洽谈、协商价格，并在平台支付订单回调完成后开放真实私信联系方式。
-    </p>
+    <h2 id="purpose">求购适合什么任务</h2>
+    <p class="lead">当物品广场没有现成方案时，可以发布预算、期限和交付要求，让服务方先在站内洽谈，再创建求购订单支付。</p>
 
-    <div class="highlight-box info">
-      <div class="box-icon">🛡️</div>
-      <div class="box-content">
-        <strong>核心保护机制</strong>
-        <p>页面默认展示公开账号与公开密码，不直接暴露真实身份。只有订单完成后才开放真实私信入口。</p>
-      </div>
+    <HelpPath :items="[{ label: '首页', to: '/' }, { label: '求购广场' }, { label: '发布求购', to: '/buy-requests/new' }]" />
+
+    <h2 id="prepare">发布前准备</h2>
+    <ul>
+      <li>把需求拆成可验证的交付结果，写清预算、截止时间和验收方式。</li>
+      <li>不要在公开描述中放手机号、邮箱、账号密码或其他敏感信息。</li>
+      <li>确认不属于平台禁止发布的内容；不确定时先阅读 <router-link to="/docs/terms">服务条款</router-link>。</li>
+    </ul>
+
+    <h2 id="publish-and-chat">发布与洽谈步骤</h2>
+    <HelpSteps :steps="requestSteps" />
+
+    <HelpCallout title="先在站内确认方案，再支付" tone="warning">
+      为保留完整记录，请不要在私信中绕过订单直接交换联系方式。双方确认积分、范围和交付后，通过求购订单支付，页面才会开放后续联系入口。
+    </HelpCallout>
+
+    <h2 id="buy-request-order">求购订单支付与联系方式解锁</h2>
+    <p>选定服务方后，按页面流程创建求购订单。核对服务方、需求标题、约定 LDC 和交付说明，再发起支付。支付成功后回到求购订单详情刷新状态，按页面提示查看双方联系入口。</p>
+    <dl class="status-list">
+      <div><dt>等待确认或洽谈</dt><dd>继续使用站内消息沟通范围、价格和期限，暂时不要交付敏感凭证。</dd></div>
+      <div><dt>等待支付 / 支付中</dt><dd>核对订单后完成 LDC 支付；正在同步时不要重复创建订单。</dd></div>
+      <div><dt>已支付 / 进行中</dt><dd>按约定开始交付，重要变更继续在站内留下文字记录。</dd></div>
+      <div><dt>已完成或已关闭</dt><dd>交易结束；如有争议，整理订单、消息和交付证据后反馈。</dd></div>
+    </dl>
+
+    <h2 id="for-providers">服务方如何处理</h2>
+    <p>服务方从求购详情发起洽谈，在卖家后台的订单管理中切换到“求购服务”查看相关订单。商品销售和求购服务分开筛选，避免把普通物品待发货与求购履约混在一起。</p>
+
+    <h2 id="troubleshooting">异常处理</h2>
+    <ul>
+      <li>找不到求购：到个人中心的“我的求购”确认审核状态和当前可见性。</li>
+      <li>支付后未解锁入口：刷新求购订单详情，确认订单不是仍停留在等待支付。</li>
+      <li>对方要求站外先交易：暂停操作，继续使用平台订单和消息；必要时举报。</li>
+      <li>履约争议：保留需求原文、调价或承诺记录、订单号和交付证据。</li>
+    </ul>
+
+    <div class="help-actions">
+      <router-link to="/buy-requests/new">发布求购</router-link>
+      <router-link to="/user/messages" class="secondary">查看消息</router-link>
+      <router-link to="/user/buy-requests" class="secondary">我的求购</router-link>
     </div>
-
-    <h2>一、角色与入口</h2>
-    <ul>
-      <li><strong>求购方</strong>：发布需求、调价、创建支付订单、刷新订单状态。</li>
-      <li><strong>服务方</strong>：发起洽谈、沟通交付方案、在完成后通过私信交付。</li>
-      <li><strong>管理员</strong>：审核求购、管理会话、查看日志与违禁词。</li>
-      <li><strong>入口页面</strong>：<code>/buy-requests/new</code>、<code>/buy-request/:id</code>、<code>/user/buy-requests</code>、<code>/user/messages</code>、<code>/user/orders?tab=buy</code>。</li>
-    </ul>
-
-    <h2>二、发布与审核</h2>
-    <ol class="numbered-list">
-      <li>进入 <code>/buy-requests/new</code> 发布求购。</li>
-      <li>填写标题、详细需求、预算价格并提交。</li>
-      <li>新求购状态为 <code>pending_review</code>，需要管理员人工审核。</li>
-      <li>审核通过后状态进入开放，其他用户才能发起洽谈。</li>
-    </ol>
-
-    <h2>三、洽谈与调价</h2>
-    <ul>
-      <li>服务方在求购详情页点击“发起洽谈”进入独立会话。</li>
-      <li>聊天中仅展示公开身份，系统会拦截违禁词消息。</li>
-      <li>求购方可以在详情页调价，更新预算。</li>
-      <li>会话内可持续沟通需求边界、交付方式、时效等细节。</li>
-      <li>会话可由任一方主动关闭，管理员也可强制关闭。</li>
-    </ul>
-
-    <h2>四、支付闭环（关键）</h2>
-    <div class="flow-diagram">
-      <div class="flow-step"><span class="step-icon">💬</span><span>洽谈确认</span></div>
-      <span class="flow-arrow">→</span>
-      <div class="flow-step"><span class="step-icon">💳</span><span>求购方创建并支付订单</span></div>
-      <span class="flow-arrow">→</span>
-      <div class="flow-step"><span class="step-icon">🔁</span><span>LDC 回调确认订单完成</span></div>
-      <span class="flow-arrow">→</span>
-      <div class="flow-step"><span class="step-icon">📨</span><span>开放真实私信入口</span></div>
-    </div>
-
-    <p>
-      只有在“平台回调确认订单已完成”后，双方的真实联系入口才会解锁（跳转 Linux.do 私信）。
-    </p>
-
-    <h2>五、求购订单状态说明</h2>
-    <ul>
-      <li><code>pending</code>：待支付，求购方可继续支付或刷新状态。</li>
-      <li><code>completed</code>：已完成，联系方式自动开放。</li>
-      <li><code>expired</code>：已过期，需要重新创建支付订单。</li>
-      <li><code>cancelled</code>：已取消，当前订单不再可用。</li>
-    </ul>
-
-    <h2>六、我该去哪里看进度</h2>
-    <ul>
-      <li><strong>我的求购</strong>：查看自己发布的求购状态、会话数量、待确认数量。</li>
-      <li><strong>我的消息</strong>：集中查看系统通知、会话未读消息与最新进展。</li>
-      <li><strong>求购订单</strong>：在“我的订单”中的“求购订单”Tab 查看支付状态与回调结果。</li>
-      <li><strong>消息提醒</strong>：用户中心与顶部菜单会显示未读会话提醒。</li>
-    </ul>
-
-    <h2>七、常见问题</h2>
-    <ul>
-      <li><strong>支付后未立即解锁</strong>：先在“求购订单”里点“刷新状态”，等待回调同步。</li>
-      <li><strong>订单过期</strong>：回到会话重新发起支付订单。</li>
-      <li><strong>看不到支付按钮</strong>：仅求购方可在会话中创建支付订单。</li>
-      <li><strong>看不到私信入口</strong>：只有订单状态变为 <code>completed</code> 才开放。</li>
-    </ul>
-
-    <h2>八、使用建议</h2>
-    <ul>
-      <li>标题写清核心需求关键词，便于服务方快速判断是否可接单。</li>
-      <li>详细信息尽量包含交付标准、时间要求、验收方式。</li>
-      <li>先聊清需求再支付，避免误解和争议。</li>
-      <li>不要在聊天中发布违规内容，系统会拦截并记录。</li>
-      <li>不要引导场外交易，保护双方权益。</li>
-    </ul>
   </div>
 </template>
 
 <script setup>
-// 求购操作指南
-</script>
+import HelpCallout from './HelpCallout.vue'
+import HelpPath from './HelpPath.vue'
+import HelpSteps from './HelpSteps.vue'
 
-<style scoped>
-@import './doc-styles.css';
-</style>
+const requestSteps = [
+  { title: '写清需求', description: '填写标题、分类、预算、期限、交付标准和必要背景。' },
+  { title: '提交并等待可见状态', description: '发布后到“我的求购”查看页面显示的中文审核状态。' },
+  { title: '在站内洽谈', description: '比较服务方方案，确认范围、LDC、期限和交付方式。' },
+  { title: '创建订单并支付', description: '选定服务方后通过求购订单完成 LDC 支付。', result: '支付确认后按订单页提示获取后续联系入口。' }
+]
+</script>

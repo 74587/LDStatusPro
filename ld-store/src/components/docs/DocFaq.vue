@@ -1,311 +1,107 @@
 <template>
   <div class="doc-content">
-    <h1>❓ 常见问题 FAQ</h1>
-    <p class="lead">这里汇总了用户常见的问题和解答，帮助你快速解决疑问。</p>
-    
-    <h2>账号相关</h2>
-    
+    <h2 id="how-to-use">按页面现象排查</h2>
+    <p class="lead">先找到最接近的现象，按顺序检查。反馈时提供订单号、物品名和用户可见中文状态，不要提交卡密或密钥。</p>
+
+    <h2 id="payment">支付与订单</h2>
     <div class="faq-list">
-      <div :class="['faq-item', { open: openFaq === 'login' }]">
-        <button class="faq-question" @click="toggleFaq('login')">
-          <span><span class="q-icon">Q:</span> 如何登录 LD士多？</span>
-          <span class="faq-arrow">▼</span>
-        </button>
-        <div class="faq-answer" v-show="openFaq === 'login'">
-          <p>LD士多 使用 LinuxDo 论坛账号登录，点击右上角「登录」按钮，授权后即可登录。</p>
-          <p>你需要先在 <a href="https://linux.do" target="_blank" rel="noopener">linux.do</a> 注册账号。</p>
-        </div>
-      </div>
-      
-      <div :class="['faq-item', { open: openFaq === 'logout' }]">
-        <button class="faq-question" @click="toggleFaq('logout')">
-          <span><span class="q-icon">Q:</span> 如何退出登录？</span>
-          <span class="faq-arrow">▼</span>
-        </button>
-        <div class="faq-answer" v-show="openFaq === 'logout'">
-          <p>点击右上角头像，在下拉菜单中点击「退出登录」即可。</p>
-        </div>
-      </div>
-      
-      <div :class="['faq-item', { open: openFaq === 'register' }]">
-        <button class="faq-question" @click="toggleFaq('register')">
-          <span><span class="q-icon">Q:</span> 没有 LinuxDo 账号怎么办？</span>
-          <span class="faq-arrow">▼</span>
-        </button>
-        <div class="faq-answer" v-show="openFaq === 'register'">
-          <p>LinuxDo 论坛目前采用邀请制注册，你需要获得邀请码才能注册。</p>
-          <p>可以找已有账号的朋友邀请，或关注论坛开放注册的公告。</p>
-        </div>
-      </div>
+      <details>
+        <summary>普通物品为什么也要求卖家配置收款？</summary>
+        <div><p>普通物品和自动发卡物品都在 LD 士多订单内使用 LDC 支付。普通物品只是改为卖家手动履约，不是站外支付，因此同样需要卖家收款配置。</p><p><router-link to="/docs/payment-settings">查看收款配置</router-link></p></div>
+      </details>
+      <details>
+        <summary>支付完成后订单仍显示待支付或支付中</summary>
+        <div><p>稍后刷新订单详情，确认没有重复创建或支付。卖家同时检查通知地址和通知测试。持续不更新时，保留订单号、时间和支付页面结果后反馈。</p></div>
+      </details>
+      <details>
+        <summary>我找不到订单</summary>
+        <div><p>买家到个人中心的“我的订单”；卖家到独立卖家后台的“订单管理”。卖家订单还要确认当前选中“商品销售”还是“求购服务”，并清除过窄筛选。</p></div>
+      </details>
     </div>
-    
-    <h2>积分相关</h2>
-    
+
+    <h2 id="delivery">发货与卡密</h2>
     <div class="faq-list">
-      <div :class="['faq-item', { open: openFaq === 'ldc' }]">
-        <button class="faq-question" @click="toggleFaq('ldc')">
-          <span><span class="q-icon">Q:</span> 什么是 LDC？</span>
-          <span class="faq-arrow">▼</span>
-        </button>
-        <div class="faq-answer" v-show="openFaq === 'ldc'">
-          <p>LDC（Linux.do Credit）是 LinuxDo 社区的积分系统，可用于社区内的各种服务和商品交换。</p>
-          <p>访问 <a href="https://credit.linux.do" target="_blank" rel="noopener">credit.linux.do</a> 查看你的积分余额。</p>
-        </div>
-      </div>
-      
-      <div :class="['faq-item', { open: openFaq === 'earn' }]">
-        <button class="faq-question" @click="toggleFaq('earn')">
-          <span><span class="q-icon">Q:</span> 如何获取 LDC？</span>
-          <span class="faq-arrow">▼</span>
-        </button>
-        <div class="faq-answer" v-show="openFaq === 'earn'">
-          <p>可以通过以下方式获取 LDC：</p>
-          <ul>
-            <li>在论坛活跃参与讨论、发帖</li>
-            <li>获得其他用户的点赞和认可</li>
-            <li>参与社区活动</li>
-            <li>向其他用户提供有价值的服务</li>
-          </ul>
-        </div>
-      </div>
-      
-      <div :class="['faq-item', { open: openFaq === 'balance' }]">
-        <button class="faq-question" @click="toggleFaq('balance')">
-          <span><span class="q-icon">Q:</span> 如何查看 LDC 余额？</span>
-          <span class="faq-arrow">▼</span>
-        </button>
-        <div class="faq-answer" v-show="openFaq === 'balance'">
-          <p>访问 <a href="https://credit.linux.do" target="_blank" rel="noopener">credit.linux.do</a> 登录后即可查看你的 LDC 余额和交易记录。</p>
-        </div>
-      </div>
+      <details>
+        <summary>订单为什么一直待发货？</summary>
+        <div><p>普通物品需要卖家手动履约。自动发卡订单待发货时，卖家应检查支付通知、独立卡密可用库存或共享内容，再从订单详情处理。</p><p><router-link to="/docs/seller-orders#pending-delivery">处理待发货订单</router-link></p></div>
+      </details>
+      <details>
+        <summary>共享卡密的库存为什么是 9999？</summary>
+        <div><p>共享卡密重复发放同一内容，商城统一显示 9999 作为展示库存，不代表录入了 9999 条卡密。每次下单限购一件，销量仍按实际成交累计。</p></div>
+      </details>
+      <details>
+        <summary>切换共享与独立卡密后，旧库存去哪了？</summary>
+        <div><p>独立切共享时，独立卡密被暂停；共享切独立时，共享内容迁移成一条可用独立卡密。切回独立会恢复此前暂停库存。每次切换都要重新审核。</p><p><router-link to="/docs/inventory-management#switch-cdk-mode">查看完整切换规则</router-link></p></div>
+      </details>
     </div>
-    
-    <h2>购买相关</h2>
-    
+
+    <h2 id="coupons">优惠券</h2>
     <div class="faq-list">
-      <div :class="['faq-item', { open: openFaq === 'buy-fail' }]">
-        <button class="faq-question" @click="toggleFaq('buy-fail')">
-          <span><span class="q-icon">Q:</span> 支付成功但没收到商品？</span>
-          <span class="faq-arrow">▼</span>
-        </button>
-        <div class="faq-answer" v-show="openFaq === 'buy-fail'">
-          <p><strong>CDK 物品：</strong></p>
-          <ul>
-            <li>首先等待 1-2 分钟，刷新订单页面</li>
-            <li>检查「我的订单」中订单状态</li>
-            <li>如持续未发货，可能是卖家配置问题，请联系卖家或管理员</li>
-          </ul>
-          <p><strong>普通物品：</strong></p>
-          <ul>
-            <li>按商品描述中的方式主动联系卖家</li>
-            <li>在「我的订单」中保留订单记录，并向卖家说明订单号与支付情况</li>
-          </ul>
-        </div>
-      </div>
-      
-      <div :class="['faq-item', { open: openFaq === 'refund' }]">
-        <button class="faq-question" @click="toggleFaq('refund')">
-          <span><span class="q-icon">Q:</span> 可以申请退款吗？</span>
-          <span class="faq-arrow">▼</span>
-        </button>
-        <div class="faq-answer" v-show="openFaq === 'refund'">
-          <p>退款政策因商品类型而异：</p>
-          <ul>
-            <li><strong>CDK 物品</strong>：已发放 CDK 的订单一般不支持退款，除非 CDK 确认无效</li>
-            <li><strong>普通物品</strong>：请先与卖家协商，若卖家失联或长期不履约，可携带订单记录联系管理员</li>
-          </ul>
-          <p>如遇到诈骗或严重问题，可在论坛反馈。</p>
-        </div>
-      </div>
-      
-      <div :class="['faq-item', { open: openFaq === 'cdk-invalid' }]">
-        <button class="faq-question" @click="toggleFaq('cdk-invalid')">
-          <span><span class="q-icon">Q:</span> CDK 无效怎么办？</span>
-          <span class="faq-arrow">▼</span>
-        </button>
-        <div class="faq-answer" v-show="openFaq === 'cdk-invalid'">
-          <p>请按以下步骤处理：</p>
-          <ol>
-            <li>确认使用方法是否正确（仔细阅读商品描述）</li>
-            <li>确认是否在正确的平台/网站使用</li>
-            <li>截图保存无法使用的证据</li>
-            <li>联系卖家说明情况</li>
-            <li>如卖家不处理，可在论坛反馈</li>
-          </ol>
-        </div>
-      </div>
+      <details>
+        <summary>优惠券为什么显示“订单占用中”？</summary>
+        <div><p>它已被一个未结束订单临时锁定，不能同时用于其他订单。订单取消或过期后，仍在有效期内的券会自动释放；已过期的券不会恢复。</p></div>
+      </details>
+      <details>
+        <summary>买了多件，优惠为什么没有乘以数量？</summary>
+        <div><p>固定减额整单只减一次；单件折扣只优惠其中一件。一单最多使用一张券，最低消费按适用物品的优惠前小计判断。</p></div>
+      </details>
+      <details>
+        <summary>卖家停止领取后，买家手里的券还能用吗？</summary>
+        <div><p>停止新领取是不可逆操作，但已经领取且仍有效的优惠券继续按原规则使用。卖家不能通过停止领取改写已发放券的核心条件。</p></div>
+      </details>
     </div>
-    
-    <h2>发布相关</h2>
-    
+
+    <h2 id="seller-and-review">卖家后台与审核</h2>
     <div class="faq-list">
-      <div :class="['faq-item', { open: openFaq === 'publish-cdk' }]">
-        <button class="faq-question" @click="toggleFaq('publish-cdk')">
-          <span><span class="q-icon">Q:</span> 发布 CDK 物品需要什么条件？</span>
-          <span class="faq-arrow">▼</span>
-        </button>
-        <div class="faq-answer" v-show="openFaq === 'publish-cdk'">
-          <p>发布 CDK 物品需要先配置 LDC 收款信息：</p>
-          <ol>
-            <li>在 <a href="https://credit.linux.do/merchant" target="_blank" rel="noopener">LDC 集市</a> 创建应用</li>
-            <li>配置正确的通知地址和回调地址</li>
-            <li>在 LD士多「卖家后台 → 收款设置」中填入凭证</li>
-          </ol>
-          <p>详见 <router-link to="/docs/publish-cdk">发布 CDK 物品</router-link></p>
-        </div>
-      </div>
-      
-      <div :class="['faq-item', { open: openFaq === 'audit' }]">
-        <button class="faq-question" @click="toggleFaq('audit')">
-          <span><span class="q-icon">Q:</span> 商品审核需要多久？</span>
-          <span class="faq-arrow">▼</span>
-        </button>
-        <div class="faq-answer" v-show="openFaq === 'audit'">
-          <p>一般 1-3 个工作日内完成审核。如长时间未审核，可在论坛私信管理员。</p>
-          <p>为加快审核，建议：</p>
-          <ul>
-            <li>商品信息填写完整、描述清晰</li>
-            <li>分类选择正确</li>
-            <li>不包含违规内容</li>
-          </ul>
-        </div>
-      </div>
-      
-      <div :class="['faq-item', { open: openFaq === 'audit-fail' }]">
-        <button class="faq-question" @click="toggleFaq('audit-fail')">
-          <span><span class="q-icon">Q:</span> 商品审核被拒怎么办？</span>
-          <span class="faq-arrow">▼</span>
-        </button>
-        <div class="faq-answer" v-show="openFaq === 'audit-fail'">
-          <p>审核被拒后可以：</p>
-          <ol>
-            <li>查看拒绝原因</li>
-            <li>根据原因修改商品信息</li>
-            <li>重新提交审核</li>
-          </ol>
-          <p>如对审核结果有异议，可联系管理员。</p>
-        </div>
-      </div>
-      
-      <div :class="['faq-item', { open: openFaq === 'delivery-fail' }]">
-        <button class="faq-question" @click="toggleFaq('delivery-fail')">
-          <span><span class="q-icon">Q:</span> 买家付款了但自动发货失败？</span>
-          <span class="faq-arrow">▼</span>
-        </button>
-        <div class="faq-answer" v-show="openFaq === 'delivery-fail'">
-          <p>可能原因：</p>
-          <ul>
-            <li><strong>通知地址配置错误</strong>：检查 LDC 集市中的通知 URL</li>
-            <li><strong>CDK 库存为空</strong>：补充库存</li>
-            <li><strong>回调验证失败</strong>：检查 Client Key 是否正确</li>
-          </ul>
-          <p>如确认配置正确但仍失败，请联系管理员协助排查。</p>
-        </div>
-      </div>
+      <details>
+        <summary>在哪里查看经营数据和待办？</summary>
+        <div><p>进入“卖家后台 → 经营概览”，查看收入、成交订单、服务买家、物品浏览、收款状态和待办。买家个人中心不会展示这些经营卡片。</p></div>
+      </details>
+      <details>
+        <summary>审核需要多久？</summary>
+        <div><p>帮助中心不承诺固定审核时长。请以“我的物品”或“我的求购”显示的中文状态为准；自动检查无法确认时可能进入人工复核。</p></div>
+      </details>
+      <details>
+        <summary>推广名额或发布限额和旧教程不同</summary>
+        <div><p>发布限额、批量卡密操作限制、推广条件和名额可能动态调整，当前页面实时提示优先于帮助文档中的历史描述。</p></div>
+      </details>
     </div>
-    
-    <h2>小店相关</h2>
-    
+
+    <h2 id="payment-settings">收款与通知地址</h2>
     <div class="faq-list">
-      <div :class="['faq-item', { open: openFaq === 'shop-count' }]">
-        <button class="faq-question" @click="toggleFaq('shop-count')">
-          <span><span class="q-icon">Q:</span> 可以入驻多个小店吗？</span>
-          <span class="faq-arrow">▼</span>
-        </button>
-        <div class="faq-answer" v-show="openFaq === 'shop-count'">
-          <p>目前每个账号只能入驻一个小店。如需展示多个网站，建议选择最主要的一个。</p>
-        </div>
-      </div>
-      
-      <div :class="['faq-item', { open: openFaq === 'shop-edit' }]">
-        <button class="faq-question" @click="toggleFaq('shop-edit')">
-          <span><span class="q-icon">Q:</span> 小店入驻后可以修改信息吗？</span>
-          <span class="faq-arrow">▼</span>
-        </button>
-        <div class="faq-answer" v-show="openFaq === 'shop-edit'">
-          <p>可以。在「我的 → 小店入驻」页面点击「编辑信息」即可修改。</p>
-          <p>修改后可能需要重新审核。</p>
-        </div>
-      </div>
+      <details>
+        <summary>通知地址和回调地址应该填什么？</summary>
+        <div><p>直接从“卖家后台 → 收款设置”复制当前 Notify URL 和 Return URL，分别粘贴到 LDC 应用对应字段。不要照抄旧域名或手动拼路径。</p></div>
+      </details>
+      <details>
+        <summary>收款测试失败怎么办？</summary>
+        <div><p>检查 Client ID、Client Key、PID 等字段是否完整且没有填反，应用是否可用，通知与回调地址是否来自当前页面。不要公开 Client Key 请求帮助。</p></div>
+      </details>
     </div>
-    
-    <h2>其他问题</h2>
-    
+
+    <h2 id="requests-and-images">求购与图床</h2>
     <div class="faq-list">
-      <div :class="['faq-item', { open: openFaq === 'mobile' }]">
-        <button class="faq-question" @click="toggleFaq('mobile')">
-          <span><span class="q-icon">Q:</span> 手机上可以使用吗？</span>
-          <span class="faq-arrow">▼</span>
-        </button>
-        <div class="faq-answer" v-show="openFaq === 'mobile'">
-          <p>可以！LD士多 采用响应式设计，完美支持手机浏览器访问。</p>
-          <p>直接在手机浏览器中访问本站域名即可。</p>
-        </div>
-      </div>
-      
-      <div :class="['faq-item', { open: openFaq === 'security' }]">
-        <button class="faq-question" @click="toggleFaq('security')">
-          <span><span class="q-icon">Q:</span> LD士多 安全吗？</span>
-          <span class="faq-arrow">▼</span>
-        </button>
-        <div class="faq-answer" v-show="openFaq === 'security'">
-          <p>LD士多 是社区公益项目，采用以下安全措施：</p>
-          <ul>
-            <li>基于 LinuxDo OAuth 登录，不存储你的密码</li>
-            <li>全站 HTTPS 加密传输</li>
-            <li>商家收款凭证加密存储</li>
-            <li>代码开源可审计</li>
-          </ul>
-          <p>同时，请注意甄别商品和卖家，避免上当受骗。</p>
-        </div>
-      </div>
-      
-      <div :class="['faq-item', { open: openFaq === 'contact' }]">
-        <button class="faq-question" @click="toggleFaq('contact')">
-          <span><span class="q-icon">Q:</span> 如何联系管理员？</span>
-          <span class="faq-arrow">▼</span>
-        </button>
-        <div class="faq-answer" v-show="openFaq === 'contact'">
-          <p>可以通过以下方式联系：</p>
-          <ul>
-            <li>LinuxDo 论坛私信 <a href="https://linux.do/u/JackyLiii" target="_blank" rel="noopener"><code>@JackyLiii</code></a></li>
-            <li>在相关帖子下方留言</li>
-          </ul>
-        </div>
-      </div>
-      
-      <div :class="['faq-item', { open: openFaq === 'fee' }]">
-        <button class="faq-question" @click="toggleFaq('fee')">
-          <span><span class="q-icon">Q:</span> 平台收手续费吗？</span>
-          <span class="faq-arrow">▼</span>
-        </button>
-        <div class="faq-answer" v-show="openFaq === 'fee'">
-          <p>LD士多 是社区公益项目，<strong>不收取任何手续费</strong>。</p>
-          <p>但 LDC 官方可能会有交易费用，具体以 LDC 官方说明为准。</p>
-        </div>
-      </div>
+      <details>
+        <summary>求购支付后没有看到联系入口</summary>
+        <div><p>回到求购订单详情刷新，确认订单已从等待支付更新。不要在状态未确认时重复创建订单；持续异常时提供求购订单号反馈。</p></div>
+      </details>
+      <details>
+        <summary>图床链接在物品页不显示</summary>
+        <div><p>确认复制的是完整 HTTPS 地址，先在新标签页打开验证，再检查物品字段是否有多余空格。图片已删除时需要上传替代图片并更新物品。</p></div>
+      </details>
     </div>
-    
-    <div class="highlight-box info">
-      <div class="box-icon">💬</div>
-      <div class="box-content">
-        <strong>还有其他问题？</strong>
-        <p>如果以上内容没有解答你的问题，欢迎在 LinuxDo 论坛反馈或私信管理员。</p>
-      </div>
+
+    <h2 id="contact">仍未解决</h2>
+    <HelpCallout title="提交最少但足够的信息" tone="info">
+      提供页面地址、订单号或物品名、发生时间、当前中文状态、已完成的排查步骤。截图请遮挡卡密、Client Key、联系方式和其他隐私。
+    </HelpCallout>
+    <div class="help-actions">
+      <router-link to="/support">联系与反馈</router-link>
+      <router-link to="/user/reports" class="secondary">查看我的举报</router-link>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
-
-const openFaq = ref('')
-
-function toggleFaq(id) {
-  openFaq.value = openFaq.value === id ? '' : id
-}
+import HelpCallout from './HelpCallout.vue'
 </script>
-
-<style scoped>
-@import './doc-styles.css';
-</style>

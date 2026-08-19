@@ -393,7 +393,7 @@
               </div>
             </div>
             <div class="notice-footer">
-              <a href="https://ldcstore.com/docs/publish-cdk" target="_blank" rel="noopener">查看详细配置教程</a>
+              <a href="/docs/publish-product#auto-delivery" target="_blank" rel="noopener">查看自动发卡配置教程</a>
             </div>
           </div>
           

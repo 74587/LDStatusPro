@@ -1,11 +1,10 @@
 <template>
   <div class="doc-content">
-    <h1>📜 服务条款</h1>
     <p class="lead">使用 LD士多 平台前，请仔细阅读以下服务条款。登录即表示您已阅读、理解并同意遵守本条款。</p>
     
     <p class="update-date">最后更新日期：2026年1月24日</p>
     
-    <h2>一、平台性质声明</h2>
+    <h2 id="platform-nature">一、平台性质声明</h2>
     
     <div class="highlight-box info">
       <div class="box-icon">🎈</div>
@@ -30,7 +29,7 @@
       <li>使用本平台即视为您已具备完全民事行为能力</li>
     </ul>
     
-    <h2>二、关于 LDC（社区活跃积分）</h2>
+    <h2 id="ldc-rules">二、关于 LDC（社区活跃积分）</h2>
     
     <div class="highlight-box warning">
       <div class="box-icon">⚠️</div>
@@ -69,7 +68,7 @@
     
     <p>LDC 的使用应保持<strong>简单、纯粹</strong>——作为社区活跃的回馈，用于兑换一些小福利，仅此而已。</p>
     
-    <h2>三、用户责任与义务</h2>
+    <h2 id="user-responsibilities">三、用户责任与义务</h2>
     
     <h3>3.1 卖家责任</h3>
     <p>在本平台发布物品的用户（卖家）需承担以下责任：</p>
@@ -105,6 +104,7 @@
     <h3>3.4 禁止发布的内容</h3>
     <p>用户<strong>严禁</strong>在平台发布以下类型的物品或服务：</p>
     
+    <div class="help-table-wrap" tabindex="0" aria-label="禁止发布内容表格，可横向滚动查看">
     <table class="doc-table">
       <thead>
         <tr>
@@ -139,8 +139,9 @@
         </tr>
       </tbody>
     </table>
+    </div>
     
-    <h2>四、图床服务使用规范</h2>
+    <h2 id="image-host-rules">四、图床服务使用规范</h2>
     
     <div class="highlight-box warning">
       <div class="box-icon">📷</div>
@@ -168,7 +169,7 @@
       <li>涉及违法内容的，平台将配合相关部门进行处理</li>
     </ol>
     
-    <h2>五、免责声明</h2>
+    <h2 id="disclaimer">五、免责声明</h2>
     
     <h3>5.1 交易风险</h3>
     <div class="highlight-box info">
@@ -215,7 +216,7 @@
       <li>如发现恶意链接，请及时向平台举报</li>
     </ul>
     
-    <h2>六、账号管理</h2>
+    <h2 id="account-management">六、账号管理</h2>
     
     <h3>6.1 账号使用</h3>
     <ul>
@@ -233,21 +234,21 @@
       <li><strong>永久封禁</strong>：涉及违法或严重危害平台的行为</li>
     </ul>
     
-    <h2>七、知识产权</h2>
+    <h2 id="intellectual-property">七、知识产权</h2>
     <ul>
       <li>平台界面设计、Logo、代码等受知识产权保护</li>
       <li>用户保留其发布内容的知识产权，但授予平台在平台范围内展示的权利</li>
       <li>如发现侵权内容，请联系管理员处理</li>
     </ul>
     
-    <h2>八、隐私保护</h2>
+    <h2 id="privacy">八、隐私保护</h2>
     <ul>
       <li>平台仅收集提供服务所必需的用户信息</li>
       <li>用户数据不会出售或与第三方共享（法律要求除外）</li>
       <li>用户可在设置中管理自己的隐私偏好</li>
     </ul>
     
-    <h2>九、争议解决</h2>
+    <h2 id="dispute-resolution">九、争议解决</h2>
     
     <h3>9.1 用户间纠纷</h3>
     <ul>
@@ -263,21 +264,21 @@
       <li>举报处理结果以平台通知为准</li>
     </ul>
     
-    <h2>十、条款修订</h2>
+    <h2 id="terms-updates">十、条款修订</h2>
     <ul>
       <li>平台保留随时修订本条款的权利</li>
       <li>重大条款变更将通过平台公告通知用户</li>
       <li>继续使用本平台即视为接受修订后的条款</li>
     </ul>
     
-    <h2>十一、法律适用</h2>
+    <h2 id="applicable-law">十一、法律适用</h2>
     <ul>
       <li>本条款的解释及适用受中华人民共和国法律管辖</li>
       <li>如本条款与相关法律法规冲突，以法律法规为准</li>
       <li>本条款中任何条款被认定为无效，不影响其他条款的效力</li>
     </ul>
     
-    <h2>十二、联系我们</h2>
+    <h2 id="contact-us">十二、联系我们</h2>
     <p>如有任何疑问或建议，请通过以下方式联系：</p>
     <ul>
       <li>Linux.do 论坛私信管理员</li>
@@ -299,12 +300,9 @@
 </script>
 
 <style scoped>
-@import './doc-styles.css';
-
 .update-date {
   font-size: 13px;
-  color: var(--text-tertiary);
-  margin-top: -8px;
+  color: var(--help-muted);
   margin-bottom: 24px;
 }
 

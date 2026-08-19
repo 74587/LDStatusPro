@@ -73,7 +73,7 @@
         <router-link 
           to="/docs" 
           class="docs-btn"
-          title="使用文档"
+          title="帮助中心"
         >
           <svg height="20" width="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
@@ -121,7 +121,7 @@
                 <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
                 <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
               </svg>
-              <span>使用文档</span>
+              <span>帮助中心</span>
             </router-link>
             <a href="https://github.com/caigg188/LDStatusPro" target="_blank" rel="noopener" class="more-menu-item" @click="closeMoreMenu">
               <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor">

@@ -1,228 +1,68 @@
 <template>
   <div class="doc-content">
-    <h1>🛒 购买指南</h1>
-    <p class="lead">在 LD士多 兑换物品非常简单，本文将介绍完整的购买流程和注意事项。</p>
-    
-    <h2>购买前准备</h2>
-    
-    <div class="steps">
-      <div class="step">
-        <div class="step-num">1</div>
-        <div class="step-content">
-          <h4>登录账号</h4>
-          <p>使用 LinuxDo 论坛账号登录 LD士多</p>
-        </div>
-      </div>
-      <div class="step">
-        <div class="step-num">2</div>
-        <div class="step-content">
-          <h4>确认积分余额</h4>
-          <p>在 <a href="https://credit.linux.do" target="_blank" rel="noopener">credit.linux.do</a> 确认你的 LDC 余额充足</p>
-        </div>
-      </div>
+    <h2 id="purpose">这篇能帮你完成什么</h2>
+    <p class="lead">从物品广场找到合适物品，在平台内支付，并在订单页确认自动发卡或等待卖家履约。</p>
+
+    <HelpPath :items="[{ label: '首页', to: '/' }, { label: '选择物品' }, { label: '物品详情' }, { label: '立即购买' }]" />
+
+    <h2 id="prepare">购买前准备</h2>
+    <ul>
+      <li>登录 LinuxDo 账号并确认 LDC 余额。</li>
+      <li>阅读物品说明、库存、卖家信息、交付方式和售后约定。</li>
+      <li>如要使用优惠券，先领取并确认它适用于当前商品或店铺。</li>
+      <li>卡密属于敏感信息，交付后不要截屏公开或转发给他人。</li>
+    </ul>
+
+    <h2 id="buy-steps">购买步骤</h2>
+    <HelpSteps :steps="buySteps" />
+
+    <h2 id="delivery-result">支付后会得到什么</h2>
+    <HelpTable :columns="deliveryColumns" :rows="deliveryRows" caption="按物品类型查看交付结果" />
+
+    <h2 id="order-status">查看购买订单状态</h2>
+    <HelpPath :items="[{ label: '个人中心', to: '/user' }, { label: '我的订单', to: '/user/orders' }]" />
+    <dl class="status-list">
+      <div><dt>待支付</dt><dd>订单已创建但尚未完成 LDC 支付。不要重复创建多个订单。</dd></div>
+      <div><dt>支付中</dt><dd>正在等待支付结果同步，可稍后刷新订单详情。</dd></div>
+      <div><dt>待发货</dt><dd>普通物品等待卖家履约；自动发卡异常时卖家也会在这里处理。</dd></div>
+      <div><dt>已发货 / 已完成</dt><dd>进入订单详情查看交付内容、卖家说明或后续联系入口。</dd></div>
+      <div><dt>已取消 / 已过期</dt><dd>订单已关闭；有效且仅被该订单占用的优惠券会自动释放。</dd></div>
+    </dl>
+
+    <h2 id="troubleshooting">异常处理</h2>
+    <div class="faq-list">
+      <details><summary>支付完成后状态没有变化</summary><div><p>先等待短暂同步并刷新订单详情，确认没有在新标签页重复支付。如果持续停留在“待支付”或“支付中”，保留订单号和支付页面结果后提交反馈。</p></div></details>
+      <details><summary>自动发卡订单没有看到卡密</summary><div><p>进入订单详情检查状态和交付区域。若显示待发货，可能是支付通知或库存交付异常，联系卖家处理，不要再次购买同一物品。</p></div></details>
+      <details><summary>普通物品一直待发货</summary><div><p>通过订单详情或消息入口联系卖家，说明订单号并询问交付安排。保留站内沟通记录；长期未处理时再向平台反馈。</p></div></details>
     </div>
-    
-    <h2>购买普通物品</h2>
-    
-    <p>普通物品会在平台内支付并保留订单记录，支付完成后需要主动联系卖家获取服务：</p>
-    
-    <div class="flow-diagram">
-      <div class="flow-step">
-        <span class="step-icon">👀</span>
-        <span>浏览商品</span>
-      </div>
-      <span class="flow-arrow">→</span>
-      <div class="flow-step">
-        <span class="step-icon">📖</span>
-        <span>查看详情</span>
-      </div>
-      <span class="flow-arrow">→</span>
-      <div class="flow-step">
-        <span class="step-icon">🔗</span>
-        <span>点击兑换</span>
-      </div>
-      <span class="flow-arrow">→</span>
-      <div class="flow-step">
-        <span class="step-icon">💳</span>
-        <span>LDC 支付</span>
-      </div>
-    </div>
-    
-    <h3>详细步骤</h3>
-    
-    <ol class="numbered-list">
-      <li><strong>浏览物品</strong>：在首页或分类页面找到想要的物品</li>
-      <li><strong>查看详情</strong>：点击物品卡片进入详情页，了解物品信息</li>
-      <li><strong>点击兑换</strong>：点击「立即兑换」按钮</li>
-      <li><strong>跳转支付</strong>：自动跳转到 <code>credit.linux.do</code> 支付页面</li>
-      <li><strong>确认支付</strong>：核对金额后完成支付</li>
-      <li><strong>联系卖家</strong>：支付成功后，按物品描述中的方式联系卖家获取物品</li>
-    </ol>
-    
-    <div class="highlight-box warning">
-      <div class="box-icon">⚠️</div>
-      <div class="box-content">
-        <strong>注意事项</strong>
-        <p>普通物品不会自动发货。请仔细阅读物品描述中的履约说明，支付成功后主动联系卖家，并保留订单页面作为凭据。</p>
-      </div>
-    </div>
-    
-    <h2>购买 CDK 物品</h2>
-    
-    <p>CDK 物品支持平台内自动发货，购买流程更加便捷：</p>
-    
-    <div class="flow-diagram">
-      <div class="flow-step">
-        <span class="step-icon">👀</span>
-        <span>浏览商品</span>
-      </div>
-      <span class="flow-arrow">→</span>
-      <div class="flow-step">
-        <span class="step-icon">🛒</span>
-        <span>点击购买</span>
-      </div>
-      <span class="flow-arrow">→</span>
-      <div class="flow-step">
-        <span class="step-icon">💳</span>
-        <span>LDC 支付</span>
-      </div>
-      <span class="flow-arrow">→</span>
-      <div class="flow-step">
-        <span class="step-icon">🎫</span>
-        <span>获取 CDK</span>
-      </div>
-    </div>
-    
-    <h3>详细步骤</h3>
-    
-    <ol class="numbered-list">
-      <li><strong>浏览商品</strong>：找到想要的 CDK 商品</li>
-      <li><strong>查看详情</strong>：确认商品信息、使用说明等</li>
-      <li><strong>点击购买</strong>：点击「立即购买」→「确认购买」</li>
-      <li><strong>完成支付</strong>：跳转到 LDC 支付页面完成支付</li>
-      <li><strong>自动发货</strong>：支付成功后，系统自动发放 CDK</li>
-      <li><strong>查看 CDK</strong>：在「我的订单」中查看获得的 CDK</li>
-    </ol>
-    
-    <div class="highlight-box tip">
-      <div class="box-icon">💡</div>
-      <div class="box-content">
-        <strong>快速查看</strong>
-        <p>支付成功后会自动跳转回 LD士多，你可以直接在订单详情页查看获得的 CDK。</p>
-      </div>
-    </div>
-    
-    <h2>查看订单</h2>
-    
-    <p>所有购买记录都可以在「我的订单」中查看：</p>
-    
-    <ul>
-      <li>📋 订单列表：查看所有订单</li>
-      <li>📝 订单详情：查看具体订单信息</li>
-      <li>🎫 CDK 查看：CDK 物品可以在订单详情中复制 CDK</li>
-    </ul>
-    
-    <h3>进入方式</h3>
-    <ul>
-      <li>点击右上角头像 → 「我的订单」</li>
-      <li>移动端：点击底部「订单」Tab</li>
-    </ul>
-    
-    <h2>订单状态说明</h2>
-    
-    <table class="doc-table">
-      <thead>
-        <tr>
-          <th>状态</th>
-          <th>说明</th>
-          <th>操作</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td><code>待支付</code></td>
-          <td>订单已创建，等待支付</td>
-          <td>去支付 / 取消订单</td>
-        </tr>
-        <tr>
-          <td><code>已支付</code></td>
-          <td>支付成功，等待发货</td>
-          <td>查看详情</td>
-        </tr>
-        <tr>
-          <td><code>已完成</code></td>
-          <td>交易完成</td>
-          <td>查看 CDK / 复制</td>
-        </tr>
-        <tr>
-          <td><code>已取消</code></td>
-          <td>订单已取消</td>
-          <td>-</td>
-        </tr>
-        <tr>
-          <td><code>已退款</code></td>
-          <td>已申请退款</td>
-          <td>-</td>
-        </tr>
-      </tbody>
-    </table>
-    
-    <h2>常见问题</h2>
-    
-    <h3>Q: 购买 CDK 物品后没有收到 CDK？</h3>
-    <p>可能的原因和解决方法：</p>
-    <ul>
-      <li><strong>支付未完成</strong>：检查 LDC 是否已扣除，可能支付过程中断</li>
-      <li><strong>网络延迟</strong>：等待 1-2 分钟后刷新订单页面</li>
-      <li><strong>商品缺货</strong>：卖家 CDK 库存不足，需联系卖家补货或退款</li>
-    </ul>
-    <p>如问题持续，请联系卖家或管理员。</p>
-    
-    <h3>Q: 普通物品支付后如何获取商品？</h3>
-    <p>普通物品的获取方式由卖家手动履约，请仔细阅读商品描述中的说明。通常是：</p>
-    <ul>
-      <li>联系卖家提供支付凭证</li>
-      <li>在指定平台填写信息</li>
-      <li>卖家主动联系发货</li>
-    </ul>
-    
-    <h3>Q: 可以申请退款吗？</h3>
-    <p>退款政策：</p>
-    <ul>
-      <li><strong>CDK 物品</strong>：已发放 CDK 的订单一般不支持退款，除非 CDK 无效</li>
-      <li><strong>普通物品</strong>：请先与卖家协商，若卖家长期失联或拒绝履约，可保留订单记录并联系管理员</li>
-    </ul>
-    <p>如有纠纷，可在论坛反馈或联系管理员。</p>
-    
-    <h3>Q: 购买的 CDK 无效怎么办？</h3>
-    <ol class="numbered-list">
-      <li>首先确认使用方法是否正确（参考商品描述）</li>
-      <li>联系卖家说明情况</li>
-      <li>如卖家不处理，可在论坛反馈或联系管理员</li>
-    </ol>
-    
-    <h3>Q: 支付页面打不开？</h3>
-    <p>请检查：</p>
-    <ul>
-      <li>网络连接是否正常</li>
-      <li>是否已登录 LinuxDo 账号</li>
-      <li>浏览器是否阻止了弹出窗口</li>
-    </ul>
-    
-    <div class="highlight-box info">
-      <div class="box-icon">💬</div>
-      <div class="box-content">
-        <strong>需要帮助？</strong>
-        <p>如遇到其他问题，可在 LinuxDo 论坛私信 <code>@JackyLiii</code> 寻求帮助。</p>
-      </div>
+
+    <div class="help-actions">
+      <router-link to="/">去物品广场</router-link>
+      <router-link to="/user/orders" class="secondary">查看我的订单</router-link>
+      <router-link to="/docs/buyer-coupons" class="secondary">了解优惠券</router-link>
     </div>
   </div>
 </template>
 
 <script setup>
-// 购买指南文档
-</script>
+import HelpPath from './HelpPath.vue'
+import HelpSteps from './HelpSteps.vue'
+import HelpTable from './HelpTable.vue'
 
-<style scoped>
-@import './doc-styles.css';
-</style>
+const buySteps = [
+  { title: '筛选并查看详情', description: '按分类、关键词或物品类型浏览，进入详情确认价格和交付。' },
+  { title: '选择数量和优惠券', description: '检查结算金额。系统一单只允许使用一张券，不同券的多件优惠规则不同。' },
+  { title: '创建订单并支付', description: '在 LD 士多订单内发起 LDC 支付，等待页面确认结果。' },
+  { title: '查看交付', description: '回到订单详情查看卡密或等待卖家手动履约。', result: '订单和站内沟通记录会保留在个人中心。' }
+]
+const deliveryColumns = [
+  { key: 'type', label: '物品类型' },
+  { key: 'afterPay', label: '支付后' },
+  { key: 'yourAction', label: '你需要做什么' }
+]
+const deliveryRows = [
+  { type: '普通物品', afterPay: '订单进入待发货，由卖家手动履约', yourAction: '留意订单和消息，按约定配合交付' },
+  { type: '独立卡密', afterPay: '系统从库存逐条发放不同卡密', yourAction: '在订单详情复制并妥善保存' },
+  { type: '共享卡密', afterPay: '系统发放同一份共享内容', yourAction: '每次下单限购一件，按说明使用' }
+]
+</script>

@@ -9,6 +9,17 @@ import {
 import { storage } from '@/utils/storage'
 import HomeView from '@/views/Home.vue'
 import { resolveLegacyPublishTarget } from '@/utils/sellerNavigation'
+import { getHelpArticle, resolveLegacyHelpLocation } from '@/config/helpCenter'
+
+function resolveHelpRoute(to) {
+  const section = String(to.params.section || '')
+  const legacyTarget = resolveLegacyHelpLocation(section, to.query)
+  if (legacyTarget) return legacyTarget
+  if (!getHelpArticle(section)) {
+    return { name: 'Docs', query: to.query, replace: true }
+  }
+  return true
+}
 
 // 路由配置
 const routes = [
@@ -177,13 +188,14 @@ const routes = [
     path: '/docs',
     name: 'Docs',
     component: () => import('@/views/Docs.vue'),
-    meta: { title: '使用文档 - LD士多' }
+    meta: { title: '帮助中心 - LD士多' }
   },
   {
     path: '/docs/:section',
     name: 'DocsSection',
     component: () => import('@/views/Docs.vue'),
-    meta: { title: '使用文档 - LD士多' }
+    beforeEnter: resolveHelpRoute,
+    meta: { title: '帮助中心 - LD士多' }
   },
 
   {

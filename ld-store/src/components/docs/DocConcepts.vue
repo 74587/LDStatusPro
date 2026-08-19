@@ -1,139 +1,63 @@
 <template>
   <div class="doc-content">
-    <h1>💡 基本概念</h1>
-    <p class="lead">在开始使用 LD士多 之前，了解一些基本概念可以帮助你更好地使用平台。</p>
-    
-    <h2>LDC 积分</h2>
-    <p>LDC（Linux.do Credit）是 LinuxDo 社区的积分系统，用于在社区生态内进行价值交换。</p>
-    
-    <div class="highlight-box info">
-      <div class="box-icon">💰</div>
-      <div class="box-content">
-        <strong>如何获取 LDC？</strong>
-        <p>在 LinuxDo 论坛活跃参与讨论、发帖、获得点赞等都可以积累 LDC 积分。访问 <a href="https://credit.linux.do" target="_blank" rel="noopener">credit.linux.do</a> 查看你的积分余额。</p>
-      </div>
-    </div>
-    
-    <h2>平台角色</h2>
-    
-    <h3>买家</h3>
-    <p>任何登录 LD士多 的用户都可以作为买家浏览和购买物品。购买物品需要消耗 LDC 积分。</p>
-    
-    <h3>卖家（商家）</h3>
-    <p>任何登录用户都可以发布物品成为卖家。发布的物品需要经过管理员审核后才会上架展示。</p>
-    
-    <div class="highlight-box warning">
-      <div class="box-icon">⚠️</div>
-      <div class="box-content">
-        <strong>卖家须知</strong>
-        <p>发布普通物品或 CDK 物品都需要先配置 LDC 收款信息，请在「卖家后台 → 收款设置」中完成配置。</p>
-      </div>
-    </div>
-    
-    <h2>物品类型</h2>
-    <p>LD士多 支持两种类型的物品：</p>
-    
-    <table class="compare-table">
-      <thead>
-        <tr>
-          <th>特性</th>
-          <th>📦 普通物品</th>
-          <th>🎫 CDK 物品</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>交易方式</td>
-          <td>跳转外部链接</td>
-          <td>平台内支付</td>
-        </tr>
-        <tr>
-          <td>发货方式</td>
-          <td>手动/自行处理</td>
-          <td>自动发货</td>
-        </tr>
-        <tr>
-          <td>需要配置收款</td>
-          <td><span class="cross">✕</span></td>
-          <td><span class="check">✓</span></td>
-        </tr>
-        <tr>
-          <td>适用场景</td>
-          <td>服务、咨询、定制</td>
-          <td>激活码、卡密、Key</td>
-        </tr>
-      </tbody>
-    </table>
-    
-    <h2>平台内支付</h2>
-    <p>普通物品和 CDK 物品都会在平台内完成支付，订单会保留在 LD士多 中，便于买卖双方查询状态和处理售后。</p>
-    
-    <h2>小店集市</h2>
-    <p>小店集市是 LD士多 为社区用户提供的友情链接展示区域。如果你有自己的网站、博客、项目，可以申请入驻获得曝光。</p>
-    
-    <p>小店与普通物品的区别：</p>
-    <ul>
-      <li><strong>小店</strong>：展示外部链接，用于推广网站或服务</li>
-      <li><strong>物品</strong>：在平台内完成支付并保留订单记录</li>
-    </ul>
-    
-    <h2>订单状态</h2>
-    <p>了解订单的各种状态：</p>
-    
-    <table class="doc-table">
-      <thead>
-        <tr>
-          <th>状态</th>
-          <th>说明</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td><code>待支付</code></td>
-          <td>订单已创建，等待买家完成支付</td>
-        </tr>
-        <tr>
-          <td><code>已支付</code></td>
-          <td>买家已完成支付，等待发货（普通物品需手动履约，CDK 物品会自动发货）</td>
-        </tr>
-        <tr>
-          <td><code>已完成</code></td>
-          <td>交易完成，买家已收到商品</td>
-        </tr>
-        <tr>
-          <td><code>已取消</code></td>
-          <td>订单已取消，积分已退还（如适用）</td>
-        </tr>
-        <tr>
-          <td><code>已退款</code></td>
-          <td>交易发生退款</td>
-        </tr>
-      </tbody>
-    </table>
-    
-    <h2>审核机制</h2>
-    <p>为了保证平台商品质量，所有发布的商品都需要经过人工审核：</p>
-    
-    <ul>
-      <li><strong>提交审核</strong>：商品发布后状态为「待审核」</li>
-      <li><strong>审核通过</strong>：商品上架，在首页可见</li>
-      <li><strong>审核拒绝</strong>：商品不会上架，可修改后重新提交</li>
-    </ul>
-    
-    <div class="highlight-box tip">
-      <div class="box-icon">💡</div>
-      <div class="box-content">
-        <strong>审核技巧</strong>
-        <p>请确保商品信息完整、描述清晰、图片清晰，这样可以更快通过审核。禁止发布违规内容。</p>
-      </div>
+    <h2 id="what-is-ld-store">LD 士多有什么用</h2>
+    <p class="lead">LD 士多为 LinuxDo 社区成员提供物品展示、LDC 支付、订单记录、自动发卡、求购洽谈和小店展示等功能。</p>
+
+    <h2 id="ldc">认识 LDC</h2>
+    <dl class="definition-list">
+      <div><dt>LDC</dt><dd>Linux.do Credit，社区活跃积分。它不是法定货币，也不用于提现或与真实货币兑换。</dd></div>
+      <div><dt>平台内支付</dt><dd>买家在 LD 士多订单中发起 LDC 支付；平台根据通知更新订单并触发后续交付。</dd></div>
+      <div><dt>卖家收款</dt><dd>普通物品和自动发卡物品均要求卖家先在后台接入自己的 LDC 收款配置。</dd></div>
+    </dl>
+
+    <h2 id="roles-and-areas">角色和三个主要区域</h2>
+    <HelpTable :columns="areaColumns" :rows="areaRows" caption="角色不是固定身份，同一账号可以购买也可以经营" />
+
+    <h2 id="core-flow">一次交易如何完成</h2>
+    <HelpSteps :steps="transactionSteps" />
+
+    <h2 id="order-status">看懂用户可见状态</h2>
+    <dl class="status-list">
+      <div><dt>待支付 / 支付中</dt><dd>订单已创建，正在等待支付完成或等待支付通知确认。</dd></div>
+      <div><dt>待发货</dt><dd>普通物品通常等待卖家手动履约；自动发卡异常时也可能需要卖家补充处理。</dd></div>
+      <div><dt>已发货 / 已完成</dt><dd>交付信息已写入订单，或交易流程已经结束。以订单详情展示为准。</dd></div>
+      <div><dt>已取消 / 已过期</dt><dd>订单不再继续；被该订单占用的有效优惠券会按规则释放。</dd></div>
+    </dl>
+
+    <h2 id="review-status">看懂审核状态</h2>
+    <p>发布或编辑内容后，页面会显示当前审核结果，例如“审核中”“审核通过”“审核不通过”或进入人工复核。帮助文档不承诺固定审核时长；请以物品列表和编辑页显示的中文状态与提示为准。</p>
+    <HelpCallout title="限额和名额以页面为准" tone="warning">
+      发布上限、卡密批量操作限制、推广名额等可能动态调整。页面实时提示是当前可执行规则，不要依赖旧教程里的固定数字。
+    </HelpCallout>
+
+    <h2 id="next-step">下一步</h2>
+    <div class="help-actions">
+      <router-link to="/docs/product-types">选择物品类型</router-link>
+      <router-link to="/docs/buy-guide" class="secondary">开始购买</router-link>
+      <router-link to="/docs/seller-center" class="secondary">开始经营</router-link>
     </div>
   </div>
 </template>
 
 <script setup>
-// 基本概念文档
-</script>
+import HelpCallout from './HelpCallout.vue'
+import HelpSteps from './HelpSteps.vue'
+import HelpTable from './HelpTable.vue'
 
-<style scoped>
-@import './doc-styles.css';
-</style>
+const areaColumns = [
+  { key: 'area', label: '区域' },
+  { key: 'bestFor', label: '适合任务' },
+  { key: 'role', label: '主要角色' }
+]
+const areaRows = [
+  { area: '物品广场', bestFor: '浏览普通物品和自动发卡物品，直接下单', role: '买家、卖家' },
+  { area: '求购广场', bestFor: '先说明需求，再由服务方洽谈承接', role: '求购方、服务方' },
+  { area: '小店集市', bestFor: '展示站点、服务与店主信息，建立经营主页', role: '访客、店主' }
+]
+const transactionSteps = [
+  { title: '查看详情', description: '确认价格、库存、交付方式、卖家说明和适用优惠券。' },
+  { title: '创建订单并支付', description: '在平台订单内选择数量与优惠券，使用 LDC 完成支付。' },
+  { title: '完成交付', description: '独立或共享卡密可自动发放；普通物品由卖家按约定履约。' },
+  { title: '保留记录', description: '在个人中心查看订单、消息和交付信息，发生争议时以平台记录为依据。' }
+]
+</script>
