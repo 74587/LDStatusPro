@@ -36,6 +36,12 @@ const routes = [
     meta: { title: '商品详情 - LD士多' }
   },
   {
+    path: '/checkout/:productId',
+    name: 'OrderConfirm',
+    component: () => import('@/views/OrderConfirm.vue'),
+    meta: { title: '确认订单 - LD士多', requiresAuth: true }
+  },
+  {
     path: '/merchant/:username',
     name: 'MerchantProfile',
     component: () => import('@/views/MerchantProfile.vue'),

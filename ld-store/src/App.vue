@@ -36,7 +36,7 @@
       </section>
       <router-view v-if="showRouterView" v-slot="{ Component, route }">
         <transition name="fade" mode="out-in">
-          <keep-alive :include="cachedViews">
+          <keep-alive :include="cachedViews" :max="12">
             <component :is="Component" :key="resolveAppViewKey(route)" />
           </keep-alive>
         </transition>
@@ -103,7 +103,7 @@ const showRouterView = computed(() => userStore.sessionReady)
 
 // 需要缓存的页面组件名称
 // Home = 首页(物品广场), Category = 分类页(小店集市等)
-const cachedViews = ref(['Home', 'Category'])
+const cachedViews = ref(['Home', 'Category', 'ProductDetail'])
 
 // 涂鸦背景状态（默认开启，从本地存储读取）
 const DOODLE_STORAGE_KEY = 'ld-store-doodle-bg'

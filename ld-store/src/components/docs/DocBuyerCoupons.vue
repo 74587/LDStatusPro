@@ -25,6 +25,10 @@
       加入数量或切换优惠券后，检查结算页展示的原价、优惠和应付金额。券不符合范围、门槛或状态时不会被应用。
     </HelpCallout>
 
+    <HelpCallout title="选券不会提前占用" tone="info">
+      打开确认订单页、修改数量或选择优惠券都只是试算。只有点击“确认兑换”并成功创建订单后，优惠券才会被订单占用，商品库存也在同一时刻校验。
+    </HelpCallout>
+
     <h2 id="use-coupon">使用步骤</h2>
     <HelpSteps :steps="couponSteps" />
 
@@ -74,7 +78,7 @@ const couponRows = [
 const couponSteps = [
   { title: '打开领取链接', description: '登录后查看券的卖家、适用范围、门槛和有效期。' },
   { title: '确认领取', description: '领取成功后到“我的优惠券”查看当前状态。' },
-  { title: '在结算页选券', description: '购买符合条件的物品，选择一张可用券并核对优惠金额。' },
+  { title: '在确认订单页选券', description: '购买符合条件的物品，主动选择一张可用券并核对优惠金额；默认不使用优惠券。' },
   { title: '完成支付', description: '订单支付成功后优惠券变为已使用。', result: '若订单取消或过期，仍有效的占用券会自动释放。' }
 ]
 </script>

@@ -63,8 +63,10 @@ export function cleanupPreparedTab(win) {
 // --- Popup payment flow ---
 
 export function preparePaymentPopup() {
-  if (isMobile()) return null
   try {
+    // Mobile browsers ignore popup sizing and open this as a regular tab. It
+    // still has to be created synchronously from the user gesture so the later
+    // API response can safely navigate it without being blocked.
     const win = window.open('', 'ldc_payment', getPopupFeatures())
     if (win) win.opener = null
     return win
@@ -77,6 +79,10 @@ export function openPaymentPopup(url, preOpenedPopup = null) {
   if (!url) return { popup: null, isPopup: false }
 
   if (isMobile()) {
+    if (preOpenedPopup && !preOpenedPopup.closed) {
+      preOpenedPopup.location.href = url
+      return { popup: preOpenedPopup, isPopup: true }
+    }
     openInNewTab(url)
     return { popup: null, isPopup: false }
   }

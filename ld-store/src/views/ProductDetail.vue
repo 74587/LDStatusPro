@@ -191,49 +191,22 @@
 
             <section
               v-if="isPlatformOrder && !isOutOfStock && canPurchase && (!isTestMode || isSeller)"
-              class="coupon-section"
-              aria-labelledby="coupon-selector-title"
+              class="coupon-teaser"
+              aria-labelledby="coupon-teaser-title"
             >
-              <div class="coupon-heading">
-                <div>
-                  <h2 id="coupon-selector-title">优惠券</h2>
-                  <p>默认不使用，每笔订单最多选择一张</p>
-                </div>
-                <router-link v-if="userStore.isLoggedIn" to="/user/coupons">我的优惠券</router-link>
+              <div class="coupon-teaser-icon" aria-hidden="true">
+                <TicketPercent :size="19" />
               </div>
-
-              <router-link v-if="!userStore.isLoggedIn" :to="{ name: 'Login', query: { redirect: route.fullPath } }" class="coupon-login-link">
-                登录后查看可用优惠券
-              </router-link>
-              <div v-else-if="quoteLoading && !couponQuote" class="coupon-loading" aria-live="polite">正在查询优惠券…</div>
-              <div v-else class="coupon-options">
-                <label class="coupon-option no-coupon" :class="{ selected: selectedCouponClaimId === null }">
-                  <input v-model="selectedCouponClaimId" type="radio" name="coupon" :value="null" />
-                  <span><strong>不使用优惠券</strong><small>按商品当前折后价格结算</small></span>
-                </label>
-                <label
-                  v-for="coupon in couponOptions"
-                  :key="coupon.claimId"
-                  :class="['coupon-option', { selected: selectedCouponClaimId === coupon.claimId, disabled: !coupon.eligible }]"
-                >
-                  <input v-model="selectedCouponClaimId" type="radio" name="coupon" :value="coupon.claimId" :disabled="!coupon.eligible" />
-                  <span class="coupon-option-copy">
-                    <strong>{{ coupon.campaign.name }}</strong>
-                    <small>{{ formatCouponRule(coupon.campaign) }} · {{ coupon.campaign.scopeType === 'product' ? '指定商品' : '店铺券' }}</small>
-                    <small v-if="!coupon.eligible" class="coupon-reason">{{ coupon.reason }}</small>
-                    <small v-else>有效期至 {{ formatCouponDate(coupon.campaign.expiresAt) }}</small>
-                  </span>
-                  <b v-if="coupon.eligible">省 {{ Number(coupon.couponDiscountAmount || 0).toFixed(2) }}</b>
-                </label>
-                <p v-if="!couponOptions.length" class="coupon-empty">暂无该卖家的已领取优惠券，可从卖家分享的链接领取。</p>
-                <p v-if="quoteError" class="coupon-error">{{ quoteError }}</p>
+              <div class="coupon-teaser-copy">
+                <h2 id="coupon-teaser-title">优惠券</h2>
+                <p v-if="!userStore.isLoggedIn">登录后可在确认订单页查看并选择优惠券</p>
+                <p v-else-if="quoteLoading && !couponQuote" aria-live="polite">正在查询可用优惠券…</p>
+                <p v-else-if="eligibleCoupons.length">
+                  {{ eligibleCoupons.length }} 张可用，最高省 {{ highestCouponSaving }} LDC
+                </p>
+                <p v-else>确认订单时可查看当前可用优惠</p>
               </div>
-
-              <div v-if="selectedCoupon" class="coupon-breakdown" aria-live="polite">
-                <div><span>商品折后小计</span><strong>{{ Number(couponQuote?.productSubtotal || 0).toFixed(2) }} LDC</strong></div>
-                <div><span>优惠券减免<span v-if="selectedCoupon.discountedQuantity === 1">（优惠 1 件）</span></span><strong>-{{ Number(selectedCoupon.couponDiscountAmount || 0).toFixed(2) }} LDC</strong></div>
-                <div class="coupon-payable"><span>预计实付</span><strong>{{ Number(selectedCoupon.payableAmount || 0).toFixed(2) }} LDC</strong></div>
-              </div>
+              <span class="coupon-teaser-hint">确认订单时选择</span>
             </section>
 
             <div v-if="maintenancePurchaseHint" class="maintenance-order-notice">
@@ -298,7 +271,7 @@
                         :disabled="purchasing"
                         @click="handleBuyProduct"
                       >
-                        {{ purchasing ? '创建订单中...' : buyButtonText }}
+                        {{ purchasing ? '正在进入确认页…' : buyButtonText }}
                       </button>
                     </template>
                   <template v-else-if="isLegacyLink">
@@ -708,7 +681,7 @@
                                   :disabled="purchasing"
                                   @click="handleBuyProduct"
                                 >
-                                  {{ purchasing ? '创建订单中...' : buyButtonText }}
+                                  {{ purchasing ? '正在进入确认页…' : buyButtonText }}
                                 </button>
                               </template>
                               <template v-else-if="isLegacyLink">
@@ -884,23 +857,24 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, computed, watch, onActivated, onDeactivated, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { TicketPercent } from '@lucide/vue'
 import { useShopStore } from '@/stores/shop'
 import { useUserStore } from '@/stores/user'
+import { useCheckoutStore } from '@/stores/checkout'
 import { isMaintenanceFeatureEnabled, isRestrictedMaintenanceMode } from '@/config/maintenance'
 import { useToast } from '@/composables/useToast'
 import { useDialog } from '@/composables/useDialog'
 import { formatRelativeTime, formatPrice } from '@/utils/format'
-import { escapeHtml } from '@/utils/security'
 import { renderProductDescription } from '@/utils/renderProductDescription'
-import { preparePaymentPopup, openPaymentPopup, watchPaymentPopup, prepareNewTab, openInNewTab, cleanupPreparedTab } from '@/utils/newTab'
+import { prepareNewTab, openInNewTab, cleanupPreparedTab } from '@/utils/newTab'
 import AvatarImage from '@/components/common/AvatarImage.vue'
 import StarRatingDisplay from '@/components/common/StarRatingDisplay.vue'
 import StarRatingInput from '@/components/common/StarRatingInput.vue'
 import { buildAvatarCandidates } from '@/utils/avatar'
 import { api } from '@/utils/api'
-import { formatCouponDate, formatCouponRule, quoteOrderRequest } from '@/services/shop/couponService'
+import { quoteOrderRequest } from '@/services/shop/couponService'
 import {
   getAvailableStock,
   getProductType,
@@ -921,8 +895,11 @@ const route = useRoute()
 const router = useRouter()
 const shopStore = useShopStore()
 const userStore = useUserStore()
+const checkoutStore = useCheckoutStore()
 const toast = useToast()
 const dialog = useDialog()
+
+defineOptions({ name: 'ProductDetail' })
 
 // 状态
 const loading = ref(true)
@@ -940,7 +917,6 @@ const selectedQuantity = ref(1)
 const couponQuote = ref(null)
 const quoteLoading = ref(false)
 const quoteError = ref('')
-const selectedCouponClaimId = ref(null)
 const restockSubscribed = ref(false)
 const restockStatusLoading = ref(false)
 const restockSubscribeLoading = ref(false)
@@ -1124,11 +1100,18 @@ const maxSelectableQuantity = computed(() => {
   return minLimit > 0 ? minLimit : 1
 })
 
-const couponOptions = computed(() => Array.isArray(couponQuote.value?.coupons) ? couponQuote.value.coupons : [])
-const selectedCoupon = computed(() => couponOptions.value.find(item => item.claimId === selectedCouponClaimId.value && item.eligible) || null)
+const eligibleCoupons = computed(() => (
+  Array.isArray(couponQuote.value?.coupons)
+    ? couponQuote.value.coupons.filter(item => item.eligible)
+    : []
+))
+const highestCouponSaving = computed(() => formatPrice(
+  eligibleCoupons.value.reduce((highest, item) => (
+    Math.max(highest, Number(item.couponDiscountAmount || 0))
+  ), 0)
+))
 const totalPrice = computed(() => formatPrice(
-  selectedCoupon.value?.payableAmount
-    ?? couponQuote.value?.productSubtotal
+  couponQuote.value?.productSubtotal
     ?? (price.value * discount.value * selectedQuantity.value)
 ))
 
@@ -1143,11 +1126,10 @@ const maintenancePurchaseHint = computed(() =>
 )
 
 const buyButtonText = computed(() => {
-  const actionText = isNormal.value ? '立即下单' : '立即兑换'
   if (selectedQuantity.value > 1) {
-    return `🛒 ${actionText} ${selectedQuantity.value} 个 (${totalPrice.value} LDC)`
+    return `确认 ${selectedQuantity.value} 件 · ${totalPrice.value} LDC`
   }
-  return `🛒 ${actionText} (${totalPrice.value} LDC)`
+  return `去确认订单 · ${totalPrice.value} LDC`
 })
 
 const detailErrorContent = computed(() => {
@@ -1369,7 +1351,7 @@ function resolveDetailErrorType(result) {
 
 // 加载物品
 onMounted(async () => {
-  document.addEventListener('click', handleDocumentClick)
+  activateDetailInteractions()
   const productId = route.params.id
   if (!productId) {
     loading.value = false
@@ -1395,6 +1377,7 @@ onMounted(async () => {
   }
   
   loading.value = false
+  await restoreCheckoutReturnState()
   if (product.value && route.hash === '#comments') {
     await nextTick()
     document.getElementById('comments')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -1403,9 +1386,23 @@ onMounted(async () => {
 
 onUnmounted(() => {
   if (quoteTimer) window.clearTimeout(quoteTimer)
-  document.body.style.overflow = ''
-  document.removeEventListener('keydown', handleEscKey)
-  document.removeEventListener('click', handleDocumentClick)
+  latestQuoteRequestId++
+  deactivateDetailInteractions()
+})
+
+onActivated(() => {
+  activateDetailInteractions()
+  if (product.value?.name) document.title = `${product.value.name} - LD士多`
+  void restoreCheckoutReturnState()
+  scheduleCouponQuote()
+})
+
+onDeactivated(() => {
+  if (quoteTimer) window.clearTimeout(quoteTimer)
+  quoteTimer = null
+  latestQuoteRequestId++
+  quoteLoading.value = false
+  deactivateDetailInteractions()
 })
 
 watch(
@@ -1433,7 +1430,6 @@ async function loadCouponQuote() {
   const requestId = ++latestQuoteRequestId
   if (!product.value?.id || !isPlatformOrder.value || !userStore.isLoggedIn) {
     couponQuote.value = null
-    selectedCouponClaimId.value = null
     quoteLoading.value = false
     quoteError.value = ''
     return false
@@ -1445,11 +1441,8 @@ async function loadCouponQuote() {
   if (requestId !== latestQuoteRequestId) return false
   if (result.success) {
     couponQuote.value = result.data
-    const current = result.data?.coupons?.find(item => item.claimId === selectedCouponClaimId.value)
-    if (selectedCouponClaimId.value !== null && !current?.eligible) selectedCouponClaimId.value = null
   } else {
     couponQuote.value = null
-    selectedCouponClaimId.value = null
     quoteError.value = result.error || '优惠券报价加载失败'
   }
   quoteLoading.value = false
@@ -1458,7 +1451,43 @@ async function loadCouponQuote() {
 
 function scheduleCouponQuote() {
   if (quoteTimer) window.clearTimeout(quoteTimer)
+  latestQuoteRequestId++
+  quoteLoading.value = true
   quoteTimer = window.setTimeout(() => { void loadCouponQuote() }, 180)
+}
+
+function activateDetailInteractions() {
+  document.addEventListener('click', handleDocumentClick)
+  syncModalState()
+}
+
+function deactivateDetailInteractions() {
+  document.body.style.overflow = ''
+  document.removeEventListener('keydown', handleEscKey)
+  document.removeEventListener('click', handleDocumentClick)
+}
+
+async function restoreCheckoutReturnState() {
+  if (!product.value?.id) return false
+  const draft = checkoutStore.consumeProductReturn(product.value.id)
+  const routeQuantity = Number.parseInt(route.query.quantity, 10)
+
+  if (!draft && (!Number.isInteger(routeQuantity) || routeQuantity < 1)) return false
+
+  selectedQuantity.value = clampQuantity(draft?.quantity ?? routeQuantity)
+  const latestProduct = await shopStore.fetchProduct(product.value.id)
+  if (latestProduct) {
+    product.value = { ...product.value, ...latestProduct }
+    selectedQuantity.value = clampQuantity(selectedQuantity.value)
+  }
+
+  await nextTick()
+  if (draft) {
+    window.requestAnimationFrame(() => {
+      window.scrollTo({ top: draft.sourceScrollY || 0, behavior: 'auto' })
+    })
+  }
+  return true
 }
 
 watch(
@@ -2424,19 +2453,35 @@ async function handleBuyProduct() {
     return
   }
 
-  // 检查登录
+  const quantity = clampQuantity(selectedQuantity.value)
+  selectedQuantity.value = quantity
+  const checkoutLocation = {
+    name: 'OrderConfirm',
+    params: { productId: product.value.id },
+    query: { quantity: String(quantity) }
+  }
+  checkoutStore.startCheckout({
+    productId: product.value.id,
+    quantity,
+    sourceFullPath: route.fullPath,
+    sourceScrollY: window.scrollY || 0
+  })
+
+  // 检查登录；登录成功后直接回到确认订单页，不让用户重复点击。
   if (!userStore.isLoggedIn) {
-    if (purchaseTrustLevel.value > 0) {
-      await handleBlockedPurchaseByTrustLevel()
-      return
-    }
-    const confirmed = await dialog.confirm('请先登录后再兑换物品', {
+    const message = purchaseTrustLevel.value > 0
+      ? `该商品需登录且信任等级达到 TL${purchaseTrustLevel.value} 才可兑换`
+      : '请先登录后再兑换物品'
+    const confirmed = await dialog.confirm(message, {
       title: '需要登录',
       icon: '🔐',
       confirmText: '去登录'
     })
     if (confirmed) {
-      router.push({ name: 'Login', query: { redirect: route.fullPath } })
+      router.push({
+        name: 'Login',
+        query: { redirect: router.resolve(checkoutLocation).fullPath }
+      })
     }
     return
   }
@@ -2451,79 +2496,9 @@ async function handleBuyProduct() {
     return
   }
 
-  const quantity = clampQuantity(selectedQuantity.value)
-  selectedQuantity.value = quantity
-  const requestedCouponClaimId = selectedCouponClaimId.value
-  if (userStore.isLoggedIn) {
-    const quoteOk = await loadCouponQuote()
-    if (requestedCouponClaimId !== null && (!quoteOk || selectedCouponClaimId.value !== requestedCouponClaimId)) {
-      toast.warning(quoteError.value || '所选优惠券状态已变化，请重新选择')
-      return
-    }
-  }
-  const productSubtotal = formatPrice(couponQuote.value?.productSubtotal ?? (price.value * discount.value * quantity))
-  const couponDiscount = formatPrice(selectedCoupon.value?.couponDiscountAmount || 0)
-  const totalAmount = formatPrice(selectedCoupon.value?.payableAmount ?? Number(productSubtotal))
-  const couponLine = selectedCoupon.value
-    ? `<br>🎟️ 优惠券：<strong>${escapeHtml(selectedCoupon.value.campaign.name)}</strong>${selectedCoupon.value.discountedQuantity === 1 ? '（仅优惠 1 件）' : ''}<br>🏷️ 减免：<strong>-${couponDiscount} LDC</strong>`
-    : ''
-  const confirmMessage = isNormal.value
-    ? `确认购买「${escapeHtml(product.value.name)}」？<br><br>📦 数量：<strong>${quantity}</strong><br>🧾 商品小计：<strong>${productSubtotal} LDC</strong>${couponLine}<br>💰 实付：<strong>${totalAmount} LDC</strong><br><br>支付完成后请主动联系卖家获取服务，订单会保留在平台内等待卖家履约。`
-    : `确认兑换「${escapeHtml(product.value.name)}」？<br><br>📦 数量：<strong>${quantity}</strong><br>🧾 商品小计：<strong>${productSubtotal} LDC</strong>${couponLine}<br>💰 实付：<strong>${totalAmount} LDC</strong><br><br>支付后系统将自动发放 CDK 到您的订单中。`
-  const dialogTitle = isNormal.value ? '确认下单' : '确认兑换'
-
-  // 确认兑换
-  const confirmed = await dialog.confirm(
-    confirmMessage,
-    { title: dialogTitle, icon: '🛒' }
-  )
-  
-  if (!confirmed) return
-  
-  const preparedWindow = preparePaymentPopup()
-  let paymentPopup = null
-
   purchasing.value = true
-
   try {
-    const result = await shopStore.createOrder(product.value.id, quantity, selectedCouponClaimId.value)
-
-    if (result.success && result.data?.paymentUrl) {
-      const { popup, isPopup } = openPaymentPopup(result.data.paymentUrl, preparedWindow)
-      if (!isPopup) cleanupPreparedTab(preparedWindow)
-      paymentPopup = isPopup ? popup : null
-
-      if (paymentPopup) {
-        watchPaymentPopup(paymentPopup, () => {
-          toast.info('支付窗口已关闭，请检查订单状态')
-        })
-      }
-
-      const orderCreatedMessage = isNormal.value
-        ? `订单已创建：<strong>${result.data.orderNo}</strong><br><br>📝 请在支付窗口中完成支付<br>⏰ 订单有效期 <strong>5分钟</strong>，请尽快完成支付<br>📨 支付成功后请主动联系卖家获取服务<br>📋 可在「我的订单」中查看状态`
-        : `订单已创建：<strong>${result.data.orderNo}</strong><br><br>📝 请在支付窗口中完成支付<br>⏰ 订单有效期 <strong>5分钟</strong>，请尽快完成支付<br>✅ 支付完成后 CDK 将自动发放<br>📋 可在「我的订单」中查看状态`
-      await dialog.alert(
-        orderCreatedMessage,
-        {
-          title: '订单创建成功',
-          icon: '🎉',
-          secondaryText: '我的订单',
-          onSecondary: () => router.push({
-            path: `/order/${result.data.orderNo}`,
-            query: { role: 'buyer' }
-          })
-        }
-      )
-    } else {
-      cleanupPreparedTab(preparedWindow)
-      const errorMsg = typeof result.error === 'object'
-        ? (result.error.message || result.error.code || '创建订单失败')
-        : (result.error || '创建订单失败')
-      toast.error(errorMsg)
-    }
-  } catch (e) {
-    cleanupPreparedTab(preparedWindow)
-    toast.error('创建订单失败：' + e.message)
+    await router.push(checkoutLocation)
   } finally {
     purchasing.value = false
   }
@@ -3367,164 +3342,50 @@ async function handleOpenStore() {
   color: var(--text-tertiary);
 }
 
-.coupon-section {
-  padding: 16px;
+.coupon-teaser {
+  min-height: 72px;
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
   border: 1px solid var(--border-light);
   border-radius: 14px;
   background: var(--glass-bg-medium);
 }
 
-.coupon-heading {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.coupon-heading h2 {
-  margin: 0;
-  font-size: 14px;
-  color: var(--text-primary);
-}
-
-.coupon-heading p {
-  margin: 3px 0 0;
-  color: var(--text-tertiary);
-  font-size: 11px;
-}
-
-.coupon-heading a {
-  min-height: 32px;
-  display: inline-flex;
-  align-items: center;
-  color: var(--color-primary-hover);
-  font-size: 12px;
-  white-space: nowrap;
-}
-
-.coupon-login-link,
-.coupon-loading {
-  min-height: 46px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-top: 12px;
-  border-radius: 11px;
-  background: var(--color-primary-light);
-  color: var(--color-primary-hover);
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.coupon-options {
+.coupon-teaser-icon {
+  width: 38px;
+  height: 38px;
   display: grid;
-  gap: 8px;
-  margin-top: 12px;
-}
-
-.coupon-option {
-  min-height: 58px;
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  border: 1px solid var(--border-light);
+  place-items: center;
   border-radius: 12px;
-  background: var(--bg-card);
-  cursor: pointer;
-  transition: border-color .2s ease, background .2s ease;
-}
-
-.coupon-option.selected {
-  border-color: var(--color-primary);
   background: var(--color-primary-light);
+  color: var(--color-primary-hover);
 }
 
-.coupon-option.disabled {
-  cursor: not-allowed;
-  opacity: .58;
-}
-
-.coupon-option input {
-  width: 17px;
-  height: 17px;
-  accent-color: var(--color-primary-hover);
-}
-
-.coupon-option > span,
-.coupon-option-copy {
+.coupon-teaser-copy {
   min-width: 0;
-  display: grid;
-  gap: 2px;
 }
 
-.coupon-option strong {
-  overflow: hidden;
+.coupon-teaser-copy h2 {
+  margin: 0;
   color: var(--text-primary);
-  font-size: 13px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font-size: 14px;
 }
 
-.coupon-option small {
-  overflow: hidden;
-  color: var(--text-tertiary);
-  font-size: 10px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.coupon-option .coupon-reason,
-.coupon-error {
-  color: var(--color-danger);
-}
-
-.coupon-option > b {
-  color: var(--color-danger);
-  font-size: 12px;
-  white-space: nowrap;
-}
-
-.coupon-empty,
-.coupon-error {
-  margin: 2px 0 0;
-  font-size: 11px;
-  line-height: 1.55;
-}
-
-.coupon-empty {
-  color: var(--text-tertiary);
-}
-
-.coupon-breakdown {
-  display: grid;
-  gap: 6px;
-  margin-top: 12px;
-  padding: 12px;
-  border-radius: 12px;
-  background: var(--bg-secondary);
-}
-
-.coupon-breakdown div {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
+.coupon-teaser-copy p {
+  margin: 3px 0 0;
   color: var(--text-secondary);
   font-size: 12px;
+  line-height: 1.45;
 }
 
-.coupon-breakdown strong {
-  color: var(--color-danger);
-}
-
-.coupon-breakdown .coupon-payable {
-  margin-top: 3px;
-  padding-top: 8px;
-  border-top: 1px solid var(--border-light);
-  color: var(--text-primary);
-  font-size: 13px;
+.coupon-teaser-hint {
+  color: var(--color-primary-hover);
+  font-size: 12px;
   font-weight: 650;
+  white-space: nowrap;
 }
 
 .maintenance-order-notice {
@@ -4806,6 +4667,15 @@ async function handleOpenStore() {
   .comment-submit-btn,
   .comment-login-btn {
     min-height: 34px;
+  }
+
+  .coupon-teaser {
+    grid-template-columns: 38px minmax(0, 1fr);
+  }
+
+  .coupon-teaser-hint {
+    grid-column: 2;
+    margin-top: -7px;
   }
 
 }

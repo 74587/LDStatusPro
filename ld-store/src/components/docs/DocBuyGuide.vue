@@ -3,7 +3,7 @@
     <h2 id="purpose">这篇能帮你完成什么</h2>
     <p class="lead">从物品广场找到合适物品，在平台内支付，并在订单页确认自动发卡或等待卖家履约。</p>
 
-    <HelpPath :items="[{ label: '首页', to: '/' }, { label: '选择物品' }, { label: '物品详情' }, { label: '立即购买' }]" />
+    <HelpPath :items="[{ label: '首页', to: '/' }, { label: '选择物品' }, { label: '物品详情' }, { label: '确认订单' }, { label: 'LDC 支付' }]" />
 
     <h2 id="prepare">购买前准备</h2>
     <ul>
@@ -51,8 +51,8 @@ import HelpTable from './HelpTable.vue'
 
 const buySteps = [
   { title: '筛选并查看详情', description: '按分类、关键词或物品类型浏览，进入详情确认价格和交付。' },
-  { title: '选择数量和优惠券', description: '检查结算金额。系统一单只允许使用一张券，不同券的多件优惠规则不同。' },
-  { title: '创建订单并支付', description: '在 LD 士多订单内发起 LDC 支付，等待页面确认结果。' },
+  { title: '进入确认订单页', description: '确认页可以调整数量并主动选择一张优惠券；进入或修改确认页不会保留库存。' },
+  { title: '确认兑换并支付', description: '核对预计实付后确认兑换。此时系统才创建订单、校验库存并打开 LDC 支付。' },
   { title: '查看交付', description: '回到订单详情查看卡密或等待卖家手动履约。', result: '订单和站内沟通记录会保留在个人中心。' }
 ]
 const deliveryColumns = [
