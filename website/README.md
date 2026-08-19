@@ -145,7 +145,7 @@ website/
 
 ## 📖 详细文档
 
-完整技术文档请参考: [docs/technicaDocs/WEBSITE.md](../docs/technicaDocs/WEBSITE.md)
+完整技术文档请参考：[官网技术文档](../../docs/architecture/WEBSITE.md)
 
 ---
 
