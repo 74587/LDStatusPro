@@ -289,6 +289,13 @@ const dropdownMenuGroups = computed(() => ([
       label: '我的收藏',
       withUnread: false,
       badge: ''
+    },
+    {
+      path: '/user/coupons',
+      icon: '券',
+      label: '我的优惠券',
+      withUnread: false,
+      badge: ''
     }
   ],
   [

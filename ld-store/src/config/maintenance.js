@@ -51,6 +51,9 @@ const DEFAULT_FEATURES_BY_MODE = Object.freeze({
     topServiceRead: true,
     topServicePurchase: true,
     imageUpload: true,
+    couponRead: true,
+    couponClaim: true,
+    couponManage: true,
   }),
   [MAINTENANCE_MODES.LDC_RESTRICTED]: Object.freeze({
     publicBrowse: false,
@@ -68,6 +71,9 @@ const DEFAULT_FEATURES_BY_MODE = Object.freeze({
     topServiceRead: false,
     topServicePurchase: false,
     imageUpload: false,
+    couponRead: true,
+    couponClaim: false,
+    couponManage: false,
   }),
   [MAINTENANCE_MODES.FULL]: Object.freeze({
     publicBrowse: false,
@@ -85,6 +91,9 @@ const DEFAULT_FEATURES_BY_MODE = Object.freeze({
     topServiceRead: false,
     topServicePurchase: false,
     imageUpload: false,
+    couponRead: false,
+    couponClaim: false,
+    couponManage: false,
   }),
 })
 
@@ -139,9 +148,14 @@ const FEATURE_MESSAGE_MAP = Object.freeze({
   topServiceRead: '因 LinuxDo Credit 积分服务维护中，商家服务当前暂不可用。',
   topServicePurchase: '因 LinuxDo Credit 积分服务维护中，置顶服务购买与支付暂时关闭。',
   imageUpload: '因 LinuxDo Credit 积分服务维护中，图床上传暂时关闭。',
+  couponRead: '站点维护中，当前暂时无法查看优惠券。',
+  couponClaim: '站点维护中，当前暂时无法领取或使用优惠券。',
+  couponManage: '站点维护中，当前暂时无法发放或管理优惠券。',
 })
 
 const REQUEST_RULES = [
+  { feature: 'couponClaim', methods: ['POST'], test: (path) => /^\/api\/shop\/coupons\/[^/]+\/claim$/.test(path) },
+  { feature: 'couponManage', methods: ['POST', 'PATCH'], test: (path) => path.startsWith('/api/shop/merchant/coupons') },
   { feature: 'orderCreate', methods: ['POST'], test: (path) => path === '/api/shop/orders' },
   { feature: 'orderPayment', methods: ['GET'], test: (path) => /^\/api\/shop\/orders\/[^/]+\/payment-url$/.test(path) },
   { feature: 'orderPayment', methods: ['POST'], test: (path) => /^\/api\/shop\/orders\/[^/]+\/refresh$/.test(path) },

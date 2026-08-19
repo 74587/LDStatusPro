@@ -66,6 +66,18 @@ const routes = [
     meta: { title: '我的收藏 - LD士多', requiresAuth: true }
   },
   {
+    path: '/coupon/:token',
+    name: 'CouponClaim',
+    component: () => import('@/views/CouponClaim.vue'),
+    meta: { title: '领取优惠券 - LD士多' }
+  },
+  {
+    path: '/user/coupons',
+    name: 'MyCoupons',
+    component: () => import('@/views/MyCoupons.vue'),
+    meta: { title: '我的优惠券 - LD士多', requiresAuth: true }
+  },
+  {
     path: '/user/buy-orders/:orderNo',
     name: 'BuyOrderDetail',
     component: () => import('@/views/BuyOrderDetail.vue'),
@@ -217,6 +229,8 @@ const restrictedMaintenanceAllowedRoutes = new Set([
   'MyProducts',
   'OrderDetail',
   'BuyOrderDetail',
+  'CouponClaim',
+  'MyCoupons',
 ])
 
 // 创建路由实例
