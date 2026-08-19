@@ -119,6 +119,10 @@
             <div v-if="requiresBuyerContactOrder(order)" class="order-manual-hint">
               {{ currentRole === 'buyer' ? '支付后请主动联系卖家获取服务' : '该订单需手动履约，请及时处理' }}
             </div>
+            <div v-if="hasOrderCoupon(order)" class="order-coupon-summary">
+              <span>{{ getOrderCouponSnapshot(order).name || '优惠券' }}</span>
+              <strong>{{ getOrderCouponRule(order) }} · 省 {{ getOrderCouponDiscount(order).toFixed(2) }} LDC</strong>
+            </div>
           </router-link>
           
           <!-- 发货内容仅在订单详情页展示，列表卡片不直接暴露 CDK/发货内容。 -->
@@ -577,6 +581,31 @@ async function clearDirectFilters() {
 
 function getOrderKey(order) {
   return order.order_no || order.orderNo || order.id
+}
+
+function getOrderCouponSnapshot(order) {
+  const value = order?.coupon_snapshot ?? order?.couponSnapshot
+  if (!value) return {}
+  if (typeof value === 'object') return value
+  try { return JSON.parse(value) } catch { return {} }
+}
+
+function hasOrderCoupon(order) {
+  return !!(order?.coupon_claim_id ?? order?.couponClaimId ?? getOrderCouponSnapshot(order).campaignId)
+}
+
+function getOrderCouponDiscount(order) {
+  return Number(order?.coupon_discount_amount ?? order?.couponDiscountAmount ?? getOrderCouponSnapshot(order).couponDiscountAmount ?? 0)
+}
+
+function getOrderCouponRule(order) {
+  const snapshot = getOrderCouponSnapshot(order)
+  if (snapshot.discountType === 'fixed_amount') return `减 ${Number(snapshot.fixedAmount || 0).toFixed(2)}`
+  if (snapshot.discountType === 'percentage') {
+    const bps = Number(snapshot.percentageBps || 0)
+    return `${(bps / 1000).toFixed(bps % 1000 === 0 ? 0 : 1)} 折 · 优惠 ${snapshot.discountedQuantity || 1} 件`
+  }
+  return '优惠券'
 }
 
 function parseDateTimeToTimestamp(value) {
@@ -1520,6 +1549,30 @@ onUnmounted(() => {
   color: var(--color-primary);
 }
 
+.order-coupon-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 9px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--color-primary-light);
+  color: var(--color-primary-hover);
+  font-size: 11px;
+}
+
+.order-coupon-summary span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.order-coupon-summary strong {
+  flex: 0 0 auto;
+  color: var(--color-danger);
+}
+
 .order-quantity {
   font-weight: 600;
   color: var(--text-secondary);
@@ -1945,6 +1998,14 @@ onUnmounted(() => {
     margin-top: 6px;
     padding: 6px 8px;
     font-size: 11px;
+  }
+
+  .order-coupon-summary {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 3px;
+    margin-top: 6px;
+    padding: 6px 8px;
   }
 
   .order-footer {

@@ -89,10 +89,30 @@
             <span class="info-value">x{{ getOrderQuantity(order) }}</span>
           </div>
           
-          <div class="info-row" v-if="order.original_price && order.original_price !== order.amount">
-            <span class="info-label">原价</span>
-            <span class="info-value original-price">{{ order.original_price }} LDC</span>
+          <div class="info-row" v-if="order.original_price || order.originalPrice">
+            <span class="info-label">商品标价小计</span>
+            <span class="info-value" :class="{ 'original-price': Number(order.original_price || order.originalPrice) !== productSubtotal }">{{ Number(order.original_price || order.originalPrice).toFixed(2) }} LDC</span>
           </div>
+
+          <div class="info-row" v-if="productSubtotal > 0">
+            <span class="info-label">商品折后小计</span>
+            <span class="info-value">{{ productSubtotal.toFixed(2) }} LDC</span>
+          </div>
+
+          <template v-if="hasCoupon">
+            <div class="info-row coupon-row">
+              <span class="info-label">优惠券</span>
+              <span class="info-value coupon-name">{{ couponSnapshot.name || '优惠券' }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">优惠规则</span>
+              <span class="info-value">{{ couponRuleText }}</span>
+            </div>
+            <div class="info-row discount-row">
+              <span class="info-label">优惠券减免</span>
+              <span class="info-value">-{{ couponDiscountAmount.toFixed(2) }} LDC</span>
+            </div>
+          </template>
           
           <div class="info-row amount">
             <span class="info-label">实付积分</span>
@@ -285,6 +305,40 @@ let pendingOrderAutoRefreshTimer = null
 const isPaymentMaintenanceBlocked = computed(() =>
   isRestrictedMaintenanceMode() && !isMaintenanceFeatureEnabled('orderPayment')
 )
+
+const couponSnapshot = computed(() => {
+  const value = order.value?.coupon_snapshot ?? order.value?.couponSnapshot
+  if (!value) return {}
+  if (typeof value === 'object') return value
+  try { return JSON.parse(value) } catch { return {} }
+})
+const productSubtotal = computed(() => Number(
+  order.value?.product_subtotal
+  ?? order.value?.productSubtotal
+  ?? order.value?.amount
+  ?? 0
+))
+const couponDiscountAmount = computed(() => Number(
+  order.value?.coupon_discount_amount
+  ?? order.value?.couponDiscountAmount
+  ?? couponSnapshot.value?.couponDiscountAmount
+  ?? 0
+))
+const hasCoupon = computed(() => !!(
+  order.value?.coupon_claim_id
+  ?? order.value?.couponClaimId
+  ?? couponSnapshot.value?.campaignId
+))
+const couponRuleText = computed(() => {
+  if (couponSnapshot.value.discountType === 'fixed_amount') {
+    return `减 ${Number(couponSnapshot.value.fixedAmount || 0).toFixed(2)} LDC（整单一次）`
+  }
+  if (couponSnapshot.value.discountType === 'percentage') {
+    const bps = Number(couponSnapshot.value.percentageBps || 0)
+    return `${(bps / 1000).toFixed(bps % 1000 === 0 ? 0 : 1)} 折（仅优惠 ${couponSnapshot.value.discountedQuantity || 1} 件）`
+  }
+  return '按订单快照结算'
+})
 
 // 当前用户角色（买家/卖家）
 const currentRole = computed(() => route.query.role || 'buyer')
@@ -1012,6 +1066,22 @@ onUnmounted(() => {
   margin-top: 8px;
   border-top: 1px dashed var(--border-medium);
   border-bottom: none;
+}
+
+.coupon-name {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: var(--color-primary-light);
+  color: var(--color-primary-hover);
+  font-weight: 650;
+}
+
+.discount-row .info-value {
+  color: var(--color-danger);
+  font-weight: 700;
 }
 
 .support-heart {
