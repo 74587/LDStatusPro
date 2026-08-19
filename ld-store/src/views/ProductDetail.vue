@@ -176,6 +176,53 @@
               <div v-if="quantityHint" class="quantity-hint">{{ quantityHint }}</div>
             </div>
 
+            <section
+              v-if="isPlatformOrder && !isOutOfStock && canPurchase && (!isTestMode || isSeller)"
+              class="coupon-section"
+              aria-labelledby="coupon-selector-title"
+            >
+              <div class="coupon-heading">
+                <div>
+                  <h2 id="coupon-selector-title">优惠券</h2>
+                  <p>默认不使用，每笔订单最多选择一张</p>
+                </div>
+                <router-link v-if="userStore.isLoggedIn" to="/user/coupons">我的优惠券</router-link>
+              </div>
+
+              <router-link v-if="!userStore.isLoggedIn" :to="{ name: 'Login', query: { redirect: route.fullPath } }" class="coupon-login-link">
+                登录后查看可用优惠券
+              </router-link>
+              <div v-else-if="quoteLoading && !couponQuote" class="coupon-loading" aria-live="polite">正在查询优惠券…</div>
+              <div v-else class="coupon-options">
+                <label class="coupon-option no-coupon" :class="{ selected: selectedCouponClaimId === null }">
+                  <input v-model="selectedCouponClaimId" type="radio" name="coupon" :value="null" />
+                  <span><strong>不使用优惠券</strong><small>按商品当前折后价格结算</small></span>
+                </label>
+                <label
+                  v-for="coupon in couponOptions"
+                  :key="coupon.claimId"
+                  :class="['coupon-option', { selected: selectedCouponClaimId === coupon.claimId, disabled: !coupon.eligible }]"
+                >
+                  <input v-model="selectedCouponClaimId" type="radio" name="coupon" :value="coupon.claimId" :disabled="!coupon.eligible" />
+                  <span class="coupon-option-copy">
+                    <strong>{{ coupon.campaign.name }}</strong>
+                    <small>{{ formatCouponRule(coupon.campaign) }} · {{ coupon.campaign.scopeType === 'product' ? '指定商品' : '店铺券' }}</small>
+                    <small v-if="!coupon.eligible" class="coupon-reason">{{ coupon.reason }}</small>
+                    <small v-else>有效期至 {{ formatCouponDate(coupon.campaign.expiresAt) }}</small>
+                  </span>
+                  <b v-if="coupon.eligible">省 {{ Number(coupon.couponDiscountAmount || 0).toFixed(2) }}</b>
+                </label>
+                <p v-if="!couponOptions.length" class="coupon-empty">暂无该卖家的已领取优惠券，可从卖家分享的链接领取。</p>
+                <p v-if="quoteError" class="coupon-error">{{ quoteError }}</p>
+              </div>
+
+              <div v-if="selectedCoupon" class="coupon-breakdown" aria-live="polite">
+                <div><span>商品折后小计</span><strong>{{ Number(couponQuote?.productSubtotal || 0).toFixed(2) }} LDC</strong></div>
+                <div><span>优惠券减免<span v-if="selectedCoupon.discountedQuantity === 1">（优惠 1 件）</span></span><strong>-{{ Number(selectedCoupon.couponDiscountAmount || 0).toFixed(2) }} LDC</strong></div>
+                <div class="coupon-payable"><span>预计实付</span><strong>{{ Number(selectedCoupon.payableAmount || 0).toFixed(2) }} LDC</strong></div>
+              </div>
+            </section>
+
             <div v-if="maintenancePurchaseHint" class="maintenance-order-notice">
               {{ maintenancePurchaseHint }}
             </div>
@@ -840,8 +887,10 @@ import StarRatingDisplay from '@/components/common/StarRatingDisplay.vue'
 import StarRatingInput from '@/components/common/StarRatingInput.vue'
 import { buildAvatarCandidates } from '@/utils/avatar'
 import { api } from '@/utils/api'
+import { formatCouponDate, formatCouponRule, quoteOrderRequest } from '@/services/shop/couponService'
 import {
   getAvailableStock,
+  getProductType,
   getStockDisplay,
   isCdkProduct,
   isLegacyLinkProduct,
@@ -875,6 +924,10 @@ const reportCategory = ref('payment_config_issue')
 const reportSubmitting = ref(false)
 const favoriteSubmitting = ref(false)
 const selectedQuantity = ref(1)
+const couponQuote = ref(null)
+const quoteLoading = ref(false)
+const quoteError = ref('')
+const selectedCouponClaimId = ref(null)
 const restockSubscribed = ref(false)
 const restockStatusLoading = ref(false)
 const restockSubscribeLoading = ref(false)
@@ -1058,9 +1111,13 @@ const maxSelectableQuantity = computed(() => {
   return minLimit > 0 ? minLimit : 1
 })
 
-const totalPrice = computed(() =>
-  formatPrice(price.value * discount.value * selectedQuantity.value)
-)
+const couponOptions = computed(() => Array.isArray(couponQuote.value?.coupons) ? couponQuote.value.coupons : [])
+const selectedCoupon = computed(() => couponOptions.value.find(item => item.claimId === selectedCouponClaimId.value && item.eligible) || null)
+const totalPrice = computed(() => formatPrice(
+  selectedCoupon.value?.payableAmount
+    ?? couponQuote.value?.productSubtotal
+    ?? (price.value * discount.value * selectedQuantity.value)
+))
 
 const isOrderCreationMaintenanceBlocked = computed(() =>
   isRestrictedMaintenanceMode() && !isMaintenanceFeatureEnabled('orderCreate')
@@ -1332,6 +1389,7 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
+  if (quoteTimer) window.clearTimeout(quoteTimer)
   document.body.style.overflow = ''
   document.removeEventListener('keydown', handleEscKey)
   document.removeEventListener('click', handleDocumentClick)
@@ -1352,6 +1410,47 @@ watch(
     }
     selectedQuantity.value = clampQuantity(selectedQuantity.value)
   },
+  { immediate: true }
+)
+
+let quoteTimer = null
+let latestQuoteRequestId = 0
+
+async function loadCouponQuote() {
+  const requestId = ++latestQuoteRequestId
+  if (!product.value?.id || !isPlatformOrder.value || !userStore.isLoggedIn) {
+    couponQuote.value = null
+    selectedCouponClaimId.value = null
+    quoteLoading.value = false
+    quoteError.value = ''
+    return false
+  }
+
+  quoteLoading.value = true
+  quoteError.value = ''
+  const result = await quoteOrderRequest(product.value.id, clampQuantity(selectedQuantity.value))
+  if (requestId !== latestQuoteRequestId) return false
+  if (result.success) {
+    couponQuote.value = result.data
+    const current = result.data?.coupons?.find(item => item.claimId === selectedCouponClaimId.value)
+    if (selectedCouponClaimId.value !== null && !current?.eligible) selectedCouponClaimId.value = null
+  } else {
+    couponQuote.value = null
+    selectedCouponClaimId.value = null
+    quoteError.value = result.error || '优惠券报价加载失败'
+  }
+  quoteLoading.value = false
+  return result.success
+}
+
+function scheduleCouponQuote() {
+  if (quoteTimer) window.clearTimeout(quoteTimer)
+  quoteTimer = window.setTimeout(() => { void loadCouponQuote() }, 180)
+}
+
+watch(
+  () => [product.value?.id, selectedQuantity.value, userStore.isLoggedIn, isPlatformOrder.value],
+  scheduleCouponQuote,
   { immediate: true }
 )
 
@@ -2295,10 +2394,23 @@ async function handleBuyProduct() {
 
   const quantity = clampQuantity(selectedQuantity.value)
   selectedQuantity.value = quantity
-  const totalAmount = formatPrice(price.value * discount.value * quantity)
+  const requestedCouponClaimId = selectedCouponClaimId.value
+  if (userStore.isLoggedIn) {
+    const quoteOk = await loadCouponQuote()
+    if (requestedCouponClaimId !== null && (!quoteOk || selectedCouponClaimId.value !== requestedCouponClaimId)) {
+      toast.warning(quoteError.value || '所选优惠券状态已变化，请重新选择')
+      return
+    }
+  }
+  const productSubtotal = formatPrice(couponQuote.value?.productSubtotal ?? (price.value * discount.value * quantity))
+  const couponDiscount = formatPrice(selectedCoupon.value?.couponDiscountAmount || 0)
+  const totalAmount = formatPrice(selectedCoupon.value?.payableAmount ?? Number(productSubtotal))
+  const couponLine = selectedCoupon.value
+    ? `<br>🎟️ 优惠券：<strong>${escapeHtml(selectedCoupon.value.campaign.name)}</strong>${selectedCoupon.value.discountedQuantity === 1 ? '（仅优惠 1 件）' : ''}<br>🏷️ 减免：<strong>-${couponDiscount} LDC</strong>`
+    : ''
   const confirmMessage = isNormal.value
-    ? `确认购买「${escapeHtml(product.value.name)}」？<br><br>📦 数量：<strong>${quantity}</strong><br>💰 总价：<strong>${totalAmount} LDC</strong><br><br>支付完成后请主动联系卖家获取服务，订单会保留在平台内等待卖家履约。`
-    : `确认兑换「${escapeHtml(product.value.name)}」？<br><br>📦 数量：<strong>${quantity}</strong><br>💰 总价：<strong>${totalAmount} LDC</strong><br><br>支付后系统将自动发放 CDK 到您的订单中。`
+    ? `确认购买「${escapeHtml(product.value.name)}」？<br><br>📦 数量：<strong>${quantity}</strong><br>🧾 商品小计：<strong>${productSubtotal} LDC</strong>${couponLine}<br>💰 实付：<strong>${totalAmount} LDC</strong><br><br>支付完成后请主动联系卖家获取服务，订单会保留在平台内等待卖家履约。`
+    : `确认兑换「${escapeHtml(product.value.name)}」？<br><br>📦 数量：<strong>${quantity}</strong><br>🧾 商品小计：<strong>${productSubtotal} LDC</strong>${couponLine}<br>💰 实付：<strong>${totalAmount} LDC</strong><br><br>支付后系统将自动发放 CDK 到您的订单中。`
   const dialogTitle = isNormal.value ? '确认下单' : '确认兑换'
 
   // 确认兑换
@@ -2315,7 +2427,7 @@ async function handleBuyProduct() {
   purchasing.value = true
 
   try {
-    const result = await shopStore.createOrder(product.value.id, quantity)
+    const result = await shopStore.createOrder(product.value.id, quantity, selectedCouponClaimId.value)
 
     if (result.success && result.data?.paymentUrl) {
       const { popup, isPopup } = openPaymentPopup(result.data.paymentUrl, preparedWindow)
@@ -3162,6 +3274,166 @@ async function handleOpenStore() {
 .quantity-hint {
   font-size: 12px;
   color: var(--text-tertiary);
+}
+
+.coupon-section {
+  padding: 16px;
+  border: 1px solid var(--border-light);
+  border-radius: 14px;
+  background: var(--glass-bg-medium);
+}
+
+.coupon-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.coupon-heading h2 {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.coupon-heading p {
+  margin: 3px 0 0;
+  color: var(--text-tertiary);
+  font-size: 11px;
+}
+
+.coupon-heading a {
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  color: var(--color-primary-hover);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.coupon-login-link,
+.coupon-loading {
+  min-height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 12px;
+  border-radius: 11px;
+  background: var(--color-primary-light);
+  color: var(--color-primary-hover);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.coupon-options {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.coupon-option {
+  min-height: 58px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  background: var(--bg-card);
+  cursor: pointer;
+  transition: border-color .2s ease, background .2s ease;
+}
+
+.coupon-option.selected {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+
+.coupon-option.disabled {
+  cursor: not-allowed;
+  opacity: .58;
+}
+
+.coupon-option input {
+  width: 17px;
+  height: 17px;
+  accent-color: var(--color-primary-hover);
+}
+
+.coupon-option > span,
+.coupon-option-copy {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.coupon-option strong {
+  overflow: hidden;
+  color: var(--text-primary);
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.coupon-option small {
+  overflow: hidden;
+  color: var(--text-tertiary);
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.coupon-option .coupon-reason,
+.coupon-error {
+  color: var(--color-danger);
+}
+
+.coupon-option > b {
+  color: var(--color-danger);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.coupon-empty,
+.coupon-error {
+  margin: 2px 0 0;
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.coupon-empty {
+  color: var(--text-tertiary);
+}
+
+.coupon-breakdown {
+  display: grid;
+  gap: 6px;
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--bg-secondary);
+}
+
+.coupon-breakdown div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.coupon-breakdown strong {
+  color: var(--color-danger);
+}
+
+.coupon-breakdown .coupon-payable {
+  margin-top: 3px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-light);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 650;
 }
 
 .maintenance-order-notice {
@@ -4447,4 +4719,3 @@ async function handleOpenStore() {
 
 }
 </style>
-

@@ -770,8 +770,8 @@ export const useShopStore = defineStore('shop', () => {
     }
   }
 
-  async function createOrder(productId, quantity = 1) {
-    return createOrderRequest(productId, quantity)
+  async function createOrder(productId, quantity = 1, couponClaimId = null) {
+    return createOrderRequest(productId, quantity, couponClaimId)
   }
 
   async function cancelOrder(orderNo) {
