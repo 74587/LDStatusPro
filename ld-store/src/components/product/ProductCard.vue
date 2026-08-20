@@ -26,7 +26,10 @@
     
     <!-- 类型标签 -->
     <div v-if="isTestMode || isCdk || isNormal || isStore || isLegacyLink" class="badge-stack">
-      <span v-if="isTestMode" class="type-tag test type-tag--stacked">🧪 测试</span>
+      <span v-if="isTestMode" class="type-tag test type-tag--stacked">
+        <TestTube2 :size="12" aria-hidden="true" />
+        测试
+      </span>
       <span v-else-if="isCdk" class="type-tag cdk type-tag--stacked">CDK</span>
       <span v-else-if="isNormal" class="type-tag normal type-tag--stacked">普通</span>
       <span v-else-if="isStore" class="type-tag store type-tag--stacked">小店</span>
@@ -48,7 +51,14 @@
         @load="handleImageLoad"
         @error="handleImageError"
       />
-      <span v-if="!product.image_url" class="cover-placeholder">{{ categoryIcon }}</span>
+      <component
+        :is="categoryIconComponent"
+        v-if="!product.image_url"
+        :size="52"
+        :stroke-width="1.6"
+        aria-hidden="true"
+        class="cover-placeholder"
+      />
     </div>
     
     <!-- 商品信息 -->
@@ -95,7 +105,11 @@
             <span v-if="hasDiscount" class="original-price">{{ originalPrice }} LDC</span>
           </div>
         </div>
-        <span class="product-views">👁 {{ product.view_count || 0 }}</span>
+        <span class="product-views">
+          <Eye :size="14" aria-hidden="true" />
+          <span>{{ product.view_count || 0 }}</span>
+          <span class="sr-only">次浏览</span>
+        </span>
       </div>
     </div>
   </router-link>
@@ -103,6 +117,16 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import {
+  Eye,
+  Gamepad2,
+  MessageCircle,
+  PackageOpen,
+  Server,
+  Store,
+  TestTube2,
+  Wrench
+} from '@lucide/vue'
 import { useShopStore } from '@/stores/shop'
 import AvatarImage from '@/components/common/AvatarImage.vue'
 import { formatRelativeTime, formatPrice } from '@/utils/format'
@@ -383,12 +407,17 @@ const soldCount = computed(() => parseInt(props.product.sold_count) || 0)
 const category = computed(() => 
   props.categories.find(c => c.id === props.product.category_id)
 )
-const categoryIcon = computed(() => 
-  props.product.category_icon || category.value?.icon || '📦'
-)
 const categoryName = computed(() => 
   props.product.category_name || category.value?.name || '其他'
 )
+const categoryIcons = {
+  '公益站': Server,
+  '服务': Wrench,
+  '咨询': MessageCircle,
+  '小店': Store,
+  '游戏': Gamepad2
+}
+const categoryIconComponent = computed(() => categoryIcons[categoryName.value] || PackageOpen)
 
 // 卖家头像
 const sellerAvatarSeed = computed(() =>
@@ -540,10 +569,17 @@ function handleImageError(e) {
 }
 
 .type-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   font-size: 10px;
   font-weight: 700;
   padding: 4px 8px;
   border-radius: 8px;
+}
+
+.type-tag svg {
+  flex-shrink: 0;
 }
 
 .badge-stack {
@@ -769,8 +805,8 @@ function handleImageError(e) {
 }
 
 .cover-placeholder {
-  font-size: 48px;
-  opacity: 0.8;
+  color: var(--text-muted);
+  opacity: 0.72;
 }
 
 /* 内容 */
@@ -966,10 +1002,17 @@ function handleImageError(e) {
 }
 
 .product-views {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   font-size: 12px;
-  color: var(--text-tertiary);
+  color: var(--text-secondary);
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
+}
+
+.product-views svg {
+  flex-shrink: 0;
 }
 
 @container (max-width: 230px) {
