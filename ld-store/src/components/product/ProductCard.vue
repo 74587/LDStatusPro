@@ -454,7 +454,10 @@ function handleImageError(e) {
     0 0 0 1px rgba(255, 240, 199, 0.3),
     0 0 14px rgba(255, 199, 73, 0.35),
     0 6px 18px rgba(179, 119, 16, 0.28);
-  display: block;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  container-type: inline-size;
   background: var(--product-card-bg, var(--bg-card));
   border-radius: 16px;
   overflow: hidden;
@@ -718,6 +721,7 @@ function handleImageError(e) {
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  flex-shrink: 0;
   background: var(--product-card-cover-bg, var(--bg-secondary));
 }
 
@@ -771,7 +775,11 @@ function handleImageError(e) {
 
 /* 内容 */
 .product-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
   padding: 12px;
+  min-width: 0;
 }
 
 
@@ -781,9 +789,12 @@ function handleImageError(e) {
   color: var(--text-primary);
   margin: 0 0 8px;
   line-height: 1.4;
-  white-space: nowrap;
+  min-height: 2.8em;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
   overflow: hidden;
-  text-overflow: ellipsis;
+  overflow-wrap: anywhere;
 }
 
 .product-card--featured-selection .product-name {
@@ -896,14 +907,18 @@ function handleImageError(e) {
 
 /* 底部 */
 .product-footer {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: flex-end;
-  justify-content: space-between;
-  gap: 12px;
+  gap: 8px 10px;
+  min-width: 0;
+  margin-top: auto;
+  padding-top: 2px;
 }
 
 .price-block {
   min-width: 0;
+  overflow: hidden;
 }
 
 .price-row {
@@ -911,7 +926,8 @@ function handleImageError(e) {
   align-items: baseline;
   gap: 8px;
   min-width: 0;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
+  row-gap: 4px;
 }
 
 .product-price {
@@ -920,6 +936,7 @@ function handleImageError(e) {
   color: var(--product-card-price, var(--color-warning));
   line-height: 1;
   white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
 .product-card--featured .store-owner-label,
@@ -945,12 +962,26 @@ function handleImageError(e) {
   text-decoration: line-through;
   font-weight: 400;
   white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
 .product-views {
   font-size: 12px;
   color: var(--text-tertiary);
   white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+@container (max-width: 230px) {
+  .product-footer {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+    gap: 7px;
+  }
+
+  .product-views {
+    justify-self: start;
+  }
 }
 
 /* 移动端适配 */
