@@ -433,7 +433,7 @@ html.dark .seller-shell {
 
 @media (max-width: 1023px) {
   .seller-shell { grid-template-columns: minmax(0, 1fr); }
-  .seller-sidebar { position: fixed; left: 0; width: min(86vw, 288px); transform: translateX(-105%); box-shadow: 24px 0 64px rgba(0,0,0,.24); transition: transform 220ms ease; }
+  .seller-sidebar { position: fixed; left: 0; width: min(86vw, 288px); transform: translateX(-105%); box-shadow: none; transition: transform 220ms ease; }
   .seller-sidebar.is-open { transform: translateX(0); }
   .seller-backdrop { position: fixed; inset: 0; z-index: 50; display: block; background: rgba(7,15,23,.48); backdrop-filter: blur(2px); }
   .sidebar-close,
