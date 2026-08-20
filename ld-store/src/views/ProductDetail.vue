@@ -2668,19 +2668,25 @@ async function handleOpenStore() {
   justify-content: flex-end;
 }
 
-.nav-favorite-btn {
+.nav-favorite-btn,
+.nav-block-btn,
+.nav-report-btn {
+  min-height: 34px;
   padding: 8px 14px;
-  border: 1px solid #e4cad0;
   border-radius: 20px;
-  background: #fff4f6;
-  color: #b16472;
   font-size: 13px;
   line-height: 1.2;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
   display: inline-flex;
   align-items: center;
   gap: 6px;
+}
+
+.nav-favorite-btn {
+  border: 1px solid #e4cad0;
+  background: #fff4f6;
+  color: #b16472;
 }
 
 .nav-favorite-btn:hover {
@@ -2694,25 +2700,17 @@ async function handleOpenStore() {
   color: #9f4258;
 }
 
-.nav-favorite-btn:disabled {
+.nav-favorite-btn:disabled,
+.nav-block-btn:disabled,
+.nav-report-btn:disabled {
   opacity: 0.65;
   cursor: not-allowed;
 }
 
 .nav-block-btn {
-  min-height: 44px;
-  padding: 8px 14px;
   border: 1px solid var(--border-color);
-  border-radius: 20px;
   background: var(--bg-card);
   color: var(--text-tertiary);
-  font-size: 13px;
-  line-height: 1.2;
-  cursor: pointer;
-  transition: background 0.2s, border-color 0.2s, color 0.2s;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
 }
 
 .nav-block-btn:hover {
@@ -2721,40 +2719,23 @@ async function handleOpenStore() {
   color: var(--color-danger);
 }
 
-.nav-block-btn:focus-visible {
-  outline: 3px solid rgba(220, 38, 38, 0.22);
+.nav-favorite-btn:focus-visible,
+.nav-block-btn:focus-visible,
+.nav-report-btn:focus-visible {
+  outline: 3px solid rgba(99, 102, 241, 0.2);
   outline-offset: 2px;
 }
 
-.nav-block-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
 .nav-report-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
   border: 1px solid rgba(234, 179, 8, 0.35);
-  border-radius: 20px;
   background: rgba(250, 204, 21, 0.16);
   color: #8a6500;
-  font-size: 13px;
-  line-height: 1.2;
-  cursor: pointer;
-  transition: all 0.2s;
 }
 
 .nav-report-btn:hover {
   background: rgba(250, 204, 21, 0.24);
   border-color: rgba(234, 179, 8, 0.5);
   color: #6f5200;
-}
-
-.nav-report-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
 }
 
 .nav-category {
@@ -4561,6 +4542,12 @@ async function handleOpenStore() {
   
   .detail-nav {
     margin-bottom: 16px;
+  }
+
+  .nav-favorite-btn,
+  .nav-block-btn,
+  .nav-report-btn {
+    min-height: 44px;
   }
 
   .detail-name {
