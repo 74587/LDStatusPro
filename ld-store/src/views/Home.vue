@@ -364,11 +364,11 @@
 
       <!-- 士多热榜 -->
       <div v-show="activeSection === 'hotboard'" class="section-content hotboard-section-wrapper">
-        <div v-if="hotboardLoading" class="products-loading">
+        <div v-if="hotboardLoading && !hotboardData" class="products-loading">
           <Skeleton type="card" :count="4" :columns="2" />
         </div>
 
-        <div v-else-if="hotboardError" class="hotboard-error">
+        <div v-else-if="hotboardError && !hotboardData" class="hotboard-error">
           <EmptyState icon="📊" :text="hotboardError" hint="请稍后重试" />
         </div>
 
@@ -384,21 +384,21 @@
             </div>
             <div class="hotboard-hero-stats">
               <div class="hotboard-hero-stat">
-                <span class="hotboard-hero-stat-value">{{ hotboardData.totalStats?.totalViews || 0 }}</span>
+                <span class="hotboard-hero-stat-value">{{ formatNumber(Number(hotboardData.totalStats?.totalViews || 0)) }}</span>
                 <span class="hotboard-hero-stat-label">今日物品总浏览</span>
               </div>
               <div class="hotboard-hero-stat-divider"></div>
               <div class="hotboard-hero-stat">
-                <span class="hotboard-hero-stat-value">{{ hotboardData.totalStats?.totalOrders || 0 }}</span>
+                <span class="hotboard-hero-stat-value">{{ formatNumber(Number(hotboardData.totalStats?.totalOrders || 0)) }}</span>
                 <span class="hotboard-hero-stat-label">今日总单数</span>
               </div>
               <div class="hotboard-hero-stat-divider"></div>
               <div class="hotboard-hero-stat">
-                <span class="hotboard-hero-stat-value">{{ hotboardData.totalStats?.totalSold || 0 }}</span>
-                <span class="hotboard-hero-stat-label">今日总售出</span>
+                <span class="hotboard-hero-stat-value">{{ formatNumber(Number(hotboardData.totalStats?.totalSoldQuantity ?? hotboardData.totalStats?.totalSold ?? 0)) }}</span>
+                <span class="hotboard-hero-stat-label">今日售出件数</span>
               </div>
             </div>
-            <p class="hotboard-hero-hint">数据基于北京时间今日 · 约2分钟刷新</p>
+            <p class="hotboard-hero-hint">{{ hotboardLoading ? '正在更新热榜…' : (hotboardError || '数据基于北京时间今日 · 页面停留时约2分钟刷新') }}</p>
           </div>
 
           <!-- 热卖卖家 Top3 -->
@@ -485,11 +485,11 @@
           </div>
 
           <!-- 分类成交分布 -->
-          <div class="hotboard-section" v-if="hotboardData.categoryTrend?.length">
+          <div class="hotboard-section" v-if="trendChartModel.length">
             <h3 class="hotboard-section-title">📈 分类成交分布</h3>
             <div class="hotboard-cat-bars">
               <div
-                v-for="(cat, ci) in hotboardData.categoryTrend"
+                v-for="(cat, ci) in trendChartModel"
                 :key="cat.categoryId"
                 class="hotboard-cat-row"
               >
@@ -503,47 +503,79 @@
                     }"
                   ></div>
                 </div>
+                <span class="hotboard-cat-value">{{ formatNumber(cat.totalOrders) }} 单</span>
               </div>
             </div>
-            <div v-if="hotboardData.categoryTrend?.length" class="hotboard-hourly-section">
-              <p class="hotboard-hourly-title">逐时走势（北京时间 0:00 - 24:00）</p>
+            <div v-if="trendChartModel.length" class="hotboard-hourly-section">
+              <div class="hotboard-hourly-heading">
+                <p class="hotboard-hourly-title">逐时订单走势（北京时间）</p>
+                <span class="hotboard-hourly-meta">显示至 {{ trendEndHourLabel }} · {{ formatNumber(trendChartMax) }} 单/时峰值</span>
+              </div>
               <div class="hotboard-trend-legend">
-                <span
-                  v-for="(cat, ci) in hotboardData.categoryTrend"
+                <button
+                  type="button"
+                  v-for="(cat, ci) in trendChartModel"
                   :key="cat.categoryId"
                   class="hotboard-trend-legend-item"
-                  :class="{ active: hoveredTrendIdx === ci, dimmed: hoveredTrendIdx >= 0 && hoveredTrendIdx !== ci }"
+                  :class="{ active: activeTrendIdx === ci, dimmed: activeTrendIdx >= 0 && activeTrendIdx !== ci }"
+                  :aria-pressed="selectedTrendIdx === ci"
+                  :aria-label="`${cat.categoryName}，${cat.totalOrders} 单，点击${selectedTrendIdx === ci ? '取消突出显示' : '突出显示'}`"
+                  @click="toggleTrendSelection(ci)"
+                  @keydown.enter.prevent="toggleTrendSelection(ci)"
+                  @keydown.space.prevent="toggleTrendSelection(ci)"
                   @mouseenter="hoveredTrendIdx = ci"
                   @mouseleave="hoveredTrendIdx = -1"
                 >
                   <span class="hotboard-trend-dot" :style="{ background: TREND_COLORS[ci % TREND_COLORS.length] }"></span>
                   {{ cat.categoryIcon }} {{ cat.categoryName }}
-                </span>
+                </button>
+              </div>
+              <div class="hotboard-trend-scale" aria-hidden="true">
+                <span>{{ formatNumber(trendChartMax) }} 单</span>
+                <span>0 单</span>
               </div>
               <div class="hotboard-trend-chart-wrap">
                 <svg
                   class="hotboard-trend-chart"
                   viewBox="0 0 480 200"
                   preserveAspectRatio="none"
+                  role="img"
+                  :aria-label="trendChartAriaLabel"
+                  @mouseleave="hoveredTrendIdx = -1"
                 >
+                  <title>{{ trendChartAriaLabel }}</title>
                   <line v-for="y in [50, 100, 150]" :key="'g'+y" x1="0" :y1="y" x2="480" :y2="y" stroke="var(--border-light)" stroke-width="1" vector-effect="non-scaling-stroke" stroke-dasharray="4 3" />
                   <line x1="0" y1="0" x2="480" y2="0" stroke="var(--border-light)" stroke-width="0.5" vector-effect="non-scaling-stroke" />
                   <line x1="0" y1="200" x2="480" y2="200" stroke="var(--border-light)" stroke-width="0.5" vector-effect="non-scaling-stroke" />
-                  <template v-for="(cat, ci) in hotboardData.categoryTrend" :key="cat.categoryId">
+                  <template v-for="(cat, ci) in trendChartModel" :key="cat.categoryId">
                     <path
-                      v-if="cat.trend.length > 0"
-                      :d="trendCurve(cat.trend)"
+                      v-if="cat.points.length > 0"
+                      :d="cat.path"
                       fill="none"
                       :stroke="TREND_COLORS[ci % TREND_COLORS.length]"
-                      :stroke-width="hoveredTrendIdx === ci ? 3.5 : 2"
-                      :opacity="hoveredTrendIdx >= 0 && hoveredTrendIdx !== ci ? 0.25 : 1"
+                      :stroke-width="activeTrendIdx === ci ? 3.5 : 2"
+                      :opacity="activeTrendIdx >= 0 && activeTrendIdx !== ci ? 0.25 : 1"
                       stroke-linecap="round"
                       stroke-linejoin="round"
                       vector-effect="non-scaling-stroke"
                       class="hotboard-trend-path"
                       @mouseenter="hoveredTrendIdx = ci"
                       @mouseleave="hoveredTrendIdx = -1"
-                    />
+                    >
+                      <title>{{ cat.categoryName }}：{{ formatNumber(cat.totalOrders) }} 单</title>
+                    </path>
+                    <circle
+                      v-for="point in cat.points"
+                      :key="`${cat.categoryId}-${point.hour}`"
+                      :cx="trendX(point.hour)"
+                      :cy="trendY(point.orderCount)"
+                      r="3"
+                      :fill="TREND_COLORS[ci % TREND_COLORS.length]"
+                      :opacity="activeTrendIdx >= 0 && activeTrendIdx !== ci ? 0.25 : 0.9"
+                      class="hotboard-trend-point"
+                    >
+                      <title>{{ cat.categoryName }} {{ point.hour }}:00–{{ point.hour + 1 }}:00：{{ formatNumber(point.orderCount) }} 单 / {{ formatNumber(point.soldQuantity) }} 件</title>
+                    </circle>
                   </template>
                 </svg>
               </div>
@@ -554,6 +586,25 @@
                 <span class="hotboard-trend-label">18:00</span>
                 <span class="hotboard-trend-label">24:00</span>
               </div>
+              <details class="hotboard-trend-details">
+                <summary>查看逐时数据表</summary>
+                <div class="hotboard-trend-table-wrap">
+                  <table class="hotboard-trend-table">
+                    <thead>
+                      <tr>
+                        <th scope="col">分类</th>
+                        <th v-for="hour in trendHours" :key="`hour-${hour}`" scope="col">{{ hour }}:00</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="cat in trendChartModel" :key="`table-${cat.categoryId}`">
+                        <th scope="row">{{ cat.categoryName }}</th>
+                        <td v-for="point in cat.points" :key="`cell-${cat.categoryId}-${point.hour}`">{{ point.orderCount }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </details>
             </div>
           </div>
         </div>
@@ -578,7 +629,7 @@ import { useShopStore } from '@/stores/shop'
 import { useUserStore } from '@/stores/user'
 import { api } from '@/utils/api'
 import { useToast } from '@/composables/useToast'
-import { formatRelativeTime, formatPrice } from '@/utils/format'
+import { formatRelativeTime, formatPrice, formatNumber } from '@/utils/format'
 import ProductCard from '@/components/product/ProductCard.vue'
 import ShopCard from '@/components/shop/ShopCard.vue'
 import CategoryFilter from '@/components/product/CategoryFilter.vue'
@@ -625,6 +676,7 @@ const activeSection = ref(normalizeSection(String(route.query.section || '').tri
 watch(sectionTabs, (tabs) => {
   if (!tabs.some(t => t.value === activeSection.value)) {
     activeSection.value = 'products'
+    stopHotboardRefresh()
   }
 })
 
@@ -676,9 +728,11 @@ const hotboardLoaded = ref(false)
 const hotboardError = ref('')
 const hotboardCacheTime = ref(0)
 const HOTBOARD_CACHE_TTL = 2 * 60 * 1000
+let hotboardRefreshTimer = null
+let hotboardRequestId = 0
 
 const TREND_COLORS = [
-  '#b5a898', '#7eb89a', '#e8a860', '#778d9c', '#c98b8b', '#8ba5c9', '#b8a0d0'
+  '#b5a898', '#7eb89a', '#e8a860', '#778d9c', '#c98b8b', '#8ba5c9', '#b8a0d0', '#6ca7a3'
 ]
 
 const stats = ref({
@@ -875,8 +929,11 @@ async function switchSection(section) {
     await loadBuyRequests(true)
   }
 
-  if (section === 'hotboard' && !hotboardLoaded.value) {
+  if (section === 'hotboard') {
     await loadHotboard()
+    startHotboardRefresh()
+  } else {
+    stopHotboardRefresh()
   }
 
   if (section === 'products') {
@@ -991,27 +1048,48 @@ function buyStatusClass(status) {
   return 'default'
 }
 
-async function loadHotboard() {
+function stopHotboardRefresh() {
+  if (hotboardRefreshTimer) {
+    window.clearInterval(hotboardRefreshTimer)
+    hotboardRefreshTimer = null
+  }
+}
+
+function startHotboardRefresh() {
+  stopHotboardRefresh()
+  if (activeSection.value !== 'hotboard') return
+  hotboardRefreshTimer = window.setInterval(() => {
+    if (document.visibilityState === 'visible' && activeSection.value === 'hotboard') {
+      loadHotboard(true)
+    }
+  }, HOTBOARD_CACHE_TTL)
+}
+
+async function loadHotboard(force = false) {
   const now = Date.now()
-  if (hotboardData.value && (now - hotboardCacheTime.value) < HOTBOARD_CACHE_TTL) {
+  if (!force && hotboardData.value && (now - hotboardCacheTime.value) < HOTBOARD_CACHE_TTL) {
     return
   }
+  if (hotboardLoading.value) return
+  const requestId = ++hotboardRequestId
   hotboardLoading.value = true
-  hotboardError.value = ''
+  if (!hotboardData.value) hotboardError.value = ''
   try {
     const result = await api.get('/api/shop/hotboard')
+    if (requestId !== hotboardRequestId) return
     if (result.success && result.data) {
       hotboardData.value = result.data
-      hotboardCacheTime.value = now
+      hotboardCacheTime.value = Date.now()
+      hotboardError.value = ''
     } else {
-      hotboardError.value = result.error?.message || '加载热榜失败'
+      hotboardError.value = result.error?.message || result.error || '加载热榜失败'
     }
   } catch (e) {
-    hotboardError.value = '加载热榜失败，请稍后重试'
+    hotboardError.value = hotboardData.value ? '热榜更新失败，当前显示上次数据' : '加载热榜失败，请稍后重试'
     console.error('Load hotboard failed:', e)
   } finally {
     hotboardLoading.value = false
-    hotboardLoaded.value = true
+    hotboardLoaded.value = !!hotboardData.value
   }
 }
 
@@ -1254,6 +1332,7 @@ onMounted(async () => {
     await loadBuyRequests(true)
   } else if (activeSection.value === 'hotboard') {
     await loadHotboard()
+    startHotboardRefresh()
   }
 
   if (activeSection.value === 'products') {
@@ -1263,6 +1342,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   window.removeEventListener('resize', updateGridColumns)
+  stopHotboardRefresh()
   if (observer) observer.disconnect()
   if (shopsObserver) shopsObserver.disconnect()
 })
@@ -1285,13 +1365,15 @@ onActivated(async () => {
     setupShopsInfiniteScroll()
   } else if (activeSection.value === 'buy' && !buyInitialized.value) {
     await loadBuyRequests(true)
-  } else if (activeSection.value === 'hotboard' && !hotboardLoaded.value) {
+  } else if (activeSection.value === 'hotboard') {
     await loadHotboard()
+    startHotboardRefresh()
   }
 })
 
 onDeactivated(() => {
   savedScrollPosition = window.scrollY
+  stopHotboardRefresh()
   if (observer) observer.disconnect()
   if (shopsObserver) shopsObserver.disconnect()
 })
@@ -1329,48 +1411,93 @@ function setupInfiniteScroll() {
   observer.observe(sentinel.value)
 }
 
-function getCatBarWidth(cat) {
-  const maxOrders = Math.max(1, ...hotboardData.value.categoryTrend.map(c =>
-    c.trend.reduce((s, t) => s + (t.orderCount || 0), 0)
-  ))
-  const catTotal = cat.trend.reduce((s, t) => s + (t.orderCount || 0), 0)
-  return Math.max(3, (catTotal / maxOrders) * 100)
-}
-
-// Trend chart: viewBox 480×200, X maps 0-24h, Y maps data proportionally
+// Trend chart: viewBox 480×200, X maps hourly bucket centers across 0-24h.
 const TVB_W = 480
 const TVB_H = 200
 const TVB_PAD = 8
 const TVB_PLOT_H = TVB_H - TVB_PAD * 2
 
-const hoveredTrendIdx = ref(-1)
+const rawTrendCategories = computed(() => toSafeArray(hotboardData.value?.categoryTrend))
+const trendHours = computed(() => {
+  const endHour = Number(hotboardData.value?.trendEndHour)
+  const lastHour = Number.isFinite(endHour)
+    ? Math.min(23, Math.max(0, Math.floor(endHour)))
+    : 23
+  return Array.from({ length: lastHour + 1 }, (_, hour) => hour)
+})
 
-function trendX(hour) {
-  return (hour / 24) * TVB_W
+const trendChartMax = computed(() => Math.max(
+  1,
+  ...rawTrendCategories.value.flatMap(cat => toSafeArray(cat?.trend).map(point => Number(point?.orderCount) || 0))
+))
+
+const trendChartModel = computed(() => rawTrendCategories.value.map((cat) => {
+  const pointsByHour = new Map(toSafeArray(cat?.trend).map(point => [Number(point?.hour), point]))
+  const points = trendHours.value.map(hour => {
+    const point = pointsByHour.get(hour) || {}
+    return {
+      hour,
+      orderCount: Number(point.orderCount) || 0,
+      soldQuantity: Number(point.soldQuantity) || 0
+    }
+  })
+  const totalOrders = points.reduce((sum, point) => sum + point.orderCount, 0)
+  const totalSoldQuantity = points.reduce((sum, point) => sum + point.soldQuantity, 0)
+  return {
+    ...cat,
+    points,
+    totalOrders,
+    totalSoldQuantity,
+    path: trendCurve(points, trendChartMax.value)
+  }
+}))
+
+const trendChartMaxTotal = computed(() => Math.max(
+  1,
+  ...trendChartModel.value.map(cat => cat.totalOrders)
+))
+
+const trendEndHourLabel = computed(() => {
+  const current = hotboardData.value?.currentBeijingTime
+  if (current && Number.isFinite(Number(current.hour))) {
+    return `${String(Number(current.hour)).padStart(2, '0')}:${String(Number(current.minute) || 0).padStart(2, '0')}`
+  }
+  const lastHour = trendHours.value[trendHours.value.length - 1] || 0
+  return `${String(lastHour + 1).padStart(2, '0')}:00`
+})
+
+const trendChartAriaLabel = computed(() => {
+  const categoryCount = trendChartModel.value.length
+  return `北京时间逐时订单走势，共 ${categoryCount} 个分类，显示至 ${trendEndHourLabel.value}；详细数值可展开逐时数据表。`
+})
+
+const hoveredTrendIdx = ref(-1)
+const selectedTrendIdx = ref(-1)
+const activeTrendIdx = computed(() => {
+  const selected = selectedTrendIdx.value
+  return selected >= 0 && selected < trendChartModel.value.length
+    ? selected
+    : hoveredTrendIdx.value
+})
+
+function toggleTrendSelection(index) {
+  selectedTrendIdx.value = selectedTrendIdx.value === index ? -1 : index
 }
 
-function trendCurve(catTrend) {
-  if (!catTrend.length) return ''
-  const maxVal = Math.max(1, ...hotboardData.value.categoryTrend.flatMap(c => c.trend.map(t => t.orderCount || 0)))
-  const pts = catTrend.map(t => ({
-    x: trendX(t.hour),
-    y: TVB_PAD + TVB_PLOT_H - ((t.orderCount || 0) / maxVal) * TVB_PLOT_H
-  }))
-  if (pts.length === 1) return `M ${pts[0].x} ${pts[0].y}`
-  // Catmull-Rom → cubic bezier
-  let d = `M ${pts[0].x} ${pts[0].y}`
-  for (let i = 0; i < pts.length - 1; i++) {
-    const p0 = pts[Math.max(0, i - 1)]
-    const p1 = pts[i]
-    const p2 = pts[i + 1]
-    const p3 = pts[Math.min(pts.length - 1, i + 2)]
-    const cp1x = p1.x + (p2.x - p0.x) / 6
-    const cp1y = p1.y + (p2.y - p0.y) / 6
-    const cp2x = p2.x - (p3.x - p1.x) / 6
-    const cp2y = p2.y - (p3.y - p1.y) / 6
-    d += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p2.x} ${p2.y}`
-  }
-  return d
+function getCatBarWidth(cat) {
+  return Math.max(3, (cat.totalOrders / trendChartMaxTotal.value) * 100)
+}
+
+function trendX(hour) {
+  return ((hour + 0.5) / 24) * TVB_W
+}
+
+function trendY(value, maxVal = trendChartMax.value) {
+  return TVB_PAD + TVB_PLOT_H - (Math.max(0, Number(value) || 0) / maxVal) * TVB_PLOT_H
+}
+
+function trendCurve(points, maxVal = trendChartMax.value) {
+  return points.map((point, index) => `${index === 0 ? 'M' : 'L'} ${trendX(point.hour)} ${trendY(point.orderCount, maxVal)}`).join(' ')
 }
 </script>
 
@@ -2884,6 +3011,14 @@ function trendCurve(catTrend) {
   opacity: 1;
 }
 
+.hotboard-cat-value {
+  min-width: 58px;
+  color: var(--text-tertiary);
+  font-size: 11px;
+  text-align: right;
+  white-space: nowrap;
+}
+
 /* Hourly trend section */
 .hotboard-hourly-section {
   margin-top: 18px;
@@ -2895,7 +3030,21 @@ function trendCurve(catTrend) {
   font-size: 12px;
   font-weight: 500;
   color: var(--text-tertiary);
-  margin: 0 0 10px;
+  margin: 0;
+}
+
+.hotboard-hourly-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.hotboard-hourly-meta {
+  color: var(--text-tertiary);
+  font-size: 11px;
+  white-space: nowrap;
 }
 
 .hotboard-trend-legend {
@@ -2908,11 +3057,18 @@ function trendCurve(catTrend) {
 }
 
 .hotboard-trend-legend-item {
+  min-height: 44px;
+  padding: 8px 4px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
   display: flex;
   align-items: center;
   gap: 5px;
+  font-family: inherit;
   font-size: 12px;
   color: var(--text-secondary);
+  text-align: left;
 }
 
 .hotboard-trend-dot {
@@ -2927,6 +3083,14 @@ function trendCurve(catTrend) {
   z-index: 1;
 }
 
+.hotboard-trend-scale {
+  display: flex;
+  justify-content: space-between;
+  color: var(--text-tertiary);
+  font-size: 11px;
+  margin-bottom: 2px;
+}
+
 .hotboard-trend-chart {
   width: 100%;
   height: 220px;
@@ -2938,19 +3102,29 @@ function trendCurve(catTrend) {
   transition: opacity 0.2s ease;
 }
 
+.hotboard-trend-point {
+  cursor: pointer;
+  transition: opacity 0.2s ease, r 0.15s ease;
+}
+
 .hotboard-trend-legend-item {
   cursor: pointer;
   transition: opacity 0.2s ease, transform 0.2s ease, font-weight 0.15s ease;
 }
 
 .hotboard-trend-legend-item.active {
-  transform: scale(1.08);
   font-weight: 700;
   color: var(--text-primary);
+  background: var(--color-primary-bg, rgba(181, 168, 152, 0.12));
 }
 
 .hotboard-trend-legend-item.dimmed {
   opacity: 0.35;
+}
+
+.hotboard-trend-legend-item:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 .hotboard-trend-axis {
@@ -2960,8 +3134,57 @@ function trendCurve(catTrend) {
 }
 
 .hotboard-trend-label {
-  font-size: 10px;
+  font-size: 11px;
   color: var(--text-tertiary);
+}
+
+.hotboard-trend-details {
+  position: relative;
+  z-index: 1;
+  margin-top: 12px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.hotboard-trend-details summary {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  color: var(--color-primary);
+}
+
+.hotboard-trend-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+}
+
+.hotboard-trend-table {
+  min-width: 620px;
+  width: 100%;
+  border-collapse: collapse;
+  white-space: nowrap;
+}
+
+.hotboard-trend-table th,
+.hotboard-trend-table td {
+  padding: 7px 9px;
+  border-bottom: 1px solid var(--border-light);
+  text-align: right;
+}
+
+.hotboard-trend-table tr:last-child th,
+.hotboard-trend-table tr:last-child td {
+  border-bottom: 0;
+}
+
+.hotboard-trend-table th:first-child,
+.hotboard-trend-table td:first-child {
+  position: sticky;
+  left: 0;
+  background: var(--glass-bg-light, var(--bg-primary));
+  text-align: left;
 }
 
 .hotboard-error {
@@ -2990,6 +3213,12 @@ function trendCurve(catTrend) {
     margin-top: 16px;
   }
 
+  .hotboard-hourly-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+
   .hotboard-section {
     padding: 14px 16px;
     border-radius: 14px;
@@ -3009,6 +3238,19 @@ function trendCurve(catTrend) {
 
   .hotboard-product-right {
     min-width: 48px;
+  }
+
+  .hotboard-cat-value {
+    min-width: 48px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hotboard-cat-bar-fill,
+  .hotboard-trend-path,
+  .hotboard-trend-point,
+  .hotboard-trend-legend-item {
+    transition: none;
   }
 }
 
