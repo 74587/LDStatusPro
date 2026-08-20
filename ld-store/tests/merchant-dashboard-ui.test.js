@@ -13,6 +13,7 @@ import {
   resolveSellerViewKey
 } from '../src/utils/sellerNavigation'
 import {
+  buildSellerProductPrice,
   buildSellerOrderQuery,
   filterAndSortSellerProducts,
   paginateSellerRows,
@@ -102,6 +103,22 @@ describe('卖家后台稳定壳层与列表工具', () => {
     expect(resolveSellerStatusTone('rejected')).toBe('danger')
     expect(resolveSellerStatusTone('completed')).toBe('success')
     expect(resolveSellerStatusTone('offline')).toBe('neutral')
+  })
+
+  it('物品价格同时保留原价、折后价与折扣标签', () => {
+    expect(buildSellerProductPrice({ price: 100, discount: 0.85 })).toEqual({
+      original: 100,
+      current: 85,
+      discount: 0.85,
+      hasDiscount: true,
+      discountLabel: '8.5折'
+    })
+    expect(buildSellerProductPrice({ price: '29.9' })).toMatchObject({
+      original: 29.9,
+      current: 29.9,
+      hasDiscount: false,
+      discountLabel: '无折扣'
+    })
   })
 })
 

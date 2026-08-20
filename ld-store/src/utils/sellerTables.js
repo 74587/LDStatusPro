@@ -91,3 +91,23 @@ export function resolveSellerStatusTone(status = '') {
   if (value === 'cancelled' || value.includes('offline') || value === 'inactive') return 'neutral'
   return 'info'
 }
+
+export function buildSellerProductPrice(product = {}) {
+  const parsedOriginal = Number(product.price ?? product.originalPrice ?? product.original_price ?? 0)
+  const original = Number.isFinite(parsedOriginal) ? Math.max(0, parsedOriginal) : 0
+  const parsedDiscount = Number(product.discount ?? 1)
+  const discount = Number.isFinite(parsedDiscount)
+    ? Math.min(1, Math.max(0, parsedDiscount))
+    : 1
+  const current = original * discount
+  const hasDiscount = discount < 0.9999
+  const discountNumber = Number((discount * 10).toFixed(2))
+
+  return {
+    original,
+    current,
+    discount,
+    hasDiscount,
+    discountLabel: hasDiscount ? `${discountNumber}折` : '无折扣'
+  }
+}

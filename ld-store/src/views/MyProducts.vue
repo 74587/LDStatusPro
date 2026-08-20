@@ -16,6 +16,7 @@
       <button v-if="hasProductFilters" type="button" class="seller-secondary-button" @click="clearProductFilters">清除筛选</button>
       <template #summary>
         <span v-if="productStatusFilter" class="seller-filter-chip">状态：{{ productStatusFilterLabel }}</span>
+        <span v-if="productTypeFilter" class="seller-filter-chip">类型：{{ productTypeFilterLabel }}</span>
         <span v-if="productStockFilter" class="seller-filter-chip">库存：{{ productStockFilterLabel }}</span>
         <span class="seller-result-count">{{ productPagination.total }} 件物品</span>
       </template>
@@ -29,20 +30,97 @@
       row-key="id"
     >
       <template #cell-product="{ row: product }">
-        <button type="button" class="product-ledger-main" @click="viewProduct(product)">
-          <span class="product-ledger-image" :style="getImageStyle(product)"><img v-if="product.image_url" :src="product.image_url" :alt="product.name" loading="lazy" @error="handleImageError" /><Package v-else :size="20" aria-hidden="true" /></span>
-          <span class="product-ledger-copy"><strong :title="product.name">{{ product.name }}</strong><small><span>#{{ product.id }}</span> · {{ product.category_name || '其他' }} · {{ getTypeText(getProductType(product)) }}</small></span>
-        </button>
+        <div class="product-ledger-main">
+          <button type="button" class="product-ledger-image" :style="getImageStyle(product)" :aria-label="`查看物品 ${product.name}`" @click="viewProduct(product)">
+            <img v-if="hasProductImage(product)" :src="product.image_url" alt="" loading="lazy" @error="handleImageError($event, product)" />
+            <Package v-else :size="20" aria-hidden="true" />
+          </button>
+          <div class="product-ledger-copy">
+            <button type="button" class="product-ledger-name" :title="product.name" @click="viewProduct(product)">
+              <strong>{{ product.name }}</strong>
+            </button>
+            <div class="product-ledger-badges">
+              <button type="button" class="product-id-badge" :class="{ copied: isProductIdCopied(product) }" :aria-label="`复制物品 ID ${product.id}`" title="点击复制物品 ID" @click="copyProductId(product)">
+                <Hash :size="12" aria-hidden="true" />
+                <span>{{ product.id }}</span>
+                <Check v-if="isProductIdCopied(product)" :size="12" aria-hidden="true" />
+                <Copy v-else :size="12" aria-hidden="true" />
+              </button>
+              <span class="product-archive-badge category" :title="product.category_name || '其他'">
+                <Tag :size="12" aria-hidden="true" />
+                <span>{{ product.category_name || '其他' }}</span>
+              </span>
+              <span :class="['product-archive-badge', 'type', `type-${getProductType(product)}`]">
+                <component :is="getTypeIcon(getProductType(product))" :size="12" aria-hidden="true" />
+                <span>{{ getTypeText(getProductType(product)) }}</span>
+              </span>
+            </div>
+          </div>
+        </div>
       </template>
-      <template #cell-status="{ row: product }"><SellerStatusBadge :tone="resolveSellerStatusTone(getProductStatus(product))" :label="getStatusText(getProductStatus(product))" /><p v-if="getRejectReason(product)" class="ledger-reason" :title="getRejectReason(product)">{{ getRejectReason(product) }}</p></template>
-      <template #cell-price="{ row: product }"><strong class="ledger-number">{{ formatPrice(product) }}</strong><small class="ledger-unit">LDC</small></template>
+      <template #cell-status="{ row: product }">
+        <div class="ledger-status-cell">
+          <SellerStatusBadge :tone="resolveSellerStatusTone(getProductStatus(product))" :label="getStatusText(getProductStatus(product))" />
+          <SellerReasonDisclosure v-if="getRejectReason(product)" :text="getRejectReason(product)" :label="getReasonLabel(product)" />
+        </div>
+      </template>
+      <template #cell-price="{ row: product }">
+        <div :class="['ledger-price', { discounted: hasProductDiscount(product) }]">
+          <div class="ledger-price-current">
+            <strong>{{ formatLedgerPrice(getProductPrice(product).current) }}</strong>
+            <small>LDC</small>
+          </div>
+          <div class="ledger-price-meta">
+            <span v-if="hasProductDiscount(product)" class="ledger-price-original">原价 <del>{{ formatLedgerPrice(getProductPrice(product).original) }}</del></span>
+            <span :class="['ledger-discount-badge', { muted: !hasProductDiscount(product) }]">{{ getProductPrice(product).discountLabel }}</span>
+          </div>
+        </div>
+      </template>
       <template #cell-stock="{ row: product }"><template v-if="isPlatformOrderProductItem(product)"><strong :class="['ledger-number', { 'is-warning': isLowStock(product) }]">{{ getStockDisplay(product) }}</strong><small class="ledger-unit">库存 · 售出 {{ product.sold_count || 0 }}</small></template><span v-else class="ledger-muted">不适用</span></template>
       <template #cell-views="{ row: product }"><strong class="ledger-number">{{ product.view_count || 0 }}</strong><small class="ledger-unit">次浏览</small></template>
       <template #cell-actions="{ row: product }"><ProductRowActions :product="product" :can-manage-cdk="isCdkItem(product)" :can-toggle="canToggleStatus(product)" :busy="isProductBusy(product)" :restricted="isRestrictedProductManagement" :toggle-label="getToggleLabel(product)" :delete-label="getDeleteLabel(product)" @edit="editProduct" @cdk="manageCdk" @toggle="toggleStatus" @delete="deleteProduct" /></template>
       <template #mobile-row="{ row: product }">
-        <div class="product-mobile-head"><button type="button" class="product-ledger-main" @click="viewProduct(product)"><span class="product-ledger-image" :style="getImageStyle(product)"><img v-if="product.image_url" :src="product.image_url" :alt="product.name" loading="lazy" @error="handleImageError" /><Package v-else :size="20" aria-hidden="true" /></span><span class="product-ledger-copy"><strong>{{ product.name }}</strong><small>#{{ product.id }} · {{ getTypeText(getProductType(product)) }}</small></span></button><SellerStatusBadge :tone="resolveSellerStatusTone(getProductStatus(product))" :label="getStatusText(getProductStatus(product))" /></div>
-        <p v-if="getRejectReason(product)" class="product-mobile-reason">{{ getRejectReason(product) }}</p>
-        <dl class="product-mobile-metrics"><div><dt>价格</dt><dd>{{ formatPrice(product) }} LDC</dd></div><div><dt>库存 / 售出</dt><dd>{{ isPlatformOrderProductItem(product) ? `${getStockDisplay(product)} / ${product.sold_count || 0}` : '不适用' }}</dd></div><div><dt>浏览</dt><dd>{{ product.view_count || 0 }}</dd></div></dl>
+        <div class="product-mobile-head">
+          <div class="product-ledger-main">
+            <button type="button" class="product-ledger-image" :style="getImageStyle(product)" :aria-label="`查看物品 ${product.name}`" @click="viewProduct(product)">
+              <img v-if="hasProductImage(product)" :src="product.image_url" alt="" loading="lazy" @error="handleImageError($event, product)" />
+              <Package v-else :size="20" aria-hidden="true" />
+            </button>
+            <div class="product-ledger-copy">
+              <button type="button" class="product-ledger-name" @click="viewProduct(product)"><strong>{{ product.name }}</strong></button>
+              <div class="product-ledger-badges">
+                <button type="button" class="product-id-badge" :class="{ copied: isProductIdCopied(product) }" :aria-label="`复制物品 ID ${product.id}`" @click="copyProductId(product)">
+                  <Hash :size="12" aria-hidden="true" />
+                  <span>{{ product.id }}</span>
+                  <Check v-if="isProductIdCopied(product)" :size="12" aria-hidden="true" />
+                  <Copy v-else :size="12" aria-hidden="true" />
+                </button>
+                <span class="product-archive-badge category"><Tag :size="12" aria-hidden="true" /><span>{{ product.category_name || '其他' }}</span></span>
+                <span :class="['product-archive-badge', 'type', `type-${getProductType(product)}`]">
+                  <component :is="getTypeIcon(getProductType(product))" :size="12" aria-hidden="true" />
+                  <span>{{ getTypeText(getProductType(product)) }}</span>
+                </span>
+              </div>
+            </div>
+          </div>
+          <SellerStatusBadge :tone="resolveSellerStatusTone(getProductStatus(product))" :label="getStatusText(getProductStatus(product))" />
+        </div>
+        <div v-if="getRejectReason(product)" class="product-mobile-reason">
+          <CircleAlert :size="16" aria-hidden="true" />
+          <div><strong>{{ getReasonLabel(product) }}</strong><p>{{ getRejectReason(product) }}</p></div>
+        </div>
+        <dl class="product-mobile-metrics">
+          <div class="metric-price">
+            <dt>成交价</dt>
+            <dd>
+              <span :class="['mobile-price-current', { discounted: hasProductDiscount(product) }]">{{ formatLedgerPrice(getProductPrice(product).current) }} <small>LDC</small></span>
+              <span v-if="hasProductDiscount(product)" class="mobile-price-compare"><del>{{ formatLedgerPrice(getProductPrice(product).original) }}</del><em>{{ getProductPrice(product).discountLabel }}</em></span>
+              <span v-else class="mobile-price-compare">无折扣</span>
+            </dd>
+          </div>
+          <div><dt>库存 / 售出</dt><dd>{{ isPlatformOrderProductItem(product) ? `${getStockDisplay(product)} / ${product.sold_count || 0}` : '不适用' }}</dd></div>
+          <div><dt>浏览</dt><dd>{{ product.view_count || 0 }}</dd></div>
+        </dl>
         <ProductRowActions :product="product" mobile :can-manage-cdk="isCdkItem(product)" :can-toggle="canToggleStatus(product)" :busy="isProductBusy(product)" :restricted="isRestrictedProductManagement" :toggle-label="getToggleLabel(product)" :delete-label="getDeleteLabel(product)" @edit="editProduct" @cdk="manageCdk" @toggle="toggleStatus" @delete="deleteProduct" />
       </template>
       <template #empty><div class="seller-empty-ledger"><PackageOpen :size="32" aria-hidden="true" /><strong>{{ products.length ? '当前筛选下没有物品' : '还没有发布物品' }}</strong><p>{{ products.length ? '调整或清除筛选条件后再试。' : '发布第一件物品，开始建立你的经营台账。' }}</p><button v-if="products.length" type="button" class="seller-secondary-button" @click="clearProductFilters">清除筛选</button><router-link v-else to="/seller/products/new" class="seller-primary-button">发布物品</router-link></div></template>
@@ -191,8 +269,8 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
-import { Download, Package, PackageOpen, Plus, Search, X } from '@lucide/vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { Check, CircleAlert, Copy, Download, Hash, KeyRound, Link2, Package, PackageOpen, Plus, Search, Store, Tag, X } from '@lucide/vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useShopStore } from '@/stores/shop'
 import { isMaintenanceFeatureEnabled, isRestrictedMaintenanceMode } from '@/config/maintenance'
@@ -202,11 +280,12 @@ import ProductRowActions from '@/components/seller/ProductRowActions.vue'
 import SellerDataTable from '@/components/seller/SellerDataTable.vue'
 import SellerPageToolbar from '@/components/seller/SellerPageToolbar.vue'
 import SellerPagination from '@/components/seller/SellerPagination.vue'
+import SellerReasonDisclosure from '@/components/seller/SellerReasonDisclosure.vue'
 import SellerStatusBadge from '@/components/seller/SellerStatusBadge.vue'
 import { api } from '@/utils/api'
 import { storage } from '@/utils/storage'
 import { CDK_UPLOAD_LIMITS } from '@/config/cdkQuota'
-import { filterAndSortSellerProducts, paginateSellerRows, resolveSellerStatusTone } from '@/utils/sellerTables'
+import { buildSellerProductPrice, filterAndSortSellerProducts, paginateSellerRows, resolveSellerStatusTone } from '@/utils/sellerTables'
 import {
   getProductType as resolveProductType,
   getProductTypeText,
@@ -231,13 +310,24 @@ const productTypeFilter = ref('')
 const productStockFilter = ref('')
 const productSort = ref('priority')
 const productColumns = [
-  { key: 'product', label: '物品', width: '34%' },
+  { key: 'product', label: '物品', width: '29%' },
   { key: 'status', label: '状态', width: '15%' },
-  { key: 'price', label: '价格', width: '12%' },
-  { key: 'stock', label: '库存 / 售出', width: '14%' },
-  { key: 'views', label: '浏览', width: '9%' },
-  { key: 'actions', label: '操作', width: '16%', align: 'right' }
+  { key: 'price', label: '价格', width: '15%' },
+  { key: 'stock', label: '库存 / 售出', width: '12%' },
+  { key: 'views', label: '浏览', width: '7%' },
+  { key: 'actions', label: '操作', width: '22%', align: 'right' }
 ]
+
+const PRODUCT_TYPE_ICONS = {
+  normal: Package,
+  cdk: KeyRound,
+  link: Link2,
+  store: Store
+}
+const ledgerPriceFormatter = new Intl.NumberFormat('zh-CN', { maximumFractionDigits: 2 })
+const copiedProductId = ref('')
+const failedProductImages = ref(new Set())
+let copiedProductIdTimer = null
 
 // CDK 管理
 const showCdkModal = ref(false)
@@ -257,6 +347,7 @@ const isRestrictedProductManagement = computed(() =>
 )
 
 const productStatusFilterLabel = computed(() => ({ approved: '已上架', pending: '审核中', rejected: '未通过', offline: '已下架' })[productStatusFilter.value] || productStatusFilter.value)
+const productTypeFilterLabel = computed(() => ({ normal: '普通物品', cdk: '自动发卡' })[productTypeFilter.value] || productTypeFilter.value)
 const productStockFilterLabel = computed(() => ({ out: '已售罄', low: '低库存', available: '库存充足' })[productStockFilter.value] || productStockFilter.value)
 const hasProductFilters = computed(() => Boolean(productSearch.value || productStatusFilter.value || productTypeFilter.value || productStockFilter.value || productSort.value !== 'priority'))
 
@@ -269,7 +360,7 @@ const filteredProducts = computed(() => filterAndSortSellerProducts(products.val
 }, {
   getStatus: getProductStatus,
   getType: getProductType,
-  getPrice: product => Number(product.price || 0) * Number(product.discount || 1),
+  getPrice: product => buildSellerProductPrice(product).current,
   getStock: product => Number(product.stock || 0),
   isStockManaged: product => isPlatformOrderProductItem(product) && !isSharedCdkProduct(product),
   priority: getProductStatusPriority
@@ -675,10 +766,20 @@ function getTypeText(type) {
   return getProductTypeText(type)
 }
 
-// 格式化价格
-function formatPrice(product) {
-  const price = product.price || 0
-  return price % 1 === 0 ? price : price.toFixed(2)
+function getTypeIcon(type) {
+  return PRODUCT_TYPE_ICONS[String(type || '').toLowerCase()] || Package
+}
+
+function getProductPrice(product) {
+  return buildSellerProductPrice(product)
+}
+
+function hasProductDiscount(product) {
+  return getProductPrice(product).hasDiscount
+}
+
+function formatLedgerPrice(value) {
+  return ledgerPriceFormatter.format(Number(value) || 0)
 }
 
 // 获取库存显示
@@ -691,9 +792,17 @@ function isLowStock(product) {
   return hasLowStock(product)
 }
 
+function getProductImageKey(product) {
+  return `${product?.id ?? 'unknown'}:${product?.image_url || ''}`
+}
+
+function hasProductImage(product) {
+  return Boolean(product?.image_url) && !failedProductImages.value.has(getProductImageKey(product))
+}
+
 // 获取图片样式
 function getImageStyle(product) {
-  if (product.image_url) return {}
+  if (hasProductImage(product)) return {}
   // 根据分类生成渐变背景
   const colors = {
     '游戏': 'linear-gradient(135deg, #a5b4a3 0%, #8fa38d 100%)',
@@ -712,9 +821,53 @@ function getImageStyle(product) {
 }
 
 // 处理图片加载错误
-function handleImageError(e) {
-  e.target.style.display = 'none'
-  e.target.parentElement.querySelector('.image-placeholder')?.style?.removeProperty('display')
+function handleImageError(_event, product) {
+  const next = new Set(failedProductImages.value)
+  next.add(getProductImageKey(product))
+  failedProductImages.value = next
+}
+
+function fallbackCopyText(value) {
+  const textarea = document.createElement('textarea')
+  textarea.value = value
+  textarea.setAttribute('readonly', '')
+  textarea.style.position = 'fixed'
+  textarea.style.opacity = '0'
+  document.body.appendChild(textarea)
+  textarea.select()
+  const copied = document.execCommand('copy')
+  document.body.removeChild(textarea)
+  if (!copied) throw new Error('复制失败')
+}
+
+async function copyProductId(product) {
+  const productId = String(product?.id ?? '').trim()
+  if (!productId) return
+  try {
+    let copied = false
+    if (navigator.clipboard?.writeText) {
+      try {
+        await navigator.clipboard.writeText(productId)
+        copied = true
+      } catch {
+        copied = false
+      }
+    }
+    if (!copied) fallbackCopyText(productId)
+    copiedProductId.value = productId
+    if (copiedProductIdTimer) window.clearTimeout(copiedProductIdTimer)
+    copiedProductIdTimer = window.setTimeout(() => {
+      copiedProductId.value = ''
+      copiedProductIdTimer = null
+    }, 1400)
+    toast.success('已复制物品ID')
+  } catch {
+    toast.error('复制失败，请稍后重试')
+  }
+}
+
+function isProductIdCopied(product) {
+  return copiedProductId.value === String(product?.id ?? '')
 }
 
 // 获取拒绝/下架原因
@@ -745,6 +898,13 @@ function getRejectReason(product) {
     return '物品已下架'
   }
   return null
+}
+
+function getReasonLabel(product) {
+  const status = getProductStatus(product)
+  if (['ai_rejected', 'manual_rejected'].includes(status)) return '拒绝原因'
+  if (status === 'offline_manual') return '下架原因'
+  return '状态说明'
 }
 
 // 是否可切换状态（已拒绝的不能切换）
@@ -928,6 +1088,10 @@ function getDeleteLabel(product) {
 
 onMounted(() => {
   loadProducts()
+})
+
+onUnmounted(() => {
+  if (copiedProductIdTimer) window.clearTimeout(copiedProductIdTimer)
 })
 
 watch(
@@ -1938,27 +2102,67 @@ watch(
 .seller-filter-chip, .seller-result-count { min-height: 30px; display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 999px; color: var(--seller-muted); background: var(--seller-jade-soft); font-size: 12px; }
 .seller-result-count { margin-left: auto; background: transparent; font-variant-numeric: tabular-nums; }
 .seller-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
-.product-ledger-main { min-width: 0; width: 100%; display: flex; align-items: center; gap: 11px; color: inherit; text-align: left; }
-.product-ledger-image { flex: 0 0 54px; width: 54px; height: 42px; display: grid; place-items: center; overflow: hidden; border: 1px solid var(--seller-border); border-radius: 9px; color: var(--seller-muted); background-color: var(--seller-surface-soft); background-size: cover; background-position: center; }
+.product-ledger-main { min-width: 0; width: 100%; display: grid; grid-template-columns: 54px minmax(0, 1fr); align-items: center; gap: 11px; color: inherit; text-align: left; }
+.product-ledger-image { width: 54px; height: 48px; display: grid; place-items: center; overflow: hidden; padding: 0; border: 1px solid var(--seller-border); border-radius: 9px; color: var(--seller-muted); background-color: var(--seller-surface-soft); background-size: cover; background-position: center; cursor: pointer; transition: border-color 160ms ease, box-shadow 160ms ease; }
 .product-ledger-image img { width: 100%; height: 100%; object-fit: cover; }
 .product-ledger-copy { min-width: 0; }
-.product-ledger-copy strong, .product-ledger-copy small { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-.product-ledger-copy strong { color: var(--seller-ink); font-size: 13px; }
-.product-ledger-copy small { margin-top: 5px; color: var(--seller-muted); font-size: 11px; }
-.product-ledger-copy small span { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-variant-numeric: tabular-nums; }
-.ledger-reason { max-width: 150px; margin: 6px 0 0; overflow: hidden; color: var(--seller-danger); font-size: 11px; line-height: 1.4; text-overflow: ellipsis; white-space: nowrap; }
+.product-ledger-name { max-width: 100%; display: block; padding: 0; border: 0; color: var(--seller-ink); background: transparent; text-align: left; cursor: pointer; }
+.product-ledger-name strong { display: block; overflow: hidden; color: var(--seller-ink); font-size: 13px; line-height: 1.45; text-overflow: ellipsis; white-space: nowrap; }
+.product-ledger-name:hover strong { color: color-mix(in srgb, var(--seller-jade) 76%, var(--seller-ink)); }
+.product-ledger-image:hover { border-color: var(--seller-jade); box-shadow: 0 0 0 3px color-mix(in srgb, var(--seller-jade) 12%, transparent); }
+.product-ledger-image:focus-visible,
+.product-ledger-name:focus-visible,
+.product-id-badge:focus-visible { outline: 3px solid color-mix(in srgb, var(--seller-jade) 52%, transparent); outline-offset: 2px; }
+.product-ledger-badges { min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 5px; margin-top: 7px; }
+.product-id-badge,
+.product-archive-badge { min-width: 0; min-height: 24px; display: inline-flex; align-items: center; gap: 4px; padding: 3px 7px; border: 1px solid var(--seller-border); border-radius: 7px; font-size: 10px; font-weight: 650; line-height: 1; white-space: nowrap; }
+.product-id-badge { max-width: 100%; color: var(--seller-muted); background: var(--seller-surface-soft); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-variant-numeric: tabular-nums; cursor: copy; transition: color 160ms ease, border-color 160ms ease, background 160ms ease; }
+.product-id-badge > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.product-id-badge:hover { color: var(--seller-ink); border-color: var(--seller-jade); background: var(--seller-jade-soft); }
+.product-id-badge.copied { color: #54745e; border-color: color-mix(in srgb, var(--seller-jade) 48%, var(--seller-border)); background: var(--seller-jade-soft); }
+.product-archive-badge > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.product-archive-badge.category { max-width: 96px; color: var(--seller-muted); background: color-mix(in srgb, var(--seller-paper) 56%, var(--seller-surface-soft)); }
+.product-archive-badge.type-normal { color: #557388; border-color: color-mix(in srgb, #557388 27%, var(--seller-border)); background: color-mix(in srgb, #557388 8%, var(--seller-surface)); }
+.product-archive-badge.type-cdk { color: #54745e; border-color: color-mix(in srgb, var(--seller-jade) 36%, var(--seller-border)); background: var(--seller-jade-soft); }
+.product-archive-badge.type-link { color: var(--seller-warning); border-color: color-mix(in srgb, var(--seller-warning) 34%, var(--seller-border)); background: color-mix(in srgb, var(--seller-warning) 8%, var(--seller-surface)); }
+.product-archive-badge.type-store { color: #755e88; border-color: color-mix(in srgb, #755e88 28%, var(--seller-border)); background: color-mix(in srgb, #755e88 8%, var(--seller-surface)); }
+.ledger-status-cell { min-width: 0; }
+.ledger-price { min-width: 0; display: grid; gap: 6px; }
+.ledger-price-current { display: flex; align-items: baseline; gap: 4px; font-variant-numeric: tabular-nums; }
+.ledger-price-current strong { color: var(--seller-ink); font: 750 15px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace; }
+.ledger-price-current small { color: var(--seller-muted); font-size: 9px; font-weight: 700; letter-spacing: .05em; }
+.ledger-price.discounted .ledger-price-current strong { color: var(--seller-danger); }
+.ledger-price-meta { min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 5px; }
+.ledger-price-original { color: var(--seller-muted); font-size: 10px; white-space: nowrap; }
+.ledger-price-original del { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.ledger-discount-badge { min-height: 20px; display: inline-flex; align-items: center; padding: 2px 6px; border: 1px solid color-mix(in srgb, var(--seller-danger) 25%, var(--seller-border)); border-radius: 999px; color: var(--seller-danger); background: color-mix(in srgb, var(--seller-danger) 7%, var(--seller-surface)); font-size: 9px; font-weight: 750; white-space: nowrap; }
+.ledger-discount-badge.muted { color: var(--seller-muted); border-color: var(--seller-border); background: var(--seller-surface-soft); }
 .ledger-number, .ledger-unit { display: block; font-variant-numeric: tabular-nums; }
 .ledger-number { color: var(--seller-ink); font: 700 14px/1.3 ui-monospace, SFMono-Regular, Menlo, monospace; }
 .ledger-number.is-warning { color: var(--seller-warning); }
 .ledger-unit { margin-top: 5px; color: var(--seller-muted); font-size: 10px; }
 .ledger-muted { color: var(--seller-muted); font-size: 12px; }
-.product-mobile-head { display: flex; align-items: flex-start; gap: 10px; justify-content: space-between; }
-.product-mobile-head .product-ledger-main { flex: 1; }
-.product-mobile-reason { margin: 12px 0 0; padding: 10px 12px; border-left: 3px solid var(--seller-danger); color: var(--seller-danger); background: color-mix(in srgb, var(--seller-danger) 7%, transparent); font-size: 12px; line-height: 1.55; }
-.product-mobile-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 15px 0 0; }
+.product-mobile-head { min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 10px; }
+.product-mobile-head > .seller-status-badge { flex: 0 0 auto; }
+.product-mobile-reason { display: grid; grid-template-columns: 16px minmax(0, 1fr); align-items: start; gap: 8px; margin: 12px 0 0; padding: 10px 12px; border-left: 3px solid var(--seller-danger); color: var(--seller-danger); background: color-mix(in srgb, var(--seller-danger) 7%, transparent); font-size: 12px; line-height: 1.55; }
+.product-mobile-reason strong { display: block; font-size: 11px; letter-spacing: .03em; }
+.product-mobile-reason p { margin: 3px 0 0; overflow-wrap: anywhere; color: var(--seller-ink); white-space: pre-wrap; }
+.product-mobile-metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 15px 0 0; }
 .product-mobile-metrics div { padding: 10px; border-radius: 9px; background: var(--seller-surface-soft); }
 .product-mobile-metrics dt { color: var(--seller-muted); font-size: 10px; }
 .product-mobile-metrics dd { margin: 4px 0 0; color: var(--seller-ink); font: 650 12px/1.3 ui-monospace, SFMono-Regular, Menlo, monospace; }
+.product-mobile-metrics .metric-price { grid-column: 1 / -1; display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 12px; }
+.product-mobile-metrics .metric-price dd { min-width: 0; margin: 0; display: flex; flex-wrap: wrap; align-items: baseline; justify-content: flex-end; gap: 5px 8px; }
+.mobile-price-current { color: var(--seller-ink); font-size: 15px; font-weight: 750; }
+.mobile-price-current.discounted { color: var(--seller-danger); }
+.mobile-price-current small { color: var(--seller-muted); font-size: 9px; }
+.mobile-price-compare { color: var(--seller-muted); font-size: 10px; font-weight: 550; }
+.mobile-price-compare em { margin-left: 6px; padding: 2px 6px; border-radius: 999px; color: var(--seller-danger); background: color-mix(in srgb, var(--seller-danger) 8%, var(--seller-surface)); font-style: normal; font-weight: 750; }
+.my-products-page :deep(tbody > tr:not(.seller-expanded-row)) { height: 82px; }
+:global(html.dark) .product-id-badge.copied,
+:global(html.dark) .product-archive-badge.type-cdk { color: #a4c8ad; }
+:global(html.dark) .product-archive-badge.type-normal { color: #9ebed1; }
+:global(html.dark) .product-archive-badge.type-store { color: #c2a9d4; }
 .seller-empty-ledger { display: grid; justify-items: center; gap: 8px; color: var(--seller-muted); }
 .seller-empty-ledger strong { color: var(--seller-ink); font-family: "Noto Serif SC", "Source Han Serif SC", "Songti SC", STSong, serif; font-size: 18px; }
 .seller-empty-ledger p { margin: 0 0 8px; font-size: 13px; }
@@ -1968,6 +2172,21 @@ watch(
   .product-search, .seller-filter-field { width: 100%; }
   .seller-filter-field select { flex: 1; }
   .seller-result-count { margin-left: 0; }
+  .product-ledger-image { width: 52px; height: 52px; }
+  .product-ledger-main { grid-template-columns: 52px minmax(0, 1fr); gap: 10px; }
+  .product-ledger-name { min-height: 44px; display: flex; align-items: center; }
+  .product-id-badge { min-height: 44px; padding: 5px 8px; }
+  .product-archive-badge { min-height: 26px; }
+}
+
+@media (min-width: 768px) and (max-width: 1199px) {
+  .my-products-page :deep(th),
+  .my-products-page :deep(td) { padding-right: 8px; padding-left: 8px; }
+}
+
+@media (max-width: 420px) {
+  .product-mobile-head { grid-template-columns: minmax(0, 1fr); }
+  .product-mobile-head > .seller-status-badge { justify-self: start; margin-left: 62px; }
 }
 
 /* Mobile */
