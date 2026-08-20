@@ -90,7 +90,11 @@ export const useUserStore = defineStore('user', () => {
   }
 
   // 恢复会话
-  async function restoreSession() {
+  function restoreSession() {
+    if (sessionReady.value) {
+      return ensureValidSession()
+    }
+
     const savedToken = storage.get('token')
     const savedUser = storage.get('user')
 
@@ -187,4 +191,3 @@ export const useUserStore = defineStore('user', () => {
     fetchLdcInfo
   }
 })
-

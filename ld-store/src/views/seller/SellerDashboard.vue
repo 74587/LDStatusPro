@@ -118,7 +118,14 @@
               >{{ item.label }}</button>
             </div>
           </div>
-          <SellerTrendChart :trend="dashboard.trend" :view="chartView" />
+          <Suspense>
+            <SellerTrendChart :trend="dashboard.trend" :view="chartView" />
+            <template #fallback>
+              <div class="seller-chart-async-placeholder skeleton" role="status">
+                <span class="sr-only">趋势图加载中</span>
+              </div>
+            </template>
+          </Suspense>
           <div v-if="chartView !== 'views'" class="source-summary">
             <div>
               <span>商品销售</span>
@@ -264,13 +271,12 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, defineAsyncComponent, onMounted, ref } from 'vue'
 import {
   AlertCircle, ArrowUpRight, CalendarDays, ChevronRight, CircleCheck, ClipboardList,
   CreditCard, Eye, Minus, PackageCheck, PackageOpen, Plus, RefreshCw, ShoppingBag,
   Sparkles, Store, TicketPercent, TrendingDown, TrendingUp, UsersRound, WalletCards
 } from '@lucide/vue'
-import SellerTrendChart from '@/components/seller/SellerTrendChart.vue'
 import { fetchMerchantDashboard } from '@/services/merchantDashboard'
 import {
   buildMerchantBrief,
@@ -279,6 +285,8 @@ import {
   getTaskPriorityLabel,
   sortMerchantTasks
 } from '@/utils/merchantDashboard'
+
+const SellerTrendChart = defineAsyncComponent(() => import('@/components/seller/SellerTrendChart.vue'))
 
 const loading = ref(true)
 const rangeLoading = ref(false)
@@ -473,6 +481,7 @@ html.dark .range-switch button.active, html.dark .chart-view-switch button.activ
 .dashboard-primary-grid { display: grid; grid-template-columns: minmax(0,1.9fr) minmax(290px,.8fr); gap: 16px; }
 .dashboard-secondary-grid { display: grid; grid-template-columns: minmax(0,1.5fr) minmax(300px,.7fr); gap: 16px; }
 .trend-card { min-width: 0; }
+.seller-chart-async-placeholder { min-height: 300px; border-radius: 0; }
 .chart-view-switch button { padding: 0 10px; }
 .source-summary { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 1px; margin: 0 22px 16px; overflow: hidden; border: 1px solid var(--seller-border); border-radius: 10px; background: var(--seller-border); }
 .source-summary > div { padding: 11px 13px; background: var(--seller-surface); }
@@ -593,6 +602,7 @@ html.dark .range-switch button.active, html.dark .chart-view-switch button.activ
   .performance-revenue { min-width: 82px; }
   .skeleton-row { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; }
   .kpi-skeleton { height: 132px; }
+  .seller-chart-async-placeholder { min-height: 248px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .skeleton { animation: none; }

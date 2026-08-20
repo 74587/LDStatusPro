@@ -1,5 +1,7 @@
 <template>
   <div class="app-container min-h-screen">
+    <NavigationProgress />
+
     <!-- 涂鸦背景 -->
     <DoodleBackground v-if="showDecorativeShell" :isVisible="showDoodleBg" />
 
@@ -73,12 +75,12 @@ import AppFooter from '@/components/layout/AppFooter.vue'
 import Toast from '@/components/common/Toast.vue'
 import Dialog from '@/components/common/Dialog.vue'
 import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
+import NavigationProgress from '@/components/common/NavigationProgress.vue'
 import DoodleBackground from '@/components/common/DoodleBackground.vue'
 import CornerActionMenu from '@/components/common/CornerActionMenu.vue'
 import { resolveAppViewKey } from '@/utils/sellerNavigation'
 import {
   MAINTENANCE_STATE,
-  ensureMaintenanceStatusLoaded,
   isFullMaintenanceMode,
   isRestrictedMaintenanceMode,
 } from '@/config/maintenance'
@@ -134,14 +136,13 @@ watch(showDoodleBg, (value) => {
 initTheme()
 
 // 初始化
-onMounted(async () => {
-  await ensureMaintenanceStatusLoaded()
+onMounted(() => {
   // 恢复涂鸦背景偏好
   initDoodlePreference()
   // 全站维护时直接展示公告页，避免触发额外初始化链路
   if (!isFullMaintenanceMode()) {
-    await userStore.restoreSession()
-    await fetchAnnouncements().catch(() => [])
+    userStore.restoreSession()
+    void fetchAnnouncements().catch(() => [])
   } else {
     userStore.sessionReady = true
   }

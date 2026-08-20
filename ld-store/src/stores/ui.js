@@ -109,6 +109,20 @@ export const useUiStore = defineStore('ui', () => {
     globalLoading.value = false
   }
 
+  // Route navigation progress (kept separate from the blocking global overlay)
+  const routeLoading = ref(false)
+  let activeRouteLoads = 0
+
+  function startRouteLoading() {
+    activeRouteLoads += 1
+    routeLoading.value = true
+  }
+
+  function finishRouteLoading() {
+    activeRouteLoads = Math.max(0, activeRouteLoads - 1)
+    routeLoading.value = activeRouteLoads > 0
+  }
+
   return {
     // Toast
     toasts,
@@ -124,6 +138,10 @@ export const useUiStore = defineStore('ui', () => {
     globalLoading,
     loadingText,
     showLoading,
-    hideLoading
+    hideLoading,
+    // Route navigation
+    routeLoading,
+    startRouteLoading,
+    finishRouteLoading
   }
 })

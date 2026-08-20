@@ -16,6 +16,20 @@ const pinia = createPinia()
 // 使用 Pinia 状态管理
 app.use(pinia)
 
+const globalUiStore = useUiStore(pinia)
+
+// 路由模块或数据分包首次加载时提供轻量反馈，不阻塞页面交互。
+router.beforeEach(() => {
+  globalUiStore.startRouteLoading()
+  return true
+})
+router.afterEach(() => {
+  globalUiStore.finishRouteLoading()
+})
+router.onError(() => {
+  globalUiStore.finishRouteLoading()
+})
+
 // 使用路由
 app.use(router)
 

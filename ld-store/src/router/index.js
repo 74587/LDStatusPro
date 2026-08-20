@@ -3,13 +3,15 @@ import { useUserStore } from '@/stores/user'
 import {
   MAINTENANCE_STATE,
   ensureMaintenanceStatusLoaded,
-  isFullMaintenanceMode,
-  isRestrictedMaintenanceMode,
 } from '@/config/maintenance'
 import { storage } from '@/utils/storage'
 import HomeView from '@/views/Home.vue'
 import { resolveLegacyPublishTarget } from '@/utils/sellerNavigation'
 import { getHelpArticle, resolveLegacyHelpLocation } from '@/config/helpCenter'
+import {
+  resolveMaintenanceRedirect,
+  startBackgroundMaintenanceRefresh,
+} from '@/utils/maintenanceNavigation'
 
 function resolveHelpRoute(to) {
   const section = String(to.params.section || '')
@@ -299,29 +301,6 @@ const routes = [
 
 // 需要保持滚动位置的页面
 const keepScrollRoutes = ['Home', 'Category']
-const fullMaintenanceAllowedRoutes = new Set(['Maintenance', 'Login', 'AuthCallback'])
-const restrictedMaintenanceAllowedRoutes = new Set([
-  'Home',
-  'ProductDetail',
-  'ShopDetail',
-  'MerchantProfile',
-  'Category',
-  'Search',
-  'Docs',
-  'DocsSection',
-  'Support',
-  'Login',
-  'AuthCallback',
-  'Orders',
-  'SellerDashboard',
-  'SellerOrders',
-  'SellerProducts',
-  'SellerOrderDetail',
-  'OrderDetail',
-  'BuyOrderDetail',
-  'CouponClaim',
-  'MyCoupons',
-])
 
 // 创建路由实例
 const router = createRouter({
@@ -347,40 +326,46 @@ const router = createRouter({
   }
 })
 
+function enforceCurrentMaintenanceRoute() {
+  const currentRoute = router.currentRoute.value
+  if (!currentRoute?.name) return
+
+  const redirect = resolveMaintenanceRedirect(currentRoute.name, MAINTENANCE_STATE.mode)
+  if (!redirect) return
+
+  const target = router.resolve(redirect)
+  if (target.fullPath === currentRoute.fullPath) return
+  router.replace(redirect).catch(() => {})
+}
+
+function refreshMaintenanceStatus() {
+  startBackgroundMaintenanceRefresh(
+    () => ensureMaintenanceStatusLoaded(),
+    enforceCurrentMaintenanceRoute
+  )
+}
+
 // 路由守卫
-router.beforeEach(async (to, from, next) => {
+router.beforeEach((to) => {
   if (to.name === 'Orders' && String(to.query.tab || '').toLowerCase() === 'seller') {
     const query = { ...to.query }
     delete query.tab
-    next({ name: 'SellerOrders', query: { ...query, source: 'product' }, replace: true })
-    return
+    return { name: 'SellerOrders', query: { ...query, source: 'product' }, replace: true }
   }
 
   if (to.name === 'OrderDetail' && String(to.query.role || '').toLowerCase() === 'seller') {
     const query = { ...to.query, source: 'product' }
     delete query.role
-    next({ name: 'SellerOrderDetail', params: { id: to.params.id }, query, replace: true })
-    return
+    return { name: 'SellerOrderDetail', params: { id: to.params.id }, query, replace: true }
   }
 
-  await ensureMaintenanceStatusLoaded()
+  // 导航只使用当前缓存状态做同步判定；缓存刷新在后台进行，避免网络请求阻塞 URL 更新。
+  // 本地强制维护会在 ensureMaintenanceStatusLoaded() 调用时同步写入状态，因此仍能即时拦截。
+  refreshMaintenanceStatus()
 
   const routeName = String(to.name || '')
-
-  if (isFullMaintenanceMode()) {
-    if (!fullMaintenanceAllowedRoutes.has(routeName)) {
-      next({ name: 'Maintenance', replace: true })
-      return
-    }
-  } else if (isRestrictedMaintenanceMode()) {
-    if (!restrictedMaintenanceAllowedRoutes.has(routeName)) {
-      next({ name: 'Home', replace: true })
-      return
-    }
-  } else if (routeName === 'Maintenance') {
-    next({ name: 'Home', replace: true })
-    return
-  }
+  const maintenanceRedirect = resolveMaintenanceRedirect(routeName, MAINTENANCE_STATE.mode)
+  if (maintenanceRedirect) return maintenanceRedirect
 
   // 更新页面标题
   if (routeName === 'Maintenance') {
@@ -394,7 +379,7 @@ router.beforeEach(async (to, from, next) => {
     const userStore = useUserStore()
     const hadStoredToken = !!storage.get('token')
 
-    await userStore.restoreSession()
+    userStore.restoreSession()
 
     // 如果用户未登录，跳转到登录页
     if (!userStore.ensureValidSession()) {
@@ -403,15 +388,14 @@ router.beforeEach(async (to, from, next) => {
         query.reason = 'expired'
       }
 
-      next({
+      return {
         name: 'Login',
         query
-      })
-      return
+      }
     }
   }
 
-  next()
+  return true
 })
 
 export default router
