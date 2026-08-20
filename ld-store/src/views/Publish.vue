@@ -188,6 +188,11 @@
                 {{ cat.name }}
               </button>
             </div>
+            <p v-if="categoriesLoading" class="form-hint">正在加载物品分类...</p>
+            <div v-else-if="categoriesLoadError" class="category-load-error" role="alert">
+              <p class="form-error">{{ categoriesLoadError }}</p>
+              <button type="button" class="category-retry-btn" @click="loadCategories">重新加载</button>
+            </div>
             <!-- 入站分类价格提示 -->
             <div v-if="isRuzhanCategory" class="category-price-notice">
               <span class="notice-icon">注意</span>
@@ -249,6 +254,7 @@
               class="form-input"
               :class="{ 'input-error': showError('image', imageDisplayError) }"
               placeholder="https://..."
+              :maxlength="MAX_PRODUCT_IMAGE_URL_LENGTH"
               @blur="validateImageLoad"
               ref="imageInput"
               @input="markTouched('image')"
@@ -498,12 +504,12 @@
         <SellerStickySummary class="seller-product-summary" eyebrow="发布校对" title="物品摘要">
           <div class="seller-summary-preview" :class="{ empty: !imagePreviewUrl }">
             <img v-if="imagePreviewUrl" :src="imagePreviewUrl" :alt="form.name || '物品预览'" />
-            <Image v-else :size="26" aria-hidden="true" />
+            <ImageIcon v-else :size="26" aria-hidden="true" />
           </div>
           <h3 class="seller-summary-name">{{ form.name || '尚未填写物品名称' }}</h3>
           <p class="seller-summary-meta">{{ selectedCategoryName }} · {{ form.productType === 'cdk' ? '自动发卡' : '普通物品' }}</p>
           <dl class="seller-summary-facts"><div><dt>成交价</dt><dd>{{ finalPrice > 0 ? finalPrice.toFixed(2) : '—' }} LDC</dd></div><div><dt>{{ form.productType === 'cdk' ? '卡密' : '库存' }}</dt><dd>{{ form.productType === 'cdk' ? (form.sharedCdkEnabled ? '共享模式' : `${cdkCount} 个`) : (form.stock || '—') }}</dd></div></dl>
-          <ul class="seller-readiness-list"><li :class="{ ready: merchantConfigured }"><span></span>{{ merchantConfigured ? '收款配置已完成' : '需要先配置收款' }}</li><li :class="{ ready: !!form.name.trim() }"><span></span>物品名称</li><li :class="{ ready: !!form.categoryId }"><span></span>物品分类</li><li :class="{ ready: !!imageValidated }"><span></span>图片验证</li></ul>
+          <ul class="seller-readiness-list"><li :class="{ ready: merchantConfigured }"><span></span>{{ merchantReadinessText }}</li><li :class="{ ready: !!form.name.trim() }"><span></span>物品名称</li><li :class="{ ready: !!form.categoryId }"><span></span>物品分类</li><li :class="{ ready: imageValidated && lastValidatedUrl === form.imageUrl.trim() }"><span></span>图片验证</li></ul>
           <template #action><button type="submit" class="submit-btn" :disabled="!canSubmit || productSubmittingBusy">{{ submitButtonText }}</button></template>
         </SellerStickySummary>
       </form>
@@ -581,7 +587,7 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
-import { Image } from '@lucide/vue'
+import { Image as ImageIcon } from '@lucide/vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useShopStore } from '@/stores/shop'
 import { useToast } from '@/composables/useToast'
@@ -590,6 +596,11 @@ import { renderProductDescription } from '@/utils/renderProductDescription'
 import { api } from '@/utils/api'
 import { CDK_UPLOAD_LIMITS } from '@/config/cdkQuota'
 import SellerStickySummary from '@/components/seller/SellerStickySummary.vue'
+import {
+  MAX_PRODUCT_IMAGE_URL_LENGTH,
+  getProductImageUrlError,
+  preloadProductImage
+} from '@/utils/productImageValidation'
 
 const props = defineProps({
   initialMode: {
@@ -610,7 +621,9 @@ const toast = useToast()
 const submitting = ref(false)
 const submitConfirming = ref(false)
 const descMode = ref('write')
-const merchantConfigured = ref(false) // 是否已配置商家收款
+const merchantConfigured = ref(false)
+const merchantStatusLoaded = ref(false)
+const merchantConfigError = ref('')
 const showGuideModal = ref(false)
 const dontShowAgain = ref(false)
 const lockedMode = computed(() => props.lockedMode)
@@ -769,37 +782,42 @@ function cancelTestMode() {
   showTestModeModal.value = false
 }
 
-// 分类 - 从API获取或使用默认
-const categories = ref([
-  { id: 1, name: 'AI', icon: '' },
-  { id: 2, name: '存储', icon: '' },
-  { id: 3, name: '小鸡', icon: '' },
-  { id: 4, name: '咨询', icon: '' }
-])
+// 分类必须来自服务端，避免接口失败时提交过期的硬编码 ID
+const categories = ref([])
+const categoriesLoading = ref(false)
+const categoriesLoadError = ref('')
 
 // 加载分类
 async function loadCategories() {
+  categoriesLoading.value = true
+  categoriesLoadError.value = ''
   try {
     const result = await shopStore.fetchCategories()
-    if (result && result.length > 0) {
-      // 过滤掉小店分类（小店入驻使用独立的小店集市）
-      categories.value = result
-        .filter(cat => cat.name !== '小店' && cat.name !== '友情小店')
-        .map(cat => ({
-          id: cat.id,
-          name: cat.name,
-          icon: cat.icon || ''
-        }))
-      // 设置默认分类
-      if (categories.value.length > 0 && !form.value.categoryId) {
-        form.value.categoryId = categories.value[0].id
-      }
+    const availableCategories = Array.isArray(result)
+      ? result.filter(cat => cat.name !== '小店' && cat.name !== '友情小店')
+      : []
+
+    if (availableCategories.length === 0) {
+      categories.value = []
+      form.value.categoryId = null
+      categoriesLoadError.value = '物品分类加载失败，请重新加载后再发布'
+      return
     }
-  } catch (error) {
-    // 使用默认分类
-    if (categories.value.length > 0 && !form.value.categoryId) {
+
+    categories.value = availableCategories.map(cat => ({
+      id: cat.id,
+      name: cat.name,
+      icon: cat.icon || ''
+    }))
+    if (!categories.value.some(cat => Number(cat.id) === Number(form.value.categoryId))) {
       form.value.categoryId = categories.value[0].id
     }
+  } catch (error) {
+    categories.value = []
+    form.value.categoryId = null
+    categoriesLoadError.value = '物品分类加载失败，请重新加载后再发布'
+  } finally {
+    categoriesLoading.value = false
   }
 }
 
@@ -884,46 +902,25 @@ const submitButtonText = computed(() => {
   return form.value.productType === 'cdk' ? '发布并上传CDK' : '发布物品'
 })
 
-// 允许的图片后缀
-const VALID_IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'ico', 'avif']
-
 // 图片加载验证状态
 const imageValidating = ref(false)
 const imageValidated = ref(false)
 const imageLoadError = ref('')
 const imagePreviewUrl = ref('')
-let lastValidatedUrl = ''
+const lastValidatedUrl = ref('')
+let imageValidationSequence = 0
+let pendingImageValidation = null
+let pendingImageValidationUrl = ''
 
-// 检查URL是否为有效图片链接（后缀检查）
-function isValidImageUrl(url) {
-  if (!url) return false
-  try {
-    const urlObj = new URL(url)
-    const pathname = urlObj.pathname.toLowerCase()
-    // 检查路径是否以图片后缀结尾（忽略查询参数）
-    return VALID_IMAGE_EXTENSIONS.some(ext => pathname.endsWith('.' + ext))
-  } catch {
-    return false
-  }
-}
-
-// 图片预加载验证
-function preloadImage(url) {
-  return new Promise((resolve, reject) => {
-    const img = new Image()
-    img.onload = () => resolve(img)
-    img.onerror = () => reject(new Error('图片加载失败'))
-    // 设置超时
-    const timeout = setTimeout(() => {
-      img.src = ''
-      reject(new Error('图片加载超时'))
-    }, 10000) // 10秒超时
-    img.onload = () => {
-      clearTimeout(timeout)
-      resolve(img)
-    }
-    img.src = url
-  })
+function resetImageValidation() {
+  imageValidationSequence += 1
+  pendingImageValidation = null
+  pendingImageValidationUrl = ''
+  imageValidating.value = false
+  imageValidated.value = false
+  imageLoadError.value = ''
+  imagePreviewUrl.value = ''
+  lastValidatedUrl.value = ''
 }
 
 // 验证图片是否可加载
@@ -932,44 +929,58 @@ async function validateImageLoad() {
   
   // 清空或格式错误时重置状态
   if (!url || imageUrlError.value) {
-    imageValidating.value = false
-    imageValidated.value = false
-    imageLoadError.value = ''
-    imagePreviewUrl.value = ''
-    lastValidatedUrl = ''
-    return
+    resetImageValidation()
+    return false
   }
   
-  // 如果 URL 没变，不重复验证
-  if (url === lastValidatedUrl) return
-  
+  if (url === lastValidatedUrl.value && imageValidated.value) return true
+  if (pendingImageValidation && pendingImageValidationUrl === url) {
+    return pendingImageValidation
+  }
+
+  const validationSequence = ++imageValidationSequence
+  pendingImageValidationUrl = url
   imageValidating.value = true
   imageValidated.value = false
   imageLoadError.value = ''
   imagePreviewUrl.value = ''
-  
-  try {
-    await preloadImage(url)
-    // 再次检查 URL 是否变化（防止异步竞态）
-    if (form.value.imageUrl?.trim() !== url) return
-    
-    imageValidated.value = true
-    imagePreviewUrl.value = url
-    lastValidatedUrl = url
-  } catch (error) {
-    if (form.value.imageUrl?.trim() !== url) return
-    imageLoadError.value = `图片无法加载，请检查链接是否有效`
-    lastValidatedUrl = ''
-  } finally {
-    imageValidating.value = false
-  }
+
+  const validationPromise = (async () => {
+    try {
+      await preloadProductImage(url)
+      if (validationSequence !== imageValidationSequence || form.value.imageUrl?.trim() !== url) return false
+
+      imageValidated.value = true
+      imagePreviewUrl.value = url
+      lastValidatedUrl.value = url
+      return true
+    } catch (error) {
+      if (validationSequence !== imageValidationSequence || form.value.imageUrl?.trim() !== url) return false
+      imageLoadError.value = '图片无法加载，请检查链接是否有效'
+      lastValidatedUrl.value = ''
+      return false
+    } finally {
+      if (validationSequence === imageValidationSequence) {
+        imageValidating.value = false
+      }
+      if (pendingImageValidation === validationPromise) {
+        pendingImageValidation = null
+        pendingImageValidationUrl = ''
+      }
+    }
+  })()
+
+  pendingImageValidation = validationPromise
+  return validationPromise
 }
 
 // 预览图片加载失败
 function onPreviewError() {
+  imageValidationSequence += 1
   imageLoadError.value = '图片加载失败，请检查链接是否有效'
   imagePreviewUrl.value = ''
   imageValidated.value = false
+  lastValidatedUrl.value = ''
 }
 
 // 图片URL验证（只有输入内容后才验证格式，空值不报错）
@@ -1070,12 +1081,7 @@ function showError(field, err) {
 }
 
 const imageUrlError = computed(() => {
-  const url = form.value.imageUrl?.trim()
-  if (!url) return null  // 空值不显示错误，提交时再验证
-  if (!url.startsWith('https://')) return '图片链接必须使用 HTTPS'
-  if (url.includes('linux.do')) return '不支持使用 linux.do 图床，请使用其他图床服务'
-  if (!isValidImageUrl(url)) return '图片链接格式无效，支持: jpg, png, gif, webp, svg 等'
-  return null
+  return getProductImageUrlError(form.value.imageUrl) || null
 })
 
 const imageDisplayError = computed(() => {
@@ -1101,14 +1107,30 @@ const canSubmit = computed(() => {
   return true
 })
 
+const merchantReadinessText = computed(() => {
+  if (!merchantStatusLoaded.value) return '正在检查收款配置'
+  if (merchantConfigError.value) return '收款配置状态加载失败'
+  return merchantConfigured.value ? '收款配置已启用并完成认证' : '需要启用并认证收款配置'
+})
+
 // 检查商家配置
 async function checkMerchantConfig() {
+  merchantStatusLoaded.value = false
+  merchantConfigError.value = ''
   try {
     const result = await shopStore.fetchMerchantConfig()
+    if (!result) {
+      merchantConfigured.value = false
+      merchantConfigError.value = '收款配置状态加载失败，请刷新页面后重试'
+      return
+    }
     const config = result?.data?.data || result?.data || result || {}
-    merchantConfigured.value = !!config.configured
+    merchantConfigured.value = !!config.configured && !!config.isActive && !!config.isVerified
   } catch (error) {
     merchantConfigured.value = false
+    merchantConfigError.value = '收款配置状态加载失败，请刷新页面后重试'
+  } finally {
+    merchantStatusLoaded.value = true
   }
 }
 
@@ -1222,7 +1244,7 @@ async function submitForm() {
   }
   
   if (!form.value.categoryId) {
-    toast.error('请选择物品分类')
+    toast.error(categoriesLoadError.value || '请选择物品分类')
     return
   }
   
@@ -1240,8 +1262,12 @@ async function submitForm() {
   }
   
   if (form.value.productType === 'normal' || form.value.productType === 'cdk') {
+    if (merchantConfigError.value || !merchantStatusLoaded.value) {
+      toast.error(merchantConfigError.value || '正在检查收款配置，请稍后重试')
+      return
+    }
     if (!merchantConfigured.value) {
-      toast.warning('请先在「收款设置」中配置 LDC 收款信息')
+      toast.warning('请先启用 LDC 收款配置并完成认证')
       router.push('/seller/payment')
       return
     }
@@ -1267,37 +1293,27 @@ async function submitForm() {
   }
   
   // 验证图片URL（必填）
-  if (!form.value.imageUrl || !form.value.imageUrl.trim()) {
+  const imageUrl = form.value.imageUrl?.trim() || ''
+  if (!imageUrl) {
     toast.error('请上传物品图片')
     focusField('image')
     return
   }
-  if (!form.value.imageUrl.startsWith('https://')) {
-    toast.error('图片链接必须使用 HTTPS')
-    focusField('image')
-    return
-  }
-  if (form.value.imageUrl.includes('linux.do')) {
-    toast.error('不支持使用 linux.do 图床，请使用其他图床服务')
-    focusField('image')
-    return
-  }
-  if (!isValidImageUrl(form.value.imageUrl)) {
-    toast.error('图片链接格式无效，支持: jpg, png, gif, webp, svg 等')
+  if (imageUrlError.value) {
+    toast.error(imageUrlError.value)
     focusField('image')
     return
   }
   
-  // 如果图片还未验证，先进行验证
-  if (!imageValidated.value && !imageLoadError.value) {
+  // 验证结果必须属于当前 URL；复用失焦时已经启动的同一验证请求
+  if (!imageValidated.value || lastValidatedUrl.value !== imageUrl) {
     const loadingToastId = toast.loading('正在验证图片...')
     await validateImageLoad()
     toast.close(loadingToastId)
   }
   
-  // 图片加载失败
-  if (imageLoadError.value) {
-    toast.error(imageLoadError.value)
+  if (imageLoadError.value || !imageValidated.value || lastValidatedUrl.value !== imageUrl) {
+    toast.error(imageLoadError.value || '图片验证未完成，请重试')
     focusField('image')
     return
   }
@@ -1318,7 +1334,7 @@ async function submitForm() {
       description: form.value.description.trim(),
       price: parseFloat(form.value.price),
       discount: parseFloat(form.value.discount) || 1,
-      imageUrl: form.value.imageUrl.trim() || undefined,
+      imageUrl,
       productType: form.value.productType,
       purchaseTrustLevel: Number(form.value.purchaseTrustLevel) || 0
     }
@@ -1418,6 +1434,16 @@ async function submitBuyRequest() {
     buySubmitting.value = false
   }
 }
+
+watch(
+  () => form.value.imageUrl,
+  (currentUrl, previousUrl) => {
+    if (String(currentUrl || '').trim() !== String(previousUrl || '').trim()) {
+      resetImageValidation()
+    }
+  },
+  { flush: 'sync' }
+)
 
 watch(
   () => form.value.productType,
@@ -1901,6 +1927,34 @@ onMounted(async () => {
   background: var(--color-success-bg);
   border-color: var(--color-success);
   color: var(--color-success);
+}
+
+.category-load-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.category-load-error .form-error {
+  margin: 0;
+}
+
+.category-retry-btn {
+  flex: 0 0 auto;
+  min-height: 44px;
+  padding: 7px 12px;
+  border: 1px solid var(--color-danger);
+  border-radius: 9px;
+  background: transparent;
+  color: var(--color-danger);
+  font: inherit;
+  cursor: pointer;
+}
+
+.category-retry-btn:hover {
+  background: var(--input-error-bg, rgba(220, 38, 38, 0.05));
 }
 
 /* 入站分类价格提示 */

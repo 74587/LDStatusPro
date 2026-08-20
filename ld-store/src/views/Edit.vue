@@ -148,6 +148,7 @@
               class="form-input"
               :class="{ 'input-error': imageUrlError || imageLoadError }"
               placeholder="https://..."
+              :maxlength="MAX_PRODUCT_IMAGE_URL_LENGTH"
               @blur="validateImageLoad"
             />
             <p v-if="imageUrlError" class="form-error">{{ imageUrlError }}</p>
@@ -315,7 +316,7 @@
         <SellerStickySummary class="seller-product-summary" eyebrow="编辑校对" title="物品摘要">
           <div class="seller-summary-preview" :class="{ empty: !imagePreviewUrl }">
             <img v-if="imagePreviewUrl" :src="imagePreviewUrl" :alt="form.name || '物品预览'" />
-            <Image v-else :size="26" aria-hidden="true" />
+            <ImageIcon v-else :size="26" aria-hidden="true" />
           </div>
           <h3 class="seller-summary-name">{{ form.name || '尚未填写物品名称' }}</h3>
           <p class="seller-summary-meta">{{ selectedCategoryName }} · {{ getTypeName(getProductType(product)) }}</p>
@@ -326,7 +327,7 @@
           <ul class="seller-readiness-list">
             <li :class="{ ready: !!form.name.trim() }"><span></span>物品名称</li>
             <li :class="{ ready: !!form.categoryId }"><span></span>物品分类</li>
-            <li :class="{ ready: !imageUrlError && !!form.imageUrl }"><span></span>图片地址</li>
+            <li :class="{ ready: imageValidated && lastValidatedUrl === form.imageUrl.trim() }"><span></span>图片验证</li>
             <li :class="{ ready: canSubmit }"><span></span>保存前检查</li>
           </ul>
           <template #action>
@@ -348,13 +349,18 @@ import { validateProductName, validateProductDescription, validatePrice } from '
 import { renderProductDescription } from '@/utils/renderProductDescription'
 import EmptyState from '@/components/common/EmptyState.vue'
 import SellerStickySummary from '@/components/seller/SellerStickySummary.vue'
-import { Clock3, Image } from '@lucide/vue'
+import { Clock3, Image as ImageIcon } from '@lucide/vue'
 import {
   getProductType as resolveProductType,
   getProductTypeText,
   isLegacyLinkProduct,
   isNormalProduct
 } from '@/utils/shopProduct'
+import {
+  MAX_PRODUCT_IMAGE_URL_LENGTH,
+  getProductImageUrlError,
+  preloadProductImage
+} from '@/utils/productImageValidation'
 
 const route = useRoute()
 const router = useRouter()
@@ -367,9 +373,6 @@ const submitting = ref(false)
 const updateConfirming = ref(false)
 const descMode = ref('write')
 const product = ref(null)
-// 允许的图片后缀
-const VALID_IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'ico', 'avif']
-
 // 图片加载验证状态
 const imageValidating = ref(false)
 const imageValidated = ref(false)
@@ -377,7 +380,10 @@ const imageLoadError = ref('')
 const imagePreviewUrl = ref('')
 const stockInput = ref(null)
 const maxPurchaseQuantityInput = ref(null)
-let lastValidatedUrl = ''
+const lastValidatedUrl = ref('')
+let imageValidationSequence = 0
+let pendingImageValidation = null
+let pendingImageValidationUrl = ''
 const EDIT_SAVE_TIMEOUT_MS = 90000
 const EDIT_SAVE_STATUS_MAX_RETRIES = 8
 const EDIT_SAVE_STATUS_RETRY_INTERVAL_MS = 2000
@@ -447,26 +453,9 @@ async function loadCategories() {
   }
 }
 
-// 检查URL是否为有效图片链接（后缀检查）
-function isValidImageUrl(url) {
-  if (!url) return false
-  try {
-    const urlObj = new URL(url)
-    const pathname = urlObj.pathname.toLowerCase()
-    return VALID_IMAGE_EXTENSIONS.some(ext => pathname.endsWith('.' + ext))
-  } catch {
-    return false
-  }
-}
-
 // 图片URL验证
 const imageUrlError = computed(() => {
-  const url = form.value.imageUrl?.trim()
-  if (!url) return null
-  if (!url.startsWith('https://')) return '图片链接必须使用 HTTPS'
-  if (url.includes('linux.do')) return '不支持使用 linux.do 图床，请使用其他图床服务'
-  if (!isValidImageUrl(url)) return '图片链接格式无效，支持: jpg, png, gif, webp, svg 等'
-  return null
+  return getProductImageUrlError(form.value.imageUrl) || null
 })
 
 // 图片预加载验证
@@ -519,23 +508,15 @@ async function toggleSharedCdkMode() {
   }
 }
 
-function preloadImage(url) {
-  return new Promise((resolve, reject) => {
-    const img = new Image()
-    const timeout = setTimeout(() => {
-      img.src = ''
-      reject(new Error('图片加载超时'))
-    }, 10000)
-    img.onload = () => {
-      clearTimeout(timeout)
-      resolve(img)
-    }
-    img.onerror = () => {
-      clearTimeout(timeout)
-      reject(new Error('图片加载失败'))
-    }
-    img.src = url
-  })
+function resetImageValidation() {
+  imageValidationSequence += 1
+  pendingImageValidation = null
+  pendingImageValidationUrl = ''
+  imageValidating.value = false
+  imageValidated.value = false
+  imageLoadError.value = ''
+  imagePreviewUrl.value = ''
+  lastValidatedUrl.value = ''
 }
 
 // 验证图片是否可加载
@@ -543,42 +524,58 @@ async function validateImageLoad() {
   const url = form.value.imageUrl?.trim()
   
   if (!url || imageUrlError.value) {
-    imageValidating.value = false
-    imageValidated.value = false
-    imageLoadError.value = ''
-    imagePreviewUrl.value = ''
-    lastValidatedUrl = ''
-    return
+    resetImageValidation()
+    return false
   }
   
-  if (url === lastValidatedUrl) return
-  
+  if (url === lastValidatedUrl.value && imageValidated.value) return true
+  if (pendingImageValidation && pendingImageValidationUrl === url) {
+    return pendingImageValidation
+  }
+
+  const validationSequence = ++imageValidationSequence
+  pendingImageValidationUrl = url
   imageValidating.value = true
   imageValidated.value = false
   imageLoadError.value = ''
   imagePreviewUrl.value = ''
-  
-  try {
-    await preloadImage(url)
-    if (form.value.imageUrl?.trim() !== url) return
-    
-    imageValidated.value = true
-    imagePreviewUrl.value = url
-    lastValidatedUrl = url
-  } catch (error) {
-    if (form.value.imageUrl?.trim() !== url) return
-    imageLoadError.value = '图片无法加载，请检查链接是否有效'
-    lastValidatedUrl = ''
-  } finally {
-    imageValidating.value = false
-  }
+
+  const validationPromise = (async () => {
+    try {
+      await preloadProductImage(url)
+      if (validationSequence !== imageValidationSequence || form.value.imageUrl?.trim() !== url) return false
+
+      imageValidated.value = true
+      imagePreviewUrl.value = url
+      lastValidatedUrl.value = url
+      return true
+    } catch (error) {
+      if (validationSequence !== imageValidationSequence || form.value.imageUrl?.trim() !== url) return false
+      imageLoadError.value = '图片无法加载，请检查链接是否有效'
+      lastValidatedUrl.value = ''
+      return false
+    } finally {
+      if (validationSequence === imageValidationSequence) {
+        imageValidating.value = false
+      }
+      if (pendingImageValidation === validationPromise) {
+        pendingImageValidation = null
+        pendingImageValidationUrl = ''
+      }
+    }
+  })()
+
+  pendingImageValidation = validationPromise
+  return validationPromise
 }
 
 // 预览图片加载失败
 function onPreviewError() {
+  imageValidationSequence += 1
   imageLoadError.value = '图片加载失败，请检查链接是否有效'
   imagePreviewUrl.value = ''
   imageValidated.value = false
+  lastValidatedUrl.value = ''
 }
 
 function wait(ms) {
@@ -829,33 +826,24 @@ async function submitForm() {
   }
   
   // 验证图片URL（必填）
-  if (!form.value.imageUrl || !form.value.imageUrl.trim()) {
+  const imageUrl = form.value.imageUrl?.trim() || ''
+  if (!imageUrl) {
     toast.error('请上传物品图片')
     return
   }
-  if (!form.value.imageUrl.startsWith('https://')) {
-    toast.error('图片链接必须使用 HTTPS')
-    return
-  }
-  if (form.value.imageUrl.includes('linux.do')) {
-    toast.error('不支持使用 linux.do 图床，请使用其他图床服务')
-    return
-  }
-  if (!isValidImageUrl(form.value.imageUrl)) {
-    toast.error('图片链接格式无效，支持: jpg, png, gif, webp, svg 等')
+  if (imageUrlError.value) {
+    toast.error(imageUrlError.value)
     return
   }
   
-  // 如果图片还未验证，先进行验证
-  if (!imageValidated.value && !imageLoadError.value) {
-    toast.loading('正在验证图片...')
+  if (!imageValidated.value || lastValidatedUrl.value !== imageUrl) {
+    const loadingToastId = toast.loading('正在验证图片...')
     await validateImageLoad()
-    toast.dismiss()
+    toast.close(loadingToastId)
   }
   
-  // 图片加载失败
-  if (imageLoadError.value) {
-    toast.error(imageLoadError.value)
+  if (imageLoadError.value || !imageValidated.value || lastValidatedUrl.value !== imageUrl) {
+    toast.error(imageLoadError.value || '图片验证未完成，请重试')
     return
   }
   
@@ -869,7 +857,7 @@ async function submitForm() {
       description: form.value.description.trim(),
       price: parseFloat(form.value.price),
       discount: parseFloat(form.value.discount) || 1,
-      imageUrl: form.value.imageUrl.trim() || undefined,
+      imageUrl,
       purchaseTrustLevel: Number(form.value.purchaseTrustLevel) || 0
     }
     
@@ -914,6 +902,16 @@ onMounted(async () => {
   await loadCategories()
   await loadProduct()
 })
+
+watch(
+  () => form.value.imageUrl,
+  (currentUrl, previousUrl) => {
+    if (String(currentUrl || '').trim() !== String(previousUrl || '').trim()) {
+      resetImageValidation()
+    }
+  },
+  { flush: 'sync' }
+)
 
 watch(
   () => form.value.sharedCdkEnabled,
