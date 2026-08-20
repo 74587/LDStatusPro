@@ -14,7 +14,9 @@
       v-for="(tab, index) in tabs"
       :key="tab.value"
       :ref="el => setTabRef(el, index)"
+      type="button"
       :class="['liquid-tab', { active: modelValue === tab.value }]"
+      :aria-pressed="modelValue === tab.value"
       @click="selectTab(tab.value)"
     >
       <span v-if="tab.icon" class="tab-icon">{{ tab.icon }}</span>
@@ -47,6 +49,7 @@ const indicatorStyle = ref({
   width: '0px',
   opacity: 0
 })
+let selectionRevision = 0
 
 // 设置 Tab 引用
 function setTabRef(el, index) {
@@ -86,11 +89,15 @@ function updateIndicator() {
 
 // 选择 Tab
 function selectTab(value) {
+  if (value === props.modelValue) return
+  const revision = ++selectionRevision
   emit('update:modelValue', value)
   nextTick(() => {
+    if (revision !== selectionRevision || props.modelValue !== value) return
     const index = props.tabs.findIndex(tab => tab.value === value)
     if (index >= 0 && tabRefs.value[index]) {
-      tabRefs.value[index].scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
+      const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+      tabRefs.value[index].scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'nearest', inline: 'center' })
     }
   })
 }

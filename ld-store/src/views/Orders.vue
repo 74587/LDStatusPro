@@ -2,8 +2,8 @@
   <div class="orders-page" :class="{ 'seller-orders-page': sellerMode }">
     <template v-if="sellerMode">
       <SellerPageToolbar eyebrow="交易台账" description="统一处理商品订单与求购服务订单。筛选、页码与来源会保留在地址中。">
-        <LiquidTabs :modelValue="currentRole" :tabs="roleTabs" class="seller-source-tabs" @update:modelValue="switchRole" />
-        <LiquidTabs v-if="currentRole !== 'buy'" :modelValue="statusFilter" :tabs="statusTabs" class="seller-status-tabs" @update:modelValue="selectStatus" />
+        <LiquidTabs :modelValue="currentRole" :tabs="roleTabs" class="seller-source-tabs" :class="{ 'is-switching': sellerTabPending }" :aria-busy="sellerTabPending" @update:modelValue="switchRole" />
+        <LiquidTabs v-if="currentRole !== 'buy'" :modelValue="statusFilter" :tabs="statusTabs" class="seller-status-tabs" :class="{ 'is-switching': sellerTabPending }" :aria-busy="sellerTabPending" @update:modelValue="selectStatus" />
         <AppSelect v-model="timeRange" class="seller-order-select" :options="timeRangeOptions" placeholder="选择时间范围" @change="applyFilters" />
         <form class="seller-order-search" role="search" @submit.prevent="applyFilters">
           <Search :size="17" aria-hidden="true" />
@@ -13,14 +13,15 @@
         </form>
         <template #summary>
           <span class="seller-filter-chip">{{ currentRole === 'seller' ? '商品订单' : '求购服务' }}</span>
-          <span v-if="onlyDealOrders" class="seller-filter-chip">仅看已成交</span>
-          <span v-if="activeCategoryName" class="seller-filter-chip">{{ activeCategoryName }}</span>
-          <button v-if="hasDirectFilters || orderSearch || statusFilter" type="button" class="seller-filter-clear" @click="clearSellerOrderFilters">清除筛选</button>
-          <span class="seller-order-total">{{ orderPagination.total }} 笔订单</span>
+          <span v-if="currentRole !== 'buy' && onlyDealOrders" class="seller-filter-chip">仅看已成交</span>
+          <span v-if="currentRole !== 'buy' && activeCategoryName" class="seller-filter-chip">{{ activeCategoryName }}</span>
+          <button v-if="hasDirectFilters || orderSearch || (currentRole !== 'buy' && statusFilter)" type="button" class="seller-filter-clear" @click="clearSellerOrderFilters">清除筛选</button>
+          <span v-if="sellerTabPending" class="seller-order-total is-switching" role="status">正在切换…</span>
+          <span v-else class="seller-order-total">{{ orderPagination.total }} 笔订单</span>
         </template>
       </SellerPageToolbar>
 
-      <SellerDataTable caption="卖家订单管理列表" :columns="sellerOrderColumns" :rows="orders" :loading="loading" :row-key="getOrderKey" :expanded-row-key="deliverFormOrderId || ''">
+      <SellerDataTable class="seller-order-ledger" :class="{ 'is-filter-pending': sellerTabPending }" :inert="sellerTabPending ? '' : null" caption="卖家订单管理列表" :columns="sellerOrderColumns" :rows="orders" :loading="loading" :row-key="getOrderKey" :expanded-row-key="deliverFormOrderId || ''">
         <template #cell-order="{ row: order }">
           <router-link :to="getOrderDetailTarget(order)" class="seller-order-id" @click="handleOrderCardClick"><strong>{{ getOrderKey(order) }}</strong><small>{{ formatDate(order.created_at || order.createdAt) }}</small></router-link>
         </template>
@@ -360,7 +361,14 @@ import {
   clearOrderScrollState
 } from '@/utils/orderListScroll'
 import { resolveOrderArea } from '@/utils/sellerNavigation'
-import { buildSellerOrderQuery, normalizeSellerPage, resolveSellerStatusTone } from '@/utils/sellerTables'
+import {
+  buildSellerOrderQuery,
+  buildSellerOrderTabQuery,
+  createLatestRequestGuard,
+  isSellerOrderTabQueryMatch,
+  normalizeSellerPage,
+  resolveSellerStatusTone
+} from '@/utils/sellerTables'
 
 const router = useRouter()
 const route = useRoute()
@@ -404,6 +412,7 @@ const roleTabs = computed(() => props.sellerMode
 const orderSearch = ref('')
 const timeRange = ref('1m')
 const statusFilter = ref('')
+const sellerTabPending = ref(false)
 const activeCategoryId = ref(0)
 const activeCategoryName = ref('')
 const onlyDealOrders = ref(false)
@@ -430,6 +439,11 @@ const refreshingBuyOrderId = ref(null)
 const nowTs = ref(Date.now())
 let countdownTimer = null
 let restoredScrollKey = ''
+let sellerTabDebounceTimer = null
+let sellerTabIntentId = 0
+let pendingSellerTabIntent = null
+const SELLER_TAB_DEBOUNCE_MS = 140
+const orderRequestGuard = createLatestRequestGuard()
 const isPaymentMaintenanceBlocked = computed(() =>
   isRestrictedMaintenanceMode() && !isMaintenanceFeatureEnabled('orderPayment')
 )
@@ -531,18 +545,92 @@ async function restoreScrollState() {
   }
 }
 
+function settleSellerTabIntent(intent) {
+  if (!intent || pendingSellerTabIntent?.id !== intent.id) return
+  if (sellerTabDebounceTimer) {
+    window.clearTimeout(sellerTabDebounceTimer)
+    sellerTabDebounceTimer = null
+  }
+  pendingSellerTabIntent = null
+  sellerTabPending.value = false
+}
+
+function isCurrentSellerTabIntent(intent) {
+  if (sellerTabPending.value && pendingSellerTabIntent) {
+    return pendingSellerTabIntent.source === intent.source
+      && pendingSellerTabIntent.status === intent.status
+  }
+  return isSellerOrderTabQueryMatch(route.query, intent)
+}
+
+function getActiveSellerTabIntent() {
+  const source = currentRole.value === 'buy' ? 'service' : 'product'
+  return { source, status: source === 'service' ? '' : statusFilter.value }
+}
+
+function cancelPendingSellerTabNavigation() {
+  if (pendingSellerTabIntent) settleSellerTabIntent(pendingSellerTabIntent)
+}
+
+function scheduleSellerTabNavigation({ source, status = '' }) {
+  const intent = {
+    id: ++sellerTabIntentId,
+    source: source === 'service' ? 'service' : 'product',
+    status: source === 'service' ? '' : status
+  }
+  pendingSellerTabIntent = intent
+  sellerTabPending.value = true
+  if (sellerTabDebounceTimer) window.clearTimeout(sellerTabDebounceTimer)
+  sellerTabDebounceTimer = window.setTimeout(() => {
+    sellerTabDebounceTimer = null
+    void commitSellerTabNavigation(intent)
+  }, SELLER_TAB_DEBOUNCE_MS)
+}
+
+async function commitSellerTabNavigation(intent) {
+  if (pendingSellerTabIntent?.id !== intent.id) return
+  const nextQuery = buildSellerOrderTabQuery(route.query, intent)
+  if (sameQuery(route.query, nextQuery)) {
+    settleSellerTabIntent(intent)
+    return
+  }
+
+  try {
+    await router.replace({ query: nextQuery })
+  } catch {
+    // 路由异常时恢复 URL 对应状态，避免选中项停留在未生效的意图上。
+  }
+
+  if (pendingSellerTabIntent?.id !== intent.id) return
+  if (isSellerOrderTabQueryMatch(route.query, intent)) {
+    settleSellerTabIntent(intent)
+    return
+  }
+  settleSellerTabIntent(intent)
+  syncRouteState()
+}
+
 // 切换角色
-async function switchRole(role) {
+function switchRole(role) {
+  if (props.sellerMode) {
+    const normalizedRole = role === 'buy' ? 'buy' : 'seller'
+    const intent = {
+      source: normalizedRole === 'buy' ? 'service' : 'product',
+      status: normalizedRole === 'buy' ? '' : statusFilter.value
+    }
+    if (normalizedRole === currentRole.value && isCurrentSellerTabIntent(intent)) return
+
+    currentRole.value = normalizedRole
+    page.value = 1
+    closeDeliverForm()
+    scheduleSellerTabNavigation(intent)
+    return
+  }
+
   const nextQuery = { ...route.query }
   if (role === currentRole.value) return
-
-  if (props.sellerMode) {
-    nextQuery.source = role === 'buy' ? 'service' : 'product'
-    delete nextQuery.tab
-  } else {
-    nextQuery.tab = role
-    delete nextQuery.source
-  }
+  nextQuery.tab = role
+  delete nextQuery.source
   if (role === 'buy') {
     delete nextQuery.categoryId
     delete nextQuery.categoryName
@@ -555,9 +643,24 @@ async function switchRole(role) {
 
 // 选择状态筛选（写入 URL，由 watcher 统一重载）
 function selectStatus(status) {
-  if (statusFilter.value === status && String(route.query.status || '') === status) return
+  const normalizedStatus = VALID_STATUS_FILTERS.includes(String(status || '').trim())
+    ? String(status).trim()
+    : ''
+  if (props.sellerMode) {
+    if (currentRole.value === 'buy') return
+    const intent = { source: 'product', status: normalizedStatus }
+    if (normalizedStatus === statusFilter.value && isCurrentSellerTabIntent(intent)) return
+
+    statusFilter.value = normalizedStatus
+    page.value = 1
+    closeDeliverForm()
+    scheduleSellerTabNavigation(intent)
+    return
+  }
+
+  if (statusFilter.value === normalizedStatus && String(route.query.status || '') === normalizedStatus) return
   const nextQuery = { ...route.query }
-  if (status) nextQuery.status = status
+  if (normalizedStatus) nextQuery.status = normalizedStatus
   else delete nextQuery.status
   delete nextQuery.page
   router.replace({ query: nextQuery }).catch(() => {})
@@ -599,6 +702,7 @@ function buildOrderQueryOptions() {
 
 // 加载订单
 async function loadOrders(append = false) {
+  const requestToken = orderRequestGuard.begin()
   try {
     if (!append) {
       loading.value = true
@@ -607,14 +711,17 @@ async function loadOrders(append = false) {
     }
     
     const queryOptions = buildOrderQueryOptions()
+    const requestRole = currentRole.value
     let result
-    if (currentRole.value === 'buy') {
+    if (requestRole === 'buy') {
       result = await shopStore.fetchMyBuyOrders(queryOptions)
-    } else if (currentRole.value === 'buyer') {
+    } else if (requestRole === 'buyer') {
       result = await shopStore.fetchMyOrders(queryOptions)
     } else {
       result = await shopStore.fetchSellerOrders(queryOptions)
     }
+
+    if (!orderRequestGuard.isLatest(requestToken)) return
 
     const ordersList = Array.isArray(result?.orders) ? result.orders : []
     const totalPages = Number(result?.pagination?.totalPages || 0)
@@ -632,10 +739,12 @@ async function loadOrders(append = false) {
       orders.value = ordersList
     }
   } catch (error) {
-    toast.error('加载订单失败')
+    if (orderRequestGuard.isLatest(requestToken)) toast.error('加载订单失败')
   } finally {
-    loading.value = false
-    loadingMore.value = false
+    if (orderRequestGuard.isLatest(requestToken)) {
+      loading.value = false
+      loadingMore.value = false
+    }
   }
 }
 
@@ -653,13 +762,16 @@ function sameQuery(a, b) {
 }
 
 async function applyFilters() {
-  const nextQuery = { ...route.query }
+  let nextQuery = { ...route.query }
   const search = orderSearch.value.trim()
   if (search) nextQuery.search = search
   else delete nextQuery.search
   if (timeRange.value && timeRange.value !== '1m') nextQuery.timeRange = timeRange.value
   else delete nextQuery.timeRange
-  if (props.sellerMode) delete nextQuery.page
+  if (props.sellerMode) {
+    nextQuery = buildSellerOrderTabQuery(nextQuery, getActiveSellerTabIntent())
+    cancelPendingSellerTabNavigation()
+  }
   if (sameQuery(route.query, nextQuery)) {
     // URL 无变化（如默认值下再点一次搜索），直接手动重载，避免 replace 无导航
     page.value = 1
@@ -677,13 +789,16 @@ async function clearSearch() {
 }
 
 async function clearDirectFilters() {
-  const nextQuery = { ...route.query }
+  let nextQuery = { ...route.query }
   if (props.sellerMode) nextQuery.source = currentRole.value === 'buy' ? 'service' : 'product'
   else nextQuery.tab = currentRole.value
   delete nextQuery.categoryId
   delete nextQuery.categoryName
   delete nextQuery.dealOnly
-  if (props.sellerMode) delete nextQuery.page
+  if (props.sellerMode) {
+    nextQuery = buildSellerOrderTabQuery(nextQuery, getActiveSellerTabIntent())
+    cancelPendingSellerTabNavigation()
+  }
   await router.replace({ query: nextQuery }).catch(() => {})
 }
 
@@ -692,6 +807,7 @@ async function clearSellerOrderFilters() {
   statusFilter.value = ''
   timeRange.value = '1m'
   const nextQuery = { source: currentRole.value === 'buy' ? 'service' : 'product' }
+  cancelPendingSellerTabNavigation()
   await router.replace({ query: nextQuery }).catch(() => {})
 }
 
@@ -1255,6 +1371,10 @@ watch(
     route.query.page
   ].join('|'),
   async () => {
+    if (props.sellerMode && pendingSellerTabIntent) {
+      if (!isSellerOrderTabQueryMatch(route.query, pendingSellerTabIntent)) return
+      settleSellerTabIntent(pendingSellerTabIntent)
+    }
     restoredScrollKey = ''
     syncRouteState()
     if (!props.sellerMode) page.value = 1
@@ -1266,6 +1386,12 @@ watch(
 )
 
 onUnmounted(() => {
+  if (sellerTabDebounceTimer) {
+    clearTimeout(sellerTabDebounceTimer)
+    sellerTabDebounceTimer = null
+  }
+  pendingSellerTabIntent = null
+  orderRequestGuard.invalidate()
   if (countdownTimer) {
     clearInterval(countdownTimer)
     countdownTimer = null
@@ -2231,6 +2357,12 @@ onUnmounted(() => {
 .seller-orders-page { min-height: auto; padding-bottom: 24px; background: transparent; }
 .seller-source-tabs { flex: 0 0 auto; }
 .seller-status-tabs { flex: 1 1 360px; }
+.seller-source-tabs :deep(.liquid-indicator),
+.seller-status-tabs :deep(.liquid-indicator) { transition-duration: 180ms, 160ms, 120ms; }
+.seller-source-tabs.is-switching,
+.seller-status-tabs.is-switching { --liquid-tabs-shell-border: color-mix(in srgb, var(--seller-jade) 52%, var(--seller-border)); }
+.seller-order-ledger { transition: opacity 140ms ease; }
+.seller-order-ledger.is-filter-pending { opacity: .58; pointer-events: none; }
 .seller-order-select { min-width: 142px; }
 .seller-order-search { min-width: min(100%, 286px); height: 44px; display: flex; align-items: center; gap: 8px; padding: 0 6px 0 12px; border: 1px solid var(--seller-border); border-radius: 10px; color: var(--seller-muted); background: var(--seller-surface); }
 .seller-order-search:focus-within { border-color: var(--seller-jade); box-shadow: 0 0 0 3px color-mix(in srgb, var(--seller-jade) 18%, transparent); }
@@ -2239,6 +2371,7 @@ onUnmounted(() => {
 .seller-filter-chip { min-height: 30px; display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 999px; color: var(--seller-muted); background: var(--seller-jade-soft); font-size: 12px; }
 .seller-filter-clear { min-height: 30px; padding: 4px 10px; color: var(--seller-jade); font-size: 12px; font-weight: 700; }
 .seller-order-total { margin-left: auto; color: var(--seller-muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+.seller-order-total.is-switching { color: var(--seller-jade); font-weight: 700; }
 .seller-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
 .seller-order-id, .seller-order-subject, .seller-order-buyer { min-width: 0; display: block; }
 .seller-order-id strong, .seller-order-id small, .seller-order-subject strong, .seller-order-subject small, .seller-order-buyer strong, .seller-order-buyer small { display: block; }
@@ -2292,5 +2425,8 @@ onUnmounted(() => {
   .seller-order-total { margin-left: 0; }
   .seller-delivery-form { margin-top: 15px; padding: 14px; }
   .seller-delivery-form > div:last-child > * { min-height: 44px; flex: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .seller-order-ledger { transition: none; }
 }
 </style>

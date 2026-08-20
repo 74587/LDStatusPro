@@ -32,6 +32,53 @@ export function buildSellerOrderQuery({
   return options
 }
 
+export function buildSellerOrderTabQuery(query = {}, { source = 'product', status = '' } = {}) {
+  const nextQuery = { ...query }
+  const normalizedSource = String(source || '').toLowerCase() === 'service' ? 'service' : 'product'
+  const normalizedStatus = String(status || '').trim()
+
+  nextQuery.source = normalizedSource
+  delete nextQuery.tab
+  delete nextQuery.page
+
+  if (normalizedSource === 'service') {
+    delete nextQuery.categoryId
+    delete nextQuery.categoryName
+    delete nextQuery.dealOnly
+    delete nextQuery.status
+  } else if (normalizedStatus) {
+    nextQuery.status = normalizedStatus
+  } else {
+    delete nextQuery.status
+  }
+
+  return nextQuery
+}
+
+export function isSellerOrderTabQueryMatch(query = {}, { source = 'product', status = '' } = {}) {
+  const normalizedSource = String(source || '').toLowerCase() === 'service' ? 'service' : 'product'
+  const querySource = String(query.source || '').toLowerCase() === 'service' ? 'service' : 'product'
+  if (querySource !== normalizedSource) return false
+  if (normalizedSource === 'service') return true
+  return String(query.status || '').trim() === String(status || '').trim()
+}
+
+export function createLatestRequestGuard() {
+  let latestToken = 0
+  return {
+    begin() {
+      latestToken += 1
+      return latestToken
+    },
+    isLatest(token) {
+      return token === latestToken
+    },
+    invalidate() {
+      latestToken += 1
+    }
+  }
+}
+
 export function paginateSellerRows(rows = [], page = 1, pageSize = 20) {
   const safeSize = Math.max(1, Number.parseInt(pageSize, 10) || 20)
   const total = rows.length

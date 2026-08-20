@@ -15,7 +15,10 @@ import {
 import {
   buildSellerProductPrice,
   buildSellerOrderQuery,
+  buildSellerOrderTabQuery,
+  createLatestRequestGuard,
   filterAndSortSellerProducts,
+  isSellerOrderTabQueryMatch,
   paginateSellerRows,
   resolveSellerStatusTone
 } from '../src/utils/sellerTables'
@@ -84,6 +87,30 @@ describe('卖家后台稳定壳层与列表工具', () => {
     expect(buildSellerOrderQuery({ page: 2, source: 'service', status: 'paid', categoryId: 8 })).toEqual({
       page: 2, pageSize: 20, search: '', timeRange: '1m', role: 'provider'
     })
+  })
+
+  it('快速切换订单来源与状态时只保留最后一次路由意图', () => {
+    const serviceQuery = buildSellerOrderTabQuery({
+      source: 'product', status: 'paid', categoryId: '8', dealOnly: '1', page: '3', search: 'LD'
+    }, { source: 'service', status: 'delivered' })
+    expect(serviceQuery).toEqual({ source: 'service', search: 'LD' })
+    expect(isSellerOrderTabQueryMatch(serviceQuery, { source: 'service', status: '' })).toBe(true)
+
+    const deliveredQuery = buildSellerOrderTabQuery(serviceQuery, {
+      source: 'product', status: 'delivered'
+    })
+    expect(deliveredQuery).toEqual({ source: 'product', status: 'delivered', search: 'LD' })
+    expect(isSellerOrderTabQueryMatch(deliveredQuery, { source: 'product', status: 'paid' })).toBe(false)
+  })
+
+  it('并行订单请求只允许最后一次结果更新列表', () => {
+    const guard = createLatestRequestGuard()
+    const first = guard.begin()
+    const latest = guard.begin()
+    expect(guard.isLatest(first)).toBe(false)
+    expect(guard.isLatest(latest)).toBe(true)
+    guard.invalidate()
+    expect(guard.isLatest(latest)).toBe(false)
   })
 
   it('物品搜索、库存筛选、排序与分页保持确定性', () => {
