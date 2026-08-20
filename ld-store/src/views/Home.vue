@@ -503,14 +503,14 @@
                     }"
                   ></div>
                 </div>
-                <span class="hotboard-cat-value">{{ formatNumber(cat.totalOrders) }} 单</span>
+                <span class="hotboard-cat-value">{{ formatTrendShare(cat) }}</span>
               </div>
             </div>
             <div v-if="trendChartModel.length" class="hotboard-hourly-section">
               <div class="hotboard-hourly-heading">
                 <div>
                   <p class="hotboard-hourly-title">逐时订单走势</p>
-                  <p class="hotboard-hourly-subtitle">北京时间 · 每小时完成订单数</p>
+                  <p class="hotboard-hourly-subtitle">北京时间 · 每小时相对趋势</p>
                 </div>
                 <span class="hotboard-hourly-meta">
                   <span class="hotboard-hourly-live-dot" aria-hidden="true"></span>
@@ -525,7 +525,7 @@
                   class="hotboard-trend-legend-item"
                   :class="{ active: activeTrendIdx === ci, dimmed: activeTrendIdx >= 0 && activeTrendIdx !== ci }"
                   :aria-pressed="selectedTrendIdx === ci"
-                  :aria-label="`${cat.categoryName}，${cat.totalOrders} 单，点击${selectedTrendIdx === ci ? '取消突出显示' : '突出显示'}`"
+                  :aria-label="`${cat.categoryName}，点击${selectedTrendIdx === ci ? '取消突出显示' : '突出显示'}`"
                   @click="toggleTrendSelection(cat.categoryId)"
                   @keydown.enter.prevent="toggleTrendSelection(cat.categoryId)"
                   @keydown.space.prevent="toggleTrendSelection(cat.categoryId)"
@@ -534,47 +534,28 @@
                 >
                   <span class="hotboard-trend-swatch" :style="{ background: cat.color }" aria-hidden="true"></span>
                   <span class="hotboard-trend-legend-name">{{ cat.categoryIcon }} {{ cat.categoryName }}</span>
-                  <span class="hotboard-trend-legend-value">{{ formatNumber(cat.totalOrders) }}</span>
                 </button>
               </div>
               <div class="hotboard-trend-plot">
-                <div class="hotboard-trend-y-axis" aria-hidden="true">
-                  <span>{{ formatNumber(trendChartMax) }}</span>
-                  <span>{{ formatNumber(trendChartMid) }}</span>
-                  <span>0</span>
-                </div>
                 <div class="hotboard-trend-chart-wrap">
                   <svg
                     class="hotboard-trend-chart"
-                    viewBox="0 0 480 200"
+                    viewBox="0 0 960 320"
                     preserveAspectRatio="none"
+                    shape-rendering="geometricPrecision"
                     role="img"
                     :aria-label="trendChartAriaLabel"
                     @pointermove="updateTrendHover"
                     @pointerleave="clearTrendHover"
                   >
                     <title>{{ trendChartAriaLabel }}</title>
-                    <rect x="0" y="0" width="480" height="200" fill="transparent" class="hotboard-trend-hit-area" />
-                    <defs>
-                      <linearGradient
-                        v-for="cat in trendChartModel"
-                        :key="`gradient-${cat.categoryId}`"
-                        :id="`hotboard-trend-fill-${cat.categoryId}`"
-                        x1="0"
-                        y1="0"
-                        x2="0"
-                        y2="1"
-                      >
-                        <stop offset="0%" :stop-color="cat.color" stop-opacity="0.22" />
-                        <stop offset="100%" :stop-color="cat.color" stop-opacity="0" />
-                      </linearGradient>
-                    </defs>
+                    <rect x="0" y="0" width="960" height="320" fill="transparent" class="hotboard-trend-hit-area" />
 
                     <rect
                       :x="trendProgressX"
                       y="0"
                       :width="Math.max(0, TVB_W - trendProgressX)"
-                      height="200"
+                      height="320"
                       class="hotboard-trend-future"
                     />
                     <line
@@ -582,7 +563,7 @@
                       :key="`grid-y-${y}`"
                       x1="0"
                       :y1="y"
-                      x2="480"
+                      x2="960"
                       :y2="y"
                       class="hotboard-trend-grid-line"
                       vector-effect="non-scaling-stroke"
@@ -593,16 +574,9 @@
                       :x1="trendTimeX(hour)"
                       y1="0"
                       :x2="trendTimeX(hour)"
-                      y2="200"
+                      y2="320"
                       class="hotboard-trend-grid-line hotboard-trend-grid-line-vertical"
                       vector-effect="non-scaling-stroke"
-                    />
-
-                    <path
-                      v-if="activeTrendCategory?.areaPath"
-                      :d="activeTrendCategory.areaPath"
-                      :fill="`url(#hotboard-trend-fill-${activeTrendCategory.categoryId})`"
-                      class="hotboard-trend-area"
                     />
 
                     <template v-for="(cat, ci) in trendChartModel" :key="cat.categoryId">
@@ -611,8 +585,21 @@
                         :d="cat.path"
                         fill="none"
                         :stroke="cat.color"
-                        :stroke-width="activeTrendIdx === ci ? 3.2 : 2"
-                        :opacity="activeTrendIdx >= 0 && activeTrendIdx !== ci ? 0.16 : 0.82"
+                        :stroke-width="activeTrendIdx === ci ? 10 : 7"
+                        :opacity="activeTrendIdx >= 0 && activeTrendIdx !== ci ? 0 : 0.09"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        vector-effect="non-scaling-stroke"
+                        class="hotboard-trend-path-aura"
+                        aria-hidden="true"
+                      />
+                      <path
+                        v-if="cat.points.length > 0"
+                        :d="cat.path"
+                        fill="none"
+                        :stroke="cat.color"
+                        :stroke-width="activeTrendIdx === ci ? 3.4 : 2.2"
+                        :opacity="activeTrendIdx >= 0 && activeTrendIdx !== ci ? 0.13 : 0.9"
                         stroke-linecap="round"
                         stroke-linejoin="round"
                         vector-effect="non-scaling-stroke"
@@ -620,7 +607,7 @@
                         @pointerenter="hoveredTrendIdx = ci"
                         @pointerleave="hoveredTrendIdx = -1"
                       >
-                        <title>{{ cat.categoryName }}：{{ formatNumber(cat.totalOrders) }} 单</title>
+                        <title>{{ cat.categoryName }}</title>
                       </path>
                     </template>
 
@@ -629,18 +616,8 @@
                         :x1="trendX(hoveredTrendHour)"
                         y1="0"
                         :x2="trendX(hoveredTrendHour)"
-                        y2="200"
+                        y2="320"
                         class="hotboard-trend-hover-line"
-                        vector-effect="non-scaling-stroke"
-                      />
-                      <circle
-                        v-for="point in visibleTrendHoverPoints"
-                        :key="`hover-${point.categoryId}`"
-                        :cx="trendX(point.hour)"
-                        :cy="trendY(point.orderCount)"
-                        r="4"
-                        :fill="point.color"
-                        class="hotboard-trend-hover-point"
                         vector-effect="non-scaling-stroke"
                       />
                     </template>
@@ -654,10 +631,10 @@
                   >
                     <strong>{{ trendHoverSummary.label }}</strong>
                     <span v-if="activeTrendIdx >= 0">
-                      {{ trendHoverSummary.featured.categoryName }} {{ formatNumber(trendHoverSummary.featured.orderCount) }} 单
+                      {{ trendHoverSummary.categoryName }}
                     </span>
                     <span v-else>
-                      合计 {{ formatNumber(trendHoverSummary.totalOrders) }} 单 · {{ trendHoverSummary.featured.categoryName }} 最高
+                      多分类走势对比
                     </span>
                   </div>
 
@@ -670,25 +647,6 @@
                   </div>
                 </div>
               </div>
-              <details class="hotboard-trend-details">
-                <summary>查看逐时数据表</summary>
-                <div class="hotboard-trend-table-wrap">
-                  <table class="hotboard-trend-table">
-                    <thead>
-                      <tr>
-                        <th scope="col">分类</th>
-                        <th v-for="hour in trendHours" :key="`hour-${hour}`" scope="col">{{ hour }}:00</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr v-for="cat in trendChartModel" :key="`table-${cat.categoryId}`">
-                        <th scope="row">{{ cat.categoryName }}</th>
-                        <td v-for="point in cat.points" :key="`cell-${cat.categoryId}-${point.hour}`">{{ point.orderCount }}</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </details>
             </div>
           </div>
         </div>
@@ -1495,13 +1453,15 @@ function setupInfiniteScroll() {
   observer.observe(sentinel.value)
 }
 
-// Trend chart: viewBox 480×200, X maps hourly bucket centers across 0-24h.
-const TVB_W = 480
-const TVB_H = 200
-const TVB_PAD = 8
-const TVB_PLOT_H = TVB_H - TVB_PAD * 2
-const trendGridY = [TVB_PAD, TVB_H / 2, TVB_H - TVB_PAD]
+// Trend chart: a high-density vector canvas keeps curves crisp on HiDPI screens.
+const TVB_W = 960
+const TVB_H = 320
+const TVB_PAD_Y = 18
+const TVB_PLOT_H = TVB_H - TVB_PAD_Y * 2
+const trendGridY = [TVB_PAD_Y, TVB_H / 2, TVB_H - TVB_PAD_Y]
 const trendGridHours = [0, 6, 12, 18, 24]
+const TREND_VALUE_MAX = 100
+const trendShareFormatter = new Intl.NumberFormat('zh-CN', { maximumFractionDigits: 1 })
 
 const rawTrendCategories = computed(() => toSafeArray(hotboardData.value?.categoryTrend))
 const trendHours = computed(() => {
@@ -1512,44 +1472,25 @@ const trendHours = computed(() => {
   return Array.from({ length: lastHour + 1 }, (_, hour) => hour)
 })
 
-const trendChartMax = computed(() => Math.max(
-  1,
-  ...rawTrendCategories.value.flatMap(cat => toSafeArray(cat?.trend).map(point => Number(point?.orderCount) || 0))
-))
-const trendChartMid = computed(() => trendChartMax.value / 2)
-
 const trendChartModel = computed(() => rawTrendCategories.value.map((cat, colorIndex) => {
   const pointsByHour = new Map(toSafeArray(cat?.trend).map(point => [Number(point?.hour), point]))
   const points = trendHours.value.map(hour => {
     const point = pointsByHour.get(hour) || {}
     return {
       hour,
-      orderCount: Number(point.orderCount) || 0,
-      soldQuantity: Number(point.soldQuantity) || 0
+      trendValue: Math.min(TREND_VALUE_MAX, Math.max(0, Number(point.trendValue) || 0))
     }
   })
-  const totalOrders = points.reduce((sum, point) => sum + point.orderCount, 0)
-  const totalSoldQuantity = points.reduce((sum, point) => sum + point.soldQuantity, 0)
-  const path = trendCurve(points, trendChartMax.value)
-  const firstPoint = points[0] || null
-  const lastPoint = points[points.length - 1] || null
+  const orderShareBps = Math.min(10000, Math.max(0, Number(cat.orderShareBps) || 0))
+  const path = trendCurve(points)
   return {
     ...cat,
     color: TREND_COLORS[colorIndex % TREND_COLORS.length],
     points,
-    totalOrders,
-    totalSoldQuantity,
-    path,
-    areaPath: firstPoint && lastPoint
-      ? `${path} L ${trendX(lastPoint.hour)} ${TVB_H - TVB_PAD} L ${trendX(firstPoint.hour)} ${TVB_H - TVB_PAD} Z`
-      : ''
+    orderShareBps,
+    path
   }
-}).sort((a, b) => b.totalOrders - a.totalOrders))
-
-const trendChartMaxTotal = computed(() => Math.max(
-  1,
-  ...trendChartModel.value.map(cat => cat.totalOrders)
-))
+}).sort((a, b) => b.orderShareBps - a.orderShareBps))
 
 const trendEndHourLabel = computed(() => {
   const current = hotboardData.value?.currentBeijingTime
@@ -1562,7 +1503,7 @@ const trendEndHourLabel = computed(() => {
 
 const trendChartAriaLabel = computed(() => {
   const categoryCount = trendChartModel.value.length
-  return `北京时间逐时订单走势，共 ${categoryCount} 个分类，显示至 ${trendEndHourLabel.value}；详细数值可展开逐时数据表。`
+  return `北京时间逐时订单走势，共 ${categoryCount} 个分类，显示至 ${trendEndHourLabel.value}。图表使用归一化相对趋势，不包含分时订单数。`
 })
 
 const hoveredTrendIdx = ref(-1)
@@ -1577,49 +1518,20 @@ const activeTrendIdx = computed(() => {
     ? selected
     : hoveredTrendIdx.value
 })
-const activeTrendCategory = computed(() => (
-  activeTrendIdx.value >= 0 ? trendChartModel.value[activeTrendIdx.value] : null
-))
-
 const trendProgressX = computed(() => {
   const endHour = Number(hotboardData.value?.trendEndHour)
   if (!Number.isFinite(endHour)) return TVB_W
   return Math.min(TVB_W, Math.max(0, (endHour / 24) * TVB_W))
 })
 
-const trendHoverPoints = computed(() => {
-  const hour = hoveredTrendHour.value
-  if (hour === null) return []
-  return trendChartModel.value.map((cat) => {
-    const point = cat.points.find(item => item.hour === hour) || { hour, orderCount: 0, soldQuantity: 0 }
-    return {
-      ...point,
-      categoryId: cat.categoryId,
-      categoryName: cat.categoryName,
-      color: cat.color
-    }
-  })
-})
-
-const visibleTrendHoverPoints = computed(() => {
-  if (activeTrendIdx.value >= 0) {
-    const activeCategory = trendChartModel.value[activeTrendIdx.value]
-    return trendHoverPoints.value.filter(point => point.categoryId === activeCategory?.categoryId)
-  }
-  return trendHoverPoints.value.filter(point => point.orderCount > 0)
-})
-
 const trendHoverSummary = computed(() => {
   const hour = hoveredTrendHour.value
-  const points = trendHoverPoints.value
-  if (hour === null || points.length === 0) return null
-  const featured = activeTrendIdx.value >= 0
-    ? points[activeTrendIdx.value]
-    : [...points].sort((a, b) => b.orderCount - a.orderCount)[0]
+  if (hour === null || trendChartModel.value.length === 0) return null
   return {
     label: `${String(hour).padStart(2, '0')}:00–${String(hour + 1).padStart(2, '0')}:00`,
-    totalOrders: points.reduce((sum, point) => sum + point.orderCount, 0),
-    featured
+    categoryName: activeTrendIdx.value >= 0
+      ? trendChartModel.value[activeTrendIdx.value]?.categoryName || ''
+      : ''
   }
 })
 
@@ -1636,7 +1548,12 @@ function toggleTrendSelection(categoryId) {
 }
 
 function getCatBarWidth(cat) {
-  return Math.max(3, (cat.totalOrders / trendChartMaxTotal.value) * 100)
+  return cat.orderShareBps / 100
+}
+
+function formatTrendShare(cat) {
+  const percentage = getCatBarWidth(cat)
+  return `${trendShareFormatter.format(percentage)}%`
 }
 
 function trendX(hour) {
@@ -1647,39 +1564,38 @@ function trendTimeX(hour) {
   return (hour / 24) * TVB_W
 }
 
-function trendY(value, maxVal = trendChartMax.value) {
-  return TVB_PAD + TVB_PLOT_H - (Math.max(0, Number(value) || 0) / maxVal) * TVB_PLOT_H
+function trendY(value, maxVal = TREND_VALUE_MAX) {
+  return TVB_PAD_Y + TVB_PLOT_H - (Math.max(0, Number(value) || 0) / maxVal) * TVB_PLOT_H
 }
 
-function trendCurve(points, maxVal = trendChartMax.value) {
+function trendCurve(points, maxVal = TREND_VALUE_MAX) {
   if (!points.length) return ''
   const coordinates = points.map(point => ({
     x: trendX(point.hour),
-    y: trendY(point.orderCount, maxVal)
+    y: trendY(point.trendValue, maxVal)
   }))
   if (coordinates.length === 1) return `M ${coordinates[0].x} ${coordinates[0].y}`
 
-  // Monotone cubic interpolation keeps the smooth appearance without
-  // overshooting the real hourly values at peaks and valleys.
-  const slopes = coordinates.slice(0, -1).map((point, index) => {
-    const next = coordinates[index + 1]
-    return (next.y - point.y) / (next.x - point.x)
-  })
-  const tangents = coordinates.map((_, index) => {
-    if (index === 0) return slopes[0]
-    if (index === coordinates.length - 1) return slopes[slopes.length - 1]
-    const previous = slopes[index - 1]
-    const next = slopes[index]
-    if (previous === 0 || next === 0 || previous * next <= 0) return 0
-    return (2 * previous * next) / (previous + next)
-  })
-
-  let path = `M ${coordinates[0].x} ${coordinates[0].y}`
+  // A restrained Catmull-Rom spline preserves every hourly value while
+  // maintaining continuous tangents through peaks and valleys.
+  const tension = 0.72
+  const clampY = value => Math.min(TVB_H - TVB_PAD_Y, Math.max(TVB_PAD_Y, value))
+  const precise = value => Number(value.toFixed(2))
+  let path = `M ${precise(coordinates[0].x)} ${precise(coordinates[0].y)}`
   for (let index = 0; index < coordinates.length - 1; index++) {
+    const previous = coordinates[Math.max(0, index - 1)]
     const current = coordinates[index]
     const next = coordinates[index + 1]
-    const width = next.x - current.x
-    path += ` C ${current.x + width / 3} ${current.y + tangents[index] * width / 3}, ${next.x - width / 3} ${next.y - tangents[index + 1] * width / 3}, ${next.x} ${next.y}`
+    const following = coordinates[Math.min(coordinates.length - 1, index + 2)]
+    const controlOne = {
+      x: current.x + ((next.x - previous.x) * tension) / 6,
+      y: clampY(current.y + ((next.y - previous.y) * tension) / 6)
+    }
+    const controlTwo = {
+      x: next.x - ((following.x - current.x) * tension) / 6,
+      y: clampY(next.y - ((following.y - current.y) * tension) / 6)
+    }
+    path += ` C ${precise(controlOne.x)} ${precise(controlOne.y)}, ${precise(controlTwo.x)} ${precise(controlTwo.y)}, ${precise(next.x)} ${precise(next.y)}`
   }
   return path
 }
@@ -3210,8 +3126,10 @@ function clearTrendHover() {
 
 .hotboard-cat-value {
   min-width: 58px;
-  color: var(--text-tertiary);
-  font-size: 11px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
   text-align: right;
   white-space: nowrap;
 }
@@ -3309,13 +3227,6 @@ function clearTrendHover() {
   white-space: nowrap;
 }
 
-.hotboard-trend-legend-value {
-  margin-left: auto;
-  color: var(--text-tertiary);
-  font-size: 11px;
-  font-variant-numeric: tabular-nums;
-}
-
 .hotboard-trend-legend-item.active {
   border-color: var(--border-medium, var(--border-light));
   background: var(--bg-tertiary);
@@ -3334,27 +3245,12 @@ function clearTrendHover() {
 
 .hotboard-trend-plot {
   --trend-chart-height: 200px;
-  display: grid;
-  grid-template-columns: 34px minmax(0, 1fr);
-  gap: 8px;
-  padding: 14px 14px 8px 8px;
+  padding: 14px 16px 8px;
   border: 1px solid var(--border-light);
   border-radius: 14px;
   background: var(--bg-secondary);
   background: color-mix(in srgb, var(--bg-secondary) 72%, transparent);
   overflow: hidden;
-}
-
-.hotboard-trend-y-axis {
-  height: var(--trend-chart-height);
-  padding: 1px 0;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  justify-content: space-between;
-  color: var(--text-tertiary);
-  font-size: 10px;
-  font-variant-numeric: tabular-nums;
 }
 
 .hotboard-trend-chart-wrap {
@@ -3369,6 +3265,7 @@ function clearTrendHover() {
   display: block;
   overflow: visible;
   touch-action: pan-y;
+  text-rendering: geometricPrecision;
 }
 
 .hotboard-trend-future {
@@ -3397,20 +3294,9 @@ function clearTrendHover() {
   transition: opacity 0.18s ease, stroke-width 0.18s ease;
 }
 
-.hotboard-trend-area {
+.hotboard-trend-path-aura {
   pointer-events: none;
-  transition: opacity 0.18s ease;
-}
-
-.hotboard-trend-hover-point {
-  stroke: var(--bg-primary);
-  stroke-width: 1.5;
-  pointer-events: none;
-  transition: opacity 0.18s ease, r 0.18s ease;
-}
-
-.hotboard-trend-hover-point {
-  stroke-width: 2;
+  transition: opacity 0.18s ease, stroke-width 0.18s ease;
 }
 
 .hotboard-trend-hover-line {
@@ -3462,55 +3348,6 @@ function clearTrendHover() {
   font-size: 10px;
   color: var(--text-tertiary);
   font-variant-numeric: tabular-nums;
-}
-
-.hotboard-trend-details {
-  position: relative;
-  z-index: 1;
-  margin-top: 12px;
-  color: var(--text-secondary);
-  font-size: 12px;
-}
-
-.hotboard-trend-details summary {
-  min-height: 44px;
-  display: inline-flex;
-  align-items: center;
-  cursor: pointer;
-  color: var(--color-primary);
-}
-
-.hotboard-trend-table-wrap {
-  overflow-x: auto;
-  border: 1px solid var(--border-light);
-  border-radius: 8px;
-}
-
-.hotboard-trend-table {
-  min-width: 620px;
-  width: 100%;
-  border-collapse: collapse;
-  white-space: nowrap;
-}
-
-.hotboard-trend-table th,
-.hotboard-trend-table td {
-  padding: 7px 9px;
-  border-bottom: 1px solid var(--border-light);
-  text-align: right;
-}
-
-.hotboard-trend-table tr:last-child th,
-.hotboard-trend-table tr:last-child td {
-  border-bottom: 0;
-}
-
-.hotboard-trend-table th:first-child,
-.hotboard-trend-table td:first-child {
-  position: sticky;
-  left: 0;
-  background: var(--glass-bg-light, var(--bg-primary));
-  text-align: left;
 }
 
 .hotboard-error {
@@ -3566,9 +3403,7 @@ function clearTrendHover() {
 
   .hotboard-trend-plot {
     --trend-chart-height: 184px;
-    grid-template-columns: 28px minmax(0, 1fr);
-    gap: 6px;
-    padding: 12px 8px 7px 5px;
+    padding: 12px 10px 7px;
     border-radius: 12px;
   }
 
@@ -3601,8 +3436,7 @@ function clearTrendHover() {
 @media (prefers-reduced-motion: reduce) {
   .hotboard-cat-bar-fill,
   .hotboard-trend-path,
-  .hotboard-trend-area,
-  .hotboard-trend-hover-point,
+  .hotboard-trend-path-aura,
   .hotboard-trend-legend-item {
     transition: none;
   }
