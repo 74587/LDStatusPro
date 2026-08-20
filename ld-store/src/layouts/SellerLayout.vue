@@ -386,8 +386,9 @@ html.dark .seller-shell {
 .seller-nav { width: 100%; min-width: 0; display: grid; gap: 20px; }
 .seller-nav-group { width: 100%; min-width: 0; }
 .seller-nav-group h2 { margin: 0 0 7px 12px; color: rgba(233,237,240,.42); font-size: 11px; font-weight: 600; letter-spacing: .16em; }
-.seller-nav-item { width: 100%; min-width: 0; min-height: 44px; justify-self: stretch; box-sizing: border-box; display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 10px; color: rgba(240,244,246,.76); font-size: 14px; transition: background 180ms ease, color 180ms ease, transform 180ms ease; }
-.seller-nav-item > span:not(.seller-nav-badge) { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.seller-nav-item { width: 100%; min-width: 0; min-height: 44px; justify-self: stretch; box-sizing: border-box; display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 10px; color: rgba(240,244,246,.76); font-size: 14px; line-height: 1; transition: background 180ms ease, color 180ms ease, transform 180ms ease; }
+.seller-nav-item > svg { display: block; align-self: center; justify-self: center; }
+.seller-nav-item > span:not(.seller-nav-badge) { min-width: 0; align-self: center; line-height: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .seller-nav-item:hover { color: #fff; background: rgba(255,255,255,.06); transform: translateX(2px); }
 .seller-nav-item.active { color: #fff; background: rgba(145,178,154,.18); box-shadow: inset 3px 0 0 var(--seller-jade); }
 .seller-nav-badge { min-width: 22px; height: 22px; padding: 0 6px; display: grid; place-items: center; border-radius: 999px; background: #e8d4b8; color: #3d3021; font: 700 11px/1 ui-monospace, SFMono-Regular, Menlo, monospace; }
