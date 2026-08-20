@@ -103,6 +103,21 @@ export function formatNumber(num) {
 }
 
 /**
+ * 紧凑格式化非负计数，千位以上使用 k，最多保留一位小数
+ * @param {number|string} value - 原始计数
+ * @returns {string}
+ */
+export function formatCompactCount(value) {
+  const parsed = Number(value)
+  const count = Number.isFinite(parsed) ? Math.max(0, Math.trunc(parsed)) : 0
+
+  if (count < 1000) return String(count)
+
+  const thousands = Math.round(count / 100) / 10
+  return `${Number.isInteger(thousands) ? thousands : thousands.toFixed(1)} k`
+}
+
+/**
  * 格式化库存显示
  * @param {number} stock - 库存数量
  * @param {number} available - 可用库存

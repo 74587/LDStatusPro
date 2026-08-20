@@ -105,10 +105,10 @@
             <span v-if="hasDiscount" class="original-price">{{ originalPrice }} LDC</span>
           </div>
         </div>
-        <span class="product-views">
+        <span class="product-views" :title="viewCountLabel">
           <Eye :size="14" aria-hidden="true" />
-          <span>{{ product.view_count || 0 }}</span>
-          <span class="sr-only">次浏览</span>
+          <span aria-hidden="true">{{ compactViewCount }}</span>
+          <span class="sr-only">{{ viewCountLabel }}</span>
         </span>
       </div>
     </div>
@@ -129,7 +129,7 @@ import {
 } from '@lucide/vue'
 import { useShopStore } from '@/stores/shop'
 import AvatarImage from '@/components/common/AvatarImage.vue'
-import { formatRelativeTime, formatPrice } from '@/utils/format'
+import { formatCompactCount, formatNumber, formatRelativeTime, formatPrice } from '@/utils/format'
 import { buildAvatarCandidates } from '@/utils/avatar'
 import {
   getAvailableStock,
@@ -402,6 +402,14 @@ const stockDisplay = computed(() => getStockDisplay(props.product))
 
 // 销量
 const soldCount = computed(() => parseInt(props.product.sold_count) || 0)
+
+// 浏览量：视觉上使用紧凑 k 单位，辅助技术与悬浮提示保留完整数字
+const viewCount = computed(() => {
+  const parsed = Number(props.product.view_count)
+  return Number.isFinite(parsed) ? Math.max(0, Math.trunc(parsed)) : 0
+})
+const compactViewCount = computed(() => formatCompactCount(viewCount.value))
+const viewCountLabel = computed(() => `${formatNumber(viewCount.value)} 次浏览`)
 
 // 分类
 const category = computed(() => 
