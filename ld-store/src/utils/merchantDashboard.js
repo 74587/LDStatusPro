@@ -23,6 +23,19 @@ export function sortMerchantTasks(tasks = []) {
   })
 }
 
+export function sortTrendRowsNewestFirst(rows = []) {
+  return [...rows].sort((left, right) => {
+    const leftTime = Date.parse(left?.date || '')
+    const rightTime = Date.parse(right?.date || '')
+
+    if (Number.isFinite(leftTime) && Number.isFinite(rightTime)) {
+      return rightTime - leftTime
+    }
+
+    return String(right?.date || '').localeCompare(String(left?.date || ''))
+  })
+}
+
 export function buildMerchantBrief(dashboard) {
   const revenue = Number(dashboard?.today?.revenue ?? dashboard?.kpis?.revenue?.current ?? 0)
   const orders = Number(dashboard?.today?.orders ?? dashboard?.kpis?.orders?.current ?? 0)

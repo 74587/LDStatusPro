@@ -3,7 +3,8 @@ import { buildUserDropdownMenuGroups } from '../src/config/userMenu'
 import {
   buildMerchantBrief,
   formatChangeRate,
-  sortMerchantTasks
+  sortMerchantTasks,
+  sortTrendRowsNewestFirst
 } from '../src/utils/merchantDashboard'
 import {
   isSellerNavigationItemActive,
@@ -169,6 +170,21 @@ describe('经营概览展示口径', () => {
       { type: 'c', priority: 'high', count: 4 }
     ])
     expect(tasks.map(task => task.type)).toEqual(['c', 'b', 'a'])
+  })
+
+  it('趋势明细按日期从近到远展示且不修改图表原始数据', () => {
+    const trend = [
+      { date: '2026-08-18', totalRevenue: 18 },
+      { date: '2026-08-20', totalRevenue: 20 },
+      { date: '2026-08-19', totalRevenue: 19 }
+    ]
+
+    expect(sortTrendRowsNewestFirst(trend).map(row => row.date)).toEqual([
+      '2026-08-20',
+      '2026-08-19',
+      '2026-08-18'
+    ])
+    expect(trend.map(row => row.date)).toEqual(['2026-08-18', '2026-08-20', '2026-08-19'])
   })
 
   it('无成交时给出确定性建议且不伪造数据', () => {

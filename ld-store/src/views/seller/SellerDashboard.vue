@@ -137,7 +137,13 @@
             </div>
           </div>
           <details class="chart-data-details">
-            <summary>查看趋势数据表</summary>
+            <summary>
+              <span class="chart-data-summary-copy">
+                <strong>趋势数据表</strong>
+                <small>按日期查看{{ currentChartLabel }}明细</small>
+              </span>
+              <ChevronDown :size="18" aria-hidden="true" />
+            </summary>
             <div class="chart-data-table-wrap">
               <table>
                 <caption class="sr-only">{{ currentChartLabel }}逐日数据</caption>
@@ -154,7 +160,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="row in dashboard.trend" :key="row.date">
+                  <tr v-for="row in trendTableRows" :key="row.date">
                     <td>{{ row.date }}</td>
                     <template v-if="chartView === 'revenue'">
                       <td>{{ formatNumber(row.productRevenue) }}</td><td>{{ formatNumber(row.serviceRevenue) }}</td><td>{{ formatNumber(row.totalRevenue) }}</td>
@@ -273,7 +279,7 @@
 <script setup>
 import { computed, defineAsyncComponent, onMounted, ref } from 'vue'
 import {
-  AlertCircle, ArrowUpRight, CalendarDays, ChevronRight, CircleCheck, ClipboardList,
+  AlertCircle, ArrowUpRight, CalendarDays, ChevronDown, ChevronRight, CircleCheck, ClipboardList,
   CreditCard, Eye, Minus, PackageCheck, PackageOpen, Plus, RefreshCw, ShoppingBag,
   Sparkles, Store, TicketPercent, TrendingDown, TrendingUp, UsersRound, WalletCards
 } from '@lucide/vue'
@@ -283,7 +289,8 @@ import {
   formatChangeRate,
   formatDashboardNumber,
   getTaskPriorityLabel,
-  sortMerchantTasks
+  sortMerchantTasks,
+  sortTrendRowsNewestFirst
 } from '@/utils/merchantDashboard'
 
 const SellerTrendChart = defineAsyncComponent(() => import('@/components/seller/SellerTrendChart.vue'))
@@ -309,6 +316,7 @@ const chartViews = [
 
 const brief = computed(() => buildMerchantBrief(dashboard.value))
 const sortedTasks = computed(() => sortMerchantTasks(dashboard.value?.tasks || []))
+const trendTableRows = computed(() => sortTrendRowsNewestFirst(dashboard.value?.trend || []))
 const isNewSeller = computed(() => Number(dashboard.value?.lifetime?.orders || 0) === 0 && Number(dashboard.value?.businessStatus?.products?.approved || 0) === 0)
 const todayLabel = computed(() => new Intl.DateTimeFormat('zh-CN', { timeZone: 'Asia/Shanghai', month: 'long', day: 'numeric', weekday: 'long' }).format(new Date()))
 const generatedTime = computed(() => formatTime(dashboard.value?.period?.generatedAt))
@@ -488,8 +496,17 @@ html.dark .range-switch button.active, html.dark .chart-view-switch button.activ
 .source-summary span, .source-summary strong { display: block; }
 .source-summary span { color: var(--seller-muted); font-size: 11px; }
 .source-summary strong { margin-top: 3px; font: 650 13px/1.3 ui-monospace, SFMono-Regular, Menlo, monospace; }
-.chart-data-details { margin: 0 22px 20px; border-top: 1px solid var(--seller-border); }
-.chart-data-details summary { min-height: 44px; display: flex; align-items: center; color: var(--seller-muted); cursor: pointer; font-size: 12px; }
+.chart-data-details { margin: 0 22px 20px; overflow: hidden; border: 1px solid var(--seller-border); border-radius: 10px; background: color-mix(in srgb, var(--seller-paper) 48%, var(--seller-surface)); }
+.chart-data-details summary { min-height: 48px; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 12px; list-style: none; color: var(--seller-ink); cursor: pointer; font-size: 12px; }
+.chart-data-details summary::-webkit-details-marker { display: none; }
+.chart-data-details summary:hover { background: color-mix(in srgb, var(--seller-jade) 6%, transparent); }
+.chart-data-details summary:focus-visible { outline: 3px solid var(--seller-jade); outline-offset: -3px; }
+.chart-data-summary-copy { min-width: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 3px 9px; }
+.chart-data-summary-copy strong { font-size: 13px; }
+.chart-data-summary-copy small { color: var(--seller-muted); font-size: 11px; font-weight: 400; }
+.chart-data-details summary > svg { flex: 0 0 auto; color: var(--seller-muted); transition: transform 160ms ease; }
+.chart-data-details[open] summary { border-bottom: 1px solid var(--seller-border); }
+.chart-data-details[open] summary > svg { transform: rotate(180deg); }
 .chart-data-table-wrap { max-height: 280px; overflow: auto; }
 .chart-data-table-wrap table, .recent-table { width: 100%; border-collapse: collapse; font-size: 12px; }
 .chart-data-table-wrap th, .chart-data-table-wrap td { padding: 9px; border-bottom: 1px solid var(--seller-border); text-align: right; font-variant-numeric: tabular-nums; }
@@ -606,6 +623,6 @@ html.dark .range-switch button.active, html.dark .chart-view-switch button.activ
 }
 @media (prefers-reduced-motion: reduce) {
   .skeleton { animation: none; }
-  .kpi-grid, .range-switch button, .chart-view-switch button { transition: none; }
+  .kpi-grid, .range-switch button, .chart-view-switch button, .chart-data-details summary > svg { transition: none; }
 }
 </style>
