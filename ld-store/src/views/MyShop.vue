@@ -17,9 +17,13 @@
         <div class="status-banner" :class="statusClass">
           <div class="status-content">
             <SellerStatusBadge :label="statusText" :tone="statusTone" />
-            <span v-if="myShop.reject_reason" class="reject-reason">
-              审核意见：{{ myShop.reject_reason }}
-            </span>
+            <div v-if="myShop.status === 'rejected' && shopRejectReason" class="reject-reason" role="note">
+              <CircleAlert :size="17" aria-hidden="true" />
+              <div>
+                <strong>审核未通过原因</strong>
+                <span>{{ shopRejectReason }}</span>
+              </div>
+            </div>
           </div>
           <button
             v-if="myShop.status === 'rejected' || myShop.status === 'offline'"
@@ -152,7 +156,7 @@ import { api } from '@/utils/api'
 import AvatarImage from '@/components/common/AvatarImage.vue'
 import ShopForm from '@/components/shop/ShopForm.vue'
 import SellerStatusBadge from '@/components/seller/SellerStatusBadge.vue'
-import { ArrowUpRight, Eye, Store } from '@lucide/vue'
+import { ArrowUpRight, CircleAlert, Eye, Store } from '@lucide/vue'
 import { buildAvatarCandidates } from '@/utils/avatar'
 import { useToast } from '@/composables/useToast'
 import { useDialog } from '@/composables/useDialog'
@@ -165,6 +169,9 @@ const submitting = ref(false)
 const myShop = ref(null)
 const showEditForm = ref(false)
 const loadError = ref('')
+const shopRejectReason = computed(() => String(
+  myShop.value?.reject_reason || myShop.value?.rejectReason || ''
+).trim())
 
 // 解析标签
 const parsedTags = computed(() => {
@@ -731,7 +738,7 @@ onMounted(() => {
 }
 
 .status-banner {
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   padding: 12px 16px;
   border: 1px solid var(--seller-border);
@@ -740,19 +747,35 @@ onMounted(() => {
 }
 
 .status-content {
-  display: flex;
+  display: grid;
+  flex: 1;
   min-width: 0;
-  align-items: center;
-  gap: 12px;
+  justify-items: start;
+  gap: 10px;
 }
 
 .reject-reason {
-  overflow: hidden;
+  width: 100%;
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  align-items: start;
+  gap: 8px;
+  overflow: visible;
   margin: 0;
-  color: var(--seller-muted);
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--seller-danger) 28%, var(--seller-border));
+  border-radius: 9px;
+  color: var(--seller-danger);
+  background: color-mix(in srgb, var(--seller-danger) 7%, var(--seller-surface));
+  line-height: 1.55;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
+.reject-reason > svg { margin-top: 2px; }
+.reject-reason strong,
+.reject-reason span { display: block; }
+.reject-reason strong { margin-bottom: 2px; font-size: 12px; }
+.reject-reason span { color: var(--seller-ink); font-size: 12px; }
 
 .banner-action {
   min-height: 40px;
