@@ -313,7 +313,7 @@ const productColumns = [
   { key: 'product', label: '物品', width: '29%' },
   { key: 'status', label: '状态', width: '15%' },
   { key: 'price', label: '价格', width: '15%' },
-  { key: 'stock', label: '库存 / 售出', width: '12%' },
+  { key: 'stock', label: '库存', width: '12%' },
   { key: 'views', label: '浏览', width: '7%' },
   { key: 'actions', label: '操作', width: '22%', align: 'right' }
 ]
