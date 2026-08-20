@@ -14,6 +14,11 @@ export function resolveOrderArea(query = {}, sellerMode = false) {
 }
 
 export function resolveAppViewKey(route = {}) {
+  const routeName = String(route?.name || '')
+  const routePath = String(route?.path || '')
+  if (routeName === 'Docs' || routeName === 'DocsSection' || routePath === '/docs' || routePath.startsWith('/docs/')) {
+    return 'docs-help-center'
+  }
   return route?.meta?.layout === 'seller' ? 'seller-layout' : String(route?.path || route?.name || 'route')
 }
 

@@ -61,6 +61,12 @@ describe('卖家后台稳定壳层与列表工具', () => {
     expect(resolveSellerViewKey({ name: 'SellerOrders', fullPath: '/seller/orders?page=2' })).toBe('SellerOrders')
   })
 
+  it('帮助中心子文章共用稳定壳层 key，切换文章时不卸载整页', () => {
+    expect(resolveAppViewKey({ name: 'Docs', path: '/docs' })).toBe('docs-help-center')
+    expect(resolveAppViewKey({ name: 'DocsSection', path: '/docs/buy-guide' })).toBe('docs-help-center')
+    expect(resolveAppViewKey({ name: 'DocsSection', path: '/docs/payment-settings' })).toBe('docs-help-center')
+  })
+
   it('商品导航只激活所属入口且发布页不会同时选中我的物品', () => {
     const productsItem = {
       to: '/seller/products',
