@@ -19,7 +19,15 @@
       :aria-pressed="modelValue === tab.value"
       @click="selectTab(tab.value)"
     >
-      <span v-if="tab.icon" class="tab-icon">{{ tab.icon }}</span>
+      <span v-if="tab.iconComponent || tab.icon" class="tab-icon" aria-hidden="true">
+        <component
+          :is="tab.iconComponent"
+          v-if="tab.iconComponent"
+          :size="16"
+          :stroke-width="2"
+        />
+        <template v-else>{{ tab.icon }}</template>
+      </span>
       <span class="tab-text">{{ tab.label }}</span>
     </button>
   </div>
@@ -32,7 +40,7 @@ const props = defineProps({
   tabs: {
     type: Array,
     required: true,
-    // [{ value: 'xxx', label: '标签', icon: '🔥' }]
+    // [{ value: 'xxx', label: '标签', icon: '字符图标' | iconComponent: VueComponent }]
   },
   modelValue: {
     type: String,
@@ -242,6 +250,10 @@ onUnmounted(() => {
 
 /* 图标 */
 .tab-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
   font-size: 16px;
   line-height: 1;
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);

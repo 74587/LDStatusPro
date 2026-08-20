@@ -572,6 +572,7 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted, onUnmounted, onActivated, onDeactivated, watch, nextTick } from 'vue'
+import { ChartNoAxesColumnIncreasing, ClipboardPenLine, ShoppingBag, Store } from '@lucide/vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useShopStore } from '@/stores/shop'
 import { useUserStore } from '@/stores/user'
@@ -607,12 +608,12 @@ const maintenanceCatalogHint = computed(() => (
 const sentinel = ref(null)
 const sectionTabs = computed(() => {
   const tabs = [
-    { value: 'products', label: '物品广场', icon: '🛒' },
-    { value: 'buy', label: '求购广场', icon: '🌱' },
-    { value: 'stores', label: '小店集市', icon: '🏪' }
+    { value: 'products', label: '物品广场', iconComponent: ShoppingBag },
+    { value: 'buy', label: '求购广场', iconComponent: ClipboardPenLine },
+    { value: 'stores', label: '小店集市', iconComponent: Store }
   ]
   if (userStore.isLoggedIn && (userStore.trustLevel || 0) >= 1) {
-    tabs.push({ value: 'hotboard', label: '士多热榜', icon: '📊' })
+    tabs.push({ value: 'hotboard', label: '士多热榜', iconComponent: ChartNoAxesColumnIncreasing })
   }
   return tabs
 })

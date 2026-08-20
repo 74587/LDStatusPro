@@ -120,7 +120,7 @@
       <!-- 空状态 -->
       <EmptyState
         v-else-if="orders.length === 0"
-        :icon="sellerMode ? '' : '📋'"
+        :icon-component="ClipboardList"
         :text="currentRole === 'buy' ? '暂无求购订单' : '暂无订单'"
         :hint="currentRole === 'buyer' ? '您还没有购买任何物品' : (currentRole === 'seller' ? '您还没有收到任何商品订单' : (sellerMode ? '您还没有作为服务方完成求购交易' : '您还没有求购订单'))"
       >
@@ -177,43 +177,6 @@
           </router-link>
           
           <!-- 发货内容仅在订单详情页展示，列表卡片不直接暴露 CDK/发货内容。 -->
-          <!-- <div
-            v-if="hasDeliveryContent(order)"
-            class="cdk-display"
-            @click.stop
-          >
-            <div class="cdk-label">
-              {{ isCdkOrder(order) ? '🔑 CDK 密钥' : '📦 发货内容' }}
-              <span v-if="getDeliveryCodes(order).length > 1" class="cdk-count">
-                共 {{ getDeliveryCodes(order).length }} 个
-              </span>
-            </div>
-            <div class="cdk-content-wrapper">
-              <code
-                class="cdk-code"
-                :class="{ hidden: !order._showCdk }"
-              >
-                <template v-if="order._showCdk">
-                  <span
-                    v-for="(code, index) in getDeliveryCodes(order)"
-                    :key="`${getOrderKey(order)}-${index}`"
-                    class="cdk-line"
-                  >
-                    {{ getDeliveryCodes(order).length > 1 ? `${index + 1}. ` : '' }}{{ code }}
-                  </span>
-                </template>
-                <template v-else>••••••••••••••••</template>
-              </code>
-              <div class="cdk-actions">
-                <button class="cdk-btn" @click="toggleCdkVisibility(order)">
-                  {{ order._showCdk ? '🙈' : '👁️' }}
-                </button>
-                <button class="cdk-btn" @click="copyCdk(order)">
-                  📋
-                </button>
-              </div>
-            </div>
-          </div> -->
           
           <div class="order-footer">
             <div class="order-amount-wrap compact">
@@ -333,7 +296,20 @@
 
 <script setup>
 import { computed, ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
-import { ArrowUpRight, PackageCheck, RefreshCw, Search, ShoppingBag } from '@lucide/vue'
+import {
+  ArrowUpRight,
+  CircleX,
+  ClipboardList,
+  ClipboardPenLine,
+  Package,
+  PackageCheck,
+  RefreshCw,
+  RotateCcw,
+  Search,
+  ShoppingBag,
+  ShoppingCart,
+  Truck
+} from '@lucide/vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useShopStore } from '@/stores/shop'
 import { isMaintenanceFeatureEnabled, isRestrictedMaintenanceMode } from '@/config/maintenance'
@@ -406,8 +382,8 @@ const roleTabs = computed(() => props.sellerMode
       { value: 'buy', label: '求购服务' }
     ]
   : [
-      { value: 'buyer', label: '我买的', icon: '🛒' },
-      { value: 'buy', label: '求购订单', icon: '🌱' }
+      { value: 'buyer', label: '我买的', iconComponent: ShoppingCart },
+      { value: 'buy', label: '求购订单', iconComponent: ClipboardPenLine }
     ])
 const orderSearch = ref('')
 const timeRange = ref('1m')
@@ -423,11 +399,11 @@ const timeRangeOptions = [
 ]
 const VALID_STATUS_FILTERS = ['paid', 'delivered', 'cancelled', 'refunded']
 const statusTabs = computed(() => [
-  { value: '', label: '全部', icon: props.sellerMode ? '' : '📋' },
-  { value: 'paid', label: '待发货', icon: props.sellerMode ? '' : '📦' },
-  { value: 'delivered', label: '已发货', icon: props.sellerMode ? '' : '🚚' },
-  { value: 'cancelled', label: '已取消', icon: props.sellerMode ? '' : '❌' },
-  { value: 'refunded', label: '已退款', icon: props.sellerMode ? '' : '↩️' }
+  { value: '', label: '全部', iconComponent: props.sellerMode ? null : ClipboardList },
+  { value: 'paid', label: '待发货', iconComponent: props.sellerMode ? null : Package },
+  { value: 'delivered', label: '已发货', iconComponent: props.sellerMode ? null : Truck },
+  { value: 'cancelled', label: '已取消', iconComponent: props.sellerMode ? null : CircleX },
+  { value: 'refunded', label: '已退款', iconComponent: props.sellerMode ? null : RotateCcw }
 ])
 const cancellingOrderId = ref(null)
 const deliverFormOrderId = ref(null)
