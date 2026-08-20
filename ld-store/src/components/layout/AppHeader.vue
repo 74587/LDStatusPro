@@ -157,7 +157,7 @@
               <span v-if="userAlertText && !isMobile" class="user-unread-inline">
                 {{ userAlertText }}
               </span>
-              <span class="dropdown-arrow">▼</span>
+              <ChevronDown class="dropdown-arrow" :size="14" :stroke-width="2" aria-hidden="true" />
               <span v-if="headerAlertCount > 0 && isMobile" class="user-unread-badge">
                 {{ headerAlertDisplay }}
               </span>
@@ -194,7 +194,9 @@
                   :class="{ 'with-unread': item.withUnread }"
                   @click.prevent="navigateTo(item.path)"
                 >
-                  <span class="dropdown-item-icon">{{ item.icon }}</span>
+                  <span class="dropdown-item-icon" aria-hidden="true">
+                    <component :is="item.iconComponent" :size="18" :stroke-width="2" />
+                  </span>
                   <span class="dropdown-item-text">{{ item.label }}</span>
                   <span v-if="item.badge" class="dropdown-badge">{{ item.badge }}</span>
                 </a>
@@ -203,7 +205,8 @@
               <div class="dropdown-divider"></div>
               
               <button class="dropdown-item logout" @click="handleLogout">
-                🚪 退出登录
+                <LogOut class="dropdown-item-icon" :size="18" :stroke-width="2" aria-hidden="true" />
+                <span class="dropdown-item-text">退出登录</span>
               </button>
             </div>
           </div>
@@ -220,6 +223,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ChevronDown, LogOut } from '@lucide/vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import ThemeToggle from '@/components/common/ThemeToggle.vue'
@@ -935,9 +939,12 @@ watch(
 }
 
 .dropdown-item-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
   width: 18px;
-  text-align: center;
+  height: 18px;
 }
 
 .dropdown-item-text {
