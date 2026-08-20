@@ -507,7 +507,7 @@ watch(
   top: 0;
   left: 0;
   right: 0;
-  z-index: 100;
+  z-index: 200;
   /* 液态玻璃效果 */
   background: var(--glass-bg);
   backdrop-filter: blur(24px) saturate(180%);
@@ -936,6 +936,7 @@ watch(
   cursor: pointer;
   transition: background 0.2s;
   text-align: left;
+  touch-action: manipulation;
 }
 
 .dropdown-item-icon {
@@ -1087,6 +1088,14 @@ watch(
 
   .dropdown-arrow {
     display: none;
+  }
+
+  .dropdown-menu {
+    max-height: calc(100vh - 74px - env(safe-area-inset-bottom, 0px));
+    max-height: calc(100dvh - 74px - env(safe-area-inset-bottom, 0px));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
   }
 }
 </style>

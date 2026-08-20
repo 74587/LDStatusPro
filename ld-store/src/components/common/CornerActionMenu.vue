@@ -295,6 +295,7 @@ watch(
   width: 190px;
   height: 190px;
   z-index: 120;
+  pointer-events: none;
   --corner-action-bg: var(--glass-bg-light);
   --corner-action-border: var(--glass-border-light);
   --corner-action-shadow: 0 8px 16px var(--glass-shadow), inset 0 1px 0 var(--glass-shine);
@@ -490,6 +491,8 @@ watch(
   border: 1px solid var(--corner-fab-border);
   overflow: hidden;
   transition: transform 0.25s ease, box-shadow 0.25s ease;
+  pointer-events: auto;
+  touch-action: manipulation;
 }
 
 .backtop-button {
@@ -509,6 +512,8 @@ watch(
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   transition: transform 0.28s ease, opacity 0.24s ease, box-shadow 0.24s ease, color 0.24s ease;
+  pointer-events: auto;
+  touch-action: manipulation;
 }
 
 .backtop-button:hover {
