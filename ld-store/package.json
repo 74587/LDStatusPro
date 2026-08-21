@@ -17,9 +17,11 @@
     "node": ">=18"
   },
   "dependencies": {
+    "@grafana/faro-web-sdk": "2.10.0",
+    "@grafana/faro-web-tracing": "2.10.0",
+    "@lucide/vue": "^1.32.0",
     "dompurify": "^3.4.13",
     "echarts": "^6.1.0",
-    "@lucide/vue": "^1.32.0",
     "marked": "^18.0.2",
     "pinia": "^2.1.0",
     "vue": "^3.4.0",

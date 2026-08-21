@@ -21,6 +21,14 @@ function proxyOptions(target) {
 
 export default defineConfig({
   plugins: [vue()],
+  define: {
+    'import.meta.env.VITE_BUILD_VERSION': JSON.stringify(
+      process.env.VITE_APP_VERSION
+      || process.env.CF_PAGES_COMMIT_SHA?.slice(0, 12)
+      || process.env.npm_package_version
+      || 'development'
+    )
+  },
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url))

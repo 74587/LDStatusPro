@@ -110,11 +110,17 @@ cp .env.example .env.local
 - `VITE_API_BASE`：LD 士多后端地址，同时用于商家收款配置页展示回调地址
 - `VITE_AUTH_API_BASE`：登录认证接口地址
 - `VITE_IMAGE_API_BASE`：图床接口地址
+- `VITE_FARO_ENABLED`：浏览器端性能与错误采集开关，默认关闭
+- `VITE_FARO_COLLECTOR_URL`：自托管采集入口的完整 HTTPS `/collect` 地址
+- `VITE_FARO_SESSION_SAMPLE_RATE`：会话采样率，生产建议保持 `0.1`
+- `VITE_DEPLOYMENT_ENVIRONMENT`、`VITE_APP_VERSION`：部署环境与前端版本标识
 - `VITE_MAINTENANCE_MODE`：维护模式开关（`1` 开启，`0` 关闭）
 - `VITE_MAINTENANCE_TITLE`、`VITE_MAINTENANCE_MESSAGE`、`VITE_MAINTENANCE_ETA`：维护页文案
 - `VITE_MAINTENANCE_STATUS_URL`：维护状态页地址
 
 本地开发时请保持三个 API 地址为空，`/api/*` 会由 Vite 同源代理到对应服务，不会触发浏览器 CORS。生产构建在未配置时会使用代码内置的公网地址。
+
+浏览器端采集仅在显式开启且配置有效 HTTPS 入口后运行；不采集控制台、表单或会话回放，并尊重 GPC/DNT。采集入口不可用不会阻塞页面和商城 API 请求。
 
 ### 开发模式
 

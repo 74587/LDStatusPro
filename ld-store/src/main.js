@@ -5,9 +5,13 @@ import router from './router'
 import { useUserStore } from '@/stores/user'
 import { useUiStore } from '@/stores/ui'
 import { AUTH_EXPIRED_EVENT } from '@/utils/auth'
+import { captureStorefrontError, initializeStorefrontTelemetry } from '@/observability/faro'
 import './styles/main.css'
 import './styles/markdown-content.css'
 import './styles/seller.css'
+
+// 可选客户端基础设施异步启动；初始化失败不得阻塞商城渲染或业务请求。
+void initializeStorefrontTelemetry(router)
 
 // 创建应用实例
 const app = createApp(App)
@@ -26,8 +30,12 @@ router.beforeEach(() => {
 router.afterEach(() => {
   globalUiStore.finishRouteLoading()
 })
-router.onError(() => {
+router.onError((error, to) => {
   globalUiStore.finishRouteLoading()
+  captureStorefrontError(error, {
+    source: 'router',
+    route: to?.matched?.[to.matched.length - 1]?.path || to?.name || 'unknown'
+  })
 })
 
 // 使用路由
@@ -140,6 +148,11 @@ if (typeof window !== 'undefined' && !window.__LD_STORE_AUTH_EXPIRED_HANDLER__) 
 
 // 全局错误处理
 app.config.errorHandler = (err, vm, info) => {
+  captureStorefrontError(err, {
+    source: 'vue',
+    component: vm?.$options?.name || vm?.$options?.__name || 'anonymous',
+    info
+  })
   console.error('Vue Error:', err, info)
 }
 
