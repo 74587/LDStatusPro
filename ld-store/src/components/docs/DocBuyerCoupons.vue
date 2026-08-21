@@ -1,7 +1,7 @@
 <template>
   <div class="doc-content">
     <h2 id="purpose">优惠券能做什么</h2>
-    <p class="lead">卖家可以通过领取链接发放商品券或店铺券。买家领取后在结算时选择，每个订单最多使用一张。</p>
+    <p class="lead">卖家可以通过领取链接发放商品券或店铺券。买家领取后，确认订单页会自动选择当前最优惠的可用券，每个订单最多使用一张。</p>
 
     <HelpPath :items="[{ label: '优惠券领取链接' }, { label: '确认领取' }, { label: '个人中心', to: '/user' }, { label: '我的优惠券', to: '/user/coupons' }]" />
 
@@ -22,7 +22,7 @@
     </ul>
 
     <HelpCallout title="结算页金额是最终校验结果" tone="info">
-      加入数量或切换优惠券后，检查结算页展示的原价、优惠和应付金额。券不符合范围、门槛或状态时不会被应用。
+      调整数量或切换优惠券后，检查确认订单页的物品小计、优惠和应付合计。券不符合范围、门槛或状态时不会被应用。
     </HelpCallout>
 
     <HelpCallout title="选券不会提前占用" tone="info">
@@ -78,7 +78,7 @@ const couponRows = [
 const couponSteps = [
   { title: '打开领取链接', description: '登录后查看券的卖家、适用范围、门槛和有效期。' },
   { title: '确认领取', description: '领取成功后到“我的优惠券”查看当前状态。' },
-  { title: '在确认订单页选券', description: '购买符合条件的物品，主动选择一张可用券并核对优惠金额；默认不使用优惠券。' },
+  { title: '在确认订单页核对', description: '系统自动选择当前最优惠的可用券；点击优惠券摘要可以改选其他券或明确不使用优惠券。' },
   { title: '完成支付', description: '订单支付成功后优惠券变为已使用。', result: '若订单取消或过期，仍有效的占用券会自动释放。' }
 ]
 </script>

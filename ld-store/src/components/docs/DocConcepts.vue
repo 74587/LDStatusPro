@@ -55,8 +55,8 @@ const areaRows = [
   { area: '小店集市', bestFor: '展示站点、服务与店主信息，建立经营主页', role: '访客、店主' }
 ]
 const transactionSteps = [
-  { title: '查看详情', description: '确认价格、库存、交付方式、卖家说明和适用优惠券。' },
-  { title: '创建订单并支付', description: '在平台订单内选择数量与优惠券，使用 LDC 完成支付。' },
+  { title: '查看详情', description: '确认价格、兑换数量、账号要求、交付方式和卖家说明。' },
+  { title: '创建订单并支付', description: '在确认订单页调整数量、核对自动匹配的最优惠券，并使用 LDC 完成支付。' },
   { title: '完成交付', description: '独立或共享卡密可自动发放；普通物品由卖家按约定履约。' },
   { title: '保留记录', description: '在个人中心查看订单、消息和交付信息，发生争议时以平台记录为依据。' }
 ]

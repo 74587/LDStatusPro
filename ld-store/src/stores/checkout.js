@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+import { normalizeCouponSelectionMode } from '@/utils/checkoutCoupon'
 
 export const ORDER_CONFIRM_DRAFT_KEY = 'ld-store-order-confirm-draft'
 export const ORDER_CONFIRM_DRAFT_TTL_MS = 30 * 60 * 1000
@@ -35,10 +36,12 @@ export function normalizeOrderConfirmDraft(value) {
     return null
   }
 
+  const couponClaimId = normalizeCouponClaimId(value.couponClaimId)
   return {
     productId,
     quantity: toPositiveInt(value.quantity, 1),
-    couponClaimId: normalizeCouponClaimId(value.couponClaimId),
+    couponClaimId,
+    couponSelectionMode: normalizeCouponSelectionMode(value.couponSelectionMode, couponClaimId),
     sourceFullPath: String(value.sourceFullPath || ''),
     sourceScrollY: Math.max(0, Number(value.sourceScrollY) || 0),
     restoreOnReturn: value.restoreOnReturn === true,
@@ -87,13 +90,18 @@ export const useCheckoutStore = defineStore('checkout', () => {
     if (!currentProductId) return null
 
     const current = getDraft(currentProductId)
+    const couponClaimId = normalizeCouponClaimId(
+      Object.prototype.hasOwnProperty.call(nextDraft, 'couponClaimId')
+        ? nextDraft.couponClaimId
+        : current?.couponClaimId
+    )
     const normalized = {
       productId: currentProductId,
       quantity: toPositiveInt(nextDraft.quantity ?? current?.quantity, 1),
-      couponClaimId: normalizeCouponClaimId(
-        Object.prototype.hasOwnProperty.call(nextDraft, 'couponClaimId')
-          ? nextDraft.couponClaimId
-          : current?.couponClaimId
+      couponClaimId,
+      couponSelectionMode: normalizeCouponSelectionMode(
+        nextDraft.couponSelectionMode ?? current?.couponSelectionMode,
+        couponClaimId
       ),
       sourceFullPath: String(nextDraft.sourceFullPath ?? current?.sourceFullPath ?? ''),
       sourceScrollY: Math.max(0, Number(nextDraft.sourceScrollY ?? current?.sourceScrollY) || 0),
@@ -115,6 +123,7 @@ export const useCheckoutStore = defineStore('checkout', () => {
       productId: normalizedProductId,
       quantity,
       couponClaimId: current?.couponClaimId ?? null,
+      couponSelectionMode: current?.couponSelectionMode ?? 'auto',
       sourceFullPath: sourceFullPath || current?.sourceFullPath || '',
       sourceScrollY,
       restoreOnReturn: false,
@@ -127,6 +136,7 @@ export const useCheckoutStore = defineStore('checkout', () => {
       productId,
       quantity: current?.quantity ?? 1,
       couponClaimId: current?.couponClaimId ?? null,
+      couponSelectionMode: current?.couponSelectionMode ?? 'auto',
       sourceFullPath: current?.sourceFullPath ?? '',
       sourceScrollY: current?.sourceScrollY ?? 0,
       restoreOnReturn: current?.restoreOnReturn ?? false,

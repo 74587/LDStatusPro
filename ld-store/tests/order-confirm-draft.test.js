@@ -42,7 +42,13 @@ describe('订单确认草稿', () => {
       restoreOnReturn: true,
       updatedAt: Date.now() - ORDER_CONFIRM_DRAFT_TTL_MS + 1,
     })
-    expect(live).toMatchObject({ productId: 12, quantity: 3, couponClaimId: 9, restoreOnReturn: true })
+    expect(live).toMatchObject({
+      productId: 12,
+      quantity: 3,
+      couponClaimId: 9,
+      couponSelectionMode: 'manual',
+      restoreOnReturn: true,
+    })
 
     expect(normalizeOrderConfirmDraft({ ...live, updatedAt: Date.now() - ORDER_CONFIRM_DRAFT_TTL_MS - 1 })).toBeNull()
     expect(normalizeOrderConfirmDraft({ ...live, productId: 0 })).toBeNull()
@@ -62,7 +68,7 @@ describe('订单确认草稿', () => {
       sourceFullPath: '/product/28#comments',
       sourceScrollY: 760,
     })
-    store.updateCheckout(28, { quantity: 4, couponClaimId: 16 })
+    store.updateCheckout(28, { quantity: 4, couponClaimId: 16, couponSelectionMode: 'manual' })
     store.markReturnToProduct(28)
 
     const returning = store.consumeProductReturn(28)
@@ -70,12 +76,17 @@ describe('订单确认草稿', () => {
       productId: 28,
       quantity: 4,
       couponClaimId: 16,
+      couponSelectionMode: 'manual',
       sourceFullPath: '/product/28#comments',
       sourceScrollY: 760,
       restoreOnReturn: true,
     })
     expect(store.getDraft(28).restoreOnReturn).toBe(false)
-    expect(JSON.parse(storage.getItem(ORDER_CONFIRM_DRAFT_KEY))).toMatchObject({ quantity: 4, couponClaimId: 16 })
+    expect(JSON.parse(storage.getItem(ORDER_CONFIRM_DRAFT_KEY))).toMatchObject({
+      quantity: 4,
+      couponClaimId: 16,
+      couponSelectionMode: 'manual',
+    })
 
     store.clearCheckout(28)
     expect(store.getDraft()).toBeNull()
@@ -89,6 +100,20 @@ describe('订单确认草稿', () => {
     store.startCheckout({ productId: 2, quantity: 1 })
 
     expect(store.getDraft(1)).toBeNull()
-    expect(store.getDraft(2)).toMatchObject({ quantity: 1, couponClaimId: null })
+    expect(store.getDraft(2)).toMatchObject({ quantity: 1, couponClaimId: null, couponSelectionMode: 'auto' })
+  })
+
+  it('手动不用券的草稿在继续调整数量后仍保持手动模式', () => {
+    const store = useCheckoutStore()
+    store.startCheckout({ productId: 36, quantity: 1 })
+    store.updateCheckout(36, { couponClaimId: null, couponSelectionMode: 'manual' })
+    store.updateCheckout(36, { quantity: 3 })
+
+    expect(store.getDraft(36)).toMatchObject({
+      productId: 36,
+      quantity: 3,
+      couponClaimId: null,
+      couponSelectionMode: 'manual',
+    })
   })
 })

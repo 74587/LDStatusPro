@@ -119,19 +119,9 @@
                 <Eye class="status-icon" :size="16" aria-hidden="true" />
                 <span class="status-text">{{ product.view_count || 0 }} 浏览</span>
               </div>
-              <div v-if="isPlatformOrder" class="status-item">
-                <Package class="status-icon" :size="16" aria-hidden="true" />
-                <span :class="['status-text', { low: isOutOfStock }]">库存 {{ stockDisplay }}</span>
-              </div>
               <div v-if="isPlatformOrder && soldCount > 0" class="status-item hot">
                 <Flame class="status-icon" :size="16" aria-hidden="true" />
                 <span class="status-text">已售 {{ soldCount }}</span>
-              </div>
-              <div v-if="purchaseTrustLevel > 0" class="status-item">
-                <ShieldCheck class="status-icon" :size="16" aria-hidden="true" />
-                <span :class="['status-text', { low: !canPurchaseByTrustLevel }]">
-                  兑换需 TL{{ purchaseTrustLevel }}
-                </span>
               </div>
               <div class="status-item">
                 <CalendarClock class="status-icon" :size="16" aria-hidden="true" />
@@ -147,10 +137,6 @@
                 </span>
                 <span class="test-desc">{{ isSeller ? '只有您可以购买此物品' : '该物品为测试模式，仅卖家可购买' }}</span>
               </div>
-
-            <div v-if="isNormal" class="manual-delivery-notice">
-              支付完成后请主动联系卖家获取服务，订单会保留在平台内，卖家需手动履约。
-            </div>
 
             <div
               :class="['seller-card', { disabled: !product.seller_username }]"
@@ -184,45 +170,40 @@
               </div>
             </div>
 
-            <div
-              v-if="isPlatformOrder && !isOutOfStock && canPurchase && (!isTestMode || isSeller)"
-              class="quantity-section"
-            >
-              <div class="quantity-title">购买数量</div>
-              <div class="quantity-controls">
-                <button type="button" class="qty-btn" @click="decreaseQuantity">-</button>
-                <input
-                  v-model.number="selectedQuantity"
-                  type="number"
-                  min="1"
-                  :max="maxSelectableQuantity"
-                  class="qty-input"
-                  @input="handleQuantityInput"
-                />
-                <button type="button" class="qty-btn" @click="increaseQuantity">+</button>
-              </div>
-              <div class="quantity-summary">预计支付 {{ totalPrice }} LDC</div>
-              <div v-if="quantityHint" class="quantity-hint">{{ quantityHint }}</div>
-            </div>
-
             <section
-              v-if="isPlatformOrder && !isOutOfStock && canPurchase && (!isTestMode || isSeller)"
-              class="coupon-teaser"
-              aria-labelledby="coupon-teaser-title"
+              v-if="isPlatformOrder"
+              class="purchase-conditions"
+              aria-labelledby="purchase-conditions-title"
             >
-              <div class="coupon-teaser-icon" aria-hidden="true">
-                <TicketPercent :size="19" />
+              <div class="purchase-conditions-heading">
+                <ShieldCheck :size="18" aria-hidden="true" />
+                <h2 id="purchase-conditions-title">兑换条件</h2>
               </div>
-              <div class="coupon-teaser-copy">
-                <h2 id="coupon-teaser-title">优惠券</h2>
-                <p v-if="!userStore.isLoggedIn">登录后可在确认订单页查看并选择优惠券</p>
-                <p v-else-if="quoteLoading && !couponQuote" aria-live="polite">正在查询可用优惠券…</p>
-                <p v-else-if="eligibleCoupons.length">
-                  {{ eligibleCoupons.length }} 张可用，最高省 {{ highestCouponSaving }} LDC
-                </p>
-                <p v-else>确认订单时可查看当前可用优惠</p>
+              <div class="purchase-condition-list">
+                <div :class="['purchase-condition-item', { 'is-blocked': isOutOfStock }]">
+                  <span class="purchase-condition-icon" aria-hidden="true"><Package :size="18" /></span>
+                  <span class="purchase-condition-copy">
+                    <small>兑换数量</small>
+                    <strong>{{ exchangeQuantityText }}</strong>
+                  </span>
+                </div>
+                <div :class="['purchase-condition-item', purchaseAccountTone]">
+                  <span class="purchase-condition-icon" aria-hidden="true"><ShieldCheck :size="18" /></span>
+                  <span class="purchase-condition-copy">
+                    <small>账号要求</small>
+                    <strong>{{ purchaseAccountText }}</strong>
+                  </span>
+                </div>
+                <div class="purchase-condition-item">
+                  <span class="purchase-condition-icon" aria-hidden="true">
+                    <component :is="deliveryConditionIcon" :size="18" />
+                  </span>
+                  <span class="purchase-condition-copy">
+                    <small>交付方式</small>
+                    <strong>{{ deliveryConditionText }}</strong>
+                  </span>
+                </div>
               </div>
-              <span class="coupon-teaser-hint">确认订单时选择</span>
             </section>
 
             <div v-if="maintenancePurchaseHint" class="maintenance-order-notice">
@@ -278,6 +259,13 @@
                                               维护中暂不可下单
                                             </button>
                                             <button
+                                              v-else-if="isOwnProductPurchaseBlocked"
+                                              class="buy-btn disabled"
+                                              disabled
+                                            >
+                                              不能兑换自己的物品
+                                            </button>
+                                            <button
                                               v-else-if="!canPurchase"
                                               class="buy-btn disabled"
                                               disabled
@@ -286,14 +274,22 @@
                                               <span>暂停销售</span>
                                             </button>
                                             <button
+                                              v-else-if="userStore.isLoggedIn && !canPurchaseByTrustLevel"
+                                              class="buy-btn disabled"
+                                              disabled
+                                            >
+                                              需达到 TL{{ purchaseTrustLevel }}
+                                            </button>
+                                            <button
                                               v-else
                         class="buy-btn"
                         :class="{ test: isTestMode && isSeller }"
                         :disabled="purchasing"
                         @click="handleBuyProduct"
                       >
-                        {{ purchasing ? '正在进入确认页…' : buyButtonText }}
+                        {{ purchasing ? '正在进入确认页…' : '立即兑换' }}
                       </button>
+                      <p v-if="canEnterCheckout" class="purchase-next-step-hint">数量与优惠券将在下一步确认</p>
                     </template>
                   <template v-else-if="isLegacyLink">
                     <button
@@ -700,6 +696,13 @@
                                   维护中暂不可下单
                                 </button>
                                 <button
+                                  v-else-if="isOwnProductPurchaseBlocked"
+                                  class="buy-btn disabled"
+                                  disabled
+                                >
+                                  不能兑换自己的物品
+                                </button>
+                                <button
                                   v-else-if="!canPurchase"
                                   class="buy-btn disabled"
                                   disabled
@@ -708,14 +711,22 @@
                                   <span>暂停销售</span>
                                 </button>
                                 <button
+                                  v-else-if="userStore.isLoggedIn && !canPurchaseByTrustLevel"
+                                  class="buy-btn disabled"
+                                  disabled
+                                >
+                                  需达到 TL{{ purchaseTrustLevel }}
+                                </button>
+                                <button
                                   v-else
                                   class="buy-btn"
                                   :class="{ test: isTestMode && isSeller }"
                                   :disabled="purchasing"
                                   @click="handleBuyProduct"
                                 >
-                                  {{ purchasing ? '正在进入确认页…' : buyButtonText }}
+                                  {{ purchasing ? '正在进入确认页…' : '立即兑换' }}
                                 </button>
+                                <p v-if="canEnterCheckout" class="purchase-next-step-hint">数量与优惠券将在下一步确认</p>
                               </template>
                               <template v-else-if="isLegacyLink">
                                 <button
@@ -936,7 +947,6 @@ import {
   ThumbsDown,
   ThumbsUp,
   Ticket,
-  TicketPercent,
   Wrench,
   X
 } from '@lucide/vue'
@@ -954,19 +964,15 @@ import StarRatingDisplay from '@/components/common/StarRatingDisplay.vue'
 import StarRatingInput from '@/components/common/StarRatingInput.vue'
 import { buildAvatarCandidates } from '@/utils/avatar'
 import { api } from '@/utils/api'
-import { quoteOrderRequest } from '@/services/shop/couponService'
 import {
   getAvailableStock,
   getProductType,
-  getStockDisplay,
   isCdkProduct,
   isLegacyLinkProduct,
-  isNormalProduct,
   isOutOfStock as isProductOutOfStock,
   isPlatformOrderProduct,
   isStoreProduct,
-  isUnlimitedStock,
-  requiresBuyerContact
+  isUnlimitedStock
 } from '@/utils/shopProduct'
 import Skeleton from '@/components/common/Skeleton.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
@@ -993,10 +999,6 @@ const reportReason = ref('')
 const reportCategory = ref('payment_config_issue')
 const reportSubmitting = ref(false)
 const favoriteSubmitting = ref(false)
-const selectedQuantity = ref(1)
-const couponQuote = ref(null)
-const quoteLoading = ref(false)
-const quoteError = ref('')
 const restockSubscribed = ref(false)
 const restockStatusLoading = ref(false)
 const restockSubscribeLoading = ref(false)
@@ -1065,7 +1067,6 @@ const reportCategoryOptions = [
 // 物品类型
 const renderedDescription = computed(() => renderProductDescription(product.value?.description))
 const isCdk = computed(() => isCdkProduct(product.value))
-const isNormal = computed(() => isNormalProduct(product.value))
 const isStore = computed(() => isStoreProduct(product.value))
 const isLegacyLink = computed(() => isLegacyLinkProduct(product.value))
 const isPlatformOrder = computed(() => isPlatformOrderProduct(product.value))
@@ -1123,7 +1124,6 @@ const originalPrice = computed(() => formatPrice(price.value))
 const availableStock = computed(() => getAvailableStock(product.value))
 const hasUnlimitedStock = computed(() => isUnlimitedStock(product.value))
 const isOutOfStock = computed(() => isProductOutOfStock(product.value))
-const stockDisplay = computed(() => getStockDisplay(product.value))
 const restockButtonText = computed(() => {
   if (restockStatusLoading.value) return '加载中...'
   if (restockSubscribeLoading.value) return '订阅中...'
@@ -1161,7 +1161,8 @@ const purchaseTrustBlockMessage = computed(() => {
   return `当前账号信任等级为 TL${viewerTrustLevel.value}，需达到 TL${purchaseTrustLevel.value} 才可兑换`
 })
 
-const maxSelectableQuantity = computed(() => {
+const maxExchangeQuantity = computed(() => {
+  if (isOutOfStock.value) return 0
   const limits = [1000]
 
   if (maxPurchaseQuantity.value > 0) {
@@ -1178,40 +1179,58 @@ const maxSelectableQuantity = computed(() => {
   }
 
   const minLimit = Math.min(...limits)
-  return minLimit > 0 ? minLimit : 1
+  return Math.max(0, minLimit)
 })
 
-const eligibleCoupons = computed(() => (
-  Array.isArray(couponQuote.value?.coupons)
-    ? couponQuote.value.coupons.filter(item => item.eligible)
-    : []
+const exchangeQuantityText = computed(() => (
+  maxExchangeQuantity.value > 0
+    ? `本次最多 ${maxExchangeQuantity.value} 件`
+    : '当前无货'
 ))
-const highestCouponSaving = computed(() => formatPrice(
-  eligibleCoupons.value.reduce((highest, item) => (
-    Math.max(highest, Number(item.couponDiscountAmount || 0))
-  ), 0)
+
+const purchaseAccountText = computed(() => {
+  if (purchaseTrustLevel.value <= 0) {
+    return userStore.isLoggedIn ? '无等级限制' : '登录后即可兑换'
+  }
+  if (!userStore.isLoggedIn) return `需 TL${purchaseTrustLevel.value} · 登录后核验`
+  return canPurchaseByTrustLevel.value
+    ? `需 TL${purchaseTrustLevel.value} · 当前 TL${viewerTrustLevel.value}，已满足`
+    : `需 TL${purchaseTrustLevel.value} · 当前 TL${viewerTrustLevel.value}，尚未满足`
+})
+
+const purchaseAccountTone = computed(() => {
+  if (!userStore.isLoggedIn) return ''
+  if (purchaseTrustLevel.value <= 0 || canPurchaseByTrustLevel.value) return 'is-satisfied'
+  return 'is-blocked'
+})
+
+const deliveryConditionText = computed(() => (
+  isCdk.value ? '支付成功后自动发放' : '支付后联系卖家履约'
 ))
-const totalPrice = computed(() => formatPrice(
-  couponQuote.value?.productSubtotal
-    ?? (price.value * discount.value * selectedQuantity.value)
+const deliveryConditionIcon = computed(() => (isCdk.value ? Ticket : MessagesSquare))
+const isOwnProductPurchaseBlocked = computed(() => (
+  isPlatformOrder.value && isSeller.value && !isTestMode.value
 ))
 
 const isOrderCreationMaintenanceBlocked = computed(() =>
   isRestrictedMaintenanceMode() && !isMaintenanceFeatureEnabled('orderCreate')
 )
 
+const canEnterCheckout = computed(() => (
+  isPlatformOrder.value
+  && !isOutOfStock.value
+  && !isOrderCreationMaintenanceBlocked.value
+  && canPurchase.value
+  && !isOwnProductPurchaseBlocked.value
+  && !(isCdk.value && isTestMode.value && !isSeller.value)
+  && (!userStore.isLoggedIn || canPurchaseByTrustLevel.value)
+))
+
 const maintenancePurchaseHint = computed(() =>
   isOrderCreationMaintenanceBlocked.value
     ? '因 LinuxDo Credit 积分服务维护中，当前暂不支持创建新订单。'
     : ''
 )
-
-const buyButtonText = computed(() => {
-  if (selectedQuantity.value > 1) {
-    return `确认 ${selectedQuantity.value} 件 · ${totalPrice.value} LDC`
-  }
-  return `去确认订单 · ${totalPrice.value} LDC`
-})
 
 const detailErrorContent = computed(() => {
   if (detailErrorType.value === 'login_required') {
@@ -1235,29 +1254,6 @@ const detailErrorContent = computed(() => {
     text: '物品不存在',
     hint: '该物品可能已下架或被删除'
   }
-})
-
-const quantityHint = computed(() => {
-  const hints = []
-
-  if (maxPurchaseQuantity.value > 0) {
-    hints.push(`单次最多购买 ${maxPurchaseQuantity.value} 个`)
-  }
-
-  if (purchaseTrustLevel.value > 0) {
-    hints.push(`兑换需信任等级 TL${purchaseTrustLevel.value}`)
-  }
-
-  if (!hasUnlimitedStock.value) {
-    const canBuyNow = Math.max(0, Number(availableStock.value) || 0)
-    hints.push(`当前可购买 ${canBuyNow} 个`)
-  }
-
-  if (requiresBuyerContact(product.value)) {
-    hints.push('支付后需主动联系卖家')
-  }
-
-  return hints.join('，')
 })
 
 const commentPageNumbers = computed(() => {
@@ -1479,8 +1475,6 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
-  if (quoteTimer) window.clearTimeout(quoteTimer)
-  latestQuoteRequestId++
   deactivateDetailInteractions()
 })
 
@@ -1488,67 +1482,11 @@ onActivated(() => {
   activateDetailInteractions()
   if (product.value?.name) document.title = `${product.value.name} - LD士多`
   void restoreCheckoutReturnState()
-  scheduleCouponQuote()
 })
 
 onDeactivated(() => {
-  if (quoteTimer) window.clearTimeout(quoteTimer)
-  quoteTimer = null
-  latestQuoteRequestId++
-  quoteLoading.value = false
   deactivateDetailInteractions()
 })
-
-watch(
-  () => [
-    product.value?.id,
-    maxSelectableQuantity.value,
-    isPlatformOrder.value,
-    isOutOfStock.value,
-    canPurchase.value
-  ],
-  () => {
-    if (!isPlatformOrder.value || isOutOfStock.value || !canPurchase.value) {
-      selectedQuantity.value = 1
-      return
-    }
-    selectedQuantity.value = clampQuantity(selectedQuantity.value)
-  },
-  { immediate: true }
-)
-
-let quoteTimer = null
-let latestQuoteRequestId = 0
-
-async function loadCouponQuote() {
-  const requestId = ++latestQuoteRequestId
-  if (!product.value?.id || !isPlatformOrder.value || !userStore.isLoggedIn) {
-    couponQuote.value = null
-    quoteLoading.value = false
-    quoteError.value = ''
-    return false
-  }
-
-  quoteLoading.value = true
-  quoteError.value = ''
-  const result = await quoteOrderRequest(product.value.id, clampQuantity(selectedQuantity.value))
-  if (requestId !== latestQuoteRequestId) return false
-  if (result.success) {
-    couponQuote.value = result.data
-  } else {
-    couponQuote.value = null
-    quoteError.value = result.error || '优惠券报价加载失败'
-  }
-  quoteLoading.value = false
-  return result.success
-}
-
-function scheduleCouponQuote() {
-  if (quoteTimer) window.clearTimeout(quoteTimer)
-  latestQuoteRequestId++
-  quoteLoading.value = true
-  quoteTimer = window.setTimeout(() => { void loadCouponQuote() }, 180)
-}
 
 function activateDetailInteractions() {
   document.addEventListener('click', handleDocumentClick)
@@ -1564,15 +1502,11 @@ function deactivateDetailInteractions() {
 async function restoreCheckoutReturnState() {
   if (!product.value?.id) return false
   const draft = checkoutStore.consumeProductReturn(product.value.id)
-  const routeQuantity = Number.parseInt(route.query.quantity, 10)
+  if (!draft) return false
 
-  if (!draft && (!Number.isInteger(routeQuantity) || routeQuantity < 1)) return false
-
-  selectedQuantity.value = clampQuantity(draft?.quantity ?? routeQuantity)
   const latestProduct = await shopStore.fetchProduct(product.value.id)
   if (latestProduct) {
     product.value = { ...product.value, ...latestProduct }
-    selectedQuantity.value = clampQuantity(selectedQuantity.value)
   }
 
   await nextTick()
@@ -1583,12 +1517,6 @@ async function restoreCheckoutReturnState() {
   }
   return true
 }
-
-watch(
-  () => [product.value?.id, selectedQuantity.value, userStore.isLoggedIn, isPlatformOrder.value],
-  scheduleCouponQuote,
-  { immediate: true }
-)
 
 watch(
   () => [
@@ -2301,27 +2229,6 @@ function handleImageError(e) {
   e.target.style.display = 'none'
 }
 
-function clampQuantity(value) {
-  const parsed = Number(value)
-  if (!Number.isFinite(parsed)) return 1
-  const intValue = Math.floor(parsed)
-  if (intValue < 1) return 1
-  if (intValue > maxSelectableQuantity.value) return maxSelectableQuantity.value
-  return intValue
-}
-
-function handleQuantityInput() {
-  selectedQuantity.value = clampQuantity(selectedQuantity.value)
-}
-
-function increaseQuantity() {
-  selectedQuantity.value = clampQuantity(selectedQuantity.value + 1)
-}
-
-function decreaseQuantity() {
-  selectedQuantity.value = clampQuantity(selectedQuantity.value - 1)
-}
-
 // 图片预览
 // 图片预览
 function openImagePreview() {
@@ -2547,12 +2454,11 @@ async function handleBuyProduct() {
     return
   }
 
-  const quantity = clampQuantity(selectedQuantity.value)
-  selectedQuantity.value = quantity
+  const existingDraft = checkoutStore.getDraft(product.value.id)
+  const quantity = existingDraft?.quantity || 1
   const checkoutLocation = {
     name: 'OrderConfirm',
-    params: { productId: product.value.id },
-    query: { quantity: String(quantity) }
+    params: { productId: product.value.id }
   }
   checkoutStore.startCheckout({
     productId: product.value.id,
@@ -3367,116 +3273,86 @@ async function handleOpenStore() {
   font-weight: 500;
 }
 
-/* 数量选择 */
-.quantity-section {
-  padding: 14px;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-light);
-  border-radius: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.quantity-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-secondary);
-}
-
-.quantity-controls {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.qty-btn {
-  width: 34px;
-  height: 34px;
-  border: 1px solid var(--border-light);
-  border-radius: 8px;
-  background: var(--bg-card);
-  color: var(--text-primary);
-  font-size: 16px;
-  cursor: pointer;
-}
-
-.qty-btn:hover {
-  background: var(--bg-tertiary);
-}
-
-.qty-input {
-  width: 88px;
-  height: 34px;
-  border: 1px solid var(--border-light);
-  border-radius: 8px;
-  background: var(--bg-card);
-  color: var(--text-primary);
-  font-size: 14px;
-  text-align: center;
-  padding: 0 6px;
-}
-
-.qty-input:focus {
-  outline: none;
-  border-color: var(--color-primary);
-}
-
-.quantity-summary {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--color-warning);
-}
-
-.quantity-hint {
-  font-size: 12px;
-  color: var(--text-tertiary);
-}
-
-.coupon-teaser {
-  min-height: 72px;
-  display: grid;
-  grid-template-columns: 38px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 12px;
-  padding: 14px 16px;
+/* 兑换条件 */
+.purchase-conditions {
+  padding: 16px;
   border: 1px solid var(--border-light);
   border-radius: 14px;
   background: var(--glass-bg-medium);
 }
 
-.coupon-teaser-icon {
-  width: 38px;
-  height: 38px;
+.purchase-conditions-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-primary-hover);
+}
+
+.purchase-conditions-heading h2 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.purchase-condition-list {
+  display: grid;
+  gap: 9px;
+  margin-top: 13px;
+}
+
+.purchase-condition-item {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 11px 12px;
+  border-radius: 12px;
+  background: var(--bg-secondary);
+}
+
+.purchase-condition-icon {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
   display: grid;
   place-items: center;
-  border-radius: 12px;
+  border-radius: 10px;
   background: var(--color-primary-light);
   color: var(--color-primary-hover);
 }
 
-.coupon-teaser-copy {
+.purchase-condition-copy {
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
-.coupon-teaser-copy h2 {
-  margin: 0;
+.purchase-condition-copy small {
+  color: var(--text-tertiary);
+  font-size: 11px;
+}
+
+.purchase-condition-copy strong {
   color: var(--text-primary);
-  font-size: 14px;
-}
-
-.coupon-teaser-copy p {
-  margin: 3px 0 0;
-  color: var(--text-secondary);
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.45;
+  overflow-wrap: anywhere;
 }
 
-.coupon-teaser-hint {
-  color: var(--color-primary-hover);
-  font-size: 12px;
-  font-weight: 650;
-  white-space: nowrap;
+.purchase-condition-item.is-satisfied .purchase-condition-icon {
+  background: var(--color-success-bg);
+  color: var(--color-success);
+}
+
+.purchase-condition-item.is-blocked .purchase-condition-icon,
+.purchase-condition-item.is-blocked .purchase-condition-copy strong {
+  color: var(--color-danger);
+}
+
+.purchase-condition-item.is-blocked .purchase-condition-icon {
+  background: var(--color-danger-bg);
 }
 
 .maintenance-order-notice {
@@ -3485,16 +3361,6 @@ async function handleOpenStore() {
   background: rgba(245, 158, 11, 0.12);
   border: 1px solid rgba(245, 158, 11, 0.24);
   color: #b45309;
-  font-size: 13px;
-  line-height: 1.6;
-}
-
-.manual-delivery-notice {
-  padding: 12px 14px;
-  border-radius: 12px;
-  background: rgba(37, 99, 235, 0.08);
-  border: 1px solid rgba(37, 99, 235, 0.18);
-  color: var(--text-secondary);
   font-size: 13px;
   line-height: 1.6;
 }
@@ -3633,6 +3499,14 @@ async function handleOpenStore() {
 .action-section {
   margin-top: auto;
   padding-top: 10px;
+}
+
+.purchase-next-step-hint {
+  margin: 9px 0 0;
+  color: var(--text-tertiary);
+  font-size: 12px;
+  line-height: 1.45;
+  text-align: center;
 }
 
 .detail-main--landscape .detail-side-panel {
@@ -4390,6 +4264,10 @@ async function handleOpenStore() {
   z-index: 100;
 }
 
+.action-bottom .purchase-next-step-hint {
+  margin: 8px 0 0;
+}
+
 .mobile-only {
   display: block;
 }
@@ -4533,7 +4411,7 @@ async function handleOpenStore() {
 @media (max-width: 640px) {
   .page-container {
     padding: 12px;
-    padding-bottom: 90px;
+    padding-bottom: 116px;
   }
   
   .detail-main {
@@ -4776,13 +4654,12 @@ async function handleOpenStore() {
     min-height: 34px;
   }
 
-  .coupon-teaser {
-    grid-template-columns: 38px minmax(0, 1fr);
+  .purchase-conditions {
+    padding: 14px;
   }
 
-  .coupon-teaser-hint {
-    grid-column: 2;
-    margin-top: -7px;
+  .purchase-condition-item {
+    padding: 10px;
   }
 
 }

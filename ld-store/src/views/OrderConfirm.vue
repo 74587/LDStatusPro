@@ -8,13 +8,8 @@
 
       <header class="checkout-header">
         <div>
-          <p class="checkout-kicker">兑换前最后一步</p>
           <h1 id="checkout-title">确认订单</h1>
-          <p>核对数量、优惠与交付方式，再确认兑换。</p>
-        </div>
-        <div class="inventory-notice">
-          <ShieldCheck :size="18" aria-hidden="true" />
-          <span>提交前不会保留库存，以确认兑换时的校验结果为准</span>
+          <p>确认物品、数量与优惠后提交兑换。</p>
         </div>
       </header>
 
@@ -58,7 +53,7 @@
                 <div class="heading-icon"><ShoppingBag :size="18" aria-hidden="true" /></div>
                 <div>
                   <h2 id="product-card-title">物品信息</h2>
-                  <p>本次订单仅包含这一件物品</p>
+                  <p>本单包含 1 种物品</p>
                 </div>
               </div>
 
@@ -86,7 +81,7 @@
               <div class="quantity-row">
                 <div>
                   <label for="checkout-quantity">兑换数量</label>
-                  <p>{{ quantityHint }}</p>
+                  <p>{{ quantityHint }} · 数量仅用于试算，确认兑换时校验库存</p>
                 </div>
                 <div class="quantity-control">
                   <button
@@ -120,78 +115,53 @@
               </div>
             </section>
 
-            <section class="checkout-card coupon-card" aria-labelledby="coupon-card-title">
-              <div class="section-heading coupon-heading">
+            <section class="checkout-card order-options-card" aria-labelledby="order-options-title">
+              <div class="section-heading">
                 <div class="heading-icon"><TicketPercent :size="18" aria-hidden="true" /></div>
                 <div>
-                  <h2 id="coupon-card-title">优惠券</h2>
-                  <p>每笔订单最多使用一张，默认不使用</p>
+                  <h2 id="order-options-title">订单选项</h2>
+                  <p>核对优惠券与交付方式</p>
                 </div>
-                <span v-if="availableCoupons.length" class="coupon-count">
-                  {{ availableCoupons.length }} 张可用
-                </span>
               </div>
 
-              <div v-if="quoteLoading" class="quote-loading" aria-live="polite">
-                <RefreshCw :size="17" class="spin" aria-hidden="true" />
-                <span>正在更新优惠与金额…</span>
-              </div>
-
-              <div v-else class="coupon-list" role="radiogroup" aria-label="选择优惠券">
-                <label :class="['coupon-choice', { selected: selectedCouponClaimId === null }]">
-                  <input v-model="selectedCouponClaimId" type="radio" name="checkout-coupon" :value="null" />
-                  <span class="radio-mark" aria-hidden="true"></span>
-                  <span class="coupon-choice-copy">
-                    <strong>不使用优惠券</strong>
-                    <small>按物品当前折后价格结算</small>
-                  </span>
-                  <span class="coupon-saving">默认</span>
-                </label>
-
-                <label
-                  v-for="coupon in availableCoupons"
-                  :key="coupon.claimId"
-                  :class="['coupon-choice', { selected: selectedCouponClaimId === coupon.claimId }]"
+              <div class="order-option-list">
+                <button
+                  type="button"
+                  class="order-option-row coupon-option-row"
+                  :disabled="quoteLoading || submitting"
+                  aria-haspopup="dialog"
+                  :aria-expanded="couponPickerOpen"
+                  @click="handleCouponOptionClick"
                 >
-                  <input v-model="selectedCouponClaimId" type="radio" name="checkout-coupon" :value="coupon.claimId" />
-                  <span class="radio-mark" aria-hidden="true"></span>
-                  <span class="coupon-choice-copy">
-                    <strong>{{ coupon.campaign.name }}</strong>
-                    <small>{{ couponRuleText(coupon) }} · {{ couponScopeText(coupon) }}</small>
-                    <small>有效期至 {{ formatCouponDate(coupon.campaign.expiresAt) }}</small>
+                  <span class="order-option-icon" aria-hidden="true"><TicketPercent :size="18" /></span>
+                  <span class="order-option-copy">
+                    <strong>优惠券</strong>
+                    <small v-if="quoteLoading">正在更新优惠与金额…</small>
+                    <small v-else-if="quoteError">优惠信息加载失败，点击重试</small>
+                    <small v-else>{{ couponSummaryText }}</small>
                   </span>
-                  <span class="coupon-saving">省 {{ formatMoney(coupon.couponDiscountAmount) }}</span>
-                </label>
+                  <span v-if="selectedCoupon && !quoteLoading" class="order-option-saving">
+                    -{{ formatMoney(couponDiscountAmount) }} LDC
+                  </span>
+                  <ChevronRight v-if="!quoteLoading" :size="18" class="order-option-chevron" aria-hidden="true" />
+                  <RefreshCw v-else :size="17" class="spin order-option-chevron" aria-hidden="true" />
+                </button>
 
-                <p v-if="!availableCoupons.length && !quoteError" class="coupon-empty">
-                  当前没有适用于这件物品的优惠券。
+                <p v-if="quoteError" class="coupon-error" role="status">
+                  {{ quoteError }}，当前按不使用优惠券计算；可重试或继续兑换。
                 </p>
-                <p v-if="quoteError" class="coupon-error" role="status">{{ quoteError }}，仍可不使用优惠券继续兑换。</p>
+                <p v-else-if="couponSelectionNotice" class="coupon-selection-notice" role="status">
+                  {{ couponSelectionNotice }}
+                </p>
 
-                <details v-if="unavailableCoupons.length" class="unavailable-coupons">
-                  <summary>查看 {{ unavailableCoupons.length }} 张不可用优惠券</summary>
-                  <div class="unavailable-list">
-                    <div v-for="coupon in unavailableCoupons" :key="coupon.claimId" class="unavailable-item">
-                      <div>
-                        <strong>{{ coupon.campaign.name }}</strong>
-                        <small>{{ couponRuleText(coupon) }} · {{ couponScopeText(coupon) }}</small>
-                      </div>
-                      <span>{{ coupon.reason || '当前不可使用' }}</span>
-                    </div>
-                  </div>
-                </details>
-              </div>
-            </section>
-
-            <section class="checkout-card delivery-card" aria-labelledby="delivery-card-title">
-              <div class="section-heading">
-                <div class="heading-icon"><PackageCheck :size="18" aria-hidden="true" /></div>
-                <div>
-                  <h2 id="delivery-card-title">交付说明</h2>
-                  <p>{{ isCdk ? '支付成功后自动处理' : '支付成功后由卖家履约' }}</p>
+                <div class="order-option-row delivery-option-row">
+                  <span class="order-option-icon" aria-hidden="true"><PackageCheck :size="18" /></span>
+                  <span class="order-option-copy">
+                    <strong>交付方式</strong>
+                    <small>{{ deliveryNotice }}</small>
+                  </span>
                 </div>
               </div>
-              <p>{{ deliveryNotice }}</p>
             </section>
           </div>
 
@@ -200,30 +170,28 @@
               <div class="receipt-heading">
                 <div>
                   <p>本单明细</p>
-                  <h2>价格收据</h2>
+                  <h2>金额明细</h2>
                 </div>
                 <ReceiptText :size="24" aria-hidden="true" />
               </div>
 
               <dl class="receipt-lines" aria-live="polite" aria-atomic="true">
-                <div v-if="hasProductDiscount">
-                  <dt>物品标价小计</dt>
-                  <dd class="original-amount">{{ formatMoney(originalSubtotal) }} LDC</dd>
-                </div>
                 <div>
-                  <dt>商品折后小计</dt>
-                  <dd>{{ formatMoney(productSubtotal) }} LDC</dd>
+                  <dt>物品小计</dt>
+                  <dd>{{ formatMoney(originalSubtotal) }} LDC</dd>
                 </div>
-                <div>
-                  <dt>优惠券减免</dt>
-                  <dd :class="{ saving: couponDiscountAmount > 0 }">
-                    {{ couponDiscountAmount > 0 ? '-' : '' }}{{ formatMoney(couponDiscountAmount) }} LDC
-                  </dd>
+                <div v-if="productDiscountAmount > 0">
+                  <dt>物品优惠</dt>
+                  <dd class="saving">-{{ formatMoney(productDiscountAmount) }} LDC</dd>
+                </div>
+                <div v-if="couponDiscountAmount > 0">
+                  <dt>优惠券</dt>
+                  <dd class="saving">-{{ formatMoney(couponDiscountAmount) }} LDC</dd>
                 </div>
               </dl>
 
               <div class="receipt-total" aria-live="polite" aria-atomic="true">
-                <span>预计实付</span>
+                <span>应付合计</span>
                 <strong>{{ formatMoney(payableAmount) }} <small>LDC</small></strong>
               </div>
 
@@ -253,7 +221,7 @@
 
     <div v-if="product" class="mobile-confirm-bar">
       <div>
-        <span>预计实付</span>
+        <span>应付合计</span>
         <strong>{{ formatMoney(payableAmount) }} LDC</strong>
       </div>
       <button type="button" class="confirm-button" :disabled="!canSubmit" @click="submitOrder">
@@ -262,14 +230,24 @@
         <span>{{ submitButtonText }}</span>
       </button>
     </div>
+
+    <CouponPickerDialog
+      :open="couponPickerOpen"
+      :coupons="availableCoupons"
+      :unavailable-coupons="unavailableCoupons"
+      :selected-claim-id="selectedCouponClaimId"
+      @close="closeCouponPicker"
+      @confirm="confirmCouponSelection"
+    />
   </div>
 </template>
 
 <script setup>
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 import {
   ArrowLeft,
+  ChevronRight,
   CircleAlert,
   CreditCard,
   Minus,
@@ -277,7 +255,6 @@ import {
   Plus,
   ReceiptText,
   RefreshCw,
-  ShieldCheck,
   ShoppingBag,
   TicketPercent,
 } from '@lucide/vue'
@@ -286,9 +263,16 @@ import { useUserStore } from '@/stores/user'
 import { useCheckoutStore } from '@/stores/checkout'
 import { useToast } from '@/composables/useToast'
 import { isMaintenanceFeatureEnabled, isRestrictedMaintenanceMode } from '@/config/maintenance'
-import { formatCouponDate, formatCouponRule, quoteOrderRequest } from '@/services/shop/couponService'
+import { quoteOrderRequest } from '@/services/shop/couponService'
 import { formatPrice } from '@/utils/format'
 import { createSubmissionGate } from '@/utils/submissionGate'
+import {
+  COUPON_SELECTION_AUTO,
+  COUPON_SELECTION_MANUAL,
+  evaluateFinalQuote,
+  resolveCouponSelection,
+  resolveCouponSelectionAfterQuoteFailure,
+} from '@/utils/checkoutCoupon'
 import {
   getAvailableStock,
   getProductType,
@@ -299,6 +283,7 @@ import {
   isUnlimitedStock,
 } from '@/utils/shopProduct'
 import { cleanupPreparedTab, openPaymentPopup, preparePaymentPopup, watchPaymentPopup } from '@/utils/newTab'
+import CouponPickerDialog from '@/components/checkout/CouponPickerDialog.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 
 defineOptions({ name: 'OrderConfirm' })
@@ -319,6 +304,9 @@ const couponQuote = ref(null)
 const quoteLoading = ref(false)
 const quoteError = ref('')
 const selectedCouponClaimId = ref(null)
+const couponSelectionMode = ref(COUPON_SELECTION_AUTO)
+const couponSelectionNotice = ref('')
+const couponPickerOpen = ref(false)
 const submitting = ref(false)
 const submissionError = ref('')
 const errorSummaryRef = ref(null)
@@ -378,8 +366,17 @@ const selectedCoupon = computed(() => (
 const productSubtotal = computed(() => Number(
   couponQuote.value?.productSubtotal ?? discountedUnitPrice.value * quantity.value
 ))
+const productDiscountAmount = computed(() => Math.max(0, originalSubtotal.value - productSubtotal.value))
 const couponDiscountAmount = computed(() => Number(selectedCoupon.value?.couponDiscountAmount || 0))
 const payableAmount = computed(() => Number(selectedCoupon.value?.payableAmount ?? productSubtotal.value))
+const couponSummaryText = computed(() => {
+  if (selectedCoupon.value) {
+    const prefix = couponSelectionMode.value === COUPON_SELECTION_AUTO ? '已自动选择' : '已选择'
+    return `${prefix}「${selectedCoupon.value.campaign.name}」`
+  }
+  if (availableCoupons.value.length) return `${availableCoupons.value.length} 张可用，当前不使用`
+  return '暂无可用券'
+})
 
 const deliveryDescription = computed(() => (
   isCdk.value
@@ -427,7 +424,7 @@ const canSubmit = computed(() => (
 const submitButtonText = computed(() => (
   submitting.value
     ? '正在创建订单…'
-    : `确认兑换 · ${formatMoney(payableAmount.value)} LDC`
+    : '确认兑换'
 ))
 
 function formatMoney(value) {
@@ -438,17 +435,6 @@ function clampQuantity(value) {
   const parsed = Number(value)
   if (!Number.isFinite(parsed)) return 1
   return Math.min(Math.max(Math.floor(parsed), 1), maxSelectableQuantity.value)
-}
-
-function couponRuleText(coupon) {
-  const base = formatCouponRule(coupon?.campaign)
-  return coupon?.campaign?.discountType === 'fixed_amount'
-    ? `${base}（整单一次）`
-    : base
-}
-
-function couponScopeText(coupon) {
-  return coupon?.campaign?.scopeType === 'product' ? '指定物品券' : '店铺券'
 }
 
 function commitQuantity() {
@@ -466,10 +452,39 @@ function changeQuantity(delta) {
   scheduleQuote()
 }
 
+async function handleCouponOptionClick() {
+  if (quoteLoading.value || submitting.value) return
+  if (quoteError.value) {
+    const quoteOk = await loadQuote()
+    if (!quoteOk) return
+  }
+  couponPickerOpen.value = true
+}
+
+function closeCouponPicker() {
+  couponPickerOpen.value = false
+}
+
+function confirmCouponSelection(claimId) {
+  const normalizedClaimId = availableCoupons.value.some(coupon => coupon.claimId === claimId)
+    ? claimId
+    : null
+  selectedCouponClaimId.value = normalizedClaimId
+  couponSelectionMode.value = COUPON_SELECTION_MANUAL
+  couponSelectionNotice.value = normalizedClaimId === null
+    ? '已选择不使用优惠券。'
+    : '优惠券已应用，金额明细已更新。'
+  checkoutStore.updateCheckout(productId.value, {
+    couponClaimId: normalizedClaimId,
+    couponSelectionMode: COUPON_SELECTION_MANUAL,
+  })
+  closeCouponPicker()
+}
+
 let quoteTimer = null
 let latestQuoteRequestId = 0
 
-async function loadQuote({ preserveSelection = true } = {}) {
+async function loadQuote() {
   if (quoteTimer) {
     window.clearTimeout(quoteTimer)
     quoteTimer = null
@@ -477,31 +492,50 @@ async function loadQuote({ preserveSelection = true } = {}) {
   if (!productId.value || !product.value) return false
 
   const requestId = ++latestQuoteRequestId
-  const requestedCouponClaimId = preserveSelection ? selectedCouponClaimId.value : null
+  const requestedCouponClaimId = selectedCouponClaimId.value
+  const requestedSelectionMode = couponSelectionMode.value
   quoteLoading.value = true
   quoteError.value = ''
+  couponSelectionNotice.value = ''
 
-  const result = await quoteOrderRequest(productId.value, clampQuantity(quantity.value))
+  let result
+  try {
+    result = await quoteOrderRequest(productId.value, clampQuantity(quantity.value))
+  } catch (error) {
+    result = { success: false, error: error?.message || '优惠券报价暂时不可用' }
+  }
   if (requestId !== latestQuoteRequestId) return false
 
   if (result?.success) {
     couponQuote.value = result.data
-    if (requestedCouponClaimId !== null) {
-      const current = result.data?.coupons?.find(coupon => (
-        coupon.claimId === requestedCouponClaimId && coupon.eligible
-      ))
-      if (current) {
-        selectedCouponClaimId.value = requestedCouponClaimId
-      } else {
-        selectedCouponClaimId.value = null
-        checkoutStore.updateCheckout(productId.value, { couponClaimId: null })
-        quoteError.value = '之前选择的优惠券状态已变化，请重新选择'
-      }
+    const selection = resolveCouponSelection({
+      coupons: result.data?.coupons,
+      mode: requestedSelectionMode,
+      selectedClaimId: requestedCouponClaimId,
+    })
+    selectedCouponClaimId.value = selection.selectedClaimId
+    couponSelectionMode.value = selection.mode
+    if (selection.replacedManualSelection) {
+      couponSelectionNotice.value = selection.selectedClaimId === null
+        ? '之前选择的优惠券已不可用，当前没有其他可用券。'
+        : '之前选择的优惠券已不可用，已为你改用当前最优惠券。'
     }
+    checkoutStore.updateCheckout(productId.value, {
+      couponClaimId: selection.selectedClaimId,
+      couponSelectionMode: selection.mode,
+    })
   } else {
     couponQuote.value = null
-    selectedCouponClaimId.value = null
-    checkoutStore.updateCheckout(productId.value, { couponClaimId: null })
+    const selection = resolveCouponSelectionAfterQuoteFailure({
+      mode: requestedSelectionMode,
+      selectedClaimId: requestedCouponClaimId,
+    })
+    selectedCouponClaimId.value = selection.selectedClaimId
+    couponSelectionMode.value = selection.mode
+    checkoutStore.updateCheckout(productId.value, {
+      couponClaimId: null,
+      couponSelectionMode: couponSelectionMode.value,
+    })
     quoteError.value = result?.error || '优惠券报价暂时不可用'
   }
 
@@ -540,9 +574,9 @@ async function initializeCheckout() {
   }
 
   const existingDraft = checkoutStore.getDraft(productId.value)
-  const routeQuantity = Number.parseInt(route.query.quantity, 10)
-  quantity.value = existingDraft?.quantity || (Number.isInteger(routeQuantity) && routeQuantity > 0 ? routeQuantity : 1)
+  quantity.value = existingDraft?.quantity || 1
   selectedCouponClaimId.value = existingDraft?.couponClaimId ?? null
+  couponSelectionMode.value = existingDraft?.couponSelectionMode || COUPON_SELECTION_AUTO
 
   if (!existingDraft) {
     checkoutStore.startCheckout({ productId: productId.value, quantity: quantity.value })
@@ -580,7 +614,14 @@ async function submitOrder() {
 
   try {
     const quoteOk = await loadQuote()
-    if (requestedCouponClaimId !== null && (!quoteOk || selectedCouponClaimId.value !== requestedCouponClaimId)) {
+    const finalQuoteState = evaluateFinalQuote({
+      requestedCouponClaimId,
+      currentCouponClaimId: selectedCouponClaimId.value,
+      amountBeforeValidation,
+      currentPayableAmount: payableAmount.value,
+      quoteSucceeded: quoteOk,
+    })
+    if (finalQuoteState.selectedCouponInvalidated) {
       cleanupPreparedTab(preparedWindow)
       submissionError.value = quoteError.value || '所选优惠券状态已变化，请重新选择。'
       await refreshAfterSubmitFailure()
@@ -588,9 +629,9 @@ async function submitOrder() {
       return
     }
 
-    if (quoteOk && Math.abs(payableAmount.value - amountBeforeValidation) > 0.0001) {
+    if (finalQuoteState.confirmationRequired) {
       cleanupPreparedTab(preparedWindow)
-      submissionError.value = '物品价格或优惠金额刚刚发生变化，已为你更新本单金额，请确认后再次兑换。'
+      submissionError.value = '物品价格或优惠券刚刚发生变化，已为你更新本单金额，请确认后再次兑换。'
       await refreshAfterSubmitFailure()
       await focusSubmissionError()
       return
@@ -646,7 +687,6 @@ function resolveProductFallback() {
   return {
     name: 'ProductDetail',
     params: { id: productId.value },
-    query: { quantity: String(clampQuantity(quantity.value)) },
   }
 }
 
@@ -660,11 +700,6 @@ function goBack() {
   }
   router.replace(resolveProductFallback())
 }
-
-watch(selectedCouponClaimId, value => {
-  if (!productId.value) return
-  checkoutStore.updateCheckout(productId.value, { couponClaimId: value })
-})
 
 onBeforeRouteLeave(to => {
   if (to.name === 'ProductDetail' && String(to.params.id) === String(productId.value)) {
@@ -714,19 +749,7 @@ onBeforeUnmount(() => {
 }
 
 .checkout-header {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 32px;
   margin: 30px 0 24px;
-}
-
-.checkout-kicker {
-  margin: 0 0 6px;
-  color: var(--color-primary-hover);
-  font-size: 13px;
-  font-weight: 750;
-  letter-spacing: .08em;
 }
 
 .checkout-header h1 {
@@ -741,26 +764,6 @@ onBeforeUnmount(() => {
   margin: 10px 0 0;
   color: var(--text-secondary);
   font-size: 15px;
-}
-
-.inventory-notice {
-  max-width: 420px;
-  min-height: 44px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 14px;
-  border: 1px solid var(--border-light);
-  border-radius: 14px;
-  background: var(--color-primary-light);
-  color: var(--text-secondary);
-  font-size: 13px;
-  line-height: 1.5;
-}
-
-.inventory-notice svg {
-  flex: 0 0 auto;
-  color: var(--color-primary-hover);
 }
 
 .checkout-grid {
@@ -983,109 +986,75 @@ onBeforeUnmount(() => {
   -webkit-appearance: none;
 }
 
-.coupon-heading {
-  align-items: flex-start;
-}
-
-.coupon-heading > div:nth-child(2) {
-  flex: 1;
-}
-
-.coupon-count {
-  min-height: 28px;
-  display: inline-flex;
-  align-items: center;
-  padding: 0 10px;
-  border-radius: 999px;
-  background: var(--color-success-bg);
-  color: var(--color-success);
-  font-size: 12px;
-  font-weight: 750;
-}
-
-.quote-loading {
-  min-height: 74px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 9px;
-  margin-top: 18px;
-  border-radius: 15px;
-  background: var(--bg-secondary);
-  color: var(--text-secondary);
-  font-size: 13px;
-}
-
-.coupon-list {
+.order-option-list {
   display: grid;
   gap: 10px;
   margin-top: 18px;
 }
 
-.coupon-choice {
+.order-option-row {
+  width: 100%;
   min-height: 76px;
   display: grid;
-  grid-template-columns: 20px minmax(0, 1fr) auto;
+  grid-template-columns: 38px minmax(0, 1fr) auto 18px;
   gap: 12px;
   align-items: center;
   padding: 14px 15px;
   border: 1px solid var(--border-light);
   border-radius: 16px;
   background: var(--bg-secondary);
+  color: inherit;
+  text-align: left;
+}
+
+button.order-option-row {
   cursor: pointer;
   transition: border-color .2s ease, background .2s ease, box-shadow .2s ease;
 }
 
-.coupon-choice:hover {
+button.order-option-row:hover:not(:disabled) {
   border-color: var(--border-heavy);
+  background: var(--bg-tertiary);
 }
 
-.coupon-choice.selected {
-  border-color: var(--color-primary-hover);
-  background: var(--color-primary-light);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 20%, transparent);
+button.order-option-row:disabled {
+  cursor: progress;
 }
 
-.coupon-choice input {
-  position: absolute;
-  opacity: 0;
-  pointer-events: none;
+.delivery-option-row {
+  grid-template-columns: 38px minmax(0, 1fr);
 }
 
-.radio-mark {
-  width: 20px;
-  height: 20px;
+.order-option-icon {
+  width: 38px;
+  height: 38px;
   display: grid;
   place-items: center;
-  border: 2px solid var(--border-heavy);
-  border-radius: 50%;
-  background: var(--bg-card);
+  border-radius: 12px;
+  background: var(--color-primary-light);
+  color: var(--color-primary-hover);
 }
 
-.coupon-choice.selected .radio-mark {
-  border: 6px solid var(--color-primary-hover);
-}
-
-.coupon-choice-copy {
+.order-option-copy {
   min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 3px;
 }
 
-.coupon-choice-copy strong {
+.order-option-copy strong {
   overflow-wrap: anywhere;
   color: var(--text-primary);
   font-size: 14px;
 }
 
-.coupon-choice-copy small {
+.order-option-copy small {
   color: var(--text-tertiary);
   font-size: 12px;
-  line-height: 1.45;
+  line-height: 1.5;
 }
 
-.coupon-saving {
+.order-option-saving {
   color: var(--color-danger);
   font-size: 13px;
   font-weight: 750;
@@ -1093,13 +1062,15 @@ onBeforeUnmount(() => {
   font-variant-numeric: tabular-nums;
 }
 
-.coupon-empty,
-.coupon-error {
+.order-option-chevron {
+  color: var(--text-tertiary);
+}
+
+.coupon-error,
+.coupon-selection-notice {
   margin: 0;
-  padding: 14px;
-  border-radius: 14px;
-  color: var(--text-secondary);
-  background: var(--bg-secondary);
+  padding: 11px 13px;
+  border-radius: 12px;
   font-size: 13px;
   line-height: 1.55;
 }
@@ -1109,68 +1080,9 @@ onBeforeUnmount(() => {
   background: var(--color-warning-bg);
 }
 
-.unavailable-coupons {
-  border-top: 1px dashed var(--border-medium);
-}
-
-.unavailable-coupons summary {
-  min-height: 44px;
-  display: flex;
-  align-items: center;
-  color: var(--text-secondary);
-  font-size: 13px;
-  font-weight: 650;
-  cursor: pointer;
-}
-
-.unavailable-list {
-  display: grid;
-  gap: 8px;
-  padding-bottom: 4px;
-}
-
-.unavailable-item {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 12px 14px;
-  border-radius: 13px;
-  background: var(--bg-secondary);
-  opacity: .72;
-}
-
-.unavailable-item div {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.unavailable-item strong {
-  color: var(--text-primary);
-  font-size: 13px;
-}
-
-.unavailable-item small,
-.unavailable-item > span {
-  color: var(--text-tertiary);
-  font-size: 12px;
-}
-
-.unavailable-item > span {
-  max-width: 44%;
-  text-align: right;
-}
-
-.delivery-card > p {
-  margin: 18px 0 0;
-  padding: 15px 16px;
-  border-left: 3px solid var(--color-info);
-  border-radius: 0 13px 13px 0;
-  background: var(--color-info-bg);
-  color: var(--text-secondary);
-  font-size: 13px;
-  line-height: 1.65;
+.coupon-selection-notice {
+  color: var(--color-success);
+  background: var(--color-success-bg);
 }
 
 .checkout-sidebar {
@@ -1238,12 +1150,6 @@ onBeforeUnmount(() => {
   text-align: right;
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
-}
-
-.receipt-lines .original-amount {
-  color: var(--text-tertiary);
-  font-weight: 500;
-  text-decoration: line-through;
 }
 
 .receipt-lines dd.saving {
@@ -1392,8 +1298,7 @@ onBeforeUnmount(() => {
 .state-action:focus-visible,
 .quantity-control button:focus-visible,
 .quantity-control input:focus-visible,
-.coupon-choice:has(input:focus-visible),
-.unavailable-coupons summary:focus-visible,
+.coupon-option-row:focus-visible,
 .confirm-button:focus-visible {
   outline: 2px solid var(--color-primary-hover);
   outline-offset: 3px;
@@ -1409,11 +1314,6 @@ onBeforeUnmount(() => {
     flex-direction: column;
     gap: 16px;
     margin-top: 22px;
-  }
-
-  .inventory-notice {
-    max-width: none;
-    width: 100%;
   }
 
   .checkout-grid,
@@ -1486,7 +1386,7 @@ onBeforeUnmount(() => {
   }
 
   .mobile-confirm-bar .confirm-button {
-    min-width: 190px;
+    min-width: 148px;
     padding-inline: 18px;
     white-space: nowrap;
   }
@@ -1516,33 +1416,33 @@ onBeforeUnmount(() => {
 
   .quantity-control input { width: 70px; }
 
-  .coupon-choice {
-    grid-template-columns: 20px minmax(0, 1fr);
+  .coupon-option-row {
+    grid-template-columns: 34px minmax(0, 1fr) 18px;
   }
 
-  .coupon-saving {
+  .order-option-icon {
+    width: 34px;
+    height: 34px;
+  }
+
+  .order-option-saving {
     grid-column: 2;
     justify-self: start;
   }
 
-  .unavailable-item {
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .unavailable-item > span {
-    max-width: none;
-    text-align: left;
+  .coupon-option-row .order-option-chevron {
+    grid-column: 3;
+    grid-row: 1 / span 2;
   }
 
   .mobile-confirm-bar > div strong { font-size: 16px; }
-  .mobile-confirm-bar .confirm-button { min-width: 175px; padding-inline: 13px; }
+  .mobile-confirm-bar .confirm-button { min-width: 136px; padding-inline: 13px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .back-button,
   .state-action,
-  .coupon-choice,
+  .order-option-row,
   .confirm-button,
   .quantity-control button,
   .skeleton {

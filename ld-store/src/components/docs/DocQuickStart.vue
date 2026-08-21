@@ -7,7 +7,7 @@
       <router-link to="/docs/buy-guide" class="task-card">
         <span class="card-kicker">买家路线</span>
         <h3>找到物品并完成购买</h3>
-        <p>浏览详情、选择优惠券、在平台内支付，然后到订单页查看交付。</p>
+        <p>浏览详情、核对兑换条件，在确认订单页调整数量和优惠券，然后完成平台内支付。</p>
       </router-link>
       <router-link to="/docs/seller-center" class="task-card">
         <span class="card-kicker">卖家路线</span>

@@ -8,7 +8,7 @@
     <h2 id="prepare">购买前准备</h2>
     <ul>
       <li>登录 LinuxDo 账号并确认 LDC 余额。</li>
-      <li>阅读物品说明、库存、卖家信息、交付方式和售后约定。</li>
+      <li>阅读物品说明、兑换数量、账号要求、交付方式和售后约定。</li>
       <li>如要使用优惠券，先领取并确认它适用于当前商品或店铺。</li>
       <li>卡密属于敏感信息，交付后不要截屏公开或转发给他人。</li>
     </ul>
@@ -50,9 +50,9 @@ import HelpSteps from './HelpSteps.vue'
 import HelpTable from './HelpTable.vue'
 
 const buySteps = [
-  { title: '筛选并查看详情', description: '按分类、关键词或物品类型浏览，进入详情确认价格和交付。' },
-  { title: '进入确认订单页', description: '确认页可以调整数量并主动选择一张优惠券；进入或修改确认页不会保留库存。' },
-  { title: '确认兑换并支付', description: '核对预计实付后确认兑换。此时系统才创建订单、校验库存并打开 LDC 支付。' },
+  { title: '筛选并查看详情', description: '按分类、关键词或物品类型浏览，进入详情确认价格、兑换条件和交付方式。' },
+  { title: '进入确认订单页', description: '点击“立即兑换”后调整数量；系统会自动选择当前最优惠的可用券，也可以改选或不用券。进入或修改确认页不会保留库存。' },
+  { title: '确认兑换并支付', description: '核对应付合计后确认兑换。此时系统才创建订单、校验库存并打开 LDC 支付。' },
   { title: '查看交付', description: '回到订单详情查看卡密或等待卖家手动履约。', result: '订单和站内沟通记录会保留在个人中心。' }
 ]
 const deliveryColumns = [
