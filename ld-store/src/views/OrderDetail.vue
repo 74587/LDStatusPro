@@ -244,11 +244,11 @@
 
           <div class="order-summary-grid">
             <div class="summary-item">
-              <span class="summary-label">订单号</span>
+              <span class="summary-label">业务单号</span>
               <span class="summary-value mono">{{ order.order_no || order.orderNo || order.id }}</span>
             </div>
             <div v-if="order.ldc_trade_no" class="summary-item">
-              <span class="summary-label">LDC交易号</span>
+              <span class="summary-label">编号</span>
               <span class="summary-value mono">{{ order.ldc_trade_no }}</span>
             </div>
           </div>
