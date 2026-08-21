@@ -41,6 +41,7 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
+    chunkSizeWarningLimit: 600,
     sourcemap: false,
     minify: 'terser',
     terserOptions: {
