@@ -186,8 +186,17 @@
                 <div class="receipt-unit-line">
                   <dt>单价</dt>
                   <dd>
-                    <span>{{ formatMoney(originalUnitPrice) }} LDC / 件</span>
-                    <small v-if="hasProductDiscount">折后 {{ formatMoney(discountedUnitPrice) }} LDC / 件</small>
+                    <template v-if="hasProductDiscount">
+                      <small class="receipt-unit-original">
+                        原价 <del>{{ formatMoney(originalUnitPrice) }} LDC / 件</del>
+                      </small>
+                      <strong class="receipt-unit-discounted">
+                        折后 {{ formatMoney(discountedUnitPrice) }} LDC / 件
+                      </strong>
+                    </template>
+                    <strong v-else class="receipt-unit-current">
+                      {{ formatMoney(originalUnitPrice) }} LDC / 件
+                    </strong>
                   </dd>
                 </div>
                 <div>
@@ -1223,6 +1232,32 @@ button.order-option-row:disabled {
 }
 
 .receipt-lines dd.saving {
+  color: var(--color-danger);
+}
+
+.receipt-lines dd .receipt-unit-original {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.receipt-unit-original del {
+  text-decoration-line: line-through;
+  text-decoration-thickness: 1px;
+  text-decoration-color: currentColor;
+}
+
+.receipt-unit-current,
+.receipt-unit-discounted {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.35;
+  white-space: nowrap;
+}
+
+.receipt-unit-discounted {
   color: var(--color-danger);
 }
 
