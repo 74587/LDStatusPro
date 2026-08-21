@@ -31,8 +31,11 @@ artifact="$artifact_dir/ldstore-web-$release.tar.gz"
 mkdir -p "$artifact_dir"
 (
   cd dist
+  # macOS bsdtar otherwise serializes Finder/provenance xattrs. GNU tar can
+  # materialize those as AppleDouble ._* files, which are not source maps.
+  export COPYFILE_DISABLE=1
   find assets -type f -name '*.js.map' -print0 \
-    | tar --null -czf "$artifact" -T -
+    | tar --no-xattrs --null -czf "$artifact" -T -
 )
 chmod 0600 "$artifact"
 
