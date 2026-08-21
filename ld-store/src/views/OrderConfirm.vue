@@ -165,33 +165,51 @@
             </section>
           </div>
 
-          <aside class="checkout-sidebar" aria-label="价格明细">
+          <aside class="checkout-sidebar" aria-label="本单明细">
             <div class="receipt-card">
               <div class="receipt-heading">
                 <div>
-                  <p>本单明细</p>
-                  <h2>金额明细</h2>
+                  <p>预计购买凭证</p>
+                  <h2>本单明细</h2>
+                  <span>提交前请核对数量与金额</span>
                 </div>
-                <ReceiptText :size="24" aria-hidden="true" />
+                <span class="receipt-heading-icon" aria-hidden="true">
+                  <ReceiptText :size="22" />
+                </span>
               </div>
 
               <dl class="receipt-lines" aria-live="polite" aria-atomic="true">
                 <div>
+                  <dt>数量</dt>
+                  <dd>{{ quantity }} 件</dd>
+                </div>
+                <div class="receipt-unit-line">
+                  <dt>单价</dt>
+                  <dd>
+                    <span>{{ formatMoney(originalUnitPrice) }} LDC / 件</span>
+                    <small v-if="hasProductDiscount">折后 {{ formatMoney(discountedUnitPrice) }} LDC / 件</small>
+                  </dd>
+                </div>
+                <div>
                   <dt>物品小计</dt>
                   <dd>{{ formatMoney(originalSubtotal) }} LDC</dd>
                 </div>
-                <div v-if="productDiscountAmount > 0">
-                  <dt>物品优惠</dt>
-                  <dd class="saving">-{{ formatMoney(productDiscountAmount) }} LDC</dd>
-                </div>
-                <div v-if="couponDiscountAmount > 0">
-                  <dt>优惠券</dt>
-                  <dd class="saving">-{{ formatMoney(couponDiscountAmount) }} LDC</dd>
+                <div class="receipt-discount-line">
+                  <dt>
+                    <span>优惠金额</span>
+                    <small>{{ discountBreakdownText }}</small>
+                  </dt>
+                  <dd :class="{ saving: totalDiscountAmount > 0 }">
+                    {{ totalDiscountAmount > 0 ? '-' : '' }}{{ formatMoney(totalDiscountAmount) }} LDC
+                  </dd>
                 </div>
               </dl>
 
               <div class="receipt-total" aria-live="polite" aria-atomic="true">
-                <span>应付合计</span>
+                <span>
+                  <small>共 {{ quantity }} 件</small>
+                  最终应付
+                </span>
                 <strong>{{ formatMoney(payableAmount) }} <small>LDC</small></strong>
               </div>
 
@@ -221,7 +239,7 @@
 
     <div v-if="product" class="mobile-confirm-bar">
       <div>
-        <span>应付合计</span>
+        <span>最终应付 · {{ quantity }} 件</span>
         <strong>{{ formatMoney(payableAmount) }} LDC</strong>
       </div>
       <button type="button" class="confirm-button" :disabled="!canSubmit" @click="submitOrder">
@@ -368,7 +386,14 @@ const productSubtotal = computed(() => Number(
 ))
 const productDiscountAmount = computed(() => Math.max(0, originalSubtotal.value - productSubtotal.value))
 const couponDiscountAmount = computed(() => Number(selectedCoupon.value?.couponDiscountAmount || 0))
+const totalDiscountAmount = computed(() => productDiscountAmount.value + couponDiscountAmount.value)
 const payableAmount = computed(() => Number(selectedCoupon.value?.payableAmount ?? productSubtotal.value))
+const discountBreakdownText = computed(() => {
+  const parts = []
+  if (productDiscountAmount.value > 0) parts.push(`物品优惠 ${formatMoney(productDiscountAmount.value)}`)
+  if (couponDiscountAmount.value > 0) parts.push(`优惠券 ${formatMoney(couponDiscountAmount.value)}`)
+  return parts.length ? parts.join(' + ') : '本单暂无优惠'
+})
 const couponSummaryText = computed(() => {
   if (selectedCoupon.value) {
     const prefix = couponSelectionMode.value === COUPON_SELECTION_AUTO ? '已自动选择' : '已选择'
@@ -1107,7 +1132,7 @@ button.order-option-row:disabled {
 
 .receipt-heading {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
   color: var(--color-primary-hover);
@@ -1127,24 +1152,69 @@ button.order-option-row:disabled {
   font-size: 21px;
 }
 
+.receipt-heading > div > span {
+  display: block;
+  margin-top: 5px;
+  color: var(--text-tertiary);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.receipt-heading-icon {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 13px;
+  background: var(--color-primary-light);
+  color: var(--color-primary-hover);
+}
+
 .receipt-lines {
   display: grid;
-  gap: 13px;
-  margin: 22px 0 0;
-  padding: 20px 0;
+  gap: 0;
+  margin: 20px 0 0;
+  padding: 12px 0;
   border-block: 1px dashed var(--border-medium);
 }
 
 .receipt-lines div {
   display: flex;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 18px;
+  min-height: 38px;
+  padding: 8px 0;
   color: var(--text-secondary);
   font-size: 13px;
 }
 
+.receipt-lines div + div {
+  border-top: 1px solid color-mix(in srgb, var(--border-light) 70%, transparent);
+}
+
+.receipt-lines dt {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.receipt-lines dt small,
+.receipt-lines dd small {
+  color: var(--text-tertiary);
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
 .receipt-lines dd {
   margin: 0;
+  display: flex;
+  align-items: flex-end;
+  flex-direction: column;
+  gap: 3px;
   color: var(--text-primary);
   font-weight: 650;
   text-align: right;
@@ -1156,19 +1226,35 @@ button.order-option-row:disabled {
   color: var(--color-danger);
 }
 
+.receipt-discount-line dt small {
+  max-width: 175px;
+}
+
 .receipt-total {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding-top: 20px;
+  margin-top: 14px;
+  padding: 16px;
+  border-radius: 16px;
+  background: var(--color-primary-light);
 }
 
 .receipt-total > span {
-  padding-bottom: 4px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
   color: var(--text-secondary);
   font-size: 14px;
   font-weight: 650;
+}
+
+.receipt-total > span small {
+  color: var(--text-tertiary);
+  font-size: 10px;
+  font-weight: 550;
 }
 
 .receipt-total strong {
@@ -1180,7 +1266,7 @@ button.order-option-row:disabled {
   font-variant-numeric: tabular-nums;
 }
 
-.receipt-total small {
+.receipt-total strong small {
   font-size: 13px;
   letter-spacing: 0;
 }
@@ -1196,6 +1282,9 @@ button.order-option-row:disabled {
 }
 
 .selected-coupon-note {
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--color-danger-bg);
   color: var(--color-danger);
 }
 
@@ -1342,6 +1431,8 @@ button.order-option-row:disabled {
 
   .receipt-card {
     position: static;
+    width: min(100%, 560px);
+    margin-inline: auto;
   }
 
   .desktop-confirm,
@@ -1410,11 +1501,14 @@ button.order-option-row:disabled {
   }
 
   .quantity-control {
-    width: 100%;
-    grid-template-columns: 1fr 70px 1fr;
+    width: 142px;
+    height: 44px;
+    align-self: flex-end;
+    grid-template-columns: 44px 54px 44px;
+    border-radius: 12px;
   }
 
-  .quantity-control input { width: 70px; }
+  .quantity-control input { width: 54px; }
 
   .coupon-option-row {
     grid-template-columns: 34px minmax(0, 1fr) 18px;

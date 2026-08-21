@@ -1195,7 +1195,7 @@ const purchaseAccountText = computed(() => {
   if (!userStore.isLoggedIn) return `需 TL${purchaseTrustLevel.value} · 登录后核验`
   return canPurchaseByTrustLevel.value
     ? `需 TL${purchaseTrustLevel.value} · 当前 TL${viewerTrustLevel.value}，已满足`
-    : `需 TL${purchaseTrustLevel.value} · 当前 TL${viewerTrustLevel.value}，尚未满足`
+    : `需 TL${purchaseTrustLevel.value} · 当前 TL${viewerTrustLevel.value}，差 ${purchaseTrustLevel.value - viewerTrustLevel.value} 级`
 })
 
 const purchaseAccountTone = computed(() => {
@@ -3275,7 +3275,7 @@ async function handleOpenStore() {
 
 /* 兑换条件 */
 .purchase-conditions {
-  padding: 16px;
+  padding: 13px;
   border: 1px solid var(--border-light);
   border-radius: 14px;
   background: var(--glass-bg-medium);
@@ -3284,40 +3284,43 @@ async function handleOpenStore() {
 .purchase-conditions-heading {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
   color: var(--color-primary-hover);
 }
 
 .purchase-conditions-heading h2 {
   margin: 0;
   color: var(--text-primary);
-  font-size: 14px;
+  font-size: 13px;
   line-height: 1.4;
 }
 
 .purchase-condition-list {
   display: grid;
-  gap: 9px;
-  margin-top: 13px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 10px;
 }
 
 .purchase-condition-item {
   min-width: 0;
   display: flex;
-  align-items: center;
-  gap: 11px;
-  padding: 11px 12px;
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 7px;
+  min-height: 92px;
+  padding: 9px 8px;
   border-radius: 12px;
   background: var(--bg-secondary);
 }
 
 .purchase-condition-icon {
-  width: 34px;
-  height: 34px;
+  width: 28px;
+  height: 28px;
   flex: 0 0 auto;
   display: grid;
   place-items: center;
-  border-radius: 10px;
+  border-radius: 9px;
   background: var(--color-primary-light);
   color: var(--color-primary-hover);
 }
@@ -3331,13 +3334,14 @@ async function handleOpenStore() {
 
 .purchase-condition-copy small {
   color: var(--text-tertiary);
-  font-size: 11px;
+  font-size: 10px;
+  line-height: 1.3;
 }
 
 .purchase-condition-copy strong {
   color: var(--text-primary);
-  font-size: 13px;
-  line-height: 1.45;
+  font-size: 12px;
+  line-height: 1.4;
   overflow-wrap: anywhere;
 }
 
@@ -4655,11 +4659,20 @@ async function handleOpenStore() {
   }
 
   .purchase-conditions {
-    padding: 14px;
+    padding: 12px;
+  }
+
+  .purchase-condition-list {
+    gap: 6px;
   }
 
   .purchase-condition-item {
-    padding: 10px;
+    min-height: 88px;
+    padding: 8px 6px;
+  }
+
+  .purchase-condition-copy strong {
+    font-size: 11px;
   }
 
 }
