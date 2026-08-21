@@ -56,11 +56,13 @@ export function resolveTelemetryConfig(
 ) {
   const enabled = envFlag(env.VITE_FARO_ENABLED)
   const collectorUrl = validCollectorUrl(env.VITE_FARO_COLLECTOR_URL, locationLike, env.PROD === true)
+  const apiKey = String(env.VITE_FARO_API_KEY || '').trim()
   const blocked = privacySignalEnabled(navigatorLike) || isAutomatedBrowser(navigatorLike)
 
   return {
-    enabled: Boolean(enabled && collectorUrl && !blocked),
+    enabled: Boolean(enabled && collectorUrl && apiKey.length >= 16 && !blocked),
     collectorUrl,
+    apiKey,
     sampleRate: clampSampleRate(env.VITE_FARO_SESSION_SAMPLE_RATE),
     environment: env.VITE_DEPLOYMENT_ENVIRONMENT || (env.PROD === true ? 'production' : 'development'),
     version: env.VITE_APP_VERSION || env.VITE_BUILD_VERSION || 'development'
@@ -127,6 +129,7 @@ export function initializeStorefrontTelemetry(router) {
   ]).then(([{ getWebInstrumentations, initializeFaro }, { TracingInstrumentation }]) => {
     faroInstance = initializeFaro({
       url: config.collectorUrl,
+      apiKey: config.apiKey,
       app: {
         name: 'ldstore-web',
         version: config.version,

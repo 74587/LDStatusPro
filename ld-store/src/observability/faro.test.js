@@ -17,7 +17,8 @@ describe('frontend infrastructure configuration', () => {
     const config = resolveTelemetryConfig({
       PROD: true,
       VITE_FARO_ENABLED: '1',
-      VITE_FARO_COLLECTOR_URL: 'https://observe.ldspro.qzz.io/collect'
+      VITE_FARO_COLLECTOR_URL: 'https://observe.ldspro.qzz.io/collect',
+      VITE_FARO_API_KEY: 'public-ingestion-key'
     }, {}, locationLike)
     expect(config.enabled).toBe(true)
     expect(config.sampleRate).toBe(0.1)
@@ -27,7 +28,8 @@ describe('frontend infrastructure configuration', () => {
     const env = {
       PROD: true,
       VITE_FARO_ENABLED: '1',
-      VITE_FARO_COLLECTOR_URL: 'https://observe.ldspro.qzz.io/collect'
+      VITE_FARO_COLLECTOR_URL: 'https://observe.ldspro.qzz.io/collect',
+      VITE_FARO_API_KEY: 'public-ingestion-key'
     }
     expect(resolveTelemetryConfig(env, { globalPrivacyControl: true }, locationLike).enabled).toBe(false)
     expect(resolveTelemetryConfig(env, { doNotTrack: '1' }, locationLike).enabled).toBe(false)
@@ -38,6 +40,7 @@ describe('frontend infrastructure configuration', () => {
       PROD: true,
       VITE_FARO_ENABLED: 'true',
       VITE_FARO_COLLECTOR_URL: 'http://observe.ldspro.qzz.io/collect',
+      VITE_FARO_API_KEY: 'public-ingestion-key',
       VITE_FARO_SESSION_SAMPLE_RATE: '4'
     }, {}, locationLike)
     expect(config.enabled).toBe(false)
