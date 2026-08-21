@@ -11,7 +11,8 @@ release=$(git rev-parse --short=12 HEAD)
 }
 
 export LDSP_PRIVATE_BUILD_METADATA=1
-export VITE_APP_VERSION=$release
+export CF_PAGES_COMMIT_SHA=$(git rev-parse HEAD)
+unset VITE_APP_VERSION
 export VITE_FARO_ENABLED=${VITE_FARO_ENABLED:-1}
 export VITE_FARO_COLLECTOR_URL=${VITE_FARO_COLLECTOR_URL:-https://api1.ldspro.qzz.io/faro/collect}
 export VITE_FARO_SESSION_SAMPLE_RATE=${VITE_FARO_SESSION_SAMPLE_RATE:-0.1}

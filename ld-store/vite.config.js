@@ -15,7 +15,20 @@ const buildVersion = process.env.VITE_APP_VERSION
   || 'development'
 
 if (privateBuildMetadata && !/^[0-9a-f]{12}$/.test(buildVersion)) {
-  throw new Error('Private build metadata requires a 12 character Git revision in VITE_APP_VERSION')
+  throw new Error('Private build metadata requires a 12 character Git revision')
+}
+
+function privateBuildMetadataPlugin() {
+  return {
+    name: 'ldsp-private-build-metadata',
+    apply: 'build',
+    generateBundle(_options, bundle) {
+      if (privateBuildMetadata) return
+      for (const fileName of Object.keys(bundle)) {
+        if (fileName.endsWith('.map')) delete bundle[fileName]
+      }
+    }
+  }
 }
 
 function proxyOptions(target) {
@@ -29,7 +42,7 @@ function proxyOptions(target) {
 }
 
 export default defineConfig({
-  plugins: [vue()],
+  plugins: [vue(), privateBuildMetadataPlugin()],
   define: {
     'import.meta.env.VITE_BUILD_VERSION': JSON.stringify(
       buildVersion
@@ -56,9 +69,10 @@ export default defineConfig({
     outDir: 'dist',
     assetsDir: 'assets',
     chunkSizeWarningLimit: 600,
-    // Normal Pages builds never publish maps. A trusted build host may opt in
-    // to hidden maps and transfer only those private artifacts to Alloy.
-    sourcemap: privateBuildMetadata ? 'hidden' : false,
+    // Both build modes must hash identical hidden-map output so the private
+    // maps match the public chunks byte-for-byte. The plugin removes map
+    // assets from ordinary Pages builds before anything is written to dist.
+    sourcemap: 'hidden',
     minify: 'terser',
     terserOptions: {
       compress: {
