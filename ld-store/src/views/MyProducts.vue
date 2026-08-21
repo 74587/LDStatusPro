@@ -523,9 +523,18 @@ async function toggleStatus(product) {
         discount: product.discount,
         imageUrl: product.image_url || '',
         stock: getProductType(product) === 'normal' ? Number(product.stock || 0) : undefined,
-        maxPurchaseQuantity: getProductType(product) === 'cdk'
-          ? Number(product.max_purchase_quantity || product.maxPurchaseQuantity || 0)
-          : undefined
+        purchaseLimitType: product.purchase_limit_config?.mode
+          || product.purchaseLimitConfig?.mode
+          || product.purchase_limit_type
+          || product.purchaseLimitType
+          || 'none',
+        maxPurchaseQuantity: Number(
+          product.purchase_limit_config?.quantity
+            ?? product.purchaseLimitConfig?.quantity
+            ?? product.max_purchase_quantity
+            ?? product.maxPurchaseQuantity
+            ?? 0
+        )
       })
       if (result?.success === false) {
         toast.error(result?.error?.message || result?.error || '上架失败')

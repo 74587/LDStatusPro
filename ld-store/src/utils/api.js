@@ -162,7 +162,9 @@ async function request(url, options = {}) {
       return {
         success: false,
         error: errorMessage,
-        status: response.status
+        status: response.status,
+        errorCode: data?.error?.code || data?.code || '',
+        details: data?.error?.details || data?.details
       }
     }
 

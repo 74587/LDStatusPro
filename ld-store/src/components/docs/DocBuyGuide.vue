@@ -8,13 +8,21 @@
     <h2 id="prepare">购买前准备</h2>
     <ul>
       <li>登录 LinuxDo 账号并确认 LDC 余额。</li>
-      <li>阅读物品说明、兑换数量、账号要求、交付方式和售后约定。</li>
+      <li>阅读物品说明、兑换限制、账号要求、交付方式和售后约定。</li>
       <li>如要使用优惠券，先领取并确认它适用于当前商品或店铺。</li>
       <li>卡密属于敏感信息，交付后不要截屏公开或转发给他人。</li>
     </ul>
 
     <h2 id="buy-steps">购买步骤</h2>
     <HelpSteps :steps="buySteps" />
+
+    <h2 id="purchase-limit">理解兑换限制</h2>
+    <ul>
+      <li>“每单最多 X 件”只约束当前订单；“累计限购 X 件”会按当前账号统计历史购买。</li>
+      <li>待支付或支付中的订单会暂时占用累计额度，取消或过期后释放。</li>
+      <li>支付成功后永久计入累计额度，后续退款也不会恢复。</li>
+      <li>确认订单页会显示“已购买 + 待支付 + 本次”的额度等式；并发下单时以创建订单的最终校验为准。</li>
+    </ul>
 
     <h2 id="delivery-result">支付后会得到什么</h2>
     <HelpTable :columns="deliveryColumns" :rows="deliveryRows" caption="按物品类型查看交付结果" />
@@ -63,6 +71,6 @@ const deliveryColumns = [
 const deliveryRows = [
   { type: '普通物品', afterPay: '订单进入待发货，由卖家手动履约', yourAction: '留意订单和消息，按约定配合交付' },
   { type: '独立卡密', afterPay: '系统从库存逐条发放不同卡密', yourAction: '在订单详情复制并妥善保存' },
-  { type: '共享卡密', afterPay: '系统发放同一份共享内容', yourAction: '每次下单限购一件，按说明使用' }
+  { type: '共享卡密', afterPay: '系统发放同一份共享内容', yourAction: '每位用户累计限购一件，按说明使用' }
 ]
 </script>

@@ -198,6 +198,7 @@
               普通物品不会自动发货。买家支付后会收到“请主动联系卖家获取服务”的提醒，请及时在订单页处理履约。
             </p>
           </div>
+
         </div>
 
         <div class="form-card" v-else-if="getProductType(product) === 'link'">
@@ -221,6 +222,17 @@
               仅影响“兑换”门槛；TL0 表示任何能看到该商品的用户都可以兑换。
             </p>
           </div>
+
+          <div v-if="getProductType(product) !== 'link'" class="form-group">
+            <PurchaseLimitSelector
+              ref="maxPurchaseQuantityInput"
+              v-model:mode="form.purchaseLimitType"
+              v-model:quantity="form.maxPurchaseQuantity"
+              :shared-cdk-enabled="getProductType(product) === 'cdk' && form.sharedCdkEnabled"
+              :error="maxPurchaseQuantityError"
+              input-id-prefix="edit-purchase-limit"
+            />
+          </div>
         </div>
         
         <!-- CDK 类型提示 -->
@@ -236,7 +248,7 @@
                 <span class="toggle-help" v-if="form.sharedCdkEnabled">（同一 CDK 重复发货）</span>
               </span>
             </label>
-            <p class="form-hint">开启后只需填写 1 个共享 CDK，库存保持无限，且买家单次只能购买 1 个。</p>
+            <p class="form-hint">开启后只需填写 1 个共享 CDK，库存保持无限，系统会固定每位用户累计只能购买 1 件。</p>
           </div>
 
           <div v-if="form.sharedCdkEnabled" class="form-group">
@@ -250,37 +262,6 @@
             ></textarea>
             <p v-if="sharedCdkCodeError" class="form-error">{{ sharedCdkCodeError }}</p>
             <p v-else class="form-hint">保存后会直接用于自动发货，买家侧展示无差异。</p>
-          </div>
-
-          <div class="form-group">
-            <label class="toggle-switch limit-toggle" @click.prevent="!form.sharedCdkEnabled && (form.limitEnabled = !form.limitEnabled)">
-              <span class="toggle-track" :class="{ active: form.sharedCdkEnabled ? true : form.limitEnabled }">
-                <span class="toggle-thumb"></span>
-              </span>
-              <span class="toggle-label">
-                设置单人单次购买上限
-                <span class="toggle-help" v-if="form.sharedCdkEnabled">（共享模式固定为 1）</span>
-                <span class="toggle-help" v-else-if="!form.limitEnabled">（默认不限制）</span>
-              </span>
-            </label>
-            <p class="form-hint">开启后，每位用户单次下单最多只能购买您设置的数量。</p>
-
-            <div v-if="form.limitEnabled || form.sharedCdkEnabled" class="limit-input-row">
-              <input
-                v-model="form.maxPurchaseQuantity"
-                ref="maxPurchaseQuantityInput"
-                type="number"
-                class="form-input"
-                :class="{ 'input-error': !!maxPurchaseQuantityError }"
-                min="1"
-                max="1000"
-                step="1"
-                placeholder="例如：5"
-                :disabled="form.sharedCdkEnabled"
-              />
-              <span class="limit-unit">个 / 单</span>
-            </div>
-            <p v-if="maxPurchaseQuantityError" class="form-error">{{ maxPurchaseQuantityError }}</p>
           </div>
 
           <div v-if="initialTestModeEnabled" class="form-group">
@@ -323,6 +304,7 @@
           <dl class="seller-summary-facts">
             <div><dt>成交价</dt><dd>{{ editFinalPrice > 0 ? editFinalPrice.toFixed(2) : '—' }} LDC</dd></div>
             <div><dt>库存</dt><dd>{{ getProductType(product) === 'normal' ? (form.stock || '0') : (form.sharedCdkEnabled ? '共享模式' : '在物品页管理') }}</dd></div>
+            <div><dt>限购</dt><dd>{{ purchaseLimitSummary }}</dd></div>
           </dl>
           <ul class="seller-readiness-list">
             <li :class="{ ready: !!form.name.trim() }"><span></span>物品名称</li>
@@ -349,6 +331,7 @@ import { validateProductName, validateProductDescription, validatePrice } from '
 import { renderProductDescription } from '@/utils/renderProductDescription'
 import EmptyState from '@/components/common/EmptyState.vue'
 import SellerStickySummary from '@/components/seller/SellerStickySummary.vue'
+import PurchaseLimitSelector from '@/components/product/PurchaseLimitSelector.vue'
 import { Clock3, Image as ImageIcon } from '@lucide/vue'
 import {
   getProductType as resolveProductType,
@@ -407,7 +390,7 @@ const form = ref({
   purchaseTrustLevel: 0,
   sharedCdkEnabled: false,
   sharedCdkCode: '',
-  limitEnabled: false,
+  purchaseLimitType: 'none',
   maxPurchaseQuantity: '',
   isTestMode: false
 })
@@ -426,6 +409,13 @@ const editOverlayDescription = computed(() => {
 const descriptionPreview = computed(() => renderProductDescription(form.value.description))
 const editFinalPrice = computed(() => Number(form.value.price || 0) * Number(form.value.discount || 1))
 const selectedCategoryName = computed(() => categories.value.find(category => Number(category.id) === Number(form.value.categoryId))?.name || '未选择分类')
+const purchaseLimitSummary = computed(() => {
+  if (getProductType(product.value) === 'cdk' && form.value.sharedCdkEnabled) return '每位用户累计 1 件'
+  const quantity = Number(form.value.maxPurchaseQuantity || 0)
+  if (form.value.purchaseLimitType === 'per_order' && quantity > 0) return `每单 ${quantity} 件`
+  if (form.value.purchaseLimitType === 'per_user' && quantity > 0) return `每位用户累计 ${quantity} 件`
+  return '不限制'
+})
 const submitButtonText = computed(() => {
   if (updateConfirming.value) return '正在确认保存结果...'
   if (submitting.value) return '保存中...'
@@ -470,13 +460,12 @@ const stockError = computed(() => {
 })
 
 const maxPurchaseQuantityError = computed(() => {
-  if (getProductType(product.value) !== 'cdk' || (!form.value.limitEnabled && !form.value.sharedCdkEnabled)) return ''
+  if (form.value.purchaseLimitType === 'none') return ''
   const raw = String(form.value.maxPurchaseQuantity ?? '').trim()
-  if (!raw) return '请输入单人单次购买上限'
+  if (!raw) return '请输入购买上限'
   const value = Number(raw)
-  if (!Number.isInteger(value) || value < 1) return '单人单次购买上限必须是大于 0 的整数'
-  if (form.value.sharedCdkEnabled && value !== 1) return '共享卡密模式下单次购买上限固定为 1'
-  if (value > 1000) return '单人单次购买上限不能超过 1000'
+  if (!Number.isInteger(value) || value < 1) return '购买上限必须是大于 0 的整数'
+  if (value > 1000) return '购买上限不能超过 1000'
   return ''
 })
 
@@ -491,13 +480,13 @@ const sharedCdkCodeError = computed(() => {
 async function toggleSharedCdkMode() {
   const current = !!form.value.sharedCdkEnabled
   const savedMode = !!(product.value?.sharedCdkEnabled || Number(product.value?.shared_cdk_enabled || 0) === 1)
-  if (current === savedMode) {
+  if (current !== savedMode) {
     form.value.sharedCdkEnabled = !current
     return
   }
   const message = current
     ? '切换为独立卡密后，当前共享码将自动迁移为 1 条可用卡密（库存 1），可在「我的物品」中批量补充；切换后将重新提交 AI 审核。'
-    : '切换为共享卡密后，现有独立卡密将暂停出售（切回独立时恢复），单次限购固定为 1；请填写共享卡密；切换后将重新提交 AI 审核。'
+    : `切换为共享卡密后，现有独立卡密将暂停出售，系统固定每位用户累计限购 1 件；切回独立时会恢复“${purchaseLimitSummary.value}”。请填写共享卡密；切换后将重新提交 AI 审核。`
   const confirmed = await dialog.confirm(message, {
     title: '切换卡密模式',
     confirmText: '确定切换',
@@ -631,11 +620,15 @@ function hasExpectedProductState(latestProduct, expectedData, expectedType) {
   const expectedPurchaseTrustLevel = Number(expectedData.purchaseTrustLevel || 0)
   if (latestPurchaseTrustLevel !== expectedPurchaseTrustLevel) return false
 
-  if (expectedType === 'cdk') {
-    const latestLimit = Number(latestProduct.max_purchase_quantity || latestProduct.maxPurchaseQuantity || 0)
-    const expectedLimit = Number(expectedData.maxPurchaseQuantity || 0)
-    if (latestLimit !== expectedLimit) return false
+  const latestLimitConfig = latestProduct.purchase_limit_config || latestProduct.purchaseLimitConfig || {}
+  const latestLimitType = String(latestLimitConfig.mode || latestProduct.purchase_limit_type || latestProduct.purchaseLimitType || 'none')
+  const expectedLimitType = String(expectedData.purchaseLimitType || 'none')
+  if (latestLimitType !== expectedLimitType) return false
+  const latestLimit = Number(latestLimitConfig.quantity ?? latestProduct.max_purchase_quantity ?? latestProduct.maxPurchaseQuantity ?? 0)
+  const expectedLimit = Number(expectedData.maxPurchaseQuantity || 0)
+  if (latestLimit !== expectedLimit) return false
 
+  if (expectedType === 'cdk') {
     const latestSharedCdkEnabled = !!(latestProduct.sharedCdkEnabled || Number(latestProduct.shared_cdk_enabled || 0) === 1)
     const expectedSharedCdkEnabled = !!expectedData.sharedCdkEnabled
     if (latestSharedCdkEnabled !== expectedSharedCdkEnabled) return false
@@ -703,8 +696,8 @@ const canSubmit = computed(() => {
     if (stockError.value) return false
   } else if (type === 'cdk') {
     if (sharedCdkCodeError.value) return false
-    if (maxPurchaseQuantityError.value) return false
   }
+  if (maxPurchaseQuantityError.value) return false
 
   return true
 })
@@ -746,9 +739,26 @@ async function loadProduct() {
         ),
         sharedCdkEnabled: !!(product.value.sharedCdkEnabled || Number(product.value.shared_cdk_enabled || 0) === 1),
         sharedCdkCode: String(product.value.shared_cdk_code || product.value.sharedCdkCode || ''),
-        limitEnabled: Number(product.value.max_purchase_quantity || product.value.maxPurchaseQuantity || 0) > 0,
-        maxPurchaseQuantity: Number(product.value.max_purchase_quantity || product.value.maxPurchaseQuantity || 0) > 0
-          ? Number(product.value.max_purchase_quantity || product.value.maxPurchaseQuantity)
+        purchaseLimitType: String(
+          product.value.purchase_limit_config?.mode
+            || product.value.purchaseLimitConfig?.mode
+            || product.value.purchase_limit_type
+            || product.value.purchaseLimitType
+            || 'none'
+        ),
+        maxPurchaseQuantity: Number(
+          product.value.purchase_limit_config?.quantity
+            ?? product.value.purchaseLimitConfig?.quantity
+            ?? product.value.max_purchase_quantity
+            ?? product.value.maxPurchaseQuantity
+            ?? 0
+        ) > 0
+          ? Number(
+            product.value.purchase_limit_config?.quantity
+              ?? product.value.purchaseLimitConfig?.quantity
+              ?? product.value.max_purchase_quantity
+              ?? product.value.maxPurchaseQuantity
+          )
           : '',
         isTestMode: !!(product.value.is_test_mode || product.value.isTestMode)
       }
@@ -818,11 +828,11 @@ async function submitForm() {
       toast.error(sharedCdkCodeError.value)
       return
     }
-    if (maxPurchaseQuantityError.value) {
-      toast.error(maxPurchaseQuantityError.value)
-      maxPurchaseQuantityInput.value?.focus?.()
-      return
-    }
+  }
+  if (maxPurchaseQuantityError.value) {
+    toast.error(maxPurchaseQuantityError.value)
+    maxPurchaseQuantityInput.value?.focus?.()
+    return
   }
   
   // 验证图片URL（必填）
@@ -858,16 +868,17 @@ async function submitForm() {
       price: parseFloat(form.value.price),
       discount: parseFloat(form.value.discount) || 1,
       imageUrl,
-      purchaseTrustLevel: Number(form.value.purchaseTrustLevel) || 0
+      purchaseTrustLevel: Number(form.value.purchaseTrustLevel) || 0,
+      purchaseLimitType: form.value.purchaseLimitType,
+      maxPurchaseQuantity: form.value.purchaseLimitType === 'none'
+        ? 0
+        : Number(form.value.maxPurchaseQuantity)
     }
     
     // 类型特定数据
     if (productType === 'normal') {
       updateData.stock = Number(form.value.stock)
     } else if (productType === 'cdk') {
-      updateData.maxPurchaseQuantity = form.value.sharedCdkEnabled
-        ? 1
-        : (form.value.limitEnabled ? Number(form.value.maxPurchaseQuantity) : 0)
       updateData.sharedCdkEnabled = form.value.sharedCdkEnabled
       updateData.sharedCdkCode = form.value.sharedCdkEnabled ? form.value.sharedCdkCode.trim() : ''
       if (initialTestModeEnabled.value) {
@@ -913,19 +924,6 @@ watch(
   { flush: 'sync' }
 )
 
-watch(
-  () => form.value.sharedCdkEnabled,
-  enabled => {
-    if (getProductType(product.value) !== 'cdk') return
-    if (enabled) {
-      form.value.limitEnabled = true
-      form.value.maxPurchaseQuantity = 1
-    } else if (String(form.value.maxPurchaseQuantity) === '1') {
-      form.value.limitEnabled = false
-      form.value.maxPurchaseQuantity = ''
-    }
-  }
-)
 </script>
 
 <style scoped>

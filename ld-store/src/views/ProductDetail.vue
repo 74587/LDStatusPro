@@ -180,11 +180,18 @@
                 <h2 id="purchase-conditions-title">兑换条件</h2>
               </div>
               <div class="purchase-condition-list">
-                <div :class="['purchase-condition-item', { 'is-blocked': isOutOfStock }]">
+                <div :class="['purchase-condition-item', { 'is-blocked': isOutOfStock || purchaseLimitReached }]">
                   <span class="purchase-condition-icon" aria-hidden="true"><Package :size="18" /></span>
                   <span class="purchase-condition-copy">
-                    <small>兑换数量</small>
+                    <small>兑换限制</small>
                     <strong>{{ exchangeQuantityText }}</strong>
+                    <router-link
+                      v-if="purchaseLimitReservedQuantity > 0"
+                      :to="{ name: 'Orders' }"
+                      class="purchase-limit-order-link"
+                    >
+                      待支付订单占用 {{ purchaseLimitReservedQuantity }} 件 · 查看订单
+                    </router-link>
                   </span>
                 </div>
                 <div :class="['purchase-condition-item', purchaseAccountTone]">
@@ -264,6 +271,14 @@
                                               disabled
                                             >
                                               不能兑换自己的物品
+                                            </button>
+                                            <button
+                                              v-else-if="purchaseLimitReached"
+                                              class="buy-btn disabled"
+                                              disabled
+                                            >
+                                              <CircleOff :size="18" aria-hidden="true" />
+                                              <span>已达限购</span>
                                             </button>
                                             <button
                                               v-else-if="!canPurchase"
@@ -703,6 +718,14 @@
                                   不能兑换自己的物品
                                 </button>
                                 <button
+                                  v-else-if="purchaseLimitReached"
+                                  class="buy-btn disabled"
+                                  disabled
+                                >
+                                  <CircleOff :size="18" aria-hidden="true" />
+                                  <span>已达限购</span>
+                                </button>
+                                <button
                                   v-else-if="!canPurchase"
                                   class="buy-btn disabled"
                                   disabled
@@ -965,17 +988,19 @@ import StarRatingInput from '@/components/common/StarRatingInput.vue'
 import { buildAvatarCandidates } from '@/utils/avatar'
 import { api } from '@/utils/api'
 import {
-  getAvailableStock,
-  getProductType,
   isCdkProduct,
   isLegacyLinkProduct,
   isOutOfStock as isProductOutOfStock,
   isPlatformOrderProduct,
-  isStoreProduct,
-  isUnlimitedStock
+  isStoreProduct
 } from '@/utils/shopProduct'
 import Skeleton from '@/components/common/Skeleton.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
+import {
+  formatPurchaseLimitLabel,
+  getPurchaseLimit,
+  isPurchaseLimitReached
+} from '@/utils/purchaseLimit'
 
 const route = useRoute()
 const router = useRouter()
@@ -1121,8 +1146,6 @@ const finalPrice = computed(() => formatPrice(price.value * discount.value))
 const originalPrice = computed(() => formatPrice(price.value))
 
 // 库存
-const availableStock = computed(() => getAvailableStock(product.value))
-const hasUnlimitedStock = computed(() => isUnlimitedStock(product.value))
 const isOutOfStock = computed(() => isProductOutOfStock(product.value))
 const restockButtonText = computed(() => {
   if (restockStatusLoading.value) return '加载中...'
@@ -1138,15 +1161,9 @@ const canPurchase = computed(() => {
   return product.value.canPurchase !== false
 })
 const soldCount = computed(() => parseInt(product.value?.sold_count) || 0)
-const maxPurchaseQuantity = computed(() => {
-  const sharedCdkEnabled = !!(product.value?.sharedCdkEnabled || Number(product.value?.shared_cdk_enabled || 0) === 1)
-  if (sharedCdkEnabled && getProductType(product.value) === 'cdk') {
-    return 1
-  }
-  const raw = Number(product.value?.max_purchase_quantity ?? product.value?.maxPurchaseQuantity ?? 0)
-  if (!Number.isInteger(raw) || raw < 0) return 0
-  return raw
-})
+const purchaseLimit = computed(() => getPurchaseLimit(product.value))
+const purchaseLimitReached = computed(() => isPurchaseLimitReached(purchaseLimit.value))
+const purchaseLimitReservedQuantity = computed(() => Number(purchaseLimit.value.reservedQuantity || 0))
 const purchaseTrustLevel = computed(() => {
   const raw = Number(product.value?.purchase_trust_level ?? product.value?.purchaseTrustLevel ?? 0)
   if (!Number.isInteger(raw) || raw < 0) return 0
@@ -1161,32 +1178,10 @@ const purchaseTrustBlockMessage = computed(() => {
   return `当前账号信任等级为 TL${viewerTrustLevel.value}，需达到 TL${purchaseTrustLevel.value} 才可兑换`
 })
 
-const maxExchangeQuantity = computed(() => {
-  if (isOutOfStock.value) return 0
-  const limits = [1000]
-
-  if (maxPurchaseQuantity.value > 0) {
-    limits.push(maxPurchaseQuantity.value)
-  }
-
-  if (!hasUnlimitedStock.value) {
-    limits.push(Math.max(0, Number(availableStock.value) || 0))
-  } else {
-    const available = Number(availableStock.value)
-    if (Number.isFinite(available) && available > 0) {
-      limits.push(available)
-    }
-  }
-
-  const minLimit = Math.min(...limits)
-  return Math.max(0, minLimit)
+const exchangeQuantityText = computed(() => {
+  if (isOutOfStock.value) return '当前无货'
+  return formatPurchaseLimitLabel(purchaseLimit.value, { loggedIn: userStore.isLoggedIn })
 })
-
-const exchangeQuantityText = computed(() => (
-  maxExchangeQuantity.value > 0
-    ? `本次最多 ${maxExchangeQuantity.value} 件`
-    : '当前无货'
-))
 
 const purchaseAccountText = computed(() => {
   if (purchaseTrustLevel.value <= 0) {
@@ -1219,6 +1214,7 @@ const isOrderCreationMaintenanceBlocked = computed(() =>
 const canEnterCheckout = computed(() => (
   isPlatformOrder.value
   && !isOutOfStock.value
+  && !purchaseLimitReached.value
   && !isOrderCreationMaintenanceBlocked.value
   && canPurchase.value
   && !isOwnProductPurchaseBlocked.value
@@ -2454,6 +2450,11 @@ async function handleBuyProduct() {
     return
   }
 
+  if (purchaseLimitReached.value) {
+    toast.warning(exchangeQuantityText.value)
+    return
+  }
+
   const existingDraft = checkoutStore.getDraft(product.value.id)
   const quantity = existingDraft?.quantity || 1
   const checkoutLocation = {
@@ -3343,6 +3344,21 @@ async function handleOpenStore() {
   font-size: 12px;
   line-height: 1.4;
   overflow-wrap: anywhere;
+}
+
+.purchase-limit-order-link {
+  width: fit-content;
+  margin-top: 3px;
+  color: var(--color-info);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+  text-decoration: none;
+}
+
+.purchase-limit-order-link:hover,
+.purchase-limit-order-link:focus-visible {
+  text-decoration: underline;
 }
 
 .purchase-condition-item.is-satisfied .purchase-condition-icon {

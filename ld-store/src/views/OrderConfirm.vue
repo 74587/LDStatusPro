@@ -113,6 +113,35 @@
                   </button>
                 </div>
               </div>
+
+              <div
+                v-if="purchaseLimit.mode === 'per_user'"
+                class="purchase-limit-equation"
+                :class="{ reached: purchaseLimitReached }"
+                role="status"
+              >
+                <div class="purchase-limit-equation-heading">
+                  <strong>累计限购 {{ purchaseLimit.quantity }} 件</strong>
+                  <span v-if="purchaseLimit.bypassed">测试模式自购不计累计额度</span>
+                  <span v-else-if="purchaseLimitReached">当前账号已达限购</span>
+                  <span v-else>本次最多还可兑换 {{ purchaseLimitRemaining }} 件</span>
+                </div>
+                <div v-if="!purchaseLimit.bypassed" class="purchase-limit-equation-values">
+                  <span>已购买 <strong>{{ purchaseLimitPurchased }}</strong></span>
+                  <b>+</b>
+                  <span>待支付 <strong>{{ purchaseLimitReserved }}</strong></span>
+                  <b>+</b>
+                  <span>本次 <strong>{{ quantity }}</strong></span>
+                  <b>=</b>
+                  <span class="equation-total"><strong>{{ purchaseLimitTotal }}</strong> / {{ purchaseLimit.quantity }}</span>
+                </div>
+                <router-link
+                  v-if="purchaseLimitReserved > 0"
+                  :to="{ name: 'Orders' }"
+                >
+                  查看占用额度的待支付订单
+                </router-link>
+              </div>
             </section>
 
             <section class="checkout-card order-options-card" aria-labelledby="order-options-title">
@@ -148,7 +177,8 @@
                 </button>
 
                 <p v-if="quoteError" class="coupon-error" role="status">
-                  {{ quoteError }}，当前按不使用优惠券计算；可重试或继续兑换。
+                  <template v-if="quoteErrorCode === 'PURCHASE_LIMIT_EXCEEDED'">{{ quoteError }}</template>
+                  <template v-else>{{ quoteError }}，当前按不使用优惠券计算；可重试或继续兑换。</template>
                 </p>
                 <p v-else-if="couponSelectionNotice" class="coupon-selection-notice" role="status">
                   {{ couponSelectionNotice }}
@@ -302,7 +332,6 @@ import {
 } from '@/utils/checkoutCoupon'
 import {
   getAvailableStock,
-  getProductType,
   getStockDisplay,
   isCdkProduct,
   isOutOfStock as isProductOutOfStock,
@@ -312,6 +341,12 @@ import {
 import { cleanupPreparedTab, openPaymentPopup, preparePaymentPopup, watchPaymentPopup } from '@/utils/newTab'
 import CouponPickerDialog from '@/components/checkout/CouponPickerDialog.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
+import {
+  formatPurchaseLimitLabel,
+  getPurchaseLimit,
+  getPurchaseLimitMaximum,
+  isPurchaseLimitReached
+} from '@/utils/purchaseLimit'
 
 defineOptions({ name: 'OrderConfirm' })
 
@@ -330,6 +365,7 @@ const quantity = ref(1)
 const couponQuote = ref(null)
 const quoteLoading = ref(false)
 const quoteError = ref('')
+const quoteErrorCode = ref('')
 const selectedCouponClaimId = ref(null)
 const couponSelectionMode = ref(COUPON_SELECTION_AUTO)
 const couponSelectionNotice = ref('')
@@ -357,16 +393,21 @@ const hasUnlimitedStock = computed(() => isUnlimitedStock(product.value))
 const isOutOfStock = computed(() => isProductOutOfStock(product.value))
 const stockLabel = computed(() => `库存 ${getStockDisplay(product.value)}`)
 
-const maxPurchaseQuantity = computed(() => {
-  const sharedCdkEnabled = !!(product.value?.sharedCdkEnabled || Number(product.value?.shared_cdk_enabled || 0) === 1)
-  if (sharedCdkEnabled && getProductType(product.value) === 'cdk') return 1
-  const parsed = Number(product.value?.max_purchase_quantity ?? product.value?.maxPurchaseQuantity ?? 0)
-  return Number.isInteger(parsed) && parsed > 0 ? parsed : 0
-})
+const purchaseLimit = computed(() => getPurchaseLimit(couponQuote.value || product.value))
+const purchaseLimitReached = computed(() => isPurchaseLimitReached(purchaseLimit.value))
+const purchaseLimitMaximum = computed(() => getPurchaseLimitMaximum(purchaseLimit.value))
+const purchaseLimitPurchased = computed(() => Number(purchaseLimit.value.purchasedQuantity || 0))
+const purchaseLimitReserved = computed(() => Number(purchaseLimit.value.reservedQuantity || 0))
+const purchaseLimitRemaining = computed(() => Number(
+  purchaseLimit.value.remainingQuantity ?? purchaseLimit.value.quantity ?? 0
+))
+const purchaseLimitTotal = computed(() => (
+  purchaseLimitPurchased.value + purchaseLimitReserved.value + quantity.value
+))
 
 const maxSelectableQuantity = computed(() => {
   const limits = [1000]
-  if (maxPurchaseQuantity.value > 0) limits.push(maxPurchaseQuantity.value)
+  if (purchaseLimitMaximum.value > 0 || purchaseLimitReached.value) limits.push(purchaseLimitMaximum.value)
   if (!hasUnlimitedStock.value) {
     limits.push(Math.max(0, Number(availableStock.value) || 0))
   } else {
@@ -379,7 +420,9 @@ const maxSelectableQuantity = computed(() => {
 
 const quantityHint = computed(() => {
   const hints = []
-  if (maxPurchaseQuantity.value > 0) hints.push(`单次最多 ${maxPurchaseQuantity.value} 件`)
+  if (purchaseLimit.value.mode !== 'none') {
+    hints.push(formatPurchaseLimitLabel(purchaseLimit.value, { loggedIn: true }))
+  }
   if (!hasUnlimitedStock.value) hints.push(stockLabel.value)
   return hints.length ? hints.join(' · ') : '可按需要调整本次兑换数量'
 })
@@ -442,6 +485,7 @@ const submitBlockMessage = computed(() => {
   if (!isPlatformOrder.value) return '该物品不支持站内兑换。'
   if (isOrderCreationMaintenanceBlocked.value) return '当前处于受限维护状态，暂时无法创建订单。'
   if (isOutOfStock.value) return '物品已经售罄，请返回详情订阅补货。'
+  if (purchaseLimitReached.value) return `当前账号已达到累计限购 ${purchaseLimit.value.quantity} 件。`
   if (product.value?.canPurchase === false) return '该物品当前暂停销售。'
   if (purchaseTrustLevel.value > viewerTrustLevel.value) return `当前账号需达到 TL${purchaseTrustLevel.value} 才能兑换。`
   if (isTestMode.value && !isSeller.value) return '该物品处于测试模式，仅卖家可兑换。'
@@ -454,6 +498,7 @@ const canSubmit = computed(() => (
   && !quoteLoading.value
   && !submitBlockMessage.value
   && quantity.value >= 1
+  && quantity.value <= maxSelectableQuantity.value
 ))
 const submitButtonText = computed(() => (
   submitting.value
@@ -530,6 +575,7 @@ async function loadQuote() {
   const requestedSelectionMode = couponSelectionMode.value
   quoteLoading.value = true
   quoteError.value = ''
+  quoteErrorCode.value = ''
   couponSelectionNotice.value = ''
 
   let result
@@ -571,6 +617,10 @@ async function loadQuote() {
       couponSelectionMode: couponSelectionMode.value,
     })
     quoteError.value = result?.error || '优惠券报价暂时不可用'
+    quoteErrorCode.value = result?.errorCode || ''
+    if (result?.status === 409 && result?.errorCode === 'PURCHASE_LIMIT_EXCEEDED') {
+      await loadProduct({ force: true })
+    }
   }
 
   quoteLoading.value = false
@@ -648,6 +698,13 @@ async function submitOrder() {
 
   try {
     const quoteOk = await loadQuote()
+    if (!quoteOk) {
+      cleanupPreparedTab(preparedWindow)
+      submissionError.value = quoteError.value || '最终额度与金额校验失败，请刷新后重试。'
+      await refreshAfterSubmitFailure()
+      await focusSubmissionError()
+      return
+    }
     const finalQuoteState = evaluateFinalQuote({
       requestedCouponClaimId,
       currentCouponClaimId: selectedCouponClaimId.value,
@@ -975,6 +1032,60 @@ onBeforeUnmount(() => {
   margin: 4px 0 0;
   color: var(--text-tertiary);
   font-size: 12px;
+}
+
+.purchase-limit-equation {
+  margin-top: 14px;
+  padding: 13px 14px;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 20%, var(--border-light));
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--color-primary) 6%, var(--bg-card));
+}
+
+.purchase-limit-equation.reached {
+  border-color: color-mix(in srgb, var(--color-danger) 28%, var(--border-light));
+  background: color-mix(in srgb, var(--color-danger) 6%, var(--bg-card));
+}
+
+.purchase-limit-equation-heading,
+.purchase-limit-equation-values {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.purchase-limit-equation-heading {
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.purchase-limit-equation-heading strong {
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.purchase-limit-equation-values {
+  flex-wrap: wrap;
+  margin-top: 8px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.purchase-limit-equation-values strong {
+  color: var(--text-primary);
+}
+
+.purchase-limit-equation > a {
+  display: inline-flex;
+  min-height: 32px;
+  align-items: center;
+  margin-top: 6px;
+  color: var(--color-primary-hover);
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .quantity-control {
