@@ -8,6 +8,15 @@ import { HttpsProxyAgent } from 'https-proxy-agent'
 // so Cloudflare-hosted backends are unreachable without this on some networks.
 const proxyEnv = process.env.HTTPS_PROXY || process.env.HTTP_PROXY || ''
 const proxyAgent = proxyEnv ? new HttpsProxyAgent(proxyEnv) : undefined
+const privateBuildMetadata = process.env.LDSP_PRIVATE_BUILD_METADATA === '1'
+const buildVersion = process.env.VITE_APP_VERSION
+  || process.env.CF_PAGES_COMMIT_SHA?.slice(0, 12)
+  || process.env.npm_package_version
+  || 'development'
+
+if (privateBuildMetadata && !/^[0-9a-f]{12}$/.test(buildVersion)) {
+  throw new Error('Private build metadata requires a 12 character Git revision in VITE_APP_VERSION')
+}
 
 function proxyOptions(target) {
   return {
@@ -23,10 +32,7 @@ export default defineConfig({
   plugins: [vue()],
   define: {
     'import.meta.env.VITE_BUILD_VERSION': JSON.stringify(
-      process.env.VITE_APP_VERSION
-      || process.env.CF_PAGES_COMMIT_SHA?.slice(0, 12)
-      || process.env.npm_package_version
-      || 'development'
+      buildVersion
     )
   },
   resolve: {
@@ -50,7 +56,9 @@ export default defineConfig({
     outDir: 'dist',
     assetsDir: 'assets',
     chunkSizeWarningLimit: 600,
-    sourcemap: false,
+    // Normal Pages builds never publish maps. A trusted build host may opt in
+    // to hidden maps and transfer only those private artifacts to Alloy.
+    sourcemap: privateBuildMetadata ? 'hidden' : false,
     minify: 'terser',
     terserOptions: {
       compress: {

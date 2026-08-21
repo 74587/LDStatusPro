@@ -6,6 +6,7 @@ const DEFAULT_API_ORIGINS = [
   'https://api2.ldspro.qzz.io'
 ]
 const pendingErrors = []
+const BUILD_VERSION = import.meta.env.VITE_BUILD_VERSION
 
 let faroInstance = null
 let initializationPromise = null
@@ -65,7 +66,7 @@ export function resolveTelemetryConfig(
     apiKey,
     sampleRate: clampSampleRate(env.VITE_FARO_SESSION_SAMPLE_RATE),
     environment: env.VITE_DEPLOYMENT_ENVIRONMENT || (env.PROD === true ? 'production' : 'development'),
-    version: env.VITE_APP_VERSION || env.VITE_BUILD_VERSION || 'development'
+    version: env.VITE_APP_VERSION || env.VITE_BUILD_VERSION || BUILD_VERSION || 'development'
   }
 }
 

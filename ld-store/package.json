@@ -10,6 +10,7 @@
     "lint:fix": "npm run lint -- --fix",
     "check": "npm run lint && npm run build",
     "build": "vite build",
+    "build:private-metadata": "bash scripts/build-private-metadata.sh",
     "preview": "vite preview",
     "deploy": "npm run build && npx wrangler pages deploy dist --project-name=ld-store"
   },
