@@ -2,9 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
-/* 主题切换过渡动画 */
+/* 主题切换过渡动画：只在用户主动切换时启用，首次恢复主题不做过渡。 */
 html {
-  transition: background-color 0.3s ease;
+  background-color: var(--bg-primary);
+  color-scheme: light;
+}
+
+html.dark {
+  color-scheme: dark;
 }
 
 html.theme-transition,
@@ -228,15 +233,12 @@ html.dark {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     -webkit-tap-highlight-color: transparent;
-    /* 主题切换过渡 */
-    transition: background-color 0.3s ease, color 0.3s ease;
   }
 
   body {
     color: var(--text-primary);
     background-color: var(--bg-primary);
     overflow-x: hidden;
-    transition: background-color 0.3s ease, color 0.3s ease;
   }
 
   /* 链接样式 */
@@ -294,6 +296,15 @@ html.dark {
   ::selection {
     background-color: var(--selection-bg);
     color: inherit;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.theme-transition,
+  html.theme-transition *,
+  html.theme-transition *::before,
+  html.theme-transition *::after {
+    transition: none !important;
   }
 }
 

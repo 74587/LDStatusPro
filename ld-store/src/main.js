@@ -4,6 +4,7 @@ import App from './App.vue'
 import router from './router'
 import { useUserStore } from '@/stores/user'
 import { useUiStore } from '@/stores/ui'
+import { initTheme } from '@/composables/useTheme'
 import { AUTH_EXPIRED_EVENT } from '@/utils/auth'
 import { captureStorefrontError, initializeStorefrontTelemetry } from '@/observability/faro'
 import './styles/main.css'
@@ -19,6 +20,11 @@ const pinia = createPinia()
 
 // 使用 Pinia 状态管理
 app.use(pinia)
+
+// 在首次挂载前同步恢复本地 UI 与会话状态，避免先渲染空壳再整体补上页面。
+initTheme()
+const globalUserStore = useUserStore(pinia)
+globalUserStore.restoreSession()
 
 const globalUiStore = useUiStore(pinia)
 

@@ -66,7 +66,6 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useUserStore } from '@/stores/user'
-import { initTheme } from '@/composables/useTheme'
 import { useAnnouncement } from '@/composables/useAnnouncement'
 import AppHeader from '@/components/layout/AppHeader.vue'
 import AnnouncementBar from '@/components/common/AnnouncementBar.vue'
@@ -123,6 +122,9 @@ function initDoodlePreference() {
   }
 }
 
+// 偏好是同步本地状态，必须在首次渲染前恢复，避免背景装饰先出现再消失。
+initDoodlePreference()
+
 // 监听变化并保存到本地存储
 watch(showDoodleBg, (value) => {
   try {
@@ -132,19 +134,11 @@ watch(showDoodleBg, (value) => {
   }
 })
 
-// 初始化主题
-initTheme()
-
 // 初始化
 onMounted(() => {
-  // 恢复涂鸦背景偏好
-  initDoodlePreference()
-  // 全站维护时直接展示公告页，避免触发额外初始化链路
+  // 全站维护时避免触发额外初始化链路
   if (!isFullMaintenanceMode()) {
-    userStore.restoreSession()
     void fetchAnnouncements().catch(() => [])
-  } else {
-    userStore.sessionReady = true
   }
 })
 </script>
@@ -155,7 +149,6 @@ onMounted(() => {
   flex-direction: column;
   min-height: 100vh;
   background-color: var(--bg-primary);
-  transition: background-color 0.3s ease;
 }
 
 .main-content {

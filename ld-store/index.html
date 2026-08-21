@@ -6,6 +6,49 @@
   <meta name="description" content="LD士多-LinuxDo站点积分兑换中心，在这里兑换精选虚拟物品与服务。">
   <meta name="keywords" content="LD士多,LDC,积分商城,linux.do">
   <meta name="theme-color" content="#b5a898">
+
+  <!--
+    在首个样式与 Vue 入口加载前恢复主题，避免深色模式刷新时先绘制浅色背景。
+    这里只保留首屏必需的背景色，完整主题仍由 main.css 管理。
+  -->
+  <script>
+    ;(() => {
+      let themeMode = 'system'
+
+      try {
+        themeMode = localStorage.getItem('ld-store-theme') || themeMode
+      } catch {
+        // localStorage 不可用时回退到系统主题
+      }
+
+      const shouldUseDarkTheme = themeMode === 'dark'
+        || (themeMode !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+
+      document.documentElement.classList.toggle('dark', shouldUseDarkTheme)
+    })()
+  </script>
+  <style>
+    html {
+      min-height: 100%;
+      background-color: #faf9f7;
+      color-scheme: light;
+    }
+
+    html.dark {
+      background-color: #121212;
+      color-scheme: dark;
+    }
+
+    body,
+    #app {
+      min-height: 100%;
+    }
+
+    body {
+      margin: 0;
+      background-color: inherit;
+    }
+  </style>
   
   <!-- 允许抓取但禁止收录，便于统计与预览 -->
   <meta name="robots" content="noindex, nofollow">
@@ -49,8 +92,14 @@
 
   <title>LD士多-LinuxDo站点积分兑换中心</title>
 
-  <script charset="UTF-8" id="MXA_COLLECT" src="https://mxana.tacool.com/sdk.js"></script>
-  <script>MXA.init({ id: "c2-9FYYP0Vm" })</script>
+  <!-- 统计 SDK 独立加载，不阻塞首屏 CSS 与应用入口的发现/执行。 -->
+  <script
+    async
+    charset="UTF-8"
+    id="MXA_COLLECT"
+    src="https://mxana.tacool.com/sdk.js"
+    onload="window.MXA?.init({ id: 'c2-9FYYP0Vm' })"
+  ></script>
 </head>
 <body>
   <div id="app"></div>
