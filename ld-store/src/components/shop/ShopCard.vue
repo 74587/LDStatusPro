@@ -63,7 +63,7 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, onUnmounted, ref } from 'vue'
 import AvatarImage from '@/components/common/AvatarImage.vue'
 import { buildAvatarCandidates } from '@/utils/avatar'
 
@@ -92,6 +92,7 @@ let targetY = 0
 let currentScale = 1
 let currentShadow = 0
 let animationFrame = null
+let resetTimer = null
 
 function lerp(start, end, factor) {
   return start + (end - start) * factor
@@ -116,7 +117,8 @@ function updateTilt() {
   
   tiltStyle.value = {
     transform: `perspective(${perspective}px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(${currentScale}, ${currentScale}, ${currentScale})`,
-    boxShadow: `${shadowX}px ${shadowY}px ${shadowBlur}px rgba(0, 0, 0, ${shadowAlpha}), 0 ${5 + currentShadow * 7}px ${10 + currentShadow * 14}px rgba(0, 0, 0, ${0.05 + currentShadow * 0.05})`
+    boxShadow: `${shadowX}px ${shadowY}px ${shadowBlur}px rgba(0, 0, 0, ${shadowAlpha}), 0 ${5 + currentShadow * 7}px ${10 + currentShadow * 14}px rgba(0, 0, 0, ${0.05 + currentShadow * 0.05})`,
+    willChange: 'transform'
   }
   
   // 光泽跟随
@@ -131,7 +133,12 @@ function updateTilt() {
 }
 
 function handleMouseEnter() {
-  if ('ontouchstart' in window) return
+  if (
+    'ontouchstart' in window
+    || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+  ) return
+  if (resetTimer) window.clearTimeout(resetTimer)
+  tiltStyle.value = { willChange: 'transform' }
   isHovering.value = true
   animationFrame = requestAnimationFrame(updateTilt)
 }
@@ -160,7 +167,16 @@ function handleMouseLeave() {
     transition: `transform ${speed}ms cubic-bezier(0.23, 1, 0.32, 1), box-shadow ${speed}ms cubic-bezier(0.23, 1, 0.32, 1)`
   }
   glareStyle.value = { opacity: 0 }
+
+  resetTimer = window.setTimeout(() => {
+    if (!isHovering.value) tiltStyle.value = {}
+  }, speed)
 }
+
+onUnmounted(() => {
+  if (animationFrame) cancelAnimationFrame(animationFrame)
+  if (resetTimer) window.clearTimeout(resetTimer)
+})
 
 // 解析标签
 const parsedTags = computed(() => {
@@ -212,8 +228,6 @@ const getTagClass = (tag) => {
   border: 1px solid var(--border-light);
   box-shadow: var(--shadow-sm);
   position: relative;
-  transform-style: preserve-3d;
-  will-change: transform, box-shadow;
 }
 
 .shop-card:hover {
@@ -400,6 +414,12 @@ const getTagClass = (tag) => {
   .shop-tag {
     padding: 2px 8px;
     font-size: 10px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tilt-glare {
+    transition: none;
   }
 }
 </style>

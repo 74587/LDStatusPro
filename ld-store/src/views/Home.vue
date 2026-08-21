@@ -1615,9 +1615,7 @@ function clearTrendHover() {
 /* Banner - 液态玻璃效果 */
 .home-banner {
   position: relative;
-  background: var(--glass-bg-light);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  background: var(--glass-bg-heavy);
   border-radius: 24px;
   padding: 28px 24px;
   margin-bottom: 24px;
@@ -2085,8 +2083,6 @@ function clearTrendHover() {
   border-radius: 8px;
   background: var(--glass-bg-heavy);
   color: var(--text-secondary);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
   border: none;
   cursor: pointer;
 }
@@ -2217,8 +2213,6 @@ function clearTrendHover() {
   border-radius: 8px;
   background: var(--glass-bg-heavy);
   color: var(--text-secondary);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
 }
 
 .buy-toolbar-btn-refresh {
@@ -2684,9 +2678,7 @@ function clearTrendHover() {
 /* Hero — liquid glass card */
 .hotboard-hero {
   position: relative;
-  background: var(--glass-bg-light);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  background: var(--glass-bg-heavy);
   border-radius: 20px;
   padding: 24px 28px 20px;
   border: 1px solid var(--glass-border-light);
@@ -2792,9 +2784,7 @@ function clearTrendHover() {
 /* Section card — glass card */
 .hotboard-section {
   position: relative;
-  background: var(--glass-bg, rgba(255,255,255,.06));
-  backdrop-filter: blur(16px) saturate(150%);
-  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  background: var(--glass-bg-heavy);
   border: 1px solid var(--glass-border, rgba(255,255,255,.1));
   border-radius: 16px;
   padding: 18px 22px;
@@ -3247,7 +3237,6 @@ function clearTrendHover() {
   background: var(--bg-primary);
   background: color-mix(in srgb, var(--bg-primary) 92%, transparent);
   box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
-  backdrop-filter: blur(10px);
   transform: translateX(-50%);
   display: flex;
   flex-direction: column;

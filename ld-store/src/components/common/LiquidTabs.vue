@@ -148,9 +148,7 @@ onUnmounted(() => {
   display: inline-flex;
   gap: 2px;
   padding: 5px;
-  background: var(--liquid-tabs-shell-bg, var(--glass-bg-medium));
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  background: var(--liquid-tabs-shell-bg, var(--glass-bg-heavy));
   border-radius: 16px;
   box-shadow: var(
     --liquid-tabs-shell-shadow,

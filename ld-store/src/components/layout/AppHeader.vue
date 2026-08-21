@@ -508,10 +508,8 @@ watch(
   left: 0;
   right: 0;
   z-index: 200;
-  /* 液态玻璃效果 */
-  background: var(--glass-bg);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  /* 固定导航使用高不透明表面，避免滚动时持续重采样整个页面。 */
+  background: var(--glass-bg-heavy);
   border-bottom: 1px solid var(--glass-border);
   box-shadow: 
     0 1px 3px var(--glass-shadow-light),

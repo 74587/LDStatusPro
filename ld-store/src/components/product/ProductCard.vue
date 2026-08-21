@@ -116,7 +116,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onUnmounted } from 'vue'
 import {
   Eye,
   Gamepad2,
@@ -180,6 +180,7 @@ let targetY = 0
 let currentScale = 1
 let currentShadow = 0 // 阴影强度 0-1
 let animationFrame = null
+let resetTimer = null
 
 function lerp(start, end, factor) {
   return start + (end - start) * factor
@@ -209,7 +210,8 @@ function updateTilt() {
   
   tiltStyle.value = {
     transform: `perspective(${perspective}px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(${currentScale}, ${currentScale}, ${currentScale})`,
-    boxShadow: `${shadowX}px ${shadowY}px ${shadowBlur}px rgba(${shadowConfig.primaryRgb}, ${shadowAlpha.toFixed(3)}), 0 ${liftY}px ${liftBlur}px rgba(${shadowConfig.secondaryRgb}, ${liftAlpha.toFixed(3)})${accentShadow}`
+    boxShadow: `${shadowX}px ${shadowY}px ${shadowBlur}px rgba(${shadowConfig.primaryRgb}, ${shadowAlpha.toFixed(3)}), 0 ${liftY}px ${liftBlur}px rgba(${shadowConfig.secondaryRgb}, ${liftAlpha.toFixed(3)})${accentShadow}`,
+    willChange: 'transform'
   }
   
   // 光泽跟随
@@ -224,8 +226,13 @@ function updateTilt() {
 }
 
 function handleMouseEnter() {
-  // 检查是否触摸设备
-  if ('ontouchstart' in window) return
+  // 触摸设备和减少动态效果偏好下不创建临时 3D 合成层。
+  if (
+    'ontouchstart' in window
+    || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+  ) return
+  if (resetTimer) window.clearTimeout(resetTimer)
+  tiltStyle.value = { willChange: 'transform' }
   isHovering.value = true
   animationFrame = requestAnimationFrame(updateTilt)
 }
@@ -254,7 +261,17 @@ function handleMouseLeave() {
     transition: `transform ${speed}ms cubic-bezier(0.23, 1, 0.32, 1), box-shadow ${speed}ms cubic-bezier(0.23, 1, 0.32, 1)`
   }
   glareStyle.value = { opacity: 0 }
+
+  // 回弹结束后释放合成层；列表中的所有卡片永久占层会导致滚动时频繁重栅格化。
+  resetTimer = window.setTimeout(() => {
+    if (!isHovering.value) tiltStyle.value = {}
+  }, speed)
 }
+
+onUnmounted(() => {
+  if (animationFrame) cancelAnimationFrame(animationFrame)
+  if (resetTimer) window.clearTimeout(resetTimer)
+})
 
 // 商品类型
 const isCdk = computed(() => isCdkProduct(props.product))
@@ -503,8 +520,6 @@ function handleImageError(e) {
   border: 1px solid var(--product-card-border, var(--border-light));
   position: relative;
   isolation: isolate;
-  transform-style: preserve-3d;
-  will-change: transform, box-shadow;
   transition: background 0.28s ease, border-color 0.28s ease;
 }
 
@@ -1047,6 +1062,19 @@ function handleImageError(e) {
 
   .product-price {
     font-size: 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .selection-badge::before,
+  .selection-badge::after,
+  .skeleton-shimmer {
+    animation: none;
+  }
+
+  .tilt-glare,
+  .cover-image {
+    transition: none;
   }
 }
 </style>

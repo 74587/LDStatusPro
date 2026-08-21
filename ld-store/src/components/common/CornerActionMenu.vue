@@ -396,8 +396,6 @@ watch(
   align-items: center;
   justify-content: center;
   box-shadow: var(--corner-action-shadow);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
   transition: transform 0.36s ease, opacity 0.22s ease, box-shadow 0.25s ease, color 0.25s ease, filter 0.2s ease;
   pointer-events: none;
 }
@@ -509,8 +507,6 @@ watch(
   align-items: center;
   justify-content: center;
   box-shadow: var(--corner-backtop-shadow);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
   transition: transform 0.28s ease, opacity 0.24s ease, box-shadow 0.24s ease, color 0.24s ease;
   pointer-events: auto;
   touch-action: manipulation;

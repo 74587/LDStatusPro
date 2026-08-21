@@ -131,9 +131,7 @@ onUnmounted(() => {
   overflow-x: auto;
   scrollbar-width: none;
   -ms-overflow-style: none;
-  background: var(--glass-bg-medium);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  background: var(--glass-bg-heavy);
   border-radius: 16px;
   border: 1px solid var(--glass-border);
   box-shadow: 

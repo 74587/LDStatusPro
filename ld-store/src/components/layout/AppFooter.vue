@@ -65,8 +65,6 @@ function isActive(path) {
   right: 0;
   display: none;
   background: var(--glass-bg-heavy);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
   border-top: 1px solid var(--border-light);
   padding-bottom: env(safe-area-inset-bottom, 0);
   z-index: 100;
