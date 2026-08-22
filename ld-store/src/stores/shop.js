@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { useUserStore } from '@/stores/user'
+import { useNotificationSummaryStore } from '@/stores/notificationSummary'
 import { storage } from '@/utils/storage'
 import {
   addFavoriteRequest,
@@ -868,7 +869,11 @@ export const useShopStore = defineStore('shop', () => {
   async function deliverOrder(orderNo, content) {
     const result = await deliverOrderRequest(orderNo, content)
     if (result.success) {
-      await fetchSellerOrders()
+      const notificationSummaryStore = useNotificationSummaryStore()
+      await Promise.all([
+        fetchSellerOrders(),
+        notificationSummaryStore.refresh({ force: true })
+      ])
     }
     return result
   }

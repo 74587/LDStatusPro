@@ -223,19 +223,25 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { storeToRefs } from 'pinia'
 import { ChevronDown, LogOut } from '@lucide/vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
+import { useNotificationSummaryStore } from '@/stores/notificationSummary'
 import ThemeToggle from '@/components/common/ThemeToggle.vue'
 import AvatarImage from '@/components/common/AvatarImage.vue'
 import { storage } from '@/utils/storage'
-import { api } from '@/utils/api'
 import { DEFAULT_SEARCH_KEYWORDS, loadSearchHistory, saveSearchHistory, clearSearchHistory } from '@/utils/search'
 import { buildUserDropdownMenuGroups } from '@/config/userMenu'
 
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
+const notificationSummaryStore = useNotificationSummaryStore()
+const {
+  totalUnread: messageUnread,
+  sellerPendingDeliveryCount
+} = storeToRefs(notificationSummaryStore)
 
 // 响应式状态
 const searchQuery = ref('')
@@ -247,8 +253,6 @@ const moreDropdownRef = ref(null)
 const searchBoxRef = ref(null)
 const showSearchPanel = ref(false)
 const searchHistory = ref([])
-const messageUnread = ref(0)
-const sellerPendingDeliveryCount = ref(0)
 const recommendedKeywords = DEFAULT_SEARCH_KEYWORDS
 
 // 计算属性
@@ -418,22 +422,14 @@ function checkMobile() {
 
 async function updateMessageUnread(force = false) {
   if (!isLoggedIn.value) {
-    messageUnread.value = 0
-    sellerPendingDeliveryCount.value = 0
+    notificationSummaryStore.reset()
     return
   }
   if (!force && document.visibilityState === 'hidden') {
     return
   }
 
-  try {
-    const result = await api.get('/api/shop/messages/unread-summary')
-    if (!result.success) return
-    messageUnread.value = Number(result.data?.totalUnread || 0)
-    sellerPendingDeliveryCount.value = Number(result.data?.sellerPendingDeliveryCount || 0)
-  } catch (_) {
-    // ignore polling errors
-  }
+  await notificationSummaryStore.refresh({ force })
 }
 
 function startMessageUnreadPolling() {
@@ -482,8 +478,7 @@ watch(isLoggedIn, (loggedIn) => {
     startMessageUnreadPolling()
   } else {
     stopMessageUnreadPolling()
-    messageUnread.value = 0
-    sellerPendingDeliveryCount.value = 0
+    notificationSummaryStore.reset()
   }
 })
 

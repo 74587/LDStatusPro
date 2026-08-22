@@ -31,7 +31,14 @@
           >
             <component :is="item.icon" :size="18" :stroke-width="1.8" aria-hidden="true" />
             <span>{{ item.label }}</span>
-            <span v-if="item.badge?.value" class="seller-nav-badge" :aria-label="`${item.badge.value} 项待处理`">
+            <span
+              v-if="item.badge?.value"
+              class="seller-nav-badge"
+              role="status"
+              aria-live="polite"
+              aria-atomic="true"
+              :aria-label="`订单管理有 ${item.badge.value} 项待处理`"
+            >
               {{ formatBadge(item.badge.value) }}
             </span>
           </router-link>
@@ -121,6 +128,7 @@
 
 <script setup>
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { storeToRefs } from 'pinia'
 import { useRoute, useRouter } from 'vue-router'
 import {
   AlertTriangle,
@@ -138,7 +146,7 @@ import {
   X
 } from '@lucide/vue'
 import { useUserStore } from '@/stores/user'
-import { api } from '@/utils/api'
+import { useNotificationSummaryStore } from '@/stores/notificationSummary'
 import ThemeToggle from '@/components/common/ThemeToggle.vue'
 import AvatarImage from '@/components/common/AvatarImage.vue'
 import { MAINTENANCE_STATE, isRestrictedMaintenanceMode } from '@/config/maintenance'
@@ -147,11 +155,12 @@ import { isSellerNavigationItemActive, resolveSellerViewKey } from '@/utils/sell
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
+const notificationSummaryStore = useNotificationSummaryStore()
+const { sellerPendingDeliveryCount: pendingDeliveryCount } = storeToRefs(notificationSummaryStore)
 const drawerOpen = ref(false)
 const mobileMenuButton = ref(null)
 const sidebarCloseButton = ref(null)
 const sellerMain = ref(null)
-const pendingDeliveryCount = ref(0)
 let unreadTimer = null
 
 const displayName = computed(() => userStore.user?.name || userStore.username || '卖家')
@@ -218,16 +227,17 @@ function handleKeydown(event) {
   if (event.key === 'Escape') closeDrawer({ restoreFocus: true })
 }
 
-async function updatePendingDelivery() {
-  try {
-    const result = await api.get('/api/shop/messages/unread-summary')
-    if (result.success) pendingDeliveryCount.value = Number(result.data?.sellerPendingDeliveryCount || 0)
-  } catch {
-    // 导航徽标失败不影响后台主要功能。
-  }
+async function updatePendingDelivery(force = false) {
+  if (!force && document.visibilityState === 'hidden') return
+  await notificationSummaryStore.refresh({ force })
+}
+
+function handleVisibilityChange() {
+  if (document.visibilityState === 'visible') updatePendingDelivery(true)
 }
 
 function logout() {
+  notificationSummaryStore.reset()
   userStore.logout()
   router.replace('/')
 }
@@ -243,12 +253,14 @@ watch(drawerOpen, value => {
 
 onMounted(() => {
   document.addEventListener('keydown', handleKeydown)
-  updatePendingDelivery()
+  document.addEventListener('visibilitychange', handleVisibilityChange)
+  updatePendingDelivery(true)
   unreadTimer = window.setInterval(updatePendingDelivery, 60_000)
 })
 
 onUnmounted(() => {
   document.removeEventListener('keydown', handleKeydown)
+  document.removeEventListener('visibilitychange', handleVisibilityChange)
   document.body.style.overflow = ''
   if (unreadTimer) window.clearInterval(unreadTimer)
 })
