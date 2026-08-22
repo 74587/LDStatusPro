@@ -1,9 +1,22 @@
 import { describe, expect, it } from 'vitest'
-import { resolveTelemetryConfig } from './faro'
+import { resolveTelemetryConfig, resolveTraceHeaderCorsUrls } from './faro'
 
 const locationLike = { origin: 'https://store.ldspro.qzz.io' }
 
 describe('frontend infrastructure configuration', () => {
+  it('propagates trace context to every production API origin', () => {
+    const matchers = resolveTraceHeaderCorsUrls({}, locationLike)
+
+    for (const apiOrigin of [
+      'https://api.ldspro.qzz.io',
+      'https://api1.ldspro.qzz.io',
+      'https://api2.ldspro.qzz.io'
+    ]) {
+      expect(matchers.some((matcher) => matcher.test(`${apiOrigin}/api/health`))).toBe(true)
+    }
+    expect(matchers.some((matcher) => matcher.test('https://example.com/api/health'))).toBe(false)
+  })
+
   it('stays disabled unless the feature and endpoint are both configured', () => {
     expect(resolveTelemetryConfig({ PROD: true }, {}, locationLike).enabled).toBe(false)
     expect(resolveTelemetryConfig({

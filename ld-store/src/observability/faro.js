@@ -2,6 +2,7 @@ import { sanitizeError, sanitizeTelemetryItem } from './privacy'
 
 const DEFAULT_SAMPLE_RATE = 0.1
 const DEFAULT_API_ORIGINS = [
+  'https://api.ldspro.qzz.io',
   'https://api1.ldspro.qzz.io',
   'https://api2.ldspro.qzz.io'
 ]
@@ -74,16 +75,20 @@ function escapeRegExp(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
-function traceOrigins(env = import.meta.env) {
+export function resolveTraceHeaderCorsUrls(
+  env = import.meta.env,
+  locationLike = globalThis.location
+) {
   const candidates = [
     ...DEFAULT_API_ORIGINS,
     env.VITE_API_BASE,
-    env.VITE_AUTH_API_BASE
+    env.VITE_AUTH_API_BASE,
+    env.VITE_IMAGE_API_BASE
   ]
 
   return [...new Set(candidates.filter(Boolean).flatMap((candidate) => {
     try {
-      const url = new URL(candidate, globalThis.location?.origin)
+      const url = new URL(candidate, locationLike?.origin)
       if (!['http:', 'https:'].includes(url.protocol)) return []
       return [url.origin]
     } catch {
@@ -143,7 +148,7 @@ export function initializeStorefrontTelemetry(router) {
         ...getWebInstrumentations({ captureConsole: false }),
         new TracingInstrumentation({
           instrumentationOptions: {
-            propagateTraceHeaderCorsUrls: traceOrigins()
+            propagateTraceHeaderCorsUrls: resolveTraceHeaderCorsUrls()
           }
         })
       ],
