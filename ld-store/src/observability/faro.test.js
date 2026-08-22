@@ -26,7 +26,7 @@ describe('frontend infrastructure configuration', () => {
     }, {}, locationLike).enabled).toBe(false)
   })
 
-  it('uses 10 percent session sampling by default', () => {
+  it('samples every privacy-eligible session by default at the current traffic level', () => {
     const config = resolveTelemetryConfig({
       PROD: true,
       VITE_FARO_ENABLED: '1',
@@ -34,7 +34,7 @@ describe('frontend infrastructure configuration', () => {
       VITE_FARO_API_KEY: 'public-ingestion-key'
     }, {}, locationLike)
     expect(config.enabled).toBe(true)
-    expect(config.sampleRate).toBe(0.1)
+    expect(config.sampleRate).toBe(1)
   })
 
   it('honors global privacy control and do-not-track', () => {

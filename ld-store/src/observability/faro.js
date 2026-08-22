@@ -1,6 +1,8 @@
 import { sanitizeError, sanitizeTelemetryItem } from './privacy'
 
-const DEFAULT_SAMPLE_RATE = 0.1
+// 当前商城访问量较低，10% 会话采样会形成数小时甚至数天的数据盲区。
+// 默认采集全部“符合隐私条件”的会话；GPC/DNT 和自动化浏览器仍会在初始化前被排除。
+const DEFAULT_SAMPLE_RATE = 1
 const DEFAULT_API_ORIGINS = [
   'https://api.ldspro.qzz.io',
   'https://api1.ldspro.qzz.io',

@@ -113,7 +113,7 @@ cp .env.example .env.local
 - `VITE_FARO_ENABLED`：浏览器端性能与错误采集开关，默认关闭
 - `VITE_FARO_COLLECTOR_URL`：自托管采集入口的完整 HTTPS `/collect` 地址
 - `VITE_FARO_API_KEY`：公开的浏览器采集入口标识（会进入前端产物，不应当作服务端密钥）
-- `VITE_FARO_SESSION_SAMPLE_RATE`：会话采样率，生产建议保持 `0.1`
+- `VITE_FARO_SESSION_SAMPLE_RATE`：隐私条件允许的会话采样率；当前低流量生产默认 `1`，仍排除 GPC/DNT 与自动化浏览器，且不采集 Session Replay 或表单内容。后续仅在本地 Loki 30 天 RUM 投影接近容量预算时再下调
 - `VITE_DEPLOYMENT_ENVIRONMENT`、`VITE_APP_VERSION`：部署环境与前端版本标识
 - `VITE_MAINTENANCE_MODE`：维护模式开关（`1` 开启，`0` 关闭）
 - `VITE_MAINTENANCE_TITLE`、`VITE_MAINTENANCE_MESSAGE`、`VITE_MAINTENANCE_ETA`：维护页文案
