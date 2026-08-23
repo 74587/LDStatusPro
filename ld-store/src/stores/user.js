@@ -178,6 +178,7 @@ export const useUserStore = defineStore('user', () => {
     sessionReady,
     // 计算属性
     isLoggedIn,
+    currentUser,
     username,
     avatar,
     avatarCandidates,

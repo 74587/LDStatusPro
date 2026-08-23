@@ -1,6 +1,30 @@
 <template>
   <div class="settings-page">
     <div class="page-container">
+      <section v-if="showProductPublishReturn" class="publish-return-card" aria-labelledby="publish-return-title">
+        <div class="publish-return-icon" aria-hidden="true">
+          <PackageCheck :size="21" />
+        </div>
+        <div class="publish-return-copy">
+          <h2 id="publish-return-title">完成收款配置后继续发布</h2>
+          <p role="status" aria-live="polite" aria-atomic="true">
+            {{ merchantReady
+              ? '收款配置已启用并通过验证，可以返回发布页继续填写。'
+              : '发布草稿已保存在当前设备，请先保存并验证收款配置。' }}
+          </p>
+        </div>
+        <button
+          type="button"
+          class="publish-return-button"
+          :disabled="loading || !merchantReady"
+          :title="merchantReady ? '返回发布页' : '收款配置启用并验证后才可返回'"
+          @click="returnToProductPublish"
+        >
+          <ArrowLeft :size="17" aria-hidden="true" />
+          返回继续发布
+        </button>
+      </section>
+
       <div v-if="loading" class="loading-state">
         <div class="skeleton-card">
           <div class="skeleton skeleton-line w-32"></div>
@@ -176,16 +200,20 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useShopStore } from '@/stores/shop'
 import { useToast } from '@/composables/useToast'
 import { useDialog } from '@/composables/useDialog'
 import { api } from '@/utils/api'
+import { PRODUCT_PUBLISH_PAYMENT_SOURCE } from '@/utils/productPublishDraft'
 import SellerStatusBadge from '@/components/seller/SellerStatusBadge.vue'
-import { CircleAlert, Copy, Eye, EyeOff, LockKeyhole, Send } from '@lucide/vue'
+import { ArrowLeft, CircleAlert, Copy, Eye, EyeOff, LockKeyhole, PackageCheck, Send } from '@lucide/vue'
 
 const shopStore = useShopStore()
 const toast = useToast()
 const dialog = useDialog()
+const route = useRoute()
+const router = useRouter()
 
 // 配置页展示的回调地址始终指向商城后端正式入口，避免本地代理地址误导商家配置
 const merchantApiBaseUrl = computed(() => {
@@ -210,6 +238,8 @@ const testResult = ref(null)
 
 // 是否已配置
 const isConfigured = computed(() => !!config.value.configured)
+const merchantReady = computed(() => !!config.value.configured && !!config.value.isActive && !!config.value.isVerified)
+const showProductPublishReturn = computed(() => route.query.source === PRODUCT_PUBLISH_PAYMENT_SOURCE)
 
 // 是否可以保存
 const canSave = computed(() => {
@@ -222,6 +252,11 @@ const canSave = computed(() => {
 // 格式化金额
 function formatMoney(value) {
   return parseFloat(value || 0).toFixed(2)
+}
+
+function returnToProductPublish() {
+  if (!merchantReady.value) return
+  router.push({ name: 'SellerPublish' })
 }
 
 // 加载设置
@@ -395,6 +430,94 @@ html.dark .settings-page {
   max-width: 600px;
   margin: 0 auto;
   padding: 16px;
+}
+
+.publish-return-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 14px;
+  color: var(--settings-tone-sage-text);
+  background: var(--settings-tone-sage-bg);
+  border: 1px solid var(--settings-tone-sage-border);
+  border-radius: 14px;
+}
+
+.publish-return-icon {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  color: var(--settings-tone-sage-text);
+  background: var(--bg-card);
+  border: 1px solid var(--settings-tone-sage-border);
+  border-radius: 12px;
+}
+
+.publish-return-copy {
+  flex: 1;
+  min-width: 0;
+}
+
+.publish-return-copy h2 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.publish-return-copy p {
+  margin: 3px 0 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.publish-return-button {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex: 0 0 auto;
+  padding: 10px 13px;
+  color: white;
+  background: var(--color-primary);
+  border: 1px solid var(--color-primary);
+  border-radius: 11px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.publish-return-button:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+}
+
+.publish-return-button:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.publish-return-button:disabled {
+  color: var(--text-tertiary);
+  background: var(--bg-tertiary);
+  border-color: var(--border-color);
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+@media (max-width: 560px) {
+  .publish-return-card {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .publish-return-button {
+    width: 100%;
+  }
 }
 
 .page-header {

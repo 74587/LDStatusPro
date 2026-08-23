@@ -49,6 +49,11 @@ function get(key, defaultValue = null) {
     return item.value
   } catch (e) {
     console.error('Storage get error:', e)
+    try {
+      localStorage.removeItem(NAMESPACE + key)
+    } catch {
+      // ignore cleanup failures when storage itself is unavailable
+    }
     return defaultValue
   }
 }

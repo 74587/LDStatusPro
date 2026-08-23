@@ -117,6 +117,28 @@
       </div>
 
       <form v-if="publishMode === 'product'" class="publish-form seller-product-form" @submit.prevent="submitForm">
+        <section class="draft-panel" :class="{ 'has-error': draftState === 'error' }" aria-label="发布草稿状态">
+          <div class="draft-status-row">
+            <CircleAlert v-if="draftState === 'error'" :size="18" aria-hidden="true" />
+            <Cloud v-else :size="18" aria-hidden="true" />
+            <p role="status" aria-live="polite" aria-atomic="true">{{ draftStatusText }}</p>
+            <button v-if="draftState === 'error'" type="button" class="draft-text-button" @click="retryDraftSave">
+              重试保存
+            </button>
+          </div>
+          <div v-if="hasRestoredDraft" class="draft-restore-notice">
+            <ShieldAlert :size="20" aria-hidden="true" />
+            <div class="draft-restore-copy">
+              <strong>已恢复 {{ formatDraftTime(restoredDraftAt) }} 的草稿</strong>
+              <p v-if="restoredSensitiveFields.length">
+                为保障库存安全，CDK 卡密未保存，请重新填写。
+              </p>
+              <p v-if="restoredCategoryNotice">{{ restoredCategoryNotice }}</p>
+            </div>
+            <button type="button" class="draft-discard-button" @click="discardProductDraft">放弃草稿</button>
+          </div>
+        </section>
+
         <!-- 基本信息 -->
         <div class="form-card">
           <h2 class="card-title">基本信息</h2>
@@ -311,7 +333,7 @@
               <div class="notice-item">
                 <span class="item-num">1</span>
                 <div class="item-text">
-                  <strong>请先在<a href="/seller/payment" target="_blank" style="color: #007bff;">卖家后台</a>配置 LDC 收款信息</strong>，否则买家无法完成平台内支付。
+                  <strong>请先在<button type="button" class="inline-payment-link" @click="goToPaymentSettings">卖家后台</button>配置 LDC 收款信息</strong>，否则买家无法完成平台内支付。
                 </div>
               </div>
               <div class="notice-item highlight">
@@ -392,7 +414,7 @@
               <div class="notice-item">
                 <span class="item-num">1</span>
                 <div class="item-text">
-                  <strong>在<a href="/seller/payment" target="_blank" style="color: #007bff;">卖家后台</a>配置 LDC 收款信息</strong>：在「收款设置」中填写 Client ID 和 Client Key
+                  <strong>在<button type="button" class="inline-payment-link" @click="goToPaymentSettings">卖家后台</button>配置 LDC 收款信息</strong>：在「收款设置」中填写 Client ID 和 Client Key
                 </div>
               </div>
               <div class="notice-item highlight">
@@ -567,17 +589,25 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
-import { Image as ImageIcon } from '@lucide/vue'
-import { useRouter, useRoute } from 'vue-router'
+import { ref, computed, nextTick, onBeforeUnmount, onMounted, watch } from 'vue'
+import { CircleAlert, Cloud, Image as ImageIcon, ShieldAlert } from '@lucide/vue'
+import { onBeforeRouteLeave, useRouter, useRoute } from 'vue-router'
 import { useShopStore } from '@/stores/shop'
+import { useUserStore } from '@/stores/user'
 import { useToast } from '@/composables/useToast'
+import { useDialog } from '@/composables/useDialog'
 import { validateProductName, validateProductDescription, validatePrice } from '@/utils/security'
 import { renderProductDescription } from '@/utils/renderProductDescription'
 import { api } from '@/utils/api'
 import { CDK_UPLOAD_LIMITS } from '@/config/cdkQuota'
 import SellerStickySummary from '@/components/seller/SellerStickySummary.vue'
 import PurchaseLimitSelector from '@/components/product/PurchaseLimitSelector.vue'
+import {
+  PRODUCT_PUBLISH_PAYMENT_SOURCE,
+  clearProductPublishDraft,
+  readProductPublishDraft,
+  writeProductPublishDraft
+} from '@/utils/productPublishDraft'
 import {
   MAX_PRODUCT_IMAGE_URL_LENGTH,
   getProductImageUrlError,
@@ -598,7 +628,9 @@ const props = defineProps({
 const router = useRouter()
 const route = useRoute()
 const shopStore = useShopStore()
+const userStore = useUserStore()
 const toast = useToast()
+const dialog = useDialog()
 
 const submitting = ref(false)
 const submitConfirming = ref(false)
@@ -710,6 +742,7 @@ const GUIDE_MODAL_KEY = 'ld_store_publish_guide_seen'
 const PRODUCT_SUBMIT_TIMEOUT_MS = 90000
 const PRODUCT_SUBMIT_STATUS_MAX_RETRIES = 8
 const PRODUCT_SUBMIT_STATUS_RETRY_INTERVAL_MS = 2000
+const PRODUCT_DRAFT_SAVE_DEBOUNCE_MS = 600
 
 // 关闭弹窗
 function closeGuideModal() {
@@ -719,24 +752,198 @@ function closeGuideModal() {
   }
 }
 
+function createDefaultProductForm(categoryId = null) {
+  return {
+    name: '',
+    description: '',
+    categoryId,
+    price: '',
+    discount: 1,
+    imageUrl: '',
+    productType: 'normal',
+    stock: '',
+    purchaseTrustLevel: 0,
+    cdkCodes: '',
+    sharedCdkEnabled: false,
+    sharedCdkCode: '',
+    isTestMode: false,
+    purchaseLimitType: 'none',
+    maxPurchaseQuantity: ''
+  }
+}
+
 // 表单数据
-const form = ref({
-  name: '',
-  description: '',
-  categoryId: null,
-  price: '',
-  discount: 1,
-  imageUrl: '',
-  productType: 'normal',
-  stock: '',
-  purchaseTrustLevel: 0,
-  cdkCodes: '',
-  sharedCdkEnabled: false,
-  sharedCdkCode: '',
-  isTestMode: false,
-  purchaseLimitType: 'none',
-  maxPurchaseQuantity: ''
+const form = ref(createDefaultProductForm())
+const draftReady = ref(false)
+const draftDirty = ref(false)
+const draftState = ref('idle')
+const draftSavedAt = ref(0)
+const draftError = ref('')
+const hasRestoredDraft = ref(false)
+const restoredDraftAt = ref(0)
+const restoredSensitiveFields = ref([])
+const restoredCategoryId = ref(null)
+const restoredCategoryNotice = ref('')
+let draftSaveTimer = null
+
+const draftStatusText = computed(() => {
+  if (draftState.value === 'error') {
+    return draftError.value || '自动保存失败，离开页面可能丢失内容'
+  }
+  if (draftSavedAt.value) return `已自动保存 ${formatDraftTime(draftSavedAt.value)}`
+  return '自动保存已开启'
 })
+
+function formatDraftTime(value) {
+  const date = new Date(Number(value || 0))
+  if (Number.isNaN(date.getTime())) return ''
+  const now = new Date()
+  const time = date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false })
+  if (date.toDateString() === now.toDateString()) return time
+  return `${date.getMonth() + 1}月${date.getDate()}日 ${time}`
+}
+
+function clearDraftSaveTimer() {
+  if (draftSaveTimer !== null) {
+    window.clearTimeout(draftSaveTimer)
+    draftSaveTimer = null
+  }
+}
+
+function persistProductDraft() {
+  clearDraftSaveTimer()
+  if (!draftReady.value || !draftDirty.value || publishMode.value !== 'product') return true
+
+  const result = writeProductPublishDraft(userStore.currentUser, form.value)
+  if (!result.success) {
+    draftState.value = 'error'
+    draftError.value = '自动保存失败，离开页面可能丢失内容'
+    return false
+  }
+
+  draftDirty.value = false
+  draftState.value = 'saved'
+  draftSavedAt.value = result.draft.updatedAt
+  draftError.value = ''
+  return true
+}
+
+function scheduleProductDraftSave() {
+  clearDraftSaveTimer()
+  draftSaveTimer = window.setTimeout(persistProductDraft, PRODUCT_DRAFT_SAVE_DEBOUNCE_MS)
+}
+
+function flushProductDraft() {
+  if (!draftReady.value) return true
+  return persistProductDraft()
+}
+
+function retryDraftSave() {
+  draftDirty.value = true
+  persistProductDraft()
+}
+
+function restoreProductDraft() {
+  const result = readProductPublishDraft(userStore.currentUser)
+  if (result.error) {
+    draftState.value = 'error'
+    draftError.value = '草稿读取失败，本次填写仍会继续尝试自动保存'
+    return
+  }
+  if (!result.draft) return
+
+  const draft = result.draft
+  form.value = {
+    ...createDefaultProductForm(),
+    ...draft.form,
+    cdkCodes: '',
+    sharedCdkCode: ''
+  }
+  hasRestoredDraft.value = true
+  restoredDraftAt.value = draft.updatedAt
+  restoredSensitiveFields.value = draft.sensitiveFieldsOmitted
+  restoredCategoryId.value = draft.form.categoryId
+  draftSavedAt.value = draft.updatedAt
+  draftState.value = 'saved'
+}
+
+function clearPersistedProductDraft() {
+  clearDraftSaveTimer()
+  draftReady.value = false
+  draftDirty.value = false
+  clearProductPublishDraft(userStore.currentUser)
+  hasRestoredDraft.value = false
+  restoredDraftAt.value = 0
+  restoredSensitiveFields.value = []
+  restoredCategoryId.value = null
+  restoredCategoryNotice.value = ''
+  draftSavedAt.value = 0
+  draftState.value = 'idle'
+  draftError.value = ''
+}
+
+async function discardProductDraft() {
+  const confirmed = await dialog.confirm('放弃后，当前已自动保存的发布内容将无法恢复。', {
+    title: '放弃发布草稿',
+    danger: true
+  })
+  if (!confirmed) return
+
+  clearDraftSaveTimer()
+  draftReady.value = false
+  if (!clearProductPublishDraft(userStore.currentUser)) {
+    draftState.value = 'error'
+    draftError.value = '无法清除草稿，请稍后重试'
+    draftReady.value = true
+    return
+  }
+
+  form.value = createDefaultProductForm(categories.value[0]?.id ?? null)
+  touched.value = {
+    name: false,
+    description: false,
+    price: false,
+    discount: false,
+    image: false,
+    stock: false,
+    cdkCodes: false
+  }
+  submitAttempted.value = false
+  descMode.value = 'write'
+  showTestModeModal.value = false
+  resetImageValidation()
+  clearSubmissionTokenState()
+  hasRestoredDraft.value = false
+  restoredDraftAt.value = 0
+  restoredSensitiveFields.value = []
+  restoredCategoryId.value = null
+  restoredCategoryNotice.value = ''
+  draftDirty.value = false
+  draftSavedAt.value = 0
+  draftState.value = 'idle'
+  draftError.value = ''
+  await nextTick()
+  draftReady.value = true
+}
+
+function goToPaymentSettings() {
+  if (!flushProductDraft()) {
+    toast.error('草稿保存失败，请重试后再前往收款设置')
+    return
+  }
+  router.push({
+    name: 'SellerPayment',
+    query: { source: PRODUCT_PUBLISH_PAYMENT_SOURCE }
+  })
+}
+
+function handleDraftPageHide() {
+  flushProductDraft()
+}
+
+function handleDraftVisibilityChange() {
+  if (document.visibilityState === 'hidden') flushProductDraft()
+}
 
 
 // 测试模式弹窗提示
@@ -791,8 +998,19 @@ async function loadCategories() {
       name: cat.name,
       icon: cat.icon || ''
     }))
-    if (!categories.value.some(cat => Number(cat.id) === Number(form.value.categoryId))) {
-      form.value.categoryId = categories.value[0].id
+    const preferredCategoryId = form.value.categoryId ?? restoredCategoryId.value
+    const restoredCategoryAvailable = categories.value.some(cat => Number(cat.id) === Number(preferredCategoryId))
+    if (restoredCategoryAvailable) {
+      form.value.categoryId = categories.value.find(cat => Number(cat.id) === Number(preferredCategoryId)).id
+      restoredCategoryId.value = null
+    } else {
+      if (hasRestoredDraft.value && preferredCategoryId) {
+        restoredCategoryNotice.value = '原草稿中的物品分类已不可用，请重新选择分类。'
+        form.value.categoryId = null
+      } else {
+        form.value.categoryId = categories.value[0].id
+      }
+      restoredCategoryId.value = null
     }
   } catch (error) {
     categories.value = []
@@ -1202,6 +1420,7 @@ async function confirmSubmitAfterUncertainResult(submissionToken) {
     const confirmed = await pollProductSubmissionResult(submissionToken)
     if (confirmed.confirmed) {
       clearSubmissionTokenState()
+      clearPersistedProductDraft()
       toast.success('物品提交成功，已自动确认结果')
       router.push('/seller/products')
       return true
@@ -1217,6 +1436,7 @@ async function confirmSubmitAfterUncertainResult(submissionToken) {
 // 提交表单
 async function submitForm() {
   if (productSubmittingBusy.value) return
+  flushProductDraft()
   submitAttempted.value = true
 
   const nameResult = validateProductName(form.value.name)
@@ -1258,7 +1478,7 @@ async function submitForm() {
     }
     if (!merchantConfigured.value) {
       toast.warning('请先启用 LDC 收款配置并完成认证')
-      router.push('/seller/payment')
+      goToPaymentSettings()
       return
     }
   }
@@ -1367,6 +1587,7 @@ async function submitForm() {
     }
     
     clearSubmissionTokenState()
+    clearPersistedProductDraft()
 
     // 显示成功提示
     const cdkInfo = result.data?.cdkImported ? `，已导入 ${result.data.cdkImported} 条 CDK` : ''
@@ -1427,6 +1648,16 @@ async function submitBuyRequest() {
 }
 
 watch(
+  form,
+  () => {
+    if (!draftReady.value || publishMode.value !== 'product') return
+    draftDirty.value = true
+    scheduleProductDraftSave()
+  },
+  { deep: true, flush: 'sync' }
+)
+
+watch(
   () => form.value.imageUrl,
   (currentUrl, previousUrl) => {
     if (String(currentUrl || '').trim() !== String(previousUrl || '').trim()) {
@@ -1434,6 +1665,15 @@ watch(
     }
   },
   { flush: 'sync' }
+)
+
+watch(
+  () => form.value.categoryId,
+  (categoryId) => {
+    if (draftReady.value && categoryId && restoredCategoryNotice.value) {
+      restoredCategoryNotice.value = ''
+    }
+  }
 )
 
 watch(
@@ -1447,6 +1687,21 @@ watch(
   }
 )
 
+watch(
+  publishMode,
+  (currentMode, previousMode) => {
+    if (previousMode === 'product' && currentMode !== 'product') flushProductDraft()
+  }
+)
+
+onBeforeRouteLeave(async () => {
+  if (flushProductDraft()) return true
+  return dialog.confirm('自动保存失败，继续离开可能会丢失本次填写内容。', {
+    title: '草稿尚未保存',
+    danger: true
+  })
+})
+
 onMounted(async () => {
   const queryType = String(route.query.type || '').toLowerCase()
   if (!props.lockedMode && (queryType === 'buy' || queryType === 'request')) {
@@ -1458,12 +1713,30 @@ onMounted(async () => {
   if (!hasSeenGuide) {
     showGuideModal.value = true
   }
+
+  restoreProductDraft()
   
   // 加载分类
   await loadCategories()
   
   // 检查商家配置（普通物品与 CDK 都需要）
   await checkMerchantConfig()
+
+  await nextTick()
+  draftReady.value = true
+  if (hasRestoredDraft.value && form.value.imageUrl?.trim()) {
+    void validateImageLoad()
+  }
+
+  window.addEventListener('pagehide', handleDraftPageHide)
+  document.addEventListener('visibilitychange', handleDraftVisibilityChange)
+})
+
+onBeforeUnmount(() => {
+  flushProductDraft()
+  clearDraftSaveTimer()
+  window.removeEventListener('pagehide', handleDraftPageHide)
+  document.removeEventListener('visibilitychange', handleDraftVisibilityChange)
 })
 </script>
 
@@ -1513,6 +1786,142 @@ onMounted(async () => {
   border-color: var(--color-success);
   background: var(--color-success-bg);
   color: var(--color-success);
+}
+
+.draft-panel {
+  margin-bottom: 16px;
+  overflow: hidden;
+  color: var(--text-secondary);
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: 14px;
+  box-shadow: var(--shadow-sm);
+}
+
+.draft-panel.has-error {
+  border-color: var(--color-danger);
+}
+
+.draft-status-row {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 14px;
+}
+
+.draft-status-row > svg {
+  flex: 0 0 auto;
+  color: var(--color-success);
+}
+
+.draft-panel.has-error .draft-status-row > svg,
+.draft-panel.has-error .draft-status-row p {
+  color: var(--color-danger);
+}
+
+.draft-status-row p {
+  flex: 1;
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.draft-text-button,
+.draft-discard-button {
+  min-height: 36px;
+  padding: 7px 10px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.draft-text-button {
+  color: var(--color-danger);
+  background: var(--color-danger-bg);
+  border: 1px solid var(--color-danger);
+}
+
+.draft-restore-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 13px 14px;
+  background: var(--color-warning-bg);
+  border-top: 1px solid var(--border-light);
+}
+
+.draft-restore-notice > svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  color: var(--color-warning);
+}
+
+.draft-restore-copy {
+  flex: 1;
+  min-width: 0;
+}
+
+.draft-restore-copy strong {
+  display: block;
+  color: var(--text-primary);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.draft-restore-copy p {
+  margin: 3px 0 0;
+  color: var(--color-warning);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.draft-discard-button {
+  flex: 0 0 auto;
+  color: var(--color-danger);
+  background: var(--color-danger-bg);
+  border: 1px solid var(--color-danger);
+}
+
+.draft-text-button:hover,
+.draft-discard-button:hover {
+  filter: brightness(0.98);
+}
+
+.draft-text-button:focus-visible,
+.draft-discard-button:focus-visible,
+.inline-payment-link:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.inline-payment-link {
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  margin: 0 2px;
+  padding: 2px 3px;
+  color: var(--color-primary);
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  font: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+@media (max-width: 520px) {
+  .draft-restore-notice {
+    flex-wrap: wrap;
+  }
+
+  .draft-discard-button {
+    width: 100%;
+    min-height: 44px;
+  }
 }
 
 /* 表单卡片 */
