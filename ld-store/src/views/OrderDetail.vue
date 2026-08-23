@@ -252,6 +252,13 @@
           </h3>
           <div class="description-content markdown-content" v-html="renderedProductDescription"></div>
         </div>
+
+        <OrderRefundPanel
+          v-if="isPlatformOrder(order)"
+          :order="order"
+          :role="currentRole"
+          @updated="handleRefundUpdated"
+        />
         
         <!-- 订单信息 -->
         <div class="info-card">
@@ -369,6 +376,7 @@ import { useToast } from '@/composables/useToast'
 import { useDialog } from '@/composables/useDialog'
 import { isMaintenanceFeatureEnabled, isRestrictedMaintenanceMode } from '@/config/maintenance'
 import EmptyState from '@/components/common/EmptyState.vue'
+import OrderRefundPanel from '@/components/order/OrderRefundPanel.vue'
 import { isValidLdcPaymentUrl } from '@/utils/security'
 import { renderProductDescription } from '@/utils/renderProductDescription'
 import { preparePaymentPopup, openPaymentPopup, watchPaymentPopup, cleanupPreparedTab } from '@/utils/newTab'
@@ -596,6 +604,10 @@ async function loadOrder(options = {}) {
       loading.value = false
     }
   }
+}
+
+function handleRefundUpdated() {
+  loadOrder({ silent: true }).catch(() => {})
 }
 
 function stopPendingOrderAutoRefresh() {
