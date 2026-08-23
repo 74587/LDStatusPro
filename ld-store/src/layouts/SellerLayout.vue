@@ -37,7 +37,7 @@
               role="status"
               aria-live="polite"
               aria-atomic="true"
-              :aria-label="`订单管理有 ${item.badge.value} 项待处理`"
+              :aria-label="`${item.badgeLabel || item.label}有 ${item.badge.value} 项待处理`"
             >
               {{ formatBadge(item.badge.value) }}
             </span>
@@ -141,6 +141,7 @@ import {
   Package,
   PlusCircle,
   ShoppingBag,
+  RotateCcw,
   Sparkles,
   Store,
   X
@@ -156,7 +157,10 @@ const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
 const notificationSummaryStore = useNotificationSummaryStore()
-const { sellerPendingDeliveryCount: pendingDeliveryCount } = storeToRefs(notificationSummaryStore)
+const {
+  sellerPendingDeliveryCount: pendingDeliveryCount,
+  sellerRefundPendingCount: refundPendingCount
+} = storeToRefs(notificationSummaryStore)
 const drawerOpen = ref(false)
 const mobileMenuButton = ref(null)
 const sidebarCloseButton = ref(null)
@@ -167,6 +171,7 @@ const displayName = computed(() => userStore.user?.name || userStore.username ||
 const pageTitle = computed(() => String(route.meta.title || '卖家后台').split(' - ')[0])
 const restrictedMaintenance = computed(() => isRestrictedMaintenanceMode())
 const orderBadge = computed(() => ({ value: pendingDeliveryCount.value }))
+const refundBadge = computed(() => ({ value: refundPendingCount.value }))
 
 const navigation = computed(() => [
   {
@@ -178,7 +183,8 @@ const navigation = computed(() => [
   {
     label: '交易',
     items: [
-      { label: '订单管理', to: '/seller/orders', activeRouteNames: ['SellerOrders', 'SellerOrderDetail'], icon: ShoppingBag, badge: orderBadge.value }
+      { label: '订单管理', to: '/seller/orders', activeRouteNames: ['SellerOrders', 'SellerOrderDetail'], icon: ShoppingBag, badge: orderBadge.value },
+      { label: '退款售后', to: '/seller/refunds', activeRouteNames: ['SellerRefunds'], icon: RotateCcw, badge: refundBadge.value, badgeLabel: '退款售后' }
     ]
   },
   {
@@ -205,6 +211,9 @@ const navigation = computed(() => [
 ])
 
 function isNavigationActive(item) {
+  const refundDetail = route.name === 'SellerOrderDetail' && route.query.from === 'refunds'
+  if (refundDetail && item.to === '/seller/refunds') return true
+  if (refundDetail && item.to === '/seller/orders') return false
   return isSellerNavigationItemActive(route, item)
 }
 

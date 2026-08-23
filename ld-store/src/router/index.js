@@ -241,6 +241,12 @@ const routes = [
         meta: { title: '订单详情 - LD士多卖家后台', orderRole: 'seller' }
       },
       {
+        path: 'refunds',
+        name: 'SellerRefunds',
+        component: () => import('@/views/seller/SellerRefunds.vue'),
+        meta: { title: '退款售后 - LD士多卖家后台' }
+      },
+      {
         path: 'products',
         name: 'SellerProducts',
         component: () => import('@/views/MyProducts.vue'),

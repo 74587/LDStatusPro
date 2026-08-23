@@ -23,12 +23,14 @@ describe('通知汇总状态', () => {
       totalUnread: '5',
       systemUnread: 2.8,
       buyChatUnread: -1,
-      sellerPendingDeliveryCount: 'invalid'
+      sellerPendingDeliveryCount: 'invalid',
+      sellerRefundPendingCount: '3.9'
     })).toEqual({
       totalUnread: 5,
       systemUnread: 2,
       buyChatUnread: 0,
-      sellerPendingDeliveryCount: 0
+      sellerPendingDeliveryCount: 0,
+      sellerRefundPendingCount: 3
     })
   })
 
@@ -45,17 +47,19 @@ describe('通知汇总状态', () => {
 
     resolveLatest({
       success: true,
-      data: { totalUnread: 1, sellerPendingDeliveryCount: 2 }
+      data: { totalUnread: 1, sellerPendingDeliveryCount: 2, sellerRefundPendingCount: 4 }
     })
     await latestRequest
     expect(store.sellerPendingDeliveryCount).toBe(2)
+    expect(store.sellerRefundPendingCount).toBe(4)
 
     resolveFirst({
       success: true,
-      data: { totalUnread: 9, sellerPendingDeliveryCount: 8 }
+      data: { totalUnread: 9, sellerPendingDeliveryCount: 8, sellerRefundPendingCount: 9 }
     })
     await firstRequest
     expect(store.sellerPendingDeliveryCount).toBe(2)
+    expect(store.sellerRefundPendingCount).toBe(4)
     expect(store.totalUnread).toBe(1)
   })
 
@@ -85,5 +89,6 @@ describe('通知汇总状态', () => {
 
     expect(store.totalUnread).toBe(0)
     expect(store.sellerPendingDeliveryCount).toBe(0)
+    expect(store.sellerRefundPendingCount).toBe(0)
   })
 })

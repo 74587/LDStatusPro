@@ -160,6 +160,72 @@
           <div v-if="refund.sellerResponse" class="wide seller-response"><dt>卖家说明</dt><dd>{{ refund.sellerResponse }}</dd></div>
         </dl>
 
+        <div v-if="!isBuyer && showSellerActions" class="refund-seller-console">
+          <div v-if="refund.lastErrorMessage" class="refund-seller-error" role="alert">
+            <TriangleAlert :size="19" aria-hidden="true" />
+            <div><strong>{{ refund.status === 'unknown' ? '先核对 Credit，切勿直接重试' : '上次退款没有完成' }}</strong><p>{{ refund.lastErrorMessage }}</p></div>
+          </div>
+
+          <div class="refund-actions refund-seller-actions">
+            <a
+              v-if="counterpartyMessageUrl"
+              :href="counterpartyMessageUrl"
+              target="_blank"
+              rel="noopener"
+              class="refund-btn refund-btn--secondary"
+            ><MessageCircleMore :size="17" aria-hidden="true" />私信买家</a>
+            <button
+              v-if="canSellerContact"
+              type="button"
+              class="refund-btn refund-btn--secondary"
+              :aria-expanded="sellerActionMode === 'contact'"
+              :disabled="sellerSubmitting"
+              @click="openSellerAction('contact')"
+            >标记协商中</button>
+            <button
+              v-if="canSellerDecide"
+              type="button"
+              class="refund-btn refund-btn--outline-danger"
+              :aria-expanded="sellerActionMode === 'reject'"
+              :disabled="sellerSubmitting"
+              @click="openSellerAction('reject')"
+            >拒绝申请</button>
+            <button
+              v-if="canSellerDecide"
+              type="button"
+              class="refund-btn refund-btn--primary"
+              :disabled="sellerSubmitting"
+              @click="approveRefund"
+            >
+              <LoaderCircle v-if="sellerSubmitting" class="refund-spin-icon" :size="17" aria-hidden="true" />
+              <CircleCheckBig v-else :size="17" aria-hidden="true" />
+              {{ refund.status === 'failed' ? '重试退款' : '同意并退款' }}
+            </button>
+          </div>
+
+          <form v-if="sellerActionMode" class="refund-seller-form" @submit.prevent="submitSellerAction">
+            <label for="refund-seller-message">
+              {{ sellerActionMode === 'reject' ? '拒绝原因' : '协商备注（可选）' }}
+            </label>
+            <textarea
+              id="refund-seller-message"
+              v-model.trim="sellerMessage"
+              rows="4"
+              maxlength="500"
+              :placeholder="sellerActionMode === 'reject' ? '请向买家明确说明未同意退款的原因（至少 5 个字）' : '可记录已经沟通的内容和下一步约定'"
+              :aria-invalid="Boolean(sellerActionError)"
+              :aria-describedby="sellerActionError ? 'refund-seller-action-error' : undefined"
+            ></textarea>
+            <p v-if="sellerActionError" id="refund-seller-action-error" class="refund-field__error" role="alert">{{ sellerActionError }}</p>
+            <div class="refund-form__actions">
+              <button type="button" class="refund-btn refund-btn--secondary" :disabled="sellerSubmitting" @click="closeSellerAction">取消</button>
+              <button type="submit" :class="['refund-btn', sellerActionMode === 'reject' ? 'refund-btn--danger' : 'refund-btn--primary']" :disabled="sellerSubmitting">
+                {{ sellerSubmitting ? '处理中…' : (sellerActionMode === 'reject' ? '确认拒绝' : '保存协商状态') }}
+              </button>
+            </div>
+          </form>
+        </div>
+
         <div v-if="isBuyer && refund.status === 'rejected'" class="refund-dispute">
           <ShieldQuestion :size="22" aria-hidden="true" />
           <div>
@@ -203,7 +269,14 @@ import {
 } from '@lucide/vue'
 import { useDialog } from '@/composables/useDialog'
 import { useToast } from '@/composables/useToast'
-import { createRefundRequest, fetchOrderRefundRequest } from '@/services/shop/refundService'
+import { useNotificationSummaryStore } from '@/stores/notificationSummary'
+import {
+  approveRefundRequest,
+  contactRefundBuyerRequest,
+  createRefundRequest,
+  fetchOrderRefundRequest,
+  rejectRefundRequest
+} from '@/services/shop/refundService'
 import {
   REFUND_PROGRESS_STEPS,
   REFUND_REASON_OPTIONS,
@@ -223,6 +296,7 @@ const props = defineProps({
 const emit = defineEmits(['updated'])
 const dialog = useDialog()
 const toast = useToast()
+const notificationSummaryStore = useNotificationSummaryStore()
 const loading = ref(true)
 const loadError = ref('')
 const refundState = ref(null)
@@ -230,6 +304,10 @@ const formOpen = ref(false)
 const submitting = ref(false)
 const errors = ref({})
 const errorSummary = ref(null)
+const sellerActionMode = ref('')
+const sellerMessage = ref('')
+const sellerActionError = ref('')
+const sellerSubmitting = ref(false)
 const form = reactive({ reasonCode: '', reasonDetail: '', buyerContactedSeller: false })
 
 const orderNo = computed(() => props.order?.order_no || props.order?.orderNo || '')
@@ -254,6 +332,9 @@ const statusIcon = computed(() => {
   if (refund.value?.status === 'processing') return LoaderCircle
   return Clock3
 })
+const canSellerDecide = computed(() => !isBuyer.value && ['requested', 'negotiating', 'failed'].includes(refund.value?.status))
+const canSellerContact = computed(() => !isBuyer.value && ['requested', 'negotiating', 'failed', 'unknown'].includes(refund.value?.status))
+const showSellerActions = computed(() => canSellerDecide.value || canSellerContact.value)
 
 const eventLabels = Object.freeze({
   requested: '买家提交退款申请',
@@ -328,6 +409,73 @@ async function submitRefund() {
   emit('updated')
 }
 
+function openSellerAction(mode) {
+  sellerActionMode.value = sellerActionMode.value === mode ? '' : mode
+  sellerMessage.value = mode === 'contact' ? (refund.value?.sellerResponse || '') : ''
+  sellerActionError.value = ''
+}
+
+function closeSellerAction() {
+  sellerActionMode.value = ''
+  sellerMessage.value = ''
+  sellerActionError.value = ''
+}
+
+async function applySellerResult(result, successMessage) {
+  if (!result?.success) {
+    const message = getRefundErrorMessage(result, '处理退款申请失败，请稍后重试')
+    sellerActionError.value = message
+    toast.error(message)
+    await loadRefund()
+    return false
+  }
+  refundState.value = result.data || result
+  closeSellerAction()
+  toast.success(successMessage)
+  emit('updated')
+  if (!isBuyer.value) notificationSummaryStore.refresh({ force: true })
+  return true
+}
+
+async function submitSellerAction() {
+  if (!sellerActionMode.value || sellerSubmitting.value) return
+  if (sellerActionMode.value === 'reject' && sellerMessage.value.trim().length < 5) {
+    sellerActionError.value = '请至少填写 5 个字，向买家说明拒绝原因'
+    return
+  }
+
+  if (sellerActionMode.value === 'reject') {
+    const confirmed = await dialog.confirm(
+      '拒绝后，买家将在订单页看到你的说明，并可前往 LINUX DO Credit 发起争议。',
+      { title: '确认拒绝退款申请', confirmText: '确认拒绝', cancelText: '继续协商' }
+    )
+    if (!confirmed) return
+  }
+
+  sellerSubmitting.value = true
+  const result = sellerActionMode.value === 'reject'
+    ? await rejectRefundRequest(orderNo.value, sellerMessage.value)
+    : await contactRefundBuyerRequest(orderNo.value, sellerMessage.value)
+  sellerSubmitting.value = false
+  await applySellerResult(result, sellerActionMode.value === 'reject' ? '已拒绝退款申请' : '已更新为协商中')
+}
+
+async function approveRefund() {
+  if (!canSellerDecide.value || sellerSubmitting.value) return
+  const amount = Number(refund.value?.refundAmount || 0).toFixed(2)
+  const retrying = refund.value?.status === 'failed'
+  const confirmed = await dialog.confirm(
+    `将通过 LINUX DO Credit 为订单 ${orderNo.value} 全额退回 ${amount} LDC。该操作成功后不可撤销，卡密、库存、优惠券和限购额度不会恢复。`,
+    { title: retrying ? '确认重试退款' : '确认同意并退款', confirmText: retrying ? '确认重试' : '同意并退款', cancelText: '返回检查' }
+  )
+  if (!confirmed) return
+
+  sellerSubmitting.value = true
+  const result = await approveRefundRequest(orderNo.value)
+  sellerSubmitting.value = false
+  await applySellerResult(result, '退款已完成')
+}
+
 watch(orderNo, (next, previous) => {
   if (next && next !== previous) loadRefund()
 })
@@ -368,6 +516,7 @@ onMounted(loadRefund)
 .refund-btn--primary { color: #fff; background: var(--color-primary-hover); }
 .refund-btn--secondary { color: var(--text-primary); border-color: var(--border-medium); background: var(--bg-card); }
 .refund-btn--danger { color: #fff; background: var(--color-danger); }
+.refund-btn--outline-danger { color: var(--color-danger); border-color: color-mix(in srgb, var(--color-danger) 48%, var(--border-medium)); background: var(--bg-card); }
 .refund-btn:disabled { cursor: not-allowed; opacity: .52; }
 .refund-btn:focus-visible, .refund-field select:focus-visible, .refund-field textarea:focus-visible, .refund-checkbox:focus-within { outline: 3px solid color-mix(in srgb, var(--color-primary) 42%, transparent); outline-offset: 2px; }
 .refund-unavailable { display: flex; align-items: center; gap: 7px; margin: 13px 0 0; color: var(--text-secondary); font-size: 13px; }
@@ -406,6 +555,15 @@ onMounted(loadRefund)
 .refund-detail-list dd { margin: 0; color: var(--text-primary); font-size: 13px; text-align: right; overflow-wrap: anywhere; white-space: pre-wrap; }
 .refund-detail-list .wide dd { margin-top: 5px; text-align: left; line-height: 1.65; }
 .seller-response { padding: 13px !important; border: 1px solid color-mix(in srgb, var(--color-primary) 24%, var(--border-light)) !important; border-radius: 11px; background: var(--color-primary-light); }
+.refund-seller-console { margin-top: 17px; padding-top: 17px; border-top: 1px dashed var(--border-medium); }
+.refund-seller-actions { justify-content: flex-end; }
+.refund-seller-error { display: flex; gap: 10px; margin-bottom: 13px; padding: 13px; border: 1px solid color-mix(in srgb, var(--color-danger) 34%, var(--border-light)); border-radius: 11px; color: var(--color-danger); background: var(--color-danger-bg); }
+.refund-seller-error svg { flex: 0 0 auto; }
+.refund-seller-error p { margin: 4px 0 0; color: var(--text-secondary); font-size: 12px; line-height: 1.55; }
+.refund-seller-form { display: grid; gap: 8px; margin-top: 13px; padding: 14px; border: 1px solid var(--border-light); border-radius: 12px; background: var(--bg-secondary); }
+.refund-seller-form label { color: var(--text-primary); font-size: 13px; font-weight: 700; }
+.refund-seller-form textarea { width: 100%; min-height: 96px; box-sizing: border-box; padding: 11px 12px; border: 1px solid var(--border-medium); border-radius: 10px; color: var(--text-primary); background: var(--bg-card); font: inherit; line-height: 1.55; resize: vertical; }
+.refund-seller-form textarea[aria-invalid='true'] { border-color: var(--color-danger); }
 .refund-dispute { display: flex; gap: 12px; margin-top: 16px; padding: 16px; border: 1px solid color-mix(in srgb, var(--color-warning) 36%, var(--border-light)); border-radius: 13px; color: var(--color-warning); background: var(--color-warning-bg); }
 .refund-dispute p { margin: 5px 0 12px; color: var(--text-secondary); font-size: 13px; line-height: 1.6; }
 .refund-timeline { margin-top: 18px; }

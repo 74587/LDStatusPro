@@ -12,7 +12,8 @@ export function normalizeNotificationSummary(data = {}) {
     totalUnread: normalizeCount(data.totalUnread),
     systemUnread: normalizeCount(data.systemUnread),
     buyChatUnread: normalizeCount(data.buyChatUnread),
-    sellerPendingDeliveryCount: normalizeCount(data.sellerPendingDeliveryCount)
+    sellerPendingDeliveryCount: normalizeCount(data.sellerPendingDeliveryCount),
+    sellerRefundPendingCount: normalizeCount(data.sellerRefundPendingCount)
   }
 }
 
@@ -21,6 +22,7 @@ export const useNotificationSummaryStore = defineStore('notification-summary', (
   const systemUnread = ref(0)
   const buyChatUnread = ref(0)
   const sellerPendingDeliveryCount = ref(0)
+  const sellerRefundPendingCount = ref(0)
   let activeRequest = null
   let latestRequestId = 0
 
@@ -30,6 +32,7 @@ export const useNotificationSummaryStore = defineStore('notification-summary', (
     systemUnread.value = summary.systemUnread
     buyChatUnread.value = summary.buyChatUnread
     sellerPendingDeliveryCount.value = summary.sellerPendingDeliveryCount
+    sellerRefundPendingCount.value = summary.sellerRefundPendingCount
   }
 
   async function refresh({ force = false } = {}) {
@@ -66,6 +69,7 @@ export const useNotificationSummaryStore = defineStore('notification-summary', (
     systemUnread,
     buyChatUnread,
     sellerPendingDeliveryCount,
+    sellerRefundPendingCount,
     refresh,
     reset
   }

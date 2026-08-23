@@ -68,6 +68,11 @@ describe('卖家后台稳定壳层与列表工具', () => {
     expect(resolveAppViewKey({ name: 'DocsSection', path: '/docs/payment-settings' })).toBe('docs-help-center')
   })
 
+  it('退款售后保持独立卖家页面 key，订单详情仍复用订单详情页', () => {
+    expect(resolveAppViewKey({ name: 'SellerRefunds', path: '/seller/refunds', meta: { layout: 'seller' } })).toBe('seller-layout')
+    expect(resolveSellerViewKey({ name: 'SellerRefunds', path: '/seller/refunds' })).toBe('SellerRefunds')
+  })
+
   it('商品导航只激活所属入口且发布页不会同时选中我的物品', () => {
     const productsItem = {
       to: '/seller/products',

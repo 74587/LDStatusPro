@@ -446,7 +446,10 @@ const buyerIdentity = computed(() => resolveOrderPartyIdentity(order.value, 'buy
 
 // 当前用户角色（买家/卖家）
 const currentRole = computed(() => route.meta.orderRole || route.query.role || 'buyer')
-const backTarget = computed(() => currentRole.value === 'seller' ? '/seller/orders?source=product' : '/user/orders?tab=buyer')
+const backTarget = computed(() => {
+  if (currentRole.value !== 'seller') return '/user/orders?tab=buyer'
+  return route.query.from === 'refunds' ? '/seller/refunds?status=action_required' : '/seller/orders?source=product'
+})
 
 // 是否显示操作按钮区域（买家和卖家都可以取消待支付订单）
 const showActions = computed(() => {
@@ -633,6 +636,8 @@ function getLogIcon(action) {
     pay: CircleDollarSign,
     repay: RefreshCw,
     deliver: PackageCheck,
+    refund_request: RotateCcw,
+    refund_reject: CircleX,
     refund: RotateCcw,
     cancel: CircleX,
     expire: TimerOff,
@@ -649,6 +654,8 @@ function getLogText(log) {
     pay: '支付成功',
     repay: '重新发起支付',
     deliver: '发货完成',
+    refund_request: '买家申请退款',
+    refund_reject: '卖家拒绝退款',
     refund: '订单退款',
     cancel: '取消订单',
     expire: '订单过期',
