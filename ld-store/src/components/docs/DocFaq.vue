@@ -19,6 +19,22 @@
       </details>
     </div>
 
+    <h2 id="refunds">退款与争议</h2>
+    <div class="faq-list">
+      <details>
+        <summary>为什么不能只退一部分 LDC？</summary>
+        <div><p>Credit 订单退款要求退回原订单全额，所以 LD 士多不提供部分退款。页面会按原订单实付金额显示退款数值。</p></div>
+      </details>
+      <details>
+        <summary>退款显示“结果待核实”，可以再点一次吗？</summary>
+        <div><p>不可以。这表示请求可能已送达 Credit，只是商城没有获得可确认的返回结果。重复操作可能造成风险，请保留订单号并联系 LD 士多核实。</p></div>
+      </details>
+      <details>
+        <summary>卖家拒绝退款后怎么办？</summary>
+        <div><p>先查看拒绝理由并继续与卖家协商。如果仍无法解决且买家希望继续争议，可到 credit.linux.do 查找原交易并发起争议。</p><p><router-link to="/docs/refunds#credit-dispute">查看退款与争议完整流程</router-link></p></div>
+      </details>
+    </div>
+
     <h2 id="delivery">发货与卡密</h2>
     <div class="faq-list">
       <details>

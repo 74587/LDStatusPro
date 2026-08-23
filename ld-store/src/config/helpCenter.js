@@ -1,4 +1,4 @@
-export const HELP_UPDATED_AT = '2026-08-20'
+export const HELP_UPDATED_AT = '2026-08-23'
 
 export const HELP_GROUPS = Object.freeze([
   { id: 'start', title: '快速开始' },
@@ -50,7 +50,18 @@ export const HELP_ARTICLES = Object.freeze([
     keywords: ['购买', '兑换', '支付', '订单', '普通物品', '自动发卡', 'CDK', '联系卖家', '发货'],
     icon: 'ShoppingBag',
     loader: () => import('@/components/docs/DocBuyGuide.vue'),
-    related: ['buyer-coupons', 'collections-blocks', 'product-types']
+    related: ['refunds', 'buyer-coupons', 'product-types']
+  },
+  {
+    id: 'refunds',
+    group: 'buyer',
+    title: '退款、协商与争议',
+    summary: '买家申请全额退款、卖家处理申请，以及协商无果后的 Credit 争议路径。',
+    audience: ['买家', '卖家'],
+    keywords: ['退款', '售后', '全额退款', '联系卖家', '拒绝退款', '退款异常', '退款争议', 'Credit 争议', '订单争议'],
+    icon: 'RotateCcw',
+    loader: () => import('@/components/docs/DocRefunds.vue'),
+    related: ['buy-guide', 'seller-orders', 'account-safety']
   },
   {
     id: 'collections-blocks',
@@ -138,7 +149,7 @@ export const HELP_ARTICLES = Object.freeze([
     keywords: ['卖家订单', '商品订单', '求购服务', '待发货', '手动发货', '自动发货', '订单搜索', '买家', '提醒'],
     icon: 'ClipboardCheck',
     loader: () => import('@/components/docs/DocSellerOrders.vue'),
-    related: ['seller-center', 'inventory-management', 'buy-request']
+    related: ['refunds', 'seller-center', 'inventory-management']
   },
   {
     id: 'seller-coupons',
@@ -193,7 +204,7 @@ export const HELP_ARTICLES = Object.freeze([
     keywords: ['FAQ', '常见问题', '支付失败', '没有发货', '优惠券不可用', '审核失败', '库存异常', '联系管理员'],
     icon: 'CircleHelp',
     loader: () => import('@/components/docs/DocFaq.vue'),
-    related: ['buy-guide', 'payment-settings', 'account-safety']
+    related: ['refunds', 'buy-guide', 'payment-settings']
   },
   {
     id: 'terms',
@@ -224,6 +235,10 @@ export const HELP_SEARCH_ENTRIES = Object.freeze([
   { articleId: 'payment-settings', anchor: 'test-payment', title: '测试 LDC 收款通知', keywords: ['验证凭证', '测试回调', 'Client Key'] },
   { articleId: 'buy-request', anchor: 'buy-request-order', title: '求购订单支付与联系方式解锁', keywords: ['求购订单', '刷新状态', '服务方', '私信入口'] },
   { articleId: 'buy-guide', anchor: 'order-status', title: '查看购买订单状态', keywords: ['待支付', '支付中', '待发货', '已发货', '已完成'] },
+  { articleId: 'refunds', anchor: 'buyer-request', title: '买家申请订单全额退款', keywords: ['申请退款', '退LDC', '联系卖家', '售后申请'] },
+  { articleId: 'refunds', anchor: 'seller-handle', title: '卖家处理退款待办', keywords: ['卖家退款', '同意退款', '拒绝退款', '协商中'] },
+  { articleId: 'refunds', anchor: 'credit-dispute', title: '退款协商无果后发起 Credit 争议', keywords: ['credit争议', '交易争议', '卖家拒绝', '平台介入'] },
+  { articleId: 'refunds', anchor: 'refund-exceptions', title: '退款执行失败或结果待核实', keywords: ['退款失败', '结果待核实', '不要重复退款', '退款异常'] },
   { articleId: 'seller-growth', anchor: 'promotion-services', title: '士多甄选和士多优选', keywords: ['推广名额', '置顶服务', '分类绑定'] },
   { articleId: 'image-host', anchor: 'upload-image', title: '上传物品图片并复制链接', keywords: ['图片地址', 'HTTPS图片', '图床历史'] }
 ])

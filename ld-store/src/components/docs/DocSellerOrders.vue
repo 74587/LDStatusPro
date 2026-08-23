@@ -39,6 +39,12 @@
       <div><dt>已取消 / 已过期</dt><dd>不要继续交付；如状态与实际支付不符，先反馈核对。</dd></div>
     </dl>
 
+    <h2 id="refund-after-sales">处理退款售后</h2>
+    <p>买家提交退款后，卖家后台的“退款售后”会出现新待办。进入原订单后可联系买家并标记协商、填写理由拒绝，或确认全额退款。退款完成后不再对该订单发货。</p>
+    <HelpCallout title="退款同意后不可撤销" tone="danger">
+      点击“同意并退款”会立即尝试从原收款应用全额退回 LDC。先核对订单、买家和协商结果，再进行最终确认。
+    </HelpCallout>
+
     <h2 id="troubleshooting">找不到或无法处理订单</h2>
     <ul>
       <li>检查商品销售 / 求购服务来源开关是否选错。</li>
@@ -49,6 +55,7 @@
 
     <div class="help-actions">
       <router-link to="/seller/orders">打开订单管理</router-link>
+      <router-link to="/seller/refunds" class="secondary">打开退款售后</router-link>
       <router-link to="/docs/payment-settings" class="secondary">检查收款配置</router-link>
     </div>
   </div>

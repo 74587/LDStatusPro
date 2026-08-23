@@ -61,6 +61,8 @@ describe('帮助搜索', () => {
     ['优惠券占用', ['buyer-coupons']],
     ['卖家后台', ['seller-center']],
     ['待发货', ['seller-orders']],
+    ['退款争议', ['refunds']],
+    ['拒绝退款', ['refunds']],
     ['通知地址', ['payment-settings']],
     ['求购订单', ['buy-request']],
     ['不感兴趣', ['collections-blocks']]
@@ -73,9 +75,15 @@ describe('帮助搜索', () => {
     const [shared] = searchHelpCenter('库存9999')
     const [callback] = searchHelpCenter('return url')
     const [reserved] = searchHelpCenter('reserved')
+    const [dispute] = searchHelpCenter('credit争议')
 
     expect(shared.path).toBe('/docs/product-types#shared-cdk')
     expect(callback.path).toBe('/docs/payment-settings#callback-urls')
     expect(reserved.path).toBe('/docs/buyer-coupons#coupon-reservation')
+    expect(dispute.path).toBe('/docs/refunds#credit-dispute')
+  })
+
+  it('退款争议查询优先返回专项指南', () => {
+    expect(searchHelpCenter('退款争议')[0]?.articleId).toBe('refunds')
   })
 })
