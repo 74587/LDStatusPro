@@ -187,6 +187,7 @@
             >
               <template v-if="message.senderRole === 'system'">
                 <div class="system-message">{{ message.content }}</div>
+                <div class="msg-time system-message-time">{{ formatMessageTime(message.createdAt) }}</div>
               </template>
               <template v-else>
                 <div class="msg-author">
@@ -194,7 +195,7 @@
                   <span class="msg-pass">密码 {{ message.senderPublicPassword }}</span>
                 </div>
                 <div class="msg-content">{{ message.content }}</div>
-                <div class="msg-time">{{ formatRelativeTime(message.createdAt) }}</div>
+                <div class="msg-time">{{ formatMessageTime(message.createdAt) }}</div>
               </template>
             </div>
           </div>
@@ -235,7 +236,7 @@ import { useUserStore } from '@/stores/user'
 import { api } from '@/utils/api'
 import { useToast } from '@/composables/useToast'
 import { useDialog } from '@/composables/useDialog'
-import { formatPrice, formatRelativeTime } from '@/utils/format'
+import { formatMessageTime, formatPrice, formatRelativeTime } from '@/utils/format'
 import { isValidLdcPaymentUrl } from '@/utils/security'
 import { preparePaymentPopup, openPaymentPopup, watchPaymentPopup, cleanupPreparedTab } from '@/utils/newTab'
 
@@ -1171,6 +1172,11 @@ watch(
   font-size: 12px;
   color: var(--text-tertiary);
   text-align: center;
+}
+
+.system-message-time {
+  text-align: center;
+  font-variant-numeric: tabular-nums;
 }
 
 .msg-author {

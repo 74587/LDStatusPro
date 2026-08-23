@@ -20,10 +20,11 @@ export function formatPrice(price, decimals = 2) {
  */
 export function formatRelativeTime(timestamp) {
   if (!timestamp) return ''
-  
-  const date = typeof timestamp === 'number' ? timestamp : new Date(timestamp).getTime()
+
+  const date = normalizeTimestampMs(timestamp)
+  if (!Number.isFinite(date)) return ''
   const now = Date.now()
-  const diff = now - date
+  const diff = Math.max(0, now - date)
   
   const minute = 60 * 1000
   const hour = 60 * minute
@@ -62,8 +63,11 @@ export function formatRelativeTime(timestamp) {
  */
 export function formatDate(timestamp, format = 'YYYY-MM-DD') {
   if (!timestamp) return ''
-  
-  const date = new Date(timestamp)
+
+  const timestampMs = normalizeTimestampMs(timestamp)
+  if (!Number.isFinite(timestampMs)) return ''
+
+  const date = new Date(timestampMs)
   
   if (isNaN(date.getTime())) return ''
   
@@ -90,6 +94,62 @@ export function formatDate(timestamp, format = 'YYYY-MM-DD') {
  */
 export function formatDateTime(timestamp) {
   return formatDate(timestamp, 'YYYY-MM-DD HH:mm')
+}
+
+/**
+ * 将秒/毫秒时间戳、Date 或日期字符串统一转换为毫秒时间戳。
+ * @param {number|string|Date} timestamp - 时间戳或日期
+ * @returns {number}
+ */
+export function normalizeTimestampMs(timestamp) {
+  if (timestamp instanceof Date) return timestamp.getTime()
+
+  if (typeof timestamp === 'number') {
+    if (!Number.isFinite(timestamp)) return Number.NaN
+    return timestamp > 0 && timestamp < 10_000_000_000 ? timestamp * 1000 : timestamp
+  }
+
+  const text = String(timestamp || '').trim()
+  if (!text) return Number.NaN
+  if (/^\d{10}(?:\d{3})?$/.test(text)) {
+    const numeric = Number(text)
+    return text.length === 10 ? numeric * 1000 : numeric
+  }
+
+  return new Date(text).getTime()
+}
+
+/**
+ * 使用北京时间和固定格式显示精确时间，避免浏览器产生斜杠日期或省略秒数。
+ * @param {number|string|Date} timestamp - 时间戳或日期
+ * @returns {string}
+ */
+export function formatStandardDateTime(timestamp) {
+  if (!timestamp) return ''
+
+  const timestampMs = normalizeTimestampMs(timestamp)
+  if (!Number.isFinite(timestampMs)) return ''
+
+  const date = new Date(timestampMs + 8 * 60 * 60 * 1000)
+  const year = date.getUTCFullYear()
+  const month = String(date.getUTCMonth() + 1).padStart(2, '0')
+  const day = String(date.getUTCDate()).padStart(2, '0')
+  const hours = String(date.getUTCHours()).padStart(2, '0')
+  const minutes = String(date.getUTCMinutes()).padStart(2, '0')
+  const seconds = String(date.getUTCSeconds()).padStart(2, '0')
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
+}
+
+/**
+ * 消息时间同时保留易扫读的相对时间与可核对的精确时间。
+ * @param {number|string|Date} timestamp - 时间戳或日期
+ * @returns {string}
+ */
+export function formatMessageTime(timestamp) {
+  const relative = formatRelativeTime(timestamp)
+  const exact = formatStandardDateTime(timestamp)
+  if (relative && exact) return `${relative} · ${exact}`
+  return exact || relative || '时间未知'
 }
 
 /**

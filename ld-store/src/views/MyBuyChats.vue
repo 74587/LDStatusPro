@@ -46,12 +46,13 @@
               type="text"
               class="toolbar-input"
               placeholder="搜索系统消息"
+              aria-label="搜索系统消息"
               @keyup.enter="loadSystemMessages(true)"
             />
-            <button class="toolbar-search-btn" @click="loadSystemMessages(true)">
+            <button class="toolbar-search-btn" aria-label="执行系统消息搜索" title="搜索" @click="loadSystemMessages(true)">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             </button>
-            <button v-if="systemFilter.search" class="toolbar-search-clear" @click="resetSystemFilter">×</button>
+            <button v-if="systemFilter.search" class="toolbar-search-clear" aria-label="清空系统消息搜索" title="清空" @click="resetSystemFilter">×</button>
           </div>
           <button
             class="toolbar-link-btn"
@@ -81,7 +82,7 @@
                   {{ item.isRead ? '已读' : '未读' }}
                 </span>
               </div>
-              <span class="system-time">{{ formatRelativeTime(item.createdAt || 0) }}</span>
+              <span class="system-time">{{ formatMessageTime(item.createdAt) }}</span>
             </div>
 
             <ExpandableText
@@ -146,12 +147,13 @@
               type="text"
               class="toolbar-input"
               placeholder="搜索求购标题/公开账号"
+              aria-label="搜索求购洽谈"
               @keyup.enter="loadSessions(true)"
             />
-            <button class="toolbar-search-btn" @click="loadSessions(true)">
+            <button class="toolbar-search-btn" aria-label="执行求购洽谈搜索" title="搜索" @click="loadSessions(true)">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             </button>
-            <button v-if="buyFilter.role || buyFilter.status || buyFilter.search" class="toolbar-search-clear" @click="resetBuyFilter">×</button>
+            <button v-if="buyFilter.role || buyFilter.status || buyFilter.search" class="toolbar-search-clear" aria-label="清空求购洽谈筛选" title="清空" @click="resetBuyFilter">×</button>
           </div>
         </div>
 
@@ -226,7 +228,7 @@ import { onMounted, onUnmounted, reactive, ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { api } from '@/utils/api'
 import { useToast } from '@/composables/useToast'
-import { formatPrice, formatRelativeTime } from '@/utils/format'
+import { formatMessageTime, formatPrice, formatRelativeTime } from '@/utils/format'
 import { fetchMyConversations, resolveConversationPath } from '@/utils/conversation'
 import AppSelect from '@/components/common/AppSelect.vue'
 import LiquidTabs from '@/components/common/LiquidTabs.vue'
@@ -331,10 +333,19 @@ function sessionStatusText(status) {
 
 function systemMessageTypeText(type) {
   const map = {
+    system: '系统通知',
+    notification: '系统通知',
+    seller_pending_delivery: '待发货提醒',
+    zero_stock_auto_offline: '库存下架提醒',
     product_offline: '物品下架通知',
     product_comment: '商品评论通知',
+    comment_reply: '评论回复通知',
     product_restock: '商品补货通知',
-    seller_restock_alert: '卖家补货提醒'
+    seller_restock_alert: '卖家补货提醒',
+    restock_alert: '卖家补货提醒',
+    top_service_active: '甄选服务生效通知',
+    top_service_expired: '甄选服务到期通知',
+    buyer_order_delivered: '物品发货提醒'
   }
   return map[String(type || '').trim()] || '系统通知'
 }
@@ -831,7 +842,9 @@ onUnmounted(() => {
 .system-time {
   font-size: 12px;
   color: var(--text-tertiary);
-  white-space: nowrap;
+  line-height: 1.5;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 .status-pill {
