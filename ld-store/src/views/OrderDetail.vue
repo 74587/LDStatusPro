@@ -139,18 +139,36 @@
           <div class="info-row">
             <span class="info-label">卖家</span>
             <span class="info-value user-info">
-              <a :href="'https://linux.do/u/' + (order.seller_username || '')" target="_blank" rel="noopener" class="user-link">
-                @{{ order.seller_username || '未知' }}
+              <span v-if="sellerIdentity.nickname" class="user-nickname">{{ sellerIdentity.nickname }}</span>
+              <a
+                v-if="sellerIdentity.profileUrl"
+                :href="sellerIdentity.profileUrl"
+                target="_blank"
+                rel="noopener"
+                class="user-link"
+                :aria-label="`查看 @${sellerIdentity.username} 的 Linux DO 个人主页`"
+              >
+                @{{ sellerIdentity.username }}
               </a>
+              <span v-else class="user-unknown">未知</span>
             </span>
           </div>
           
           <div class="info-row">
             <span class="info-label">买家</span>
             <span class="info-value user-info">
-              <a :href="'https://linux.do/u/' + (order.buyer_username || '')" target="_blank" rel="noopener" class="user-link">
-                @{{ order.buyer_username || '未知' }}
+              <span v-if="buyerIdentity.nickname" class="user-nickname">{{ buyerIdentity.nickname }}</span>
+              <a
+                v-if="buyerIdentity.profileUrl"
+                :href="buyerIdentity.profileUrl"
+                target="_blank"
+                rel="noopener"
+                class="user-link"
+                :aria-label="`查看 @${buyerIdentity.username} 的 Linux DO 个人主页`"
+              >
+                @{{ buyerIdentity.username }}
               </a>
+              <span v-else class="user-unknown">未知</span>
             </span>
           </div>
           
@@ -361,6 +379,7 @@ import {
   requiresBuyerContact
 } from '@/utils/shopProduct'
 import { ORDER_LIST_SCROLL_SOURCE, readOrderScrollSnapshot } from '@/utils/orderListScroll'
+import { resolveOrderPartyIdentity } from '@/utils/orderPartyIdentity'
 
 const route = useRoute()
 const router = useRouter()
@@ -413,6 +432,9 @@ const couponRuleText = computed(() => {
   }
   return '按订单快照结算'
 })
+
+const sellerIdentity = computed(() => resolveOrderPartyIdentity(order.value, 'seller'))
+const buyerIdentity = computed(() => resolveOrderPartyIdentity(order.value, 'buyer'))
 
 // 当前用户角色（买家/卖家）
 const currentRole = computed(() => route.meta.orderRole || route.query.role || 'buyer')
@@ -1584,13 +1606,50 @@ onUnmounted(() => {
 }
 
 /* 用户链接 */
+.user-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  overflow: visible;
+  line-height: 1.35;
+}
+
+.user-nickname {
+  max-width: 100%;
+  color: var(--text-primary);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
 .user-link {
-  color: var(--color-info);
-  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 24px;
+  min-height: 24px;
+  max-width: 100%;
+  color: var(--text-secondary);
+  font-size: 13px;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, currentColor 45%, transparent);
+  text-underline-offset: 3px;
+  overflow-wrap: anywhere;
 }
 
 .user-link:hover {
-  text-decoration: underline;
+  color: var(--text-primary);
+  text-decoration-color: currentColor;
+}
+
+.user-link:focus-visible {
+  outline: 2px solid var(--text-secondary);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+.user-unknown {
+  color: var(--text-tertiary);
 }
 
 /* 订单日志 */
