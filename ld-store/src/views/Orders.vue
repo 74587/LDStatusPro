@@ -26,7 +26,9 @@
           <router-link :to="getOrderDetailTarget(order)" class="seller-order-id" @click="handleOrderCardClick"><strong>{{ getOrderKey(order) }}</strong><small>{{ formatDate(order.created_at || order.createdAt) }}</small></router-link>
         </template>
         <template #cell-subject="{ row: order }"><div class="seller-order-subject"><strong :title="getOrderDisplayName(order)">{{ getOrderDisplayName(order) }}</strong><small>{{ currentRole === 'buy' ? '求购服务' : `${getSellerOrderTypeText(order.product_type || order.product?.product_type)}${isPlatformOrder(order) ? ` · ×${getOrderQuantity(order)}` : ''}` }}</small></div></template>
-        <template #cell-buyer="{ row: order }"><div class="seller-order-buyer"><strong>{{ isBuyRequestOrder(order) ? (order.counterpartyUsername || '未知') : (order.buyer_username || order.buyer?.username || '未知') }}</strong><small>{{ isBuyRequestOrder(order) ? '求购方' : '买家' }}</small></div></template>
+        <template #cell-buyer="{ row: order }">
+          <SellerOrderPartyIdentity :order="order" :role="isBuyRequestOrder(order) ? 'counterparty' : 'buyer'" />
+        </template>
         <template #cell-amount="{ row: order }"><strong class="seller-order-amount">{{ order.total_price || order.amount || 0 }}</strong><small class="seller-order-unit">LDC</small></template>
         <template #cell-status="{ row: order }"><SellerStatusBadge :tone="resolveSellerStatusTone(order.status)" :label="getStatusText(order.status, order)" /><small v-if="order.status === 'pending'" class="seller-order-expiry">{{ getExpireCountdownText(order) }}</small></template>
         <template #cell-actions="{ row: order }">
@@ -39,7 +41,7 @@
         </template>
         <template #mobile-row="{ row: order }">
           <div class="seller-order-mobile-head"><div><strong>{{ getOrderDisplayName(order) }}</strong><small>{{ getOrderKey(order) }}</small></div><SellerStatusBadge :tone="resolveSellerStatusTone(order.status)" :label="getStatusText(order.status, order)" /></div>
-          <dl class="seller-order-mobile-grid"><div><dt>买家</dt><dd>{{ isBuyRequestOrder(order) ? (order.counterpartyUsername || '未知') : (order.buyer_username || order.buyer?.username || '未知') }}</dd></div><div><dt>金额</dt><dd>{{ order.total_price || order.amount || 0 }} LDC</dd></div><div><dt>时间</dt><dd>{{ formatDate(order.created_at || order.createdAt) }}</dd></div><div><dt>来源</dt><dd>{{ currentRole === 'buy' ? '求购服务' : '商品订单' }}</dd></div></dl>
+          <dl class="seller-order-mobile-grid"><div><dt>{{ isBuyRequestOrder(order) ? '求购方' : '买家' }}</dt><dd class="seller-order-mobile-party"><SellerOrderPartyIdentity :order="order" :role="isBuyRequestOrder(order) ? 'counterparty' : 'buyer'" /></dd></div><div><dt>金额</dt><dd>{{ order.total_price || order.amount || 0 }} LDC</dd></div><div><dt>时间</dt><dd>{{ formatDate(order.created_at || order.createdAt) }}</dd></div><div><dt>来源</dt><dd>{{ currentRole === 'buy' ? '求购服务' : '商品订单' }}</dd></div></dl>
           <p v-if="order.status === 'pending'" class="seller-order-mobile-expiry">{{ getExpireCountdownText(order) }}</p>
           <div class="seller-order-mobile-actions"><button v-if="showManualDeliver(order)" type="button" class="seller-row-primary" :aria-expanded="isDeliverFormVisible(order)" @click="openDeliverForm(order)"><PackageCheck :size="15" aria-hidden="true" />立即发货</button><button v-if="isBuyRequestOrder(order) && (order.status === 'pending' || order.status === 'paid') && !isPaymentMaintenanceBlocked" type="button" class="seller-row-secondary" :disabled="refreshingBuyOrderId === getOrderKey(order)" @click="handleRefreshBuyOrder(order)"><RefreshCw :size="15" aria-hidden="true" />刷新</button><button v-if="currentRole === 'seller' && order.status === 'pending'" type="button" class="seller-row-danger" :disabled="cancellingOrderId === getOrderKey(order)" @click="handleCancelOrder(order)">取消订单</button><router-link :to="getOrderDetailTarget(order)" class="seller-row-detail" @click="handleOrderCardClick">订单详情<ArrowUpRight :size="14" aria-hidden="true" /></router-link></div>
         </template>
@@ -319,6 +321,7 @@ import AppSelect from '@/components/common/AppSelect.vue'
 import LiquidTabs from '@/components/common/LiquidTabs.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 import SellerDataTable from '@/components/seller/SellerDataTable.vue'
+import SellerOrderPartyIdentity from '@/components/seller/SellerOrderPartyIdentity.vue'
 import SellerPageToolbar from '@/components/seller/SellerPageToolbar.vue'
 import SellerPagination from '@/components/seller/SellerPagination.vue'
 import SellerStatusBadge from '@/components/seller/SellerStatusBadge.vue'
@@ -367,15 +370,15 @@ const page = ref(1)
 const hasMore = ref(false)
 const orderPagination = ref({ page: 1, pageSize: 20, total: 0, totalPages: 1 })
 const pageSize = 20
-const sellerOrderColumns = [
-  { key: 'order', label: '订单 / 时间', width: '20%' },
-  { key: 'subject', label: '商品 / 服务', width: '24%' },
-  { key: 'buyer', label: '买家', width: '13%' },
-  { key: 'amount', label: '金额', width: '11%' },
+const currentRole = ref(props.sellerMode ? 'seller' : 'buyer')
+const sellerOrderColumns = computed(() => [
+  { key: 'order', label: '订单 / 时间', width: '19%' },
+  { key: 'subject', label: '商品 / 服务', width: '23%' },
+  { key: 'buyer', label: currentRole.value === 'buy' ? '求购方' : '买家', width: '16%' },
+  { key: 'amount', label: '金额', width: '10%' },
   { key: 'status', label: '状态', width: '14%' },
   { key: 'actions', label: '操作', width: '18%', align: 'right' }
-]
-const currentRole = ref(props.sellerMode ? 'seller' : 'buyer')
+])
 const roleTabs = computed(() => props.sellerMode
   ? [
       { value: 'seller', label: '商品订单' },
@@ -2349,11 +2352,11 @@ onUnmounted(() => {
 .seller-order-total { margin-left: auto; color: var(--seller-muted); font-size: 12px; font-variant-numeric: tabular-nums; }
 .seller-order-total.is-switching { color: var(--seller-jade); font-weight: 700; }
 .seller-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
-.seller-order-id, .seller-order-subject, .seller-order-buyer { min-width: 0; display: block; }
-.seller-order-id strong, .seller-order-id small, .seller-order-subject strong, .seller-order-subject small, .seller-order-buyer strong, .seller-order-buyer small { display: block; }
+.seller-order-id, .seller-order-subject { min-width: 0; display: block; }
+.seller-order-id strong, .seller-order-id small, .seller-order-subject strong, .seller-order-subject small { display: block; }
 .seller-order-id strong { overflow: hidden; color: var(--seller-ink); font: 650 12px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; text-overflow: ellipsis; white-space: nowrap; }
-.seller-order-id small, .seller-order-subject small, .seller-order-buyer small, .seller-order-unit { margin-top: 5px; color: var(--seller-muted); font-size: 10px; }
-.seller-order-subject strong, .seller-order-buyer strong { overflow: hidden; color: var(--seller-ink); font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
+.seller-order-id small, .seller-order-subject small, .seller-order-unit { margin-top: 5px; color: var(--seller-muted); font-size: 10px; }
+.seller-order-subject strong { overflow: hidden; color: var(--seller-ink); font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
 .seller-order-amount, .seller-order-unit { display: block; font-variant-numeric: tabular-nums; }
 .seller-order-amount { color: var(--seller-ink); font: 700 14px/1.3 ui-monospace, SFMono-Regular, Menlo, monospace; }
 .seller-order-expiry { display: block; margin-top: 6px; color: var(--seller-warning); font-size: 10px; line-height: 1.35; }
@@ -2376,6 +2379,7 @@ onUnmounted(() => {
 .seller-order-mobile-grid div { min-width: 0; padding: 10px; border-radius: 9px; background: var(--seller-surface-soft); }
 .seller-order-mobile-grid dt { color: var(--seller-muted); font-size: 10px; }
 .seller-order-mobile-grid dd { margin: 4px 0 0; overflow: hidden; color: var(--seller-ink); font-size: 12px; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
+.seller-order-mobile-grid dd.seller-order-mobile-party { overflow: visible; text-overflow: clip; white-space: normal; }
 .seller-order-mobile-expiry { margin: 10px 0 0; color: var(--seller-warning); font-size: 11px; }
 .seller-order-mobile-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 15px; }
 .seller-order-mobile-actions > * { min-width: 0; min-height: 44px; flex: 1 1 calc(50% - 4px); }

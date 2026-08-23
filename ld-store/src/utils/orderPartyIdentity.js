@@ -6,6 +6,10 @@ const PARTY_FIELDS = {
   seller: {
     username: ['seller_username', 'sellerUsername'],
     nickname: ['seller_nickname', 'sellerNickname', 'seller_name', 'sellerName']
+  },
+  counterparty: {
+    username: ['counterparty_username', 'counterpartyUsername'],
+    nickname: ['counterparty_nickname', 'counterpartyNickname', 'counterparty_name', 'counterpartyName']
   }
 }
 

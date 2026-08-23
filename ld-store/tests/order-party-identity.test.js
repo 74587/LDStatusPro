@@ -31,4 +31,15 @@ describe('订单交易双方身份展示', () => {
       profileUrl: ''
     })
   })
+
+  it('支持求购订单中的交易对方身份', () => {
+    expect(resolveOrderPartyIdentity({
+      counterpartyUsername: 'requester_user',
+      counterpartyNickname: '求购方昵称'
+    }, 'counterparty')).toEqual({
+      nickname: '求购方昵称',
+      username: 'requester_user',
+      profileUrl: 'https://linux.do/u/requester_user'
+    })
+  })
 })
