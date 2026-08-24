@@ -1066,11 +1066,9 @@ html.dark .refund-guidance {
   .refund-btn--danger:hover {
     transform: none;
   }
-}
-</style>
-  }
   .refund-loading::after { animation: none; }
 }
+
 .refund-seller-error svg { flex: 0 0 auto; }
 .refund-seller-error p { margin: 5px 0 0; color: #5C635D; font-size: 13px; line-height: 1.7; }
 
