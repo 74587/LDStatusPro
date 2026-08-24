@@ -186,45 +186,448 @@ onMounted(loadRefunds)
 </script>
 
 <style scoped>
-.refund-filter-form { width: 100%; display: flex; align-items: center; gap: 10px; }
-.refund-tabs { min-width: 0; display: flex; align-items: center; gap: 4px; overflow-x: auto; }
-.refund-tabs button { min-height: 40px; display: inline-flex; align-items: center; gap: 6px; padding: 0 11px; border-radius: 9px; color: var(--seller-muted); font-size: 12px; font-weight: 650; white-space: nowrap; }
-.refund-tabs button span { min-width: 20px; height: 20px; display: grid; place-items: center; padding: 0 5px; border-radius: 999px; color: var(--seller-muted); background: var(--seller-surface-soft); font: 700 10px/1 ui-monospace, monospace; }
-.refund-tabs button.active { color: #fff; background: var(--seller-navy); }
-.refund-tabs button.active span { color: var(--seller-navy); background: #e8d4b8; }
-.refund-search { min-width: 220px; flex: 1; display: flex; align-items: center; gap: 8px; padding: 0 11px; border: 1px solid var(--seller-border); border-radius: 10px; color: var(--seller-muted); background: var(--input-bg); }
-.refund-search input { width: 100%; min-height: 40px; border: 0; outline: 0; color: var(--seller-ink); background: transparent; }
-.refund-search:focus-within { border-color: var(--seller-jade); outline: 3px solid color-mix(in srgb, var(--seller-jade) 22%, transparent); }
-.refund-search-submit, .refund-refresh { min-height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 0 13px; border: 1px solid var(--seller-border); border-radius: 10px; color: var(--seller-ink); background: var(--seller-surface); font-size: 13px; font-weight: 650; }
-.refund-search-submit:hover, .refund-refresh:hover { border-color: var(--seller-jade); }
-.refund-refresh:disabled { opacity: .5; }
-.seller-refunds-page :deep(.seller-filter-summary > span) { display: inline-flex; align-items: center; min-height: 30px; padding: 0 10px; border: 1px solid var(--seller-border); border-radius: 999px; color: var(--seller-muted); background: var(--seller-surface); font-size: 11px; font-weight: 650; }
-.seller-refunds-page :deep(.seller-filter-summary > span.alert) { border-color: color-mix(in srgb, var(--seller-danger) 30%, var(--seller-border)); color: var(--seller-danger); background: color-mix(in srgb, var(--seller-danger) 7%, var(--seller-surface)); }
-.refund-order-link, .refund-party, .refund-reason { min-width: 0; display: grid; gap: 4px; }
-.refund-order-link strong { color: var(--seller-ink); font: 700 12px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; overflow-wrap: anywhere; }
-.refund-order-link small, .refund-party small, .refund-reason small { color: var(--seller-muted); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.refund-party strong, .refund-reason strong { overflow: hidden; color: var(--seller-ink); font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
-.refund-amount-cell { font-variant-numeric: tabular-nums; white-space: nowrap; }
-.refund-detail-link { min-height: 40px; display: inline-flex; align-items: center; justify-content: flex-end; gap: 5px; color: var(--seller-jade-strong); font-weight: 700; white-space: nowrap; }
-.refund-page-error { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 12px; margin-bottom: 14px; padding: 14px; border: 1px solid color-mix(in srgb, var(--seller-danger) 35%, var(--seller-border)); border-radius: 12px; color: var(--seller-danger); background: color-mix(in srgb, var(--seller-danger) 8%, var(--seller-surface)); }
-.refund-page-error p { margin: 3px 0 0; color: var(--seller-muted); font-size: 12px; }
-.refund-page-error button { min-height: 40px; padding: 0 12px; border: 1px solid currentColor; border-radius: 9px; }
-.refund-empty { display: grid; justify-items: center; gap: 8px; color: var(--seller-muted); }
-.refund-empty svg { color: var(--seller-jade); }
-.refund-empty strong { color: var(--seller-ink); }
-.refund-empty p { margin: 0; }
-.refund-empty a { min-height: 40px; display: inline-flex; align-items: center; margin-top: 6px; padding: 0 13px; border: 1px solid var(--seller-border); border-radius: 9px; color: var(--seller-ink); }
-.refund-mobile-head, .refund-mobile-foot, .refund-mobile-product { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-.refund-mobile-head > a { color: var(--seller-ink); font: 700 12px/1.4 ui-monospace, monospace; overflow-wrap: anywhere; }
-.refund-mobile-product { margin-top: 14px; }
-.refund-mobile-product span { color: var(--seller-muted); font-size: 12px; }
-.refund-mobile-reason { margin: 10px 0; color: var(--seller-muted); font-size: 12px; line-height: 1.55; }
-.refund-mobile-foot { padding-top: 11px; border-top: 1px solid var(--seller-border); }
-.refund-mobile-foot a { min-height: 40px; display: inline-flex; align-items: center; gap: 5px; color: var(--seller-jade-strong); font-size: 12px; font-weight: 700; }
-.seller-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
-.spinning { animation: refund-rotate 800ms linear infinite; }
-@keyframes refund-rotate { to { transform: rotate(360deg); } }
-@media (max-width: 1100px) { .refund-filter-form { align-items: stretch; flex-wrap: wrap; } .refund-tabs { flex: 1 1 100%; } }
-@media (max-width: 767px) { .refund-filter-form { flex-direction: column; } .refund-tabs, .refund-search, .refund-search-submit { width: 100%; box-sizing: border-box; } .refund-page-error { grid-template-columns: auto 1fr; } .refund-page-error button { grid-column: 1 / -1; } }
-@media (prefers-reduced-motion: reduce) { .spinning { animation: none; } }
+/* 筛选表单 - 更清晰的布局 */
+.refund-filter-form {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* 状态标签页 - 温暖海军蓝配色 */
+.refund-tabs {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.refund-tabs::-webkit-scrollbar { display: none; }
+
+.refund-tabs button {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px;
+  border-radius: 999px;
+  color: #5C635D;
+  background: #FFFFFF;
+  border: 1px solid #E7E1D7;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 180ms ease;
+}
+
+.refund-tabs button:hover {
+  background: #FBF9F5;
+  border-color: #C4612F;
+  color: #1F2421;
+}
+
+.refund-tabs button span {
+  min-width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  padding: 0 6px;
+  border-radius: 999px;
+  color: #5C635D;
+  background: #F7F4EF;
+  font: 700 11px/1 ui-monospace, monospace;
+}
+
+.refund-tabs button.active {
+  color: #FFFFFF;
+  background: #1F2421;
+  border-color: #1F2421;
+  box-shadow: 0 2px 4px rgba(31, 36, 33, 0.15);
+}
+
+.refund-tabs button.active span {
+  color: #1F2421;
+  background: #F2E3D6;
+}
+
+/* 搜索框 - 柔和的聚焦效果 */
+.refund-search {
+  min-width: 240px;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 14px;
+  border: 1px solid #E7E1D7;
+  border-radius: 999px;
+  color: #5C635D;
+  background: #FFFFFF;
+  transition: all 180ms ease;
+}
+
+.refund-search:hover {
+  border-color: #C4612F;
+  background: #FBF9F5;
+}
+
+.refund-search input {
+  width: 100%;
+  min-height: 42px;
+  border: 0;
+  outline: 0;
+  color: #1F2421;
+  background: transparent;
+  font-size: 14px;
+}
+
+.refund-search input::placeholder {
+  color: #5C635D;
+}
+
+.refund-search:focus-within {
+  border-color: #C4612F;
+  box-shadow: 0 0 0 3px rgba(196, 97, 47, 0.15);
+  background: #FFFFFF;
+}
+
+.refund-search-submit,
+.refund-refresh {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 18px;
+  border: 1px solid #E7E1D7;
+  border-radius: 999px;
+  color: #1F2421;
+  background: #FFFFFF;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 180ms ease;
+}
+
+.refund-search-submit:hover,
+.refund-refresh:hover {
+  background: #C4612F;
+  border-color: #C4612F;
+  color: #FFFFFF;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(196, 97, 47, 0.2);
+}
+
+.refund-refresh:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* 摘要统计 - 温暖色调胶囊 */
+.seller-refunds-page :deep(.seller-filter-summary > span) {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 14px;
+  border: 1px solid #E7E1D7;
+  border-radius: 999px;
+  color: #5C635D;
+  background: #FFFFFF;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.seller-refunds-page :deep(.seller-filter-summary > span.alert) {
+  border-color: rgba(220, 38, 38, 0.3);
+  color: #dc2626;
+  background: rgba(239, 68, 68, 0.08);
+}
+
+/* 表格单元格内容 - 改进可读性 */
+.refund-order-link,
+.refund-party,
+.refund-reason {
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.refund-order-link {
+  text-decoration: none;
+  transition: opacity 180ms ease;
+}
+
+.refund-order-link:hover { opacity: 0.8; }
+
+.refund-order-link strong {
+  color: #1F2421;
+  font: 700 13px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+  overflow-wrap: anywhere;
+}
+
+.refund-order-link small,
+.refund-party small,
+.refund-reason small {
+  color: #5C635D;
+  font-size: 12px;
+  line-height: 1.5;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.refund-party strong,
+.refund-reason strong {
+  overflow: hidden;
+  color: #1F2421;
+  font-size: 14px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.refund-amount-cell {
+  color: #C4612F;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* 详情链接 - terracotta 强调色 */
+.refund-detail-link {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  color: #C4612F;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  text-decoration: none;
+  transition: all 180ms ease;
+}
+
+.refund-detail-link:hover {
+  background: #F2E3D6;
+  transform: translateY(-1px);
+}
+
+/* 错误状态 - 柔和的错误提示 */
+.refund-page-error {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 16px;
+  padding: 16px;
+  border: 1px solid rgba(220, 38, 38, 0.25);
+  border-radius: 14px;
+  color: #dc2626;
+  background: rgba(239, 68, 68, 0.08);
+}
+
+.refund-page-error p {
+  margin: 4px 0 0;
+  color: #5C635D;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.refund-page-error button {
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  font-weight: 600;
+  transition: all 180ms ease;
+}
+
+.refund-page-error button:hover {
+  background: rgba(239, 68, 68, 0.1);
+}
+
+/* 空状态 - 友好的空状态设计 */
+.refund-empty {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  padding: 48px 20px;
+  color: #5C635D;
+}
+
+.refund-empty svg {
+  color: #C4612F;
+  opacity: 0.7;
+}
+
+.refund-empty strong {
+  color: #1F2421;
+  font-size: 16px;
+}
+
+.refund-empty p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.refund-empty a {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  margin-top: 8px;
+  padding: 0 20px;
+  border: 1px solid #E7E1D7;
+  border-radius: 999px;
+  color: #1F2421;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 180ms ease;
+}
+
+.refund-empty a:hover {
+  background: #C4612F;
+  border-color: #C4612F;
+  color: #FFFFFF;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(196, 97, 47, 0.2);
+}
+
+/* 移动端卡片布局 - 改进层次 */
+.refund-mobile-head,
+.refund-mobile-foot,
+.refund-mobile-product {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.refund-mobile-head > a {
+  color: #1F2421;
+  font: 700 13px/1.5 ui-monospace, monospace;
+  overflow-wrap: anywhere;
+  text-decoration: none;
+}
+
+.refund-mobile-product {
+  margin-top: 14px;
+}
+
+.refund-mobile-product strong {
+  color: #1F2421;
+  font-weight: 600;
+}
+
+.refund-mobile-product span {
+  color: #5C635D;
+  font-size: 12px;
+}
+
+.refund-mobile-reason {
+  margin: 12px 0;
+  color: #5C635D;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.refund-mobile-foot {
+  padding-top: 12px;
+  border-top: 1px solid #E7E1D7;
+}
+
+.refund-mobile-foot strong {
+  color: #C4612F;
+  font-weight: 700;
+}
+
+.refund-mobile-foot a {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  color: #C4612F;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: all 180ms ease;
+}
+
+.refund-mobile-foot a:hover {
+  background: #F2E3D6;
+}
+
+.seller-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.spinning {
+  animation: refund-rotate 800ms linear infinite;
+}
+
+@keyframes refund-rotate {
+  to { transform: rotate(360deg); }
+}
+
+/* 响应式优化 */
+@media (max-width: 1100px) {
+  .refund-filter-form {
+    align-items: stretch;
+    flex-wrap: wrap;
+  }
+  .refund-tabs {
+    flex: 1 1 100%;
+  }
+}
+
+@media (max-width: 767px) {
+  .refund-filter-form {
+    flex-direction: column;
+  }
+  .refund-tabs,
+  .refund-search,
+  .refund-search-submit {
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .refund-page-error {
+    grid-template-columns: auto 1fr;
+  }
+  .refund-page-error button {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinning { animation: none; }
+  .refund-tabs button,
+  .refund-search-submit,
+  .refund-refresh,
+  .refund-detail-link,
+  .refund-empty a,
+  .refund-mobile-foot a {
+    transition: none;
+  }
+  .refund-tabs button:hover,
+  .refund-search-submit:hover,
+  .refund-refresh:hover:not(:disabled),
+  .refund-detail-link:hover,
+  .refund-empty a:hover {
+    transform: none;
+  }
+}
 </style>
