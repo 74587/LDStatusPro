@@ -17,14 +17,14 @@ defineProps({
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  min-height: 28px;
-  padding: 4px 12px;
-  border: 1px solid var(--border-light);
-  border-radius: 6px;
+  min-height: 32px;
+  padding: 6px 14px;
+  border: 2px solid var(--border-medium);
+  border-radius: 8px;
   color: var(--text-secondary);
-  background: var(--bg-primary);
+  background: white;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
   white-space: nowrap;
 }
 
@@ -37,30 +37,30 @@ defineProps({
 
 /* 成功色调 */
 .tone-success {
-  color: var(--success-dark);
-  border-color: var(--success-border);
-  background: var(--success-light);
+  color: #15803d;
+  border-color: #86efac;
+  background: #f0fdf4;
 }
 
 /* 警告色调 */
 .tone-warning {
-  color: var(--warning-dark);
-  border-color: var(--warning-border);
-  background: var(--warning-light);
+  color: #b45309;
+  border-color: #fcd34d;
+  background: #fffbeb;
 }
 
 /* 危险色调 */
 .tone-danger {
-  color: var(--danger-dark);
-  border-color: var(--danger-border);
-  background: var(--danger-light);
+  color: #991b1b;
+  border-color: #fca5a5;
+  background: #fef2f2;
 }
 
 /* 信息色调 */
 .tone-info {
-  color: var(--info-dark);
-  border-color: var(--info-border);
-  background: var(--info-light);
+  color: #0c4a6e;
+  border-color: #7dd3fc;
+  background: #f0f9ff;
 }
 
 /* 深色模式适配 */
