@@ -121,9 +121,9 @@
                 role="status"
               >
                 <div class="purchase-limit-equation-heading">
-                  <strong>累计限购 {{ purchaseLimit.quantity }} 件</strong>
+                  <strong>{{ purchaseLimitTitle }}</strong>
                   <span v-if="purchaseLimit.bypassed">测试模式自购不计累计额度</span>
-                  <span v-else-if="purchaseLimitReached">当前账号已达限购</span>
+                  <span v-else-if="purchaseLimitReached">当前账号已达{{ purchaseLimit.periodDays > 0 ? '本周期' : '永久累计' }}限购</span>
                   <span v-else>本次最多还可兑换 {{ purchaseLimitRemaining }} 件</span>
                 </div>
                 <div v-if="!purchaseLimit.bypassed" class="purchase-limit-equation-values">
@@ -135,6 +135,9 @@
                   <b>=</b>
                   <span class="equation-total"><strong>{{ purchaseLimitTotal }}</strong> / {{ purchaseLimit.quantity }}</span>
                 </div>
+                <p v-if="purchaseLimitReached && purchaseLimitReleaseText" class="purchase-limit-release">
+                  按当前状态，最早一笔记录将于 {{ purchaseLimitReleaseText }} 移出统计周期
+                </p>
                 <router-link
                   v-if="purchaseLimitReserved > 0"
                   :to="{ name: 'Orders' }"
@@ -343,6 +346,8 @@ import CouponPickerDialog from '@/components/checkout/CouponPickerDialog.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 import {
   formatPurchaseLimitLabel,
+  formatPurchaseLimitReleaseTime,
+  formatPurchaseLimitTitle,
   getPurchaseLimit,
   getPurchaseLimitMaximum,
   isPurchaseLimitReached
@@ -400,6 +405,12 @@ const purchaseLimitPurchased = computed(() => Number(purchaseLimit.value.purchas
 const purchaseLimitReserved = computed(() => Number(purchaseLimit.value.reservedQuantity || 0))
 const purchaseLimitRemaining = computed(() => Number(
   purchaseLimit.value.remainingQuantity ?? purchaseLimit.value.quantity ?? 0
+))
+const purchaseLimitTitle = computed(() => formatPurchaseLimitTitle(purchaseLimit.value))
+const purchaseLimitReleaseText = computed(() => (
+  purchaseLimit.value.periodDays > 0
+    ? formatPurchaseLimitReleaseTime(purchaseLimit.value.nextAvailableAt)
+    : ''
 ))
 const purchaseLimitTotal = computed(() => (
   purchaseLimitPurchased.value + purchaseLimitReserved.value + quantity.value
@@ -485,7 +496,9 @@ const submitBlockMessage = computed(() => {
   if (!isPlatformOrder.value) return '该物品不支持站内兑换。'
   if (isOrderCreationMaintenanceBlocked.value) return '当前处于受限维护状态，暂时无法创建订单。'
   if (isOutOfStock.value) return '物品已经售罄，请返回详情订阅补货。'
-  if (purchaseLimitReached.value) return `当前账号已达到累计限购 ${purchaseLimit.value.quantity} 件。`
+  if (purchaseLimitReached.value) {
+    return `当前账号${formatPurchaseLimitLabel(purchaseLimit.value, { loggedIn: true })}。`
+  }
   if (product.value?.canPurchase === false) return '该物品当前暂停销售。'
   if (purchaseTrustLevel.value > viewerTrustLevel.value) return `当前账号需达到 TL${purchaseTrustLevel.value} 才能兑换。`
   if (isTestMode.value && !isSeller.value) return '该物品处于测试模式，仅卖家可兑换。'
@@ -1076,6 +1089,13 @@ onBeforeUnmount(() => {
 
 .purchase-limit-equation-values strong {
   color: var(--text-primary);
+}
+
+.purchase-limit-release {
+  margin: 8px 0 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.5;
 }
 
 .purchase-limit-equation > a {

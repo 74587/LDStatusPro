@@ -971,12 +971,6 @@ html.dark .refund-error-state {
   }
   .refund-loading::after { animation: none; }
 }
-
-  border: 1px solid rgba(220, 38, 38, 0.25);
-  border-radius: 14px;
-  color: #dc2626;
-  background: rgba(239, 68, 68, 0.08);
-}
 .refund-seller-error svg { flex: 0 0 auto; }
 .refund-seller-error p { margin: 5px 0 0; color: #5C635D; font-size: 13px; line-height: 1.7; }
 

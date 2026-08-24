@@ -30,6 +30,13 @@ function trustLevelValue(value) {
   return Math.max(0, Math.min(4, parsed))
 }
 
+function purchaseLimitPeriodDaysValue(value, purchaseLimitType) {
+  if (purchaseLimitType !== 'per_user') return 0
+  const parsed = Number.parseInt(value, 10)
+  if (!Number.isInteger(parsed) || parsed < 0 || parsed > 365) return 0
+  return parsed
+}
+
 function normalizeDraftForm(form = {}) {
   const productType = PRODUCT_TYPES.has(String(form.productType)) ? String(form.productType) : 'normal'
   const purchaseLimitType = PURCHASE_LIMIT_TYPES.has(String(form.purchaseLimitType))
@@ -51,7 +58,11 @@ function normalizeDraftForm(form = {}) {
     purchaseLimitType,
     maxPurchaseQuantity: purchaseLimitType === 'none'
       ? ''
-      : stringValue(form.maxPurchaseQuantity, 32)
+      : stringValue(form.maxPurchaseQuantity, 32),
+    purchaseLimitPeriodDays: purchaseLimitPeriodDaysValue(
+      form.purchaseLimitPeriodDays,
+      purchaseLimitType
+    )
   }
 }
 

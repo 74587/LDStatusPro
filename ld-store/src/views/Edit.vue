@@ -228,8 +228,10 @@
               ref="maxPurchaseQuantityInput"
               v-model:mode="form.purchaseLimitType"
               v-model:quantity="form.maxPurchaseQuantity"
+              v-model:period-days="form.purchaseLimitPeriodDays"
               :shared-cdk-enabled="getProductType(product) === 'cdk' && form.sharedCdkEnabled"
               :error="maxPurchaseQuantityError"
+              :period-error="purchaseLimitPeriodDaysError"
               input-id-prefix="edit-purchase-limit"
             />
           </div>
@@ -392,6 +394,7 @@ const form = ref({
   sharedCdkCode: '',
   purchaseLimitType: 'none',
   maxPurchaseQuantity: '',
+  purchaseLimitPeriodDays: 0,
   isTestMode: false
 })
 const purchaseTrustLevelOptions = [0, 1, 2, 3, 4]
@@ -410,10 +413,15 @@ const descriptionPreview = computed(() => renderProductDescription(form.value.de
 const editFinalPrice = computed(() => Number(form.value.price || 0) * Number(form.value.discount || 1))
 const selectedCategoryName = computed(() => categories.value.find(category => Number(category.id) === Number(form.value.categoryId))?.name || '未选择分类')
 const purchaseLimitSummary = computed(() => {
-  if (getProductType(product.value) === 'cdk' && form.value.sharedCdkEnabled) return '每位用户累计 1 件'
+  if (getProductType(product.value) === 'cdk' && form.value.sharedCdkEnabled) return '每位用户永久累计 1 件'
   const quantity = Number(form.value.maxPurchaseQuantity || 0)
   if (form.value.purchaseLimitType === 'per_order' && quantity > 0) return `每单 ${quantity} 件`
-  if (form.value.purchaseLimitType === 'per_user' && quantity > 0) return `每位用户累计 ${quantity} 件`
+  if (form.value.purchaseLimitType === 'per_user' && quantity > 0) {
+    const periodDays = Number(form.value.purchaseLimitPeriodDays || 0)
+    return periodDays > 0
+      ? `每位用户最近 ${periodDays} 天 ${quantity} 件`
+      : `每位用户永久累计 ${quantity} 件`
+  }
   return '不限制'
 })
 const submitButtonText = computed(() => {
@@ -469,6 +477,14 @@ const maxPurchaseQuantityError = computed(() => {
   return ''
 })
 
+const purchaseLimitPeriodDaysError = computed(() => {
+  if (form.value.purchaseLimitType !== 'per_user') return ''
+  const value = Number(form.value.purchaseLimitPeriodDays || 0)
+  if (value === 0) return ''
+  if (!Number.isInteger(value) || value < 1 || value > 365) return '滚动周期必须是 1-365 天之间的整数'
+  return ''
+})
+
 const sharedCdkCodeError = computed(() => {
   if (getProductType(product.value) !== 'cdk' || !form.value.sharedCdkEnabled) return ''
   const value = String(form.value.sharedCdkCode || '').trim()
@@ -486,7 +502,7 @@ async function toggleSharedCdkMode() {
   }
   const message = current
     ? '切换为独立卡密后，当前共享码将自动迁移为 1 条可用卡密（库存 1），可在「我的物品」中批量补充；切换后将重新提交 AI 审核。'
-    : `切换为共享卡密后，现有独立卡密将暂停出售，系统固定每位用户累计限购 1 件；切回独立时会恢复“${purchaseLimitSummary.value}”。请填写共享卡密；切换后将重新提交 AI 审核。`
+    : `切换为共享卡密后，现有独立卡密将暂停出售，系统固定每位用户永久累计限购 1 件；切回独立时会恢复“${purchaseLimitSummary.value}”。请填写共享卡密；切换后将重新提交 AI 审核。`
   const confirmed = await dialog.confirm(message, {
     title: '切换卡密模式',
     confirmText: '确定切换',
@@ -627,6 +643,15 @@ function hasExpectedProductState(latestProduct, expectedData, expectedType) {
   const latestLimit = Number(latestLimitConfig.quantity ?? latestProduct.max_purchase_quantity ?? latestProduct.maxPurchaseQuantity ?? 0)
   const expectedLimit = Number(expectedData.maxPurchaseQuantity || 0)
   if (latestLimit !== expectedLimit) return false
+  const latestLimitPeriodDays = Number(
+    latestLimitConfig.periodDays
+      ?? latestLimitConfig.period_days
+      ?? latestProduct.purchase_limit_period_days
+      ?? latestProduct.purchaseLimitPeriodDays
+      ?? 0
+  )
+  const expectedLimitPeriodDays = Number(expectedData.purchaseLimitPeriodDays || 0)
+  if (latestLimitPeriodDays !== expectedLimitPeriodDays) return false
 
   if (expectedType === 'cdk') {
     const latestSharedCdkEnabled = !!(latestProduct.sharedCdkEnabled || Number(latestProduct.shared_cdk_enabled || 0) === 1)
@@ -698,6 +723,7 @@ const canSubmit = computed(() => {
     if (sharedCdkCodeError.value) return false
   }
   if (maxPurchaseQuantityError.value) return false
+  if (purchaseLimitPeriodDaysError.value) return false
 
   return true
 })
@@ -760,6 +786,14 @@ async function loadProduct() {
               ?? product.value.maxPurchaseQuantity
           )
           : '',
+        purchaseLimitPeriodDays: Number(
+          product.value.purchase_limit_config?.periodDays
+            ?? product.value.purchase_limit_config?.period_days
+            ?? product.value.purchaseLimitConfig?.periodDays
+            ?? product.value.purchase_limit_period_days
+            ?? product.value.purchaseLimitPeriodDays
+            ?? 0
+        ),
         isTestMode: !!(product.value.is_test_mode || product.value.isTestMode)
       }
       
@@ -834,6 +868,11 @@ async function submitForm() {
     maxPurchaseQuantityInput.value?.focus?.()
     return
   }
+  if (purchaseLimitPeriodDaysError.value) {
+    toast.error(purchaseLimitPeriodDaysError.value)
+    maxPurchaseQuantityInput.value?.focus?.()
+    return
+  }
   
   // 验证图片URL（必填）
   const imageUrl = form.value.imageUrl?.trim() || ''
@@ -872,7 +911,10 @@ async function submitForm() {
       purchaseLimitType: form.value.purchaseLimitType,
       maxPurchaseQuantity: form.value.purchaseLimitType === 'none'
         ? 0
-        : Number(form.value.maxPurchaseQuantity)
+        : Number(form.value.maxPurchaseQuantity),
+      purchaseLimitPeriodDays: form.value.purchaseLimitType === 'per_user'
+        ? Number(form.value.purchaseLimitPeriodDays || 0)
+        : 0
     }
     
     // 类型特定数据

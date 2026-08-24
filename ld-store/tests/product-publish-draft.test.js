@@ -39,6 +39,7 @@ function fullForm(overrides = {}) {
     isTestMode: true,
     purchaseLimitType: 'per_user',
     maxPurchaseQuantity: '2',
+    purchaseLimitPeriodDays: 7,
     ignored: 'do-not-save',
     ...overrides
   }
@@ -66,7 +67,8 @@ describe('物品发布草稿', () => {
       productType: 'cdk',
       purchaseTrustLevel: 2,
       purchaseLimitType: 'per_user',
-      maxPurchaseQuantity: '2'
+      maxPurchaseQuantity: '2',
+      purchaseLimitPeriodDays: 7
     })
     expect(draft.form).not.toHaveProperty('cdkCodes')
     expect(draft.form).not.toHaveProperty('sharedCdkCode')

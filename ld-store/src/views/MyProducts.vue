@@ -534,6 +534,14 @@ async function toggleStatus(product) {
             ?? product.max_purchase_quantity
             ?? product.maxPurchaseQuantity
             ?? 0
+        ),
+        purchaseLimitPeriodDays: Number(
+          product.purchase_limit_config?.periodDays
+            ?? product.purchase_limit_config?.period_days
+            ?? product.purchaseLimitConfig?.periodDays
+            ?? product.purchase_limit_period_days
+            ?? product.purchaseLimitPeriodDays
+            ?? 0
         )
       })
       if (result?.success === false) {

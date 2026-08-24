@@ -393,8 +393,10 @@
               ref="maxPurchaseQuantityInput"
               v-model:mode="form.purchaseLimitType"
               v-model:quantity="form.maxPurchaseQuantity"
+              v-model:period-days="form.purchaseLimitPeriodDays"
               :shared-cdk-enabled="form.productType === 'cdk' && form.sharedCdkEnabled"
               :error="maxPurchaseQuantityError"
+              :period-error="purchaseLimitPeriodDaysError"
               input-id-prefix="publish-purchase-limit"
             />
           </div>
@@ -768,7 +770,8 @@ function createDefaultProductForm(categoryId = null) {
     sharedCdkCode: '',
     isTestMode: false,
     purchaseLimitType: 'none',
-    maxPurchaseQuantity: ''
+    maxPurchaseQuantity: '',
+    purchaseLimitPeriodDays: 0
   }
 }
 
@@ -1234,11 +1237,24 @@ const maxPurchaseQuantityError = computed(() => {
   return ''
 })
 
+const purchaseLimitPeriodDaysError = computed(() => {
+  if (form.value.purchaseLimitType !== 'per_user') return ''
+  const value = Number(form.value.purchaseLimitPeriodDays || 0)
+  if (value === 0) return ''
+  if (!Number.isInteger(value) || value < 1 || value > 365) return '滚动周期必须是 1-365 天之间的整数'
+  return ''
+})
+
 const purchaseLimitSummary = computed(() => {
-  if (form.value.productType === 'cdk' && form.value.sharedCdkEnabled) return '每位用户累计 1 件'
+  if (form.value.productType === 'cdk' && form.value.sharedCdkEnabled) return '每位用户永久累计 1 件'
   const quantity = Number(form.value.maxPurchaseQuantity || 0)
   if (form.value.purchaseLimitType === 'per_order' && quantity > 0) return `每单 ${quantity} 件`
-  if (form.value.purchaseLimitType === 'per_user' && quantity > 0) return `每位用户累计 ${quantity} 件`
+  if (form.value.purchaseLimitType === 'per_user' && quantity > 0) {
+    const periodDays = Number(form.value.purchaseLimitPeriodDays || 0)
+    return periodDays > 0
+      ? `每位用户最近 ${periodDays} 天 ${quantity} 件`
+      : `每位用户永久累计 ${quantity} 件`
+  }
   return '不限制'
 })
 
@@ -1311,6 +1327,7 @@ const canSubmit = computed(() => {
   if (stockError.value) return false
   if (cdkCodesError.value) return false
   if (maxPurchaseQuantityError.value) return false
+  if (purchaseLimitPeriodDaysError.value) return false
   return true
 })
 
@@ -1365,6 +1382,7 @@ function buildProductFingerprint(productData) {
     purchaseTrustLevel: Number(productData.purchaseTrustLevel || 0),
     purchaseLimitType: productData.purchaseLimitType || 'none',
     maxPurchaseQuantity: Number(productData.maxPurchaseQuantity || 0),
+    purchaseLimitPeriodDays: Number(productData.purchaseLimitPeriodDays || 0),
     cdkCodes: productData.cdkCodes || '',
     sharedCdkEnabled: !!productData.sharedCdkEnabled,
     sharedCdkCode: productData.sharedCdkCode || '',
@@ -1495,11 +1513,16 @@ async function submitForm() {
       focusField('cdkCodes')
       return
     }
-    if (maxPurchaseQuantityError.value) {
-      toast.error(maxPurchaseQuantityError.value)
-      focusField('maxPurchaseQuantity')
-      return
-    }
+  }
+  if (maxPurchaseQuantityError.value) {
+    toast.error(maxPurchaseQuantityError.value)
+    focusField('maxPurchaseQuantity')
+    return
+  }
+  if (purchaseLimitPeriodDaysError.value) {
+    toast.error(purchaseLimitPeriodDaysError.value)
+    focusField('maxPurchaseQuantity')
+    return
   }
   
   // 验证图片URL（必填）
@@ -1550,7 +1573,10 @@ async function submitForm() {
       purchaseLimitType: form.value.purchaseLimitType,
       maxPurchaseQuantity: form.value.purchaseLimitType === 'none'
         ? 0
-        : Number(form.value.maxPurchaseQuantity)
+        : Number(form.value.maxPurchaseQuantity),
+      purchaseLimitPeriodDays: form.value.purchaseLimitType === 'per_user'
+        ? Number(form.value.purchaseLimitPeriodDays || 0)
+        : 0
     }
     
     // 类型特定数据

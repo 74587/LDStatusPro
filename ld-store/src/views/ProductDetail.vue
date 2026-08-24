@@ -185,6 +185,12 @@
                   <span class="purchase-condition-copy">
                     <small>兑换限制</small>
                     <strong>{{ exchangeQuantityText }}</strong>
+                    <span
+                      v-if="purchaseLimitReached && purchaseLimitReleaseText"
+                      class="purchase-limit-release-hint"
+                    >
+                      按当前状态，预计 {{ purchaseLimitReleaseText }} 起逐步恢复额度
+                    </span>
                     <router-link
                       v-if="purchaseLimitReservedQuantity > 0"
                       :to="{ name: 'Orders' }"
@@ -998,6 +1004,7 @@ import Skeleton from '@/components/common/Skeleton.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 import {
   formatPurchaseLimitLabel,
+  formatPurchaseLimitReleaseTime,
   getPurchaseLimit,
   isPurchaseLimitReached
 } from '@/utils/purchaseLimit'
@@ -1164,6 +1171,11 @@ const soldCount = computed(() => parseInt(product.value?.sold_count) || 0)
 const purchaseLimit = computed(() => getPurchaseLimit(product.value))
 const purchaseLimitReached = computed(() => isPurchaseLimitReached(purchaseLimit.value))
 const purchaseLimitReservedQuantity = computed(() => Number(purchaseLimit.value.reservedQuantity || 0))
+const purchaseLimitReleaseText = computed(() => (
+  purchaseLimit.value.periodDays > 0
+    ? formatPurchaseLimitReleaseTime(purchaseLimit.value.nextAvailableAt)
+    : ''
+))
 const purchaseTrustLevel = computed(() => {
   const raw = Number(product.value?.purchase_trust_level ?? product.value?.purchaseTrustLevel ?? 0)
   if (!Number.isInteger(raw) || raw < 0) return 0
@@ -3354,6 +3366,13 @@ async function handleOpenStore() {
   font-weight: 600;
   line-height: 1.4;
   text-decoration: none;
+}
+
+.purchase-limit-release-hint {
+  margin-top: 2px;
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 1.45;
 }
 
 .purchase-limit-order-link:hover,
