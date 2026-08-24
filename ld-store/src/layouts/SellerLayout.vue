@@ -299,9 +299,13 @@ onUnmounted(() => {
   --input-bg: #efede6;
   --input-focus-bg: var(--seller-surface);
   --dropdown-bg: var(--seller-surface);
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   min-height: 100dvh;
   display: grid;
   grid-template-columns: 248px minmax(0, 1fr);
+  overflow-x: clip;
   background: var(--seller-paper);
   color: var(--seller-ink);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;

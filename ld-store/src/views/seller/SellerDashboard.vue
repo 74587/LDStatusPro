@@ -429,7 +429,7 @@ onMounted(loadDashboard)
 
 <style scoped>
 .seller-dashboard { min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 22px; color: var(--seller-ink); }
-.dashboard-card, .opening-checklist { border: 1px solid var(--seller-border); border-radius: 14px; background: var(--seller-surface); box-shadow: var(--seller-shadow-sm); }
+.dashboard-card, .opening-checklist { min-width: 0; border: 1px solid var(--seller-border); border-radius: 14px; background: var(--seller-surface); box-shadow: var(--seller-shadow-sm); }
 .section-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
 .section-heading p { margin: 0 0 4px; color: var(--seller-jade); font-size: 11px; font-weight: 700; letter-spacing: .14em; }
 .section-heading h2 { margin: 0; font: 600 21px/1.3 "Noto Serif SC", "Source Han Serif SC", "Songti SC", STSong, serif; }
@@ -549,7 +549,7 @@ html.dark .range-switch button.active, html.dark .chart-view-switch button.activ
 .status-value.good { color: var(--seller-jade); }
 .status-value.warn { color: var(--seller-warning); }
 
-.recent-table-wrap { overflow-x: auto; padding: 0 16px 18px; }
+.recent-table-wrap { position: relative; width: 100%; max-width: 100%; min-width: 0; box-sizing: border-box; overflow-x: auto; overscroll-behavior-inline: contain; padding: 0 16px 18px; }
 .recent-table { min-width: 820px; }
 .recent-table th { padding: 9px 10px; color: var(--seller-muted); font-size: 10px; font-weight: 650; letter-spacing: .06em; text-align: left; }
 .recent-table td { padding: 12px 10px; border-top: 1px solid var(--seller-border); color: var(--seller-muted); }

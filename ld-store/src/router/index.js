@@ -328,7 +328,7 @@ const router = createRouter({
       return false
     }
     // 其他情况滚动到顶部
-    return { top: 0 }
+    return { left: 0, top: 0 }
   }
 })
 
