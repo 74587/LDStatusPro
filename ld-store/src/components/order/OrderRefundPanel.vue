@@ -1178,10 +1178,8 @@ html.dark .refund-guidance {
     width: 24px;
     height: 24px;
   }
-  .refund-progress li::after {
+  .refund-progress li::before {
     top: 12px;
-    left: calc(50% + 12px);
-    right: calc(-50% + 12px);
   }
 
   /* 详情列表单列 */
