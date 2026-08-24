@@ -50,7 +50,7 @@ public_hashes=$(find dist/assets -type f -name '*.js' -exec shasum -a 256 {} \; 
   exit 1
 }
 
-npx wrangler pages deploy dist --project-name=ld-store
+npx wrangler pages deploy dist --project-name=ld-store --branch main
 
 release=$(git rev-parse --short=12 HEAD)
 printf 'Pages deployment completed: release=%s source-map artifact=.private-artifacts/ldstore-web-%s.tar.gz\n' "$release" "$release"
