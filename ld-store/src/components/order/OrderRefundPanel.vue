@@ -1150,15 +1150,164 @@ html.dark .refund-guidance {
 @keyframes refund-spin { to { transform: rotate(360deg); } }
 
 /* 响应式优化 */
-@media (max-width: 520px) {
-  .refund-card { padding: 18px; }
-  .refund-card__header { align-items: center; flex-direction: column; gap: 12px; }
-  .refund-progress li { font-size: 10px; }
-  .refund-progress__dot { width: 28px; height: 28px; }
-  .refund-detail-list { grid-template-columns: minmax(0, 1fr); }
-  .refund-detail-list .wide { grid-column: auto; }
-  .refund-actions, .refund-form__actions { flex-direction: column; }
-  .refund-btn { width: 100%; box-sizing: border-box; }
+@media (max-width: 640px) {
+  .refund-card { padding: 16px; }
+  .refund-card__header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .refund-card__eyebrow {
+    font-size: 11px;
+    padding: 4px 10px;
+  }
+  .refund-card h3 { font-size: 18px; }
+
+  /* 进度条移动端优化 - 紧凑布局 */
+  .refund-progress {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+    margin: 0 -8px 20px;
+  }
+  .refund-progress li {
+    font-size: 11px;
+    gap: 6px;
+    padding: 0 4px;
+  }
+  .refund-progress__dot {
+    width: 24px;
+    height: 24px;
+  }
+  .refund-progress li::after {
+    top: 12px;
+    left: calc(50% + 12px);
+    right: calc(-50% + 12px);
+  }
+
+  /* 详情列表单列 */
+  .refund-detail-list {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  .refund-detail-list .wide {
+    grid-column: auto;
+  }
+
+  /* 按钮组优化 - 保持横向排列，自动换行 */
+  .refund-actions {
+    gap: 10px;
+  }
+  .refund-actions--intro {
+    flex-direction: row;
+    justify-content: flex-start;
+  }
+  .refund-btn {
+    flex: 1 1 auto;
+    min-width: calc(50% - 5px);
+    padding: 0 16px;
+    font-size: 13px;
+  }
+  /* 单个按钮占满宽 */
+  .refund-actions--intro .refund-btn:only-child,
+  .refund-form__actions .refund-btn:only-child {
+    flex: 1 1 100%;
+    min-width: 100%;
+  }
+
+  /* 表单按钮组 */
+  .refund-form__actions {
+    gap: 10px;
+  }
+
+  /* 金额展示 */
+  .refund-amount {
+    padding: 14px;
+    font-size: 15px;
+  }
+  .refund-amount strong {
+    font-size: 22px;
+  }
+
+  /* 表单字段 */
+  .refund-field label {
+    font-size: 13px;
+  }
+  .refund-field select,
+  .refund-field textarea {
+    font-size: 14px;
+    padding: 10px 12px;
+  }
+
+  /* 引导提示 */
+  .refund-guidance {
+    padding: 14px;
+    gap: 10px;
+  }
+  .refund-guidance strong {
+    font-size: 13px;
+  }
+  .refund-guidance p {
+    font-size: 12px;
+  }
+
+  /* 状态徽章 */
+  .refund-status {
+    font-size: 12px;
+    padding: 6px 12px;
+  }
+
+  /* 时间线优化 */
+  .refund-timeline li {
+    grid-template-columns: 14px 1fr;
+    gap: 10px;
+  }
+  .refund-timeline__marker {
+    width: 10px;
+    height: 10px;
+    margin-top: 4px;
+  }
+  .refund-timeline li:not(:last-child)::before {
+    left: 5px;
+    width: 2px;
+  }
+  .refund-timeline strong {
+    font-size: 13px;
+  }
+  .refund-timeline p {
+    font-size: 12px;
+  }
+
+  /* 卖家表单 */
+  .refund-seller-form {
+    padding: 14px;
+    gap: 8px;
+  }
+  .refund-seller-form label {
+    font-size: 13px;
+  }
+  .refund-seller-form textarea {
+    min-height: 80px;
+    font-size: 14px;
+    padding: 10px 12px;
+  }
+
+  /* 错误状态 */
+  .refund-error-state {
+    grid-template-columns: auto 1fr;
+    gap: 10px;
+    padding: 14px;
+  }
+  .refund-error-state button {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  /* 争议提示 */
+  .refund-dispute {
+    flex-direction: column;
+    gap: 10px;
+    padding: 14px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
