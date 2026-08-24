@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "test": "vitest run",
-    "lint": "eslint . --ext .js,.vue --ignore-pattern dist --ignore-pattern node_modules --ignore-pattern .wrangler --ignore-pattern public",
+    "lint": "eslint . --ext .js,.vue --ignore-pattern dist --ignore-pattern node_modules --ignore-pattern .wrangler",
     "lint:fix": "npm run lint -- --fix",
     "check": "npm run lint && npm run build",
     "build": "vite build",

@@ -2,49 +2,41 @@ const DEFAULT_SITE_URL = 'https://ldcstore.com/'
 const DEFAULT_API_BASE = 'https://api2.ldspro.qzz.io'
 const DEFAULT_OG_IMAGE = 'https://img.ldspro.qzz.io/JackyLiii/20260123_og-image_9zs1sl.png'
 const DEFAULT_LEGACY_HOSTS = ['ldstore.cc.cd', 'ldst0re.qzz.io']
-const DEFAULT_TITLE = 'LD士多-LinuxDo站点积分兑换中心'
+const DEFAULT_TITLE = 'LD士多 - LinuxDo站点积分兑换中心'
 const DEFAULT_DESCRIPTION = '在 LD士多 使用 Linux.do 社区积分兑换精选虚拟物品与服务。'
+const HTML_CACHE_CONTROL = 'no-store, no-cache, must-revalidate'
+const OEMBED_CACHE_CONTROL = 'public, max-age=300, stale-while-revalidate=3600'
 
-const STATIC_ROUTE_TITLES = [
-  [/^\/$/, 'LD士多-LinuxDo站点积分兑换中心'],
-  [/^\/merchant\/[^/]+\/?$/, '商家主页 - LD士多'],
-  [/^\/category\/[^/]+\/?$/, '分类商品 - LD士多'],
-  [/^\/search\/?$/, '搜索 - LD士多'],
-  [/^\/buy-request\/[^/]+\/?$/, '求购详情 - LD士多'],
-  [/^\/user\/?$/, '个人中心 - LD士多'],
-  [/^\/user\/orders\/?$/, '我的订单 - LD士多'],
-  [/^\/user\/favorites\/?$/, '收藏与拉黑 - LD士多'],
-  [/^\/user\/buy-orders\/[^/]+\/?$/, '求购订单详情 - LD士多'],
-  [/^\/user\/products\/?$/, '我的商品 - LD士多'],
-  [/^\/user\/buy-requests\/?$/, '我的求购 - LD士多'],
-  [/^\/user\/messages\/?$/, '我的消息 - LD士多'],
-  [/^\/user\/buy-chats\/?$/, '我的消息 - LD士多'],
-  [/^\/user\/settings\/?$/, 'LDC收款配置 - LD士多'],
-  [/^\/user\/my-shop\/?$/, '小店入驻 - LD士多'],
-  [/^\/publish\/?$/, '发布商品 - LD士多'],
-  [/^\/buy-requests\/new\/?$/, '发布求购 - LD士多'],
-  [/^\/seller\/?$/, '经营概览 - LD士多卖家后台'],
-  [/^\/seller\/orders\/?$/, '订单管理 - LD士多卖家后台'],
-  [/^\/seller\/orders\/[^/]+\/?$/, '订单详情 - LD士多卖家后台'],
-  [/^\/seller\/products\/?$/, '我的物品 - LD士多卖家后台'],
-  [/^\/seller\/products\/new\/?$/, '发布物品 - LD士多卖家后台'],
-  [/^\/seller\/products\/[^/]+\/edit\/?$/, '编辑物品 - LD士多卖家后台'],
-  [/^\/seller\/coupons\/?$/, '优惠券管理 - LD士多卖家后台'],
-  [/^\/seller\/services\/?$/, '商家服务 - LD士多卖家后台'],
-  [/^\/seller\/store\/?$/, '小店管理 - LD士多卖家后台'],
-  [/^\/seller\/payment\/?$/, '收款设置 - LD士多卖家后台'],
-  [/^\/edit\/[^/]+\/?$/, '编辑商品 - LD士多'],
-  [/^\/order\/[^/]+\/?$/, '订单详情 - LD士多'],
-  [/^\/login\/?$/, '登录 - LD士多'],
-  [/^\/auth\/callback\/?$/, '登录中...'],
-  [/^\/ld-image\/?$/, '士多图床 - LD士多'],
-  [/^\/docs(?:\/[^/]+)?\/?$/, '使用文档 - LD士多'],
-  [/^\/support\/?$/, '支持 LDStatus Pro - LD士多'],
-  [/^\/maintenance\/?$/, '系统维护中 - LD士多']
+const DYNAMIC_ROUTES = [
+  { pattern: /^\/product\/\d+\/?$/, fallbackTitle: '商品详情 - LD士多', fallbackDescription: '在 LD士多 查看商品详情、价格与兑换方式。' },
+  { pattern: /^\/merchant\/[^/]+\/?$/, fallbackTitle: '商家主页 - LD士多', fallbackDescription: '浏览 LD士多 商家的公开商品与服务。' },
+  { pattern: /^\/shop\/\d+\/?$/, fallbackTitle: '小店详情 - LD士多', fallbackDescription: '发现 LD士多 社区成员经营的小店。' },
+  { pattern: /^\/buy-request\/\d+\/?$/, fallbackTitle: '求购详情 - LD士多', fallbackDescription: '查看并响应 LD士多 社区求购需求。' },
+  { pattern: /^\/coupon\/[^/]+\/?$/, fallbackTitle: '领取优惠券 - LD士多', fallbackDescription: '领取 LD士多 商家发放的优惠券。' },
+  { pattern: /^\/category\/[^/]+\/?$/, fallbackTitle: '分类商品 - LD士多', fallbackDescription: '浏览 LD士多 分类中的公开商品与服务。' }
+]
+
+const STATIC_ROUTES = [
+  { pattern: /^\/$/, title: DEFAULT_TITLE, description: DEFAULT_DESCRIPTION },
+  { pattern: /^\/search\/?$/, title: '搜索 - LD士多', description: '搜索 LD士多 中的公开商品与服务。' },
+  { pattern: /^\/docs(?:\/[^/]+)?\/?$/, title: '使用文档 - LD士多', description: '查看 LD士多 的购买、发布、交付与售后使用指南。' },
+  { pattern: /^\/support\/?$/, title: '支持 LDStatus Pro - LD士多', description: '了解并支持 LDStatus Pro 与 LD士多 的持续维护。' },
+  { pattern: /^\/ld-image\/?$/, title: '士多图床 - LD士多', description: 'LD士多 提供的社区图片工具。' },
+  { pattern: /^\/maintenance\/?$/, title: '系统维护中 - LD士多', description: 'LD士多 当前正在维护，请稍后再来。' },
+  { pattern: /^\/login\/?$/, title: '登录 - LD士多', description: DEFAULT_DESCRIPTION },
+  { pattern: /^\/auth\/callback\/?$/, title: '登录中 - LD士多', description: DEFAULT_DESCRIPTION },
+  { pattern: /^\/checkout\/[^/]+\/?$/, title: '确认订单 - LD士多', description: DEFAULT_DESCRIPTION },
+  { pattern: /^\/order\/[^/]+\/?$/, title: '订单详情 - LD士多', description: DEFAULT_DESCRIPTION },
+  { pattern: /^\/edit\/[^/]+\/?$/, title: '编辑商品 - LD士多', description: DEFAULT_DESCRIPTION },
+  { pattern: /^\/publish\/?$/, title: '发布商品 - LD士多', description: DEFAULT_DESCRIPTION },
+  { pattern: /^\/buy-requests\/new\/?$/, title: '发布求购 - LD士多', description: DEFAULT_DESCRIPTION },
+  { pattern: /^\/user(?:\/.*)?$/, title: '个人中心 - LD士多', description: DEFAULT_DESCRIPTION },
+  { pattern: /^\/seller(?:\/.*)?$/, title: '卖家后台 - LD士多', description: DEFAULT_DESCRIPTION },
+  { pattern: /^\/merchant-services\/?$/, title: '商家服务 - LD士多', description: DEFAULT_DESCRIPTION }
 ]
 
 function escapeRegExp(value) {
-  return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  return String(value).replace(/[.*+?^$()|[\]\\]/g, '\\$&')
 }
 
 function escapeHtml(value) {
@@ -56,33 +48,51 @@ function escapeHtml(value) {
     .replace(/'/g, '&#39;')
 }
 
-function stripHtml(value) {
-  return String(value || '')
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-}
-
 function truncateText(value, maxLength = 120) {
-  const text = String(value || '').trim()
+  const text = String(value || '').replace(/\s+/g, ' ').trim()
   if (!text) return ''
-  if (text.length <= maxLength) return text
-  return `${text.slice(0, maxLength - 1)}…`
+  const segments = Array.from(new Intl.Segmenter('zh-CN', { granularity: 'grapheme' }).segment(text), ({ segment }) => segment)
+  return segments.length <= maxLength ? text : `${segments.slice(0, maxLength - 1).join('')}…`
 }
 
-function toAbsoluteUrl(raw, fallbackOrigin) {
-  const source = String(raw || '').trim()
-  if (!source) return ''
+function getSiteUrl(env) {
+  const configured = String(env.LD_STORE_SITE_URL || DEFAULT_SITE_URL).trim() || DEFAULT_SITE_URL
   try {
-    return new URL(source, fallbackOrigin).toString()
-  } catch (_) {
-    return ''
+    const url = new URL(configured)
+    url.pathname = '/'
+    url.search = ''
+    url.hash = ''
+    return url
+  } catch {
+    return new URL(DEFAULT_SITE_URL)
   }
 }
 
+function normalizePathname(pathname) {
+  const normalized = String(pathname || '/').replace(/\/{2,}/g, '/').replace(/\/+$/, '')
+  return normalized || '/'
+}
+
+export function canonicalizePageUrl(input, env = {}) {
+  const source = input instanceof URL ? input : new URL(String(input), getSiteUrl(env))
+  const canonical = new URL(normalizePathname(source.pathname), getSiteUrl(env))
+  if (canonical.pathname === '/search') {
+    const query = truncateText(source.searchParams.get('q') || '', 80)
+    if (query) canonical.searchParams.set('q', query)
+  }
+  return canonical.toString()
+}
+
+function getDynamicRoute(pathname) {
+  return DYNAMIC_ROUTES.find(({ pattern }) => pattern.test(pathname)) || null
+}
+
+function getStaticRoute(pathname) {
+  return STATIC_ROUTES.find(({ pattern }) => pattern.test(pathname)) || null
+}
+
 function getDefaultMetadata(url, env) {
-  const siteUrl = String(env.LD_STORE_SITE_URL || DEFAULT_SITE_URL).trim() || DEFAULT_SITE_URL
-  const canonicalUrl = toAbsoluteUrl(url.pathname + url.search, siteUrl) || url.toString()
+  const canonicalUrl = canonicalizePageUrl(url, env)
   return {
     title: DEFAULT_TITLE,
     description: DEFAULT_DESCRIPTION,
@@ -91,284 +101,197 @@ function getDefaultMetadata(url, env) {
     siteName: 'LD士多',
     image: String(env.LD_STORE_DEFAULT_OG_IMAGE || DEFAULT_OG_IMAGE).trim() || DEFAULT_OG_IMAGE,
     imageAlt: DEFAULT_TITLE,
+    imageType: 'image/png',
+    imageWidth: 1200,
+    imageHeight: 630,
     locale: 'zh_CN',
     twitterCard: 'summary_large_image',
-    cacheControl: 'no-store, no-cache, must-revalidate'
+    product: null,
+    notFound: false
   }
 }
 
-function getStaticRouteTitle(pathname) {
-  for (const [pattern, title] of STATIC_ROUTE_TITLES) {
-    if (pattern.test(pathname)) {
-      return title
-    }
-  }
-  return ''
-}
-
-function mergeMetadata(base, patch = {}) {
+function getNotFoundMetadata(url, env) {
   return {
-    ...base,
-    ...patch
+    ...getDefaultMetadata(url, env),
+    title: '页面未找到 - LD士多',
+    description: '这个分享地址不存在、已下架或不可公开访问。',
+    imageAlt: 'LD士多页面未找到',
+    notFound: true
   }
 }
 
-async function fetchJson(url, timeoutMs = 2500) {
-  const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
+function absoluteSameOriginPath(rawPath, env, requiredPrefix) {
+  const siteUrl = getSiteUrl(env)
   try {
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        Accept: 'application/json'
-      },
-      signal: controller.signal
-    })
-    if (!response.ok) return null
-    return await response.json()
-  } catch (_) {
-    return null
-  } finally {
-    clearTimeout(timeoutId)
+    const resolved = new URL(String(rawPath || ''), siteUrl)
+    if (resolved.origin !== siteUrl.origin || !resolved.pathname.startsWith(requiredPrefix)) return ''
+    return resolved.toString()
+  } catch {
+    return ''
   }
 }
 
 function unwrapApiPayload(payload) {
   if (!payload || typeof payload !== 'object') return null
-  if (payload.success === true && payload.data !== undefined) {
-    return payload.data
-  }
+  if (payload.success === true && payload.data !== undefined) return payload.data
   return payload
 }
 
-function pickFirstNonEmpty(values) {
-  for (const item of values) {
-    const value = String(item || '').trim()
-    if (value) return value
-  }
-  return ''
-}
-
-function parseImages(raw) {
-  if (Array.isArray(raw)) {
-    return raw.map((item) => String(item || '').trim()).filter(Boolean)
-  }
-  if (typeof raw !== 'string') {
-    return []
-  }
-  const value = raw.trim()
-  if (!value) return []
-  if (!value.startsWith('[')) {
-    return value.split(',').map((item) => item.trim()).filter(Boolean)
-  }
+async function fetchJsonResult(url, timeoutMs = 3000) {
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
   try {
-    const parsed = JSON.parse(value)
-    if (Array.isArray(parsed)) {
-      return parsed.map((item) => String(item || '').trim()).filter(Boolean)
-    }
-  } catch (_) {}
-  return []
-}
-
-async function getProductMetadata(url, env, baseMeta) {
-  const match = url.pathname.match(/^\/product\/(\d+)\/?$/)
-  if (!match) return null
-
-  const productId = match[1]
-  const apiBase = String(env.LD_STORE_META_API_BASE || DEFAULT_API_BASE).trim() || DEFAULT_API_BASE
-  const apiUrl = `${apiBase.replace(/\/$/, '')}/api/shop/products/${encodeURIComponent(productId)}`
-  const response = await fetchJson(apiUrl)
-  const payload = unwrapApiPayload(response)
-  const product = payload?.product || payload?.data?.product || null
-  if (!product || typeof product !== 'object') return null
-
-  const productName = String(product.name || '').trim()
-  if (!productName) return null
-
-  const parsedImages = parseImages(product.images)
-  const productImage = toAbsoluteUrl(
-    pickFirstNonEmpty([
-      product.image_url,
-      product.cover_url,
-      product.cover,
-      parsedImages[0],
-      baseMeta.image
-    ]),
-    baseMeta.url
-  ) || baseMeta.image
-
-  const rawDescription = stripHtml(product.description || product.short_description || '')
-  const description = truncateText(
-    rawDescription || `在 LD士多 查看「${productName}」的详情信息与兑换方式。`,
-    120
-  )
-
-  return mergeMetadata(baseMeta, {
-    title: `${productName} - LD士多`,
-    description,
-    ogType: 'product',
-    image: productImage,
-    imageAlt: `${productName} - LD士多`,
-    cacheControl: 'no-store, no-cache, must-revalidate'
-  })
-}
-
-async function getShopMetadata(url, env, baseMeta) {
-  const match = url.pathname.match(/^\/shop\/(\d+)\/?$/)
-  if (!match) return null
-
-  const shopId = match[1]
-  const apiBase = String(env.LD_STORE_META_API_BASE || DEFAULT_API_BASE).trim() || DEFAULT_API_BASE
-  const apiUrl = `${apiBase.replace(/\/$/, '')}/api/shops/${encodeURIComponent(shopId)}`
-  const response = await fetchJson(apiUrl)
-  const payload = unwrapApiPayload(response)
-  const shop = payload?.data || payload
-  if (!shop || typeof shop !== 'object') return null
-
-  const shopName = String(shop.name || '').trim()
-  if (!shopName) return null
-
-  const shopImage = toAbsoluteUrl(
-    pickFirstNonEmpty([
-      shop.image_url,
-      baseMeta.image
-    ]),
-    baseMeta.url
-  ) || baseMeta.image
-
-  const rawDescription = stripHtml(shop.description || '')
-  const description = truncateText(
-    rawDescription || `在 LD士多 查看「${shopName}」的小店详情与相关信息。`,
-    120
-  )
-
-  return mergeMetadata(baseMeta, {
-    title: `${shopName} - LD士多`,
-    description,
-    image: shopImage,
-    imageAlt: `${shopName} - LD士多`,
-    cacheControl: 'no-store, no-cache, must-revalidate'
-  })
-}
-
-async function getMerchantMetadata(url, env, baseMeta) {
-  const match = url.pathname.match(/^\/merchant\/([^/]+)\/?$/)
-  if (!match) return null
-
-  const username = decodeURIComponent(match[1] || '').trim()
-  if (!username) return null
-
-  const apiBase = String(env.LD_STORE_META_API_BASE || DEFAULT_API_BASE).trim() || DEFAULT_API_BASE
-  const apiUrl = `${apiBase.replace(/\/$/, '')}/api/shop/merchants/${encodeURIComponent(username)}`
-  const response = await fetchJson(apiUrl)
-  const payload = unwrapApiPayload(response)
-  const merchant = payload?.merchant || payload?.data?.merchant || null
-  if (!merchant || typeof merchant !== 'object') return null
-
-  const merchantUsername = String(merchant.username || username).trim()
-  if (!merchantUsername) return null
-
-  const merchantImage = toAbsoluteUrl(
-    pickFirstNonEmpty([
-      merchant.avatar,
-      merchant.avatar_url,
-      baseMeta.image
-    ]),
-    baseMeta.url
-  ) || baseMeta.image
-
-  return mergeMetadata(baseMeta, {
-    title: `${merchantUsername}的小店 - LD士多`,
-    description: `来逛逛${merchantUsername}的士多小店吧`,
-    ogType: 'profile',
-    image: merchantImage,
-    imageAlt: `${merchantUsername}的小店 - LD士多`,
-    cacheControl: 'no-store, no-cache, must-revalidate'
-  })
-}
-
-async function resolvePageMetadata(url, env) {
-  const baseMeta = getDefaultMetadata(url, env)
-
-  const productMeta = await getProductMetadata(url, env, baseMeta)
-  if (productMeta) {
-    return productMeta
-  }
-
-  const shopMeta = await getShopMetadata(url, env, baseMeta)
-  if (shopMeta) {
-    return shopMeta
-  }
-
-  const merchantMeta = await getMerchantMetadata(url, env, baseMeta)
-  if (merchantMeta) {
-    return merchantMeta
-  }
-
-  const staticTitle = getStaticRouteTitle(url.pathname)
-  if (staticTitle) {
-    return mergeMetadata(baseMeta, {
-      title: staticTitle,
-      imageAlt: staticTitle,
-      cacheControl: 'no-store, no-cache, must-revalidate'
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: { Accept: 'application/json' },
+      signal: controller.signal,
+      cf: { cacheEverything: true, cacheTtl: 300 }
     })
+    if (response.status === 404) return { state: 'not_found', status: 404, data: null }
+    if (!response.ok) return { state: 'unavailable', status: response.status, data: null }
+    const payload = unwrapApiPayload(await response.json())
+    return payload ? { state: 'ok', status: response.status, data: payload } : { state: 'unavailable', status: response.status, data: null }
+  } catch {
+    return { state: 'unavailable', status: 0, data: null }
+  } finally {
+    clearTimeout(timeoutId)
+  }
+}
+
+function normalizeShareMetadata(payload, requestUrl, env) {
+  if (!payload || typeof payload !== 'object') return null
+  const image = payload.image
+  const canonicalPath = String(payload.canonicalPath || '')
+  const imageUrl = absoluteSameOriginPath(image?.path, env, '/og/')
+  if (
+    !canonicalPath.startsWith('/') || canonicalPath.startsWith('//') ||
+    !String(payload.title || '').trim() ||
+    !String(payload.description || '').trim() ||
+    !imageUrl ||
+    image?.type !== 'image/png' ||
+    Number(image?.width) !== 1200 ||
+    Number(image?.height) !== 630
+  ) {
+    return null
   }
 
-  return mergeMetadata(baseMeta, {
-    title: '页面未找到 - LD士多',
-    imageAlt: '页面未找到 - LD士多',
-    cacheControl: 'no-store, no-cache, must-revalidate'
-  })
+  const canonicalUrl = canonicalizePageUrl(new URL(canonicalPath, requestUrl), env)
+  const priceAmount = Number(payload.product?.priceAmount)
+  const product = payload.product && payload.ogType === 'product' && Number.isFinite(priceAmount) && priceAmount >= 0 &&
+    payload.product.priceCurrency === 'LDC' && ['in stock', 'out of stock'].includes(payload.product.availability)
+    ? {
+        priceAmount: String(payload.product.priceAmount || ''),
+        priceCurrency: String(payload.product.priceCurrency || 'LDC'),
+        availability: String(payload.product.availability || '')
+      }
+    : null
+
+  return {
+    title: truncateText(payload.title, 70),
+    description: truncateText(payload.description, 120),
+    ogType: ['website', 'product', 'profile'].includes(payload.ogType) ? payload.ogType : 'website',
+    url: canonicalUrl,
+    siteName: 'LD士多',
+    image: imageUrl,
+    imageAlt: truncateText(image.alt || payload.title, 120),
+    imageType: 'image/png',
+    imageWidth: 1200,
+    imageHeight: 630,
+    locale: 'zh_CN',
+    twitterCard: 'summary_large_image',
+    product,
+    notFound: false
+  }
+}
+
+export async function resolvePageMetadata(input, env = {}) {
+  const url = input instanceof URL ? input : new URL(String(input), getSiteUrl(env))
+  const pathname = normalizePathname(url.pathname)
+  const dynamicRoute = getDynamicRoute(pathname)
+
+  if (dynamicRoute) {
+    const apiBase = String(env.LD_STORE_META_API_BASE || DEFAULT_API_BASE).trim() || DEFAULT_API_BASE
+    const apiUrl = `${apiBase.replace(/\/$/, '')}/api/shop/share-meta?path=${encodeURIComponent(pathname)}`
+    const result = await fetchJsonResult(apiUrl)
+    if (result.state === 'not_found') return getNotFoundMetadata(url, env)
+    if (result.state === 'ok') {
+      const metadata = normalizeShareMetadata(result.data, url, env)
+      if (metadata) return metadata
+    }
+    return {
+      ...getDefaultMetadata(url, env),
+      title: dynamicRoute.fallbackTitle,
+      description: dynamicRoute.fallbackDescription,
+      imageAlt: dynamicRoute.fallbackTitle
+    }
+  }
+
+  const staticRoute = getStaticRoute(pathname)
+  if (!staticRoute) return getNotFoundMetadata(url, env)
+  const searchQuery = pathname === '/search' ? truncateText(url.searchParams.get('q') || '', 80) : ''
+  const title = searchQuery ? `搜索「${searchQuery}」 - LD士多` : staticRoute.title
+  return {
+    ...getDefaultMetadata(url, env),
+    title,
+    description: staticRoute.description,
+    imageAlt: title
+  }
 }
 
 function injectTagBeforeHeadClose(html, tag) {
-  if (html.includes('</head>')) {
-    return html.replace('</head>', `${tag}\n</head>`)
-  }
+  if (html.includes('</head>')) return html.replace('</head>', `${tag}\n</head>`)
   return `${html}\n${tag}`
 }
 
+function replaceUniqueTag(html, pattern, tag) {
+  const withoutDuplicates = html.replace(pattern, '')
+  return injectTagBeforeHeadClose(withoutDuplicates, tag)
+}
+
 function upsertTitle(html, title) {
-  const tag = `<title>${escapeHtml(title)}</title>`
-  if (/<title>[\s\S]*?<\/title>/i.test(html)) {
-    return html.replace(/<title>[\s\S]*?<\/title>/i, tag)
-  }
-  return injectTagBeforeHeadClose(html, tag)
+  return replaceUniqueTag(html, /<title>[\s\S]*?<\/title>\s*/gi, `<title>${escapeHtml(title)}</title>`)
 }
 
 function upsertMetaByName(html, name, content) {
   const safeName = escapeRegExp(name)
-  const tag = `<meta name="${name}" content="${escapeHtml(content)}">`
-  const pattern = new RegExp(`<meta\\s+[^>]*name=["']${safeName}["'][^>]*>`, 'i')
-  if (pattern.test(html)) {
-    return html.replace(pattern, tag)
-  }
-  return injectTagBeforeHeadClose(html, tag)
+  const pattern = new RegExp(`<meta\\s+[^>]*name=["']${safeName}["'][^>]*>\\s*`, 'gi')
+  return replaceUniqueTag(html, pattern, `<meta name="${escapeHtml(name)}" content="${escapeHtml(content)}">`)
 }
 
 function upsertMetaByProperty(html, property, content) {
   const safeProperty = escapeRegExp(property)
-  const tag = `<meta property="${property}" content="${escapeHtml(content)}">`
-  const pattern = new RegExp(`<meta\\s+[^>]*property=["']${safeProperty}["'][^>]*>`, 'i')
-  if (pattern.test(html)) {
-    return html.replace(pattern, tag)
-  }
-  return injectTagBeforeHeadClose(html, tag)
+  const pattern = new RegExp(`<meta\\s+[^>]*property=["']${safeProperty}["'][^>]*>\\s*`, 'gi')
+  return replaceUniqueTag(html, pattern, `<meta property="${escapeHtml(property)}" content="${escapeHtml(content)}">`)
+}
+
+function removeMetaByProperty(html, property) {
+  const safeProperty = escapeRegExp(property)
+  return html.replace(new RegExp(`<meta\\s+[^>]*property=["']${safeProperty}["'][^>]*>\\s*`, 'gi'), '')
+}
+
+function upsertCanonical(html, href) {
+  return replaceUniqueTag(
+    html,
+    /<link\s+[^>]*rel=["']canonical["'][^>]*>\s*/gi,
+    `<link rel="canonical" href="${escapeHtml(href)}">`
+  )
 }
 
 function upsertOembedLink(html, href, title) {
-  const tag = `<link rel="alternate" type="application/json+oembed" href="${escapeHtml(href)}" title="${escapeHtml(title)}">`
-  const pattern = /<link\s+[^>]*type=["']application\/json\+oembed["'][^>]*>/i
-  if (pattern.test(html)) {
-    return html.replace(pattern, tag)
-  }
-  return injectTagBeforeHeadClose(html, tag)
+  return replaceUniqueTag(
+    html,
+    /<link\s+[^>]*type=["']application\/json\+oembed["'][^>]*>\s*/gi,
+    `<link rel="alternate" type="application/json+oembed" href="${escapeHtml(href)}" title="${escapeHtml(title)}">`
+  )
 }
 
-function injectMetadataIntoHtml(html, metadata, env) {
+export function injectMetadataIntoHtml(html, metadata, env = {}) {
   let output = html
   output = upsertTitle(output, metadata.title)
   output = upsertMetaByName(output, 'description', metadata.description)
+  output = upsertMetaByName(output, 'robots', 'noindex, nofollow, noarchive')
+  output = upsertCanonical(output, metadata.url)
 
   output = upsertMetaByProperty(output, 'og:title', metadata.title)
   output = upsertMetaByProperty(output, 'og:description', metadata.description)
@@ -376,6 +299,10 @@ function injectMetadataIntoHtml(html, metadata, env) {
   output = upsertMetaByProperty(output, 'og:url', metadata.url)
   output = upsertMetaByProperty(output, 'og:site_name', metadata.siteName || 'LD士多')
   output = upsertMetaByProperty(output, 'og:image', metadata.image)
+  output = upsertMetaByProperty(output, 'og:image:secure_url', metadata.image)
+  output = upsertMetaByProperty(output, 'og:image:type', metadata.imageType || 'image/png')
+  output = upsertMetaByProperty(output, 'og:image:width', String(metadata.imageWidth || 1200))
+  output = upsertMetaByProperty(output, 'og:image:height', String(metadata.imageHeight || 630))
   output = upsertMetaByProperty(output, 'og:image:alt', metadata.imageAlt || metadata.title)
   output = upsertMetaByProperty(output, 'og:locale', metadata.locale || 'zh_CN')
 
@@ -383,11 +310,21 @@ function injectMetadataIntoHtml(html, metadata, env) {
   output = upsertMetaByName(output, 'twitter:title', metadata.title)
   output = upsertMetaByName(output, 'twitter:description', metadata.description)
   output = upsertMetaByName(output, 'twitter:image', metadata.image)
+  output = upsertMetaByName(output, 'twitter:image:alt', metadata.imageAlt || metadata.title)
 
-  const siteUrl = String(env.LD_STORE_SITE_URL || DEFAULT_SITE_URL).trim() || DEFAULT_SITE_URL
-  const oembedHref = `${siteUrl.replace(/\/$/, '')}/oembed.json?url=${encodeURIComponent(metadata.url)}`
-  output = upsertOembedLink(output, oembedHref, metadata.title)
+  for (const property of ['product:price:amount', 'product:price:currency', 'product:availability']) {
+    output = removeMetaByProperty(output, property)
+  }
+  if (metadata.product?.priceAmount) {
+    output = upsertMetaByProperty(output, 'product:price:amount', metadata.product.priceAmount)
+    output = upsertMetaByProperty(output, 'product:price:currency', metadata.product.priceCurrency || 'LDC')
+    output = upsertMetaByProperty(output, 'product:availability', metadata.product.availability || 'in stock')
+  }
 
+  const siteUrl = getSiteUrl(env)
+  const oembedHref = new URL('/oembed.json', siteUrl)
+  oembedHref.searchParams.set('url', metadata.url)
+  output = upsertOembedLink(output, oembedHref.toString(), metadata.title)
   return output
 }
 
@@ -412,143 +349,94 @@ function isSameDestination(location, requestUrl) {
   if (!raw) return false
   try {
     const target = new URL(raw, requestUrl)
-    return target.origin === requestUrl.origin
-      && target.pathname === requestUrl.pathname
-      && target.search === requestUrl.search
-  } catch (_) {
+    return target.origin === requestUrl.origin && target.pathname === requestUrl.pathname && target.search === requestUrl.search
+  } catch {
     return false
   }
 }
 
 function getLegacyHosts(env) {
   const raw = String(env.LD_STORE_LEGACY_HOSTS || '').trim()
-  const hosts = raw
-    ? raw.split(',').map((item) => item.trim().toLowerCase()).filter(Boolean)
-    : DEFAULT_LEGACY_HOSTS
+  const hosts = raw ? raw.split(',').map(item => item.trim().toLowerCase()).filter(Boolean) : DEFAULT_LEGACY_HOSTS
   return new Set(hosts)
 }
 
 function maybeRedirectLegacyHost(requestUrl, env) {
   const hostname = requestUrl.hostname.toLowerCase()
-  const legacyHosts = getLegacyHosts(env)
-  if (!legacyHosts.has(hostname)) {
-    return null
-  }
-
-  const siteUrl = String(env.LD_STORE_SITE_URL || DEFAULT_SITE_URL).trim() || DEFAULT_SITE_URL
-  let destination
-  try {
-    destination = new URL(siteUrl)
-  } catch (_) {
-    destination = new URL(DEFAULT_SITE_URL)
-  }
-
-  // Prevent redirect loops if env hosts are misconfigured.
-  if (hostname === destination.hostname.toLowerCase()) {
-    return null
-  }
-
+  if (!getLegacyHosts(env).has(hostname)) return null
+  const destination = getSiteUrl(env)
+  if (hostname === destination.hostname.toLowerCase()) return null
   const targetUrl = new URL(requestUrl.pathname + requestUrl.search, destination)
   return new Response(null, {
     status: 301,
-    headers: {
-      location: targetUrl.toString(),
-      'cache-control': 'public, max-age=3600'
-    }
+    headers: { location: targetUrl.toString(), 'cache-control': 'public, max-age=3600' }
   })
 }
 
-function jsonResponse(body, status = 200, cacheControl = 'public, max-age=300', isHead = false) {
+function jsonResponse(body, status = 200, cacheControl = OEMBED_CACHE_CONTROL, isHead = false) {
   const text = JSON.stringify(body)
   return new Response(isHead ? null : text, {
     status,
     headers: {
       'content-type': 'application/json; charset=utf-8',
-      'cache-control': cacheControl
+      'cache-control': cacheControl,
+      'x-content-type-options': 'nosniff',
+      'x-robots-tag': 'noindex, nofollow, noarchive'
     }
   })
 }
 
-async function handleOembed(request, env) {
-  const url = new URL(request.url)
-  const targetRaw = url.searchParams.get('url')
-  const siteUrl = String(env.LD_STORE_SITE_URL || DEFAULT_SITE_URL).trim() || DEFAULT_SITE_URL
-
+export async function handleOembed(request, env = {}) {
+  const requestUrl = new URL(request.url)
+  const siteUrl = getSiteUrl(env)
+  const targetRaw = requestUrl.searchParams.get('url')
   let target = new URL(siteUrl)
   if (targetRaw) {
     try {
-      const parsed = new URL(targetRaw)
-      if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
-        target = parsed
-      }
-    } catch (_) {}
+      target = new URL(targetRaw)
+    } catch {
+      return jsonResponse({ error: 'invalid_url' }, 400, 'no-store', request.method === 'HEAD')
+    }
+    if (target.origin !== siteUrl.origin) {
+      return jsonResponse({ error: 'invalid_origin' }, 400, 'no-store', request.method === 'HEAD')
+    }
   }
 
   const metadata = await resolvePageMetadata(target, env)
-  const oembed = {
+  return jsonResponse({
     version: '1.0',
     type: 'link',
     title: metadata.title,
     author_name: 'LD士多',
-    author_url: siteUrl,
+    author_url: siteUrl.toString(),
     provider_name: 'LD士多',
-    provider_url: siteUrl,
+    provider_url: siteUrl.toString(),
     thumbnail_url: metadata.image,
-    thumbnail_width: 1200,
-    thumbnail_height: 630
-  }
-
-  return jsonResponse(
-    oembed,
-    200,
-    metadata.cacheControl || 'public, max-age=300',
-    request.method === 'HEAD'
-  )
+    thumbnail_width: metadata.imageWidth,
+    thumbnail_height: metadata.imageHeight
+  }, 200, OEMBED_CACHE_CONTROL, request.method === 'HEAD')
 }
 
 async function handleHtmlRequest(request, env) {
   const requestUrl = new URL(request.url)
   const metadata = await resolvePageMetadata(requestUrl, env)
-
   let assetResponse = await env.ASSETS.fetch(request)
 
-  // Some Pages setups may return a self-redirect (for example "/" -> "/").
-  // Do not pass that redirect through, otherwise the browser loops forever.
-  if (isRedirectStatus(assetResponse.status)) {
-    const location = assetResponse.headers.get('location')
-    if (isSameDestination(location, requestUrl)) {
-      const fallbackUrl = new URL('/', requestUrl)
-      assetResponse = await env.ASSETS.fetch(new Request(fallbackUrl.toString(), request))
-    }
+  if (isRedirectStatus(assetResponse.status) && isSameDestination(assetResponse.headers.get('location'), requestUrl)) {
+    assetResponse = await env.ASSETS.fetch(new Request(new URL('/', requestUrl).toString(), request))
   }
-
-  if (!assetResponse.ok) {
-    return assetResponse
-  }
-
+  if (!assetResponse.ok) return assetResponse
   const contentType = (assetResponse.headers.get('content-type') || '').toLowerCase()
-  if (!contentType.includes('text/html')) {
-    return assetResponse
-  }
+  if (!contentType.includes('text/html')) return assetResponse
 
-  const html = await assetResponse.text()
-  const rewritten = injectMetadataIntoHtml(html, metadata, env)
-
+  const rewritten = injectMetadataIntoHtml(await assetResponse.text(), metadata, env)
   const headers = new Headers(assetResponse.headers)
   headers.set('content-type', 'text/html; charset=utf-8')
-  headers.set('cache-control', metadata.cacheControl || 'public, max-age=300')
-
-  if (request.method === 'HEAD') {
-    return new Response(null, {
-      status: 200,
-      headers
-    })
-  }
-
-  return new Response(rewritten, {
-    status: 200,
-    headers
-  })
+  headers.set('cache-control', HTML_CACHE_CONTROL)
+  headers.set('x-robots-tag', 'noindex, nofollow, noarchive')
+  headers.delete('content-length')
+  const status = metadata.notFound ? 404 : 200
+  return new Response(request.method === 'HEAD' ? null : rewritten, { status, headers })
 }
 
 export default {
@@ -556,40 +444,23 @@ export default {
     const url = new URL(request.url)
     const method = request.method.toUpperCase()
     const legacyRedirect = maybeRedirectLegacyHost(url, env)
-
-    if (legacyRedirect) {
-      return legacyRedirect
-    }
-
-    if (method !== 'GET' && method !== 'HEAD') {
-      return env.ASSETS.fetch(request)
-    }
-
-    if (url.pathname === '/oembed.json') {
-      return handleOembed(request, env)
-    }
+    if (legacyRedirect) return legacyRedirect
+    if (method !== 'GET' && method !== 'HEAD') return env.ASSETS.fetch(request)
+    if (url.pathname === '/oembed.json') return handleOembed(request, env)
 
     if (shouldBypassHtmlRewrite(url.pathname)) {
       const assetResponse = await env.ASSETS.fetch(request)
-      // A hashed asset that resolved to the HTML fallback (e.g. a stale URL
-      // from an older deployment) must be served as a real 404: browsers
-      // refuse to apply an HTML response as a stylesheet and may cache the
-      // polluted response for a long time.
       if (assetResponse.status === 200) {
         const contentType = (assetResponse.headers.get('content-type') || '').toLowerCase()
         if (contentType.includes('text/html') && /\.[a-zA-Z0-9]+$/.test(url.pathname)) {
           return new Response(request.method === 'HEAD' ? null : 'Not Found', {
             status: 404,
-            headers: {
-              'content-type': 'text/plain; charset=utf-8',
-              'cache-control': 'no-store'
-            }
+            headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' }
           })
         }
       }
       return assetResponse
     }
-
     return handleHtmlRequest(request, env)
   }
 }

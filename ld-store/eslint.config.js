@@ -13,7 +13,7 @@ const toolFiles = [
 
 export default [
   {
-    ignores: ['dist/**', 'node_modules/**', '.wrangler/**', 'public/**']
+    ignores: ['dist/**', 'node_modules/**', '.wrangler/**']
   },
   {
     ...js.configs.recommended,
@@ -48,6 +48,15 @@ export default [
     files: toolFiles,
     languageOptions: {
       globals: {
+        ...globals.node
+      }
+    }
+  },
+  {
+    files: ['public/_worker.js', 'tests/worker-open-graph.test.js'],
+    languageOptions: {
+      globals: {
+        ...globals.browser,
         ...globals.node
       }
     }
