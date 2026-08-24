@@ -483,29 +483,34 @@ onMounted(loadRefund)
 </script>
 
 <style scoped>
-/* 主卡片 - 简洁清爽的设计，符合 LD 士多整体风格 */
+/* 主卡片 - 清晰的层次和对比度 */
 .refund-card {
-  margin-bottom: 16px;
-  padding: 20px;
-  border: 1px solid var(--border-light);
+  margin-bottom: 20px;
+  padding: 24px;
+  border: 1px solid var(--border-medium);
   border-radius: 12px;
-  background: var(--bg-primary);
+  background: var(--bg-card);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
 }
 
 .refund-card__header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 20px;
+  gap: 16px;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-light);
 }
 
-/* Eyebrow 标签 - 简洁的设计 */
+/* Eyebrow 标签 - 醒目的小标签 */
 .refund-card__eyebrow {
-  margin: 0 0 6px;
-  color: var(--text-tertiary);
-  font-size: 12px;
-  font-weight: 600;
+  margin: 0 0 8px;
+  color: var(--color-primary);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
 }
 
 .refund-card h3 {
@@ -514,40 +519,58 @@ onMounted(loadRefund)
   gap: 8px;
   margin: 0;
   color: var(--text-primary);
-  font-size: 16px;
-  font-weight: 600;
+  font-size: 18px;
+  font-weight: 700;
 }
 
-/* 状态徽章 - 简洁圆角 */
+/* 状态徽章 - 清晰的色彩和对比度 */
 .refund-status {
   display: inline-flex;
   align-items: center;
-  padding: 4px 10px;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
   white-space: nowrap;
+  border: 1px solid transparent;
 }
 
-.refund-status.is-warning { color: var(--warning-dark); background: var(--warning-light); }
-.refund-status.is-info { color: var(--info-dark); background: var(--info-light); }
-.refund-status.is-success { color: var(--success-dark); background: var(--success-light); }
-.refund-status.is-danger { color: var(--danger-dark); background: var(--danger-light); }
+.refund-status.is-warning {
+  color: #92400e;
+  background: var(--color-warning-bg);
+  border-color: var(--color-warning-light);
+}
+.refund-status.is-info {
+  color: #0c4a6e;
+  background: var(--color-info-bg);
+  border-color: #bae6fd;
+}
+.refund-status.is-success {
+  color: #14532d;
+  background: var(--color-success-bg);
+  border-color: var(--color-success-light);
+}
+.refund-status.is-danger {
+  color: #991b1b;
+  background: var(--color-danger-bg);
+  border-color: var(--color-danger-light);
+}
 
 .refund-loading {
-  min-height: 120px;
+  min-height: 140px;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
   color: var(--text-secondary);
+  font-size: 14px;
 }
 
 .refund-spinner {
-  width: 18px;
-  height: 18px;
-  border: 2px solid var(--border-light);
-  border-top-color: var(--primary);
+  width: 20px;
+  height: 20px;
+  border: 3px solid var(--border-light);
+  border-top-color: var(--color-primary);
   border-radius: 50%;
   animation: refund-spin 800ms linear infinite;
 }
@@ -556,32 +579,42 @@ onMounted(loadRefund)
   display: grid;
   grid-template-columns: auto 1fr auto;
   align-items: center;
-  gap: 12px;
-  padding: 14px;
-  border-radius: 14px;
-  color: #dc2626;
-  background: rgba(239, 68, 68, 0.08);
-  border: 1px solid rgba(239, 68, 68, 0.2);
+  gap: 14px;
+  padding: 16px;
+  border-radius: 12px;
+  color: #991b1b;
+  background: var(--color-danger-bg);
+  border: 2px solid var(--color-danger-light);
 }
 
-.refund-error-state p { margin: 4px 0 0; font-size: 13px; }
+.refund-error-state p {
+  margin: 4px 0 0;
+  font-size: 14px;
+  color: #7f1d1d;
+  line-height: 1.5;
+}
 .refund-error-state button {
-  min-height: 44px;
-  padding: 0 16px;
-  border: 1px solid currentColor;
+  min-height: 40px;
+  padding: 0 18px;
+  border: 2px solid #991b1b;
   border-radius: 8px;
-  color: inherit;
-  font-weight: 600;
+  color: #991b1b;
+  background: white;
+  font-weight: 700;
+  font-size: 14px;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: all 0.2s;
 }
-.refund-error-state button:hover { background: var(--danger-light); }
+.refund-error-state button:hover {
+  background: #991b1b;
+  color: white;
+}
 
-/* 进度条 - 简洁的设计 */
+/* 进度条 - 清晰的视觉引导 */
 .refund-progress {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  margin: 0 0 20px;
+  margin: 0 0 24px;
   padding: 0;
   list-style: none;
 }
@@ -590,9 +623,9 @@ onMounted(loadRefund)
   position: relative;
   display: grid;
   justify-items: center;
-  gap: 6px;
+  gap: 8px;
   color: var(--text-tertiary);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   text-align: center;
 }
@@ -601,110 +634,144 @@ onMounted(loadRefund)
   content: '';
   position: absolute;
   z-index: 0;
-  top: 14px;
+  top: 16px;
   right: 50%;
   width: 100%;
   height: 2px;
-  background: var(--border-light);
+  background: var(--border-medium);
 }
 
 .refund-progress li:first-child::before { display: none; }
-.refund-progress li.active::before { background: var(--primary); }
+.refund-progress li.active::before {
+  background: var(--color-primary);
+}
 
 .refund-progress__dot {
   position: relative;
   z-index: 1;
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   display: grid;
   place-items: center;
-  border: 2px solid var(--border-light);
+  border: 2px solid var(--border-medium);
   border-radius: 50%;
-  background: var(--bg-primary);
-  font-size: 12px;
-  font-weight: 600;
+  background: white;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-tertiary);
 }
 
-.refund-progress li.active { color: var(--text-primary); }
+.refund-progress li.active {
+  color: var(--text-primary);
+}
 .refund-progress li.active .refund-progress__dot {
-  border-color: var(--primary);
-  color: #FFFFFF;
-  background: var(--primary);
+  border-color: var(--color-primary);
+  color: white;
+  background: var(--color-primary);
+  box-shadow: 0 0 0 4px rgba(181, 168, 152, 0.15);
 }
 
 .refund-progress li.current .refund-progress__dot {
-  box-shadow: 0 0 0 3px var(--primary-light);
+  box-shadow: 0 0 0 4px rgba(181, 168, 152, 0.2);
+  animation: refund-pulse 2s ease-in-out infinite;
 }
 
-/* 引导提示 - 简洁的信息提示 */
+@keyframes refund-pulse {
+  0%, 100% { box-shadow: 0 0 0 4px rgba(181, 168, 152, 0.2); }
+  50% { box-shadow: 0 0 0 8px rgba(181, 168, 152, 0.1); }
+}
+
+/* 引导提示 - 清晰的信息框 */
 .refund-guidance {
   display: flex;
-  gap: 12px;
-  padding: 14px;
-  border: 1px solid var(--info-border);
-  border-radius: 10px;
-  background: var(--info-light);
-  color: var(--info-dark);
+  gap: 14px;
+  padding: 16px;
+  border: 2px solid #bae6fd;
+  border-radius: 12px;
+  background: var(--color-info-bg);
+  color: #0c4a6e;
 }
 
-.refund-guidance svg { flex: 0 0 auto; }
-.refund-guidance strong { color: var(--text-primary); }
-.refund-guidance p { margin: 4px 0 0; color: var(--text-secondary); font-size: 13px; line-height: 1.6; }
+.refund-guidance svg {
+  flex: 0 0 auto;
+  color: #0369a1;
+}
+.refund-guidance strong {
+  display: block;
+  margin-bottom: 4px;
+  color: #0c4a6e;
+  font-size: 14px;
+  font-weight: 700;
+}
+.refund-guidance p {
+  margin: 0;
+  color: #075985;
+  font-size: 13px;
+  line-height: 1.6;
+}
 
-.refund-actions { display: flex; flex-wrap: wrap; gap: 10px; }
-.refund-actions--intro { justify-content: flex-end; margin-top: 14px; }
+.refund-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+.refund-actions--intro { justify-content: flex-end; margin-top: 16px; }
 
-/* 按钮 - 简洁的圆角设计 */
+/* 按钮 - 清晰的层次和状态 */
 .refund-btn {
-  min-height: 40px;
+  min-height: 44px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 0 16px;
-  border: 1px solid transparent;
-  border-radius: 8px;
+  gap: 8px;
+  padding: 0 20px;
+  border: 2px solid transparent;
+  border-radius: 10px;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
   text-decoration: none;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .refund-btn--primary {
-  color: #FFFFFF;
-  background: var(--primary);
+  color: white;
+  background: var(--color-primary);
+  border-color: var(--color-primary);
 }
 .refund-btn--primary:hover:not(:disabled) {
-  background: var(--primary-hover);
+  background: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(181, 168, 152, 0.2);
 }
 
 .refund-btn--secondary {
   color: var(--text-primary);
-  border-color: var(--border-light);
-  background: var(--bg-primary);
+  border-color: var(--border-heavy);
+  background: white;
 }
 .refund-btn--secondary:hover:not(:disabled) {
-  border-color: var(--primary);
-  background: var(--bg-secondary);
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
 }
 
 .refund-btn--danger {
-  color: #FFFFFF;
-  background: var(--danger);
+  color: white;
+  background: var(--color-danger);
+  border-color: var(--color-danger);
 }
 .refund-btn--danger:hover:not(:disabled) {
-  background: var(--danger-hover);
+  background: #b91c1c;
+  border-color: #b91c1c;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(220, 38, 38, 0.3);
 }
 
 .refund-btn--outline-danger {
-  color: var(--danger);
-  border-color: var(--danger-border);
-  background: var(--bg-primary);
+  color: var(--color-danger);
+  border-color: var(--color-danger);
+  background: white;
 }
 .refund-btn--outline-danger:hover:not(:disabled) {
-  border-color: var(--danger);
-  background: var(--danger-light);
+  border-color: #b91c1c;
+  background: var(--color-danger-bg);
 }
 .refund-btn:disabled {
   cursor: not-allowed;
@@ -717,7 +784,7 @@ onMounted(loadRefund)
 .refund-field select:focus-visible,
 .refund-field textarea:focus-visible,
 .refund-checkbox:focus-within {
-  outline: 2px solid var(--primary);
+  outline: 2px solid var(--color-primary);
   outline-offset: 2px;
 }
 
@@ -731,71 +798,80 @@ onMounted(loadRefund)
   line-height: 1.5;
 }
 
-/* 表单区域 - 简洁的分隔 */
+/* 表单区域 - 清晰的分隔 */
 .refund-form {
   display: grid;
-  gap: 16px;
-  margin-top: 18px;
-  padding-top: 18px;
-  border-top: 1px solid var(--border-light);
+  gap: 20px;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 2px solid var(--border-light);
 }
 
 .refund-form__errors {
-  padding: 12px 14px;
-  border: 1px solid var(--danger-border);
-  border-radius: 8px;
-  color: var(--danger);
-  background: var(--danger-light);
+  padding: 14px 16px;
+  border: 2px solid var(--color-danger-light);
+  border-radius: 10px;
+  color: #991b1b;
+  background: var(--color-danger-bg);
+  font-size: 14px;
+  font-weight: 600;
 }
-.refund-form__errors ul { margin: 6px 0 0; padding-left: 18px; }
+.refund-form__errors ul { margin: 8px 0 0; padding-left: 20px; }
 .refund-form__errors a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
 
-/* 退款金额显示 - 简洁突出 */
+/* 退款金额显示 - 醒目突出 */
 .refund-amount {
   display: grid;
   grid-template-columns: 1fr auto;
-  gap: 6px 12px;
-  padding: 14px;
-  border-radius: 8px;
+  gap: 8px 16px;
+  padding: 18px;
+  border-radius: 12px;
   background: var(--bg-secondary);
-  border: 1px solid var(--border-light);
+  border: 2px solid var(--border-medium);
 }
-.refund-amount span { color: var(--text-secondary); font-size: 13px; font-weight: 500; }
-.refund-amount strong { color: var(--primary); font-size: 18px; font-weight: 700; }
-.refund-amount small { grid-column: 1 / -1; color: var(--text-tertiary); font-size: 12px; line-height: 1.5; margin-top: 2px; }
+.refund-amount span { color: var(--text-secondary); font-size: 14px; font-weight: 600; }
+.refund-amount strong { color: var(--color-primary); font-size: 26px; font-weight: 800; }
+.refund-amount small { grid-column: 1 / -1; color: var(--text-tertiary); font-size: 13px; line-height: 1.5; margin-top: 4px; }
 
-.refund-field { display: grid; gap: 6px; }
-.refund-field label { color: var(--text-primary); font-size: 14px; font-weight: 600; }
+.refund-field { display: grid; gap: 8px; }
+.refund-field label { color: var(--text-primary); font-size: 14px; font-weight: 700; }
 .refund-field__label-row { display: flex; align-items: center; justify-content: space-between; }
-.refund-field__label-row span { color: var(--text-tertiary); font-size: 12px; font-weight: 500; }
+.refund-field__label-row span { color: var(--text-tertiary); font-size: 12px; font-weight: 600; }
 
 .refund-field select,
 .refund-field textarea {
   width: 100%;
-  min-height: 42px;
+  min-height: 44px;
   box-sizing: border-box;
-  padding: 10px 12px;
-  border: 1px solid var(--border-light);
-  border-radius: 8px;
+  padding: 12px 14px;
+  border: 2px solid var(--border-medium);
+  border-radius: 10px;
   color: var(--text-primary);
-  background: var(--bg-primary);
+  background: white;
   font: inherit;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  font-size: 14px;
+  transition: all 0.2s;
 }
 .refund-field select:focus,
 .refund-field textarea:focus {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px var(--primary-light);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(181, 168, 152, 0.15);
   outline: none;
 }
-.refund-field textarea { min-height: 110px; resize: vertical; line-height: 1.6; }
+.refund-field textarea { min-height: 120px; resize: vertical; line-height: 1.6; }
 .refund-field select[aria-invalid='true'],
-.refund-field textarea[aria-invalid='true'] { border-color: var(--danger); }
+.refund-field textarea[aria-invalid='true'] {
+  border-color: var(--color-danger);
+}
+.refund-field select[aria-invalid='true']:focus,
+.refund-field textarea[aria-invalid='true']:focus {
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15);
+}
 
 .refund-field__help,
-.refund-field__error { margin: 0; font-size: 12px; line-height: 1.5; }
+.refund-field__error { margin: 0; font-size: 13px; line-height: 1.5; }
 .refund-field__help { color: var(--text-tertiary); }
-.refund-field__error { color: var(--danger); font-weight: 500; }
+.refund-field__error { color: var(--color-danger); font-weight: 700; }
 
 .refund-checkbox {
   display: flex;
@@ -806,142 +882,148 @@ onMounted(loadRefund)
   font-size: 14px;
   cursor: pointer;
 }
-.refund-checkbox input { width: 18px; height: 18px; accent-color: var(--primary); cursor: pointer; }
+.refund-checkbox input { width: 18px; height: 18px; accent-color: var(--color-primary); cursor: pointer; }
 
-.refund-form__actions { display: flex; justify-content: flex-end; gap: 10px; }
+.refund-form__actions { display: flex; justify-content: flex-end; gap: 12px; }
 
-/* 状态面板 - 简洁配色 */
-.refund-status-panel { display: flex; gap: 12px; padding: 14px; border-radius: 8px; }
+/* 状态面板 - 清晰配色 */
+.refund-status-panel { display: flex; gap: 14px; padding: 16px; border-radius: 12px; border: 2px solid transparent; }
 .refund-status-panel svg { flex: 0 0 auto; }
-.refund-status-panel p { margin: 4px 0 0; color: var(--text-secondary); font-size: 13px; line-height: 1.6; }
-.refund-status-panel.is-warning { color: var(--warning-dark); background: var(--warning-light); border: 1px solid var(--warning-border); }
-.refund-status-panel.is-info { color: var(--info-dark); background: var(--info-light); border: 1px solid var(--info-border); }
-.refund-status-panel.is-success { color: var(--success-dark); background: var(--success-light); border: 1px solid var(--success-border); }
-.refund-status-panel.is-danger { color: var(--danger-dark); background: var(--danger-light); border: 1px solid var(--danger-border); }
+.refund-status-panel p { margin: 4px 0 0; font-size: 14px; line-height: 1.6; }
+.refund-status-panel.is-warning { color: #92400e; background: var(--color-warning-bg); border-color: var(--color-warning-light); }
+.refund-status-panel.is-info { color: #0c4a6e; background: var(--color-info-bg); border-color: #bae6fd; }
+.refund-status-panel.is-success { color: #14532d; background: var(--color-success-bg); border-color: var(--color-success-light); }
+.refund-status-panel.is-danger { color: #991b1b; background: var(--color-danger-bg); border-color: var(--color-danger-light); }
 
-/* 详情列表 - 改进可读性 */
-.refund-detail-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 16px; margin: 16px 0 0; }
-.refund-detail-list > div { min-width: 0; display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border-light); }
+/* 详情列表 - 清晰的信息展示 */
+.refund-detail-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 20px; margin: 20px 0 0; }
+.refund-detail-list > div { min-width: 0; display: flex; justify-content: space-between; gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--border-light); }
 .refund-detail-list .wide { grid-column: 1 / -1; display: grid; }
-.refund-detail-list dt { color: var(--text-secondary); font-size: 13px; font-weight: 500; }
-.refund-detail-list dd { margin: 0; color: var(--text-primary); font-size: 14px; text-align: right; overflow-wrap: anywhere; white-space: pre-wrap; }
-.refund-detail-list .wide dd { margin-top: 4px; text-align: left; line-height: 1.6; }
+.refund-detail-list dt { color: var(--text-secondary); font-size: 13px; font-weight: 700; }
+.refund-detail-list dd { margin: 0; color: var(--text-primary); font-size: 14px; font-weight: 500; text-align: right; overflow-wrap: anywhere; white-space: pre-wrap; }
+.refund-detail-list .wide dd { margin-top: 6px; text-align: left; line-height: 1.6; }
 
 .seller-response {
-  padding: 12px !important;
-  border: 1px solid var(--border-light) !important;
-  border-radius: 8px;
+  padding: 14px !important;
+  border: 2px solid var(--border-medium) !important;
+  border-radius: 10px;
   background: var(--bg-secondary);
 }
 
-.refund-seller-console { margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--border-light); }
+.refund-seller-console { margin-top: 20px; padding-top: 20px; border-top: 2px solid var(--border-light); }
 .refund-seller-actions { justify-content: flex-end; }
 
 .refund-seller-error {
   display: flex;
-  gap: 12px;
-  margin-bottom: 14px;
-  padding: 14px;
-  border: 1px solid var(--danger-border);
-  border-radius: 8px;
-  color: var(--danger);
-  background: var(--danger-light);
+  gap: 14px;
+  margin-bottom: 16px;
+  padding: 16px;
+  border: 2px solid var(--color-danger-light);
+  border-radius: 12px;
+  color: #991b1b;
+  background: var(--color-danger-bg);
 }
 .refund-seller-error svg { flex: 0 0 auto; }
-.refund-seller-error p { margin: 4px 0 0; color: var(--text-secondary); font-size: 13px; line-height: 1.6; }
+.refund-seller-error p { margin: 4px 0 0; color: #7f1d1d; font-size: 14px; line-height: 1.6; }
 
 .refund-seller-form {
   display: grid;
-  gap: 10px;
-  margin-top: 12px;
-  padding: 14px;
-  border: 1px solid var(--border-light);
-  border-radius: 8px;
+  gap: 12px;
+  margin-top: 14px;
+  padding: 16px;
+  border: 2px solid var(--border-medium);
+  border-radius: 12px;
   background: var(--bg-secondary);
 }
-.refund-seller-form label { color: var(--text-primary); font-size: 14px; font-weight: 600; }
+.refund-seller-form label { color: var(--text-primary); font-size: 14px; font-weight: 700; }
 .refund-seller-form textarea {
   width: 100%;
-  min-height: 100px;
+  min-height: 110px;
   box-sizing: border-box;
-  padding: 10px 12px;
-  border: 1px solid var(--border-light);
-  border-radius: 8px;
+  padding: 12px 14px;
+  border: 2px solid var(--border-medium);
+  border-radius: 10px;
   color: var(--text-primary);
-  background: var(--bg-primary);
+  background: white;
   font: inherit;
+  font-size: 14px;
   line-height: 1.6;
   resize: vertical;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition: all 0.2s;
 }
 .refund-seller-form textarea:focus {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px var(--primary-light);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(181, 168, 152, 0.15);
   outline: none;
 }
 
-/* 争议引导 - 简洁明确 */
+/* 争议引导 - 清晰醒目 */
 .refund-dispute-guidance {
-  margin-top: 16px;
-  padding: 14px;
-  border: 1px solid var(--warning-border);
-  border-radius: 8px;
-  background: var(--warning-light);
-  color: var(--warning-dark);
+  margin-top: 18px;
+  padding: 16px;
+  border: 2px solid var(--color-warning-light);
+  border-radius: 12px;
+  background: var(--color-warning-bg);
+  color: #92400e;
 }
-.refund-dispute-guidance strong { display: block; margin-bottom: 6px; color: var(--text-primary); font-size: 14px; }
-.refund-dispute-guidance p { margin: 0 0 10px; color: var(--text-secondary); font-size: 13px; line-height: 1.6; }
-.refund-dispute-guidance ol { margin: 0; padding-left: 20px; color: var(--text-secondary); font-size: 13px; line-height: 1.7; }
+.refund-dispute-guidance strong { display: block; margin-bottom: 8px; color: #92400e; font-size: 15px; font-weight: 700; }
+.refund-dispute-guidance p { margin: 0 0 12px; color: #78350f; font-size: 14px; line-height: 1.6; }
+.refund-dispute-guidance ol { margin: 0; padding-left: 22px; color: #78350f; font-size: 14px; line-height: 1.8; }
 .refund-dispute-guidance a {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  margin-top: 8px;
-  color: var(--primary);
-  font-weight: 600;
+  margin-top: 10px;
+  color: var(--color-primary);
+  font-weight: 700;
   text-decoration: none;
 }
 .refund-dispute-guidance a:hover { text-decoration: underline; }
 
-/* 时间轴 - 简洁的记录 */
+/* 时间轴 - 清晰的事件流 */
 .refund-timeline {
-  margin: 18px 0 0;
+  margin: 20px 0 0;
   padding: 0;
   list-style: none;
 }
 .refund-timeline li {
   position: relative;
-  padding: 0 0 14px 24px;
-  border-left: 2px solid var(--border-light);
+  padding: 0 0 16px 28px;
+  border-left: 2px solid var(--border-medium);
 }
 .refund-timeline li:last-child { border-left-color: transparent; padding-bottom: 0; }
 .refund-timeline li::before {
   content: '';
   position: absolute;
-  left: -5px;
-  top: 4px;
-  width: 8px;
-  height: 8px;
+  left: -6px;
+  top: 5px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
-  background: var(--bg-primary);
-  border: 2px solid var(--primary);
+  background: var(--color-primary);
+  box-shadow: 0 0 0 3px white, 0 0 0 5px var(--border-medium);
 }
 .refund-timeline strong {
   display: block;
-  margin-bottom: 3px;
+  margin-bottom: 4px;
   color: var(--text-primary);
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 700;
 }
 .refund-timeline time {
   color: var(--text-tertiary);
   font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
 }
 
 /* 响应式 */
 @media (max-width: 767px) {
-  .refund-card { padding: 16px; }
+  .refund-card { padding: 18px; }
   .refund-card__header { flex-direction: column; align-items: flex-start; }
+  .refund-progress { grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  .refund-progress li:nth-child(2)::before,
+  .refund-progress li:nth-child(4)::before { display: none; }
   .refund-detail-list { grid-template-columns: 1fr; gap: 0; }
   .refund-detail-list > div { flex-direction: column; align-items: flex-start; }
   .refund-detail-list dd { text-align: left; }
@@ -950,10 +1032,18 @@ onMounted(loadRefund)
 }
 
 /* 深色模式适配 */
+html.dark .refund-card {
+  background: #1a1a1a;
+  border-color: #333;
+}
 html.dark .refund-error-state {
   color: #fca5a5;
   background: rgba(220, 38, 38, 0.15);
   border-color: rgba(220, 38, 38, 0.3);
+}
+html.dark .refund-guidance {
+  background: rgba(14, 165, 233, 0.1);
+  border-color: rgba(14, 165, 233, 0.3);
 }
 
 /* 动画 */
@@ -966,8 +1056,18 @@ html.dark .refund-error-state {
   .refund-btn,
   .refund-field select,
   .refund-field textarea,
-  .refund-seller-form textarea {
+  .refund-seller-form textarea,
+  .refund-spinner,
+  .refund-progress li.current .refund-progress__dot {
     transition: none;
+    animation: none;
+  }
+  .refund-btn--primary:hover,
+  .refund-btn--danger:hover {
+    transform: none;
+  }
+}
+</style>
   }
   .refund-loading::after { animation: none; }
 }
