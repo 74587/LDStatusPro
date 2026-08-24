@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { api } from '../src/utils/api'
 import {
@@ -8,7 +8,8 @@ import {
 
 vi.mock('../src/utils/api', () => ({
   api: {
-    get: vi.fn()
+    get: vi.fn(),
+    openEventStream: vi.fn()
   }
 }))
 
@@ -16,6 +17,11 @@ describe('通知汇总状态', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+    vi.unstubAllGlobals()
   })
 
   it('将接口计数规范为非负整数', () => {
@@ -30,7 +36,10 @@ describe('通知汇总状态', () => {
       systemUnread: 2,
       buyChatUnread: 0,
       sellerPendingDeliveryCount: 0,
-      sellerRefundPendingCount: 3
+      sellerRefundPendingCount: 3,
+      sessionsWithUnread: 0,
+      totalSessions: 0,
+      generatedAt: 0
     })
   })
 
@@ -90,5 +99,57 @@ describe('通知汇总状态', () => {
     expect(store.totalUnread).toBe(0)
     expect(store.sellerPendingDeliveryCount).toBe(0)
     expect(store.sellerRefundPendingCount).toBe(0)
+    expect(store.lastSuccessfulSyncAt).toBe(0)
+  })
+
+  it('已读操作立即更新唯一汇总状态且保持总数口径', () => {
+    const store = useNotificationSummaryStore()
+    store.setSystemUnread(3)
+    store.setBuyChatSummary({ totalUnread: 4, sessionsWithUnread: 2, totalSessions: 5 })
+
+    store.markSystemRead(1)
+    expect(store.systemUnread).toBe(2)
+    expect(store.totalUnread).toBe(6)
+
+    store.markBuyChatRead(3)
+    expect(store.buyChatUnread).toBe(1)
+    expect(store.sessionsWithUnread).toBe(1)
+    expect(store.totalUnread).toBe(3)
+  })
+
+  it('实时连接失败时启用指数退避重连', async () => {
+    vi.useFakeTimers()
+    const listeners = new Map()
+    vi.stubGlobal('window', {
+      setTimeout: (...args) => globalThis.setTimeout(...args),
+      clearTimeout: timer => globalThis.clearTimeout(timer),
+      setInterval: (...args) => globalThis.setInterval(...args),
+      clearInterval: timer => globalThis.clearInterval(timer),
+      addEventListener: (name, handler) => listeners.set(name, handler),
+      removeEventListener: name => listeners.delete(name)
+    })
+    vi.stubGlobal('document', {
+      visibilityState: 'visible',
+      addEventListener: (name, handler) => listeners.set(name, handler),
+      removeEventListener: name => listeners.delete(name)
+    })
+    vi.stubGlobal('navigator', { onLine: true })
+    api.get.mockResolvedValue({ success: true, data: {} })
+    api.openEventStream.mockResolvedValue({ success: false, status: 0 })
+
+    const store = useNotificationSummaryStore()
+    store.startRealtime()
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(api.openEventStream).toHaveBeenCalledTimes(1)
+    expect(store.connectionState).toBe('retrying')
+
+    await vi.advanceTimersByTimeAsync(999)
+    expect(api.openEventStream).toHaveBeenCalledTimes(1)
+    await vi.advanceTimersByTimeAsync(1)
+    expect(api.openEventStream).toHaveBeenCalledTimes(2)
+
+    store.stopRealtime()
+    expect(store.connectionState).toBe('idle')
   })
 })

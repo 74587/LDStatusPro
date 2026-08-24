@@ -233,6 +233,7 @@
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
+import { useNotificationSummaryStore } from '@/stores/notificationSummary'
 import { api } from '@/utils/api'
 import { useToast } from '@/composables/useToast'
 import { useDialog } from '@/composables/useDialog'
@@ -243,6 +244,7 @@ import { preparePaymentPopup, openPaymentPopup, watchPaymentPopup, cleanupPrepar
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
+const notificationSummaryStore = useNotificationSummaryStore()
 const toast = useToast()
 const dialog = useDialog()
 
@@ -266,10 +268,13 @@ const lastMessageSyncToastAt = ref(0)
 const hasOlderMessages = ref(false)
 const chatMessageListRef = ref(null)
 
-let pollTimer = null
+let chatFallbackTimer = null
+let unsubscribeRealtime = null
 let messageFetchVersion = 0
+let messageReloadPending = false
 const MESSAGE_SYNC_TOAST_INTERVAL = 15000
 const MESSAGE_FETCH_LIMIT = 50
+const CHAT_FALLBACK_INTERVAL = 15000
 
 const isLoggedIn = computed(() => userStore.isLoggedIn)
 const requestId = computed(() => Number(route.params.id || 0))
@@ -494,7 +499,10 @@ async function loadMessages(options = {}) {
   const reset = !!normalizedOptions.reset
   const loadBefore = !!normalizedOptions.before
   if (!activeSessionId.value) return
-  if ((loadingMessages.value || loadingOlderMessages.value) && !reset) return
+  if ((loadingMessages.value || loadingOlderMessages.value) && !reset) {
+    if (!loadBefore) messageReloadPending = true
+    return
+  }
 
   const targetSessionId = activeSessionId.value
   const fetchVersion = ++messageFetchVersion
@@ -544,8 +552,15 @@ async function loadMessages(options = {}) {
     }
 
     const currentSession = sessions.value.find((item) => item.id === targetSessionId)
-    if (!loadBefore && currentSession && Number(currentSession.unreadCount || 0) > 0) {
+    const unreadBefore = Number(currentSession?.unreadCount || 0)
+    if (!loadBefore && currentSession && unreadBefore > 0) {
       currentSession.unreadCount = 0
+      notificationSummaryStore.markBuyChatRead(unreadBefore)
+    }
+
+    const latestMessageId = Number(pagination.latestMessageId || messages.value[messages.value.length - 1]?.id || 0)
+    if (!loadBefore && latestMessageId > 0 && document.visibilityState === 'visible') {
+      void api.post(`/api/shop/buy-sessions/${targetSessionId}/read`, { lastReadMessageId: latestMessageId })
     }
 
     const sessionState = result.data?.session || null
@@ -589,6 +604,10 @@ async function loadMessages(options = {}) {
     if (loadBefore) {
       loadingOlderMessages.value = false
     }
+    if (!loadBefore && messageReloadPending) {
+      messageReloadPending = false
+      void loadMessages(false)
+    }
   }
 }
 
@@ -597,21 +616,20 @@ async function loadOlderMessages() {
   await loadMessages({ before: true })
 }
 
-function startPolling() {
-  stopPolling()
-  pollTimer = setInterval(() => {
-    if (document.visibilityState === 'hidden') {
-      return
-    }
-    loadMessages(false)
-  }, 4000)
+function syncChatFallback() {
+  if (chatFallbackTimer) clearInterval(chatFallbackTimer)
+  chatFallbackTimer = null
+  if (notificationSummaryStore.isRealtimeConnected) return
+  chatFallbackTimer = setInterval(() => {
+    if (document.visibilityState === 'visible') loadMessages(false)
+  }, CHAT_FALLBACK_INTERVAL)
 }
 
-function stopPolling() {
-  if (pollTimer) {
-    clearInterval(pollTimer)
-    pollTimer = null
-  }
+function handleRealtimeNotification(event) {
+  if (event.type !== 'buy-message.created') return
+  if (Number(event.data?.sessionId || 0) !== activeSessionId.value) return
+  if (document.visibilityState === 'hidden') return
+  loadMessages(false)
 }
 
 async function selectSession(sessionId) {
@@ -835,18 +853,27 @@ function handleVisibilityChange() {
 }
 
 onMounted(async () => {
+  unsubscribeRealtime = notificationSummaryStore.subscribeEvents(handleRealtimeNotification)
   await loadDetail(true)
   if (activeSessionId.value) {
     await loadMessages(true)
   }
-  startPolling()
+  syncChatFallback()
   document.addEventListener('visibilitychange', handleVisibilityChange)
 })
 
 onUnmounted(() => {
-  stopPolling()
+  if (chatFallbackTimer) clearInterval(chatFallbackTimer)
+  chatFallbackTimer = null
+  unsubscribeRealtime?.()
+  unsubscribeRealtime = null
   document.removeEventListener('visibilitychange', handleVisibilityChange)
 })
+
+watch(
+  () => notificationSummaryStore.isRealtimeConnected,
+  () => syncChatFallback()
+)
 
 watch(
   () => route.query.session,

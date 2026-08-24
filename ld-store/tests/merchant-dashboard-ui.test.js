@@ -26,7 +26,11 @@ import {
 
 describe('买卖功能分区', () => {
   it('右上角菜单严格按买家、系统与卖家入口分组', () => {
-    const groups = buildUserDropdownMenuGroups({ messageUnread: 3, sellerPendingDeliveryCount: 7 })
+    const groups = buildUserDropdownMenuGroups({
+      messageUnread: 3,
+      sellerPendingDeliveryCount: 7,
+      sellerRefundPendingCount: 2
+    })
     expect(groups.map(group => group.map(item => item.label))).toEqual([
       ['我的消息', '收藏与拉黑'],
       ['我的订单', '我的优惠券', '我的举报', '我的求购'],
@@ -34,7 +38,7 @@ describe('买卖功能分区', () => {
       ['卖家后台']
     ])
     expect(groups[1][0].badge).toBe('')
-    expect(groups[3][0].badge).toBe('7')
+    expect(groups[3][0].badge).toBe('9')
   })
 
   it('旧发布入口按类型分流且保留筛选参数', () => {

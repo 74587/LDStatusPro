@@ -9,9 +9,14 @@ import {
   TicketPercent
 } from '@lucide/vue'
 
-export function buildUserDropdownMenuGroups({ messageUnread = 0, sellerPendingDeliveryCount = 0 } = {}) {
+export function buildUserDropdownMenuGroups({
+  messageUnread = 0,
+  sellerPendingDeliveryCount = 0,
+  sellerRefundPendingCount = 0
+} = {}) {
   const unread = Number(messageUnread || 0)
   const pending = Number(sellerPendingDeliveryCount || 0)
+  const refunds = Number(sellerRefundPendingCount || 0)
   const badge = value => value > 99 ? '99+' : String(value || '')
   const item = (path, iconComponent, label, count = 0) => ({
     path,
@@ -33,6 +38,6 @@ export function buildUserDropdownMenuGroups({ messageUnread = 0, sellerPendingDe
       item('/user/buy-requests', ClipboardPenLine, '我的求购')
     ],
     [item('/ld-image', ImageIcon, '士多图床')],
-    [item('/seller', Store, '卖家后台', pending)]
+    [item('/seller', Store, '卖家后台', pending + refunds)]
   ]
 }

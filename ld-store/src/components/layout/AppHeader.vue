@@ -143,7 +143,13 @@
         <!-- 用户信息 -->
         <template v-if="isLoggedIn">
           <div class="user-dropdown" ref="dropdownRef">
-            <button class="user-info" :class="{ 'has-unread': headerAlertCount > 0 }" @click="toggleDropdown">
+            <button
+              class="user-info"
+              :class="{ 'has-unread': headerAlertCount > 0 }"
+              :aria-expanded="showDropdown"
+              :aria-label="userButtonLabel"
+              @click="toggleDropdown"
+            >
               <AvatarImage
                 :src="avatar"
                 :candidates="userStore.avatarCandidates"
@@ -162,6 +168,9 @@
                 {{ headerAlertDisplay }}
               </span>
             </button>
+            <span class="header-alert-status" role="status" aria-live="polite" aria-atomic="true">
+              {{ userAlertStatusText }}
+            </span>
             
             <!-- 下拉菜单 -->
             <div v-show="showDropdown" class="dropdown-menu">
@@ -222,10 +231,10 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { ChevronDown, LogOut } from '@lucide/vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { useNotificationSummaryStore } from '@/stores/notificationSummary'
 import ThemeToggle from '@/components/common/ThemeToggle.vue'
@@ -234,13 +243,13 @@ import { storage } from '@/utils/storage'
 import { DEFAULT_SEARCH_KEYWORDS, loadSearchHistory, saveSearchHistory, clearSearchHistory } from '@/utils/search'
 import { buildUserDropdownMenuGroups } from '@/config/userMenu'
 
-const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
 const notificationSummaryStore = useNotificationSummaryStore()
 const {
   totalUnread: messageUnread,
-  sellerPendingDeliveryCount
+  sellerPendingDeliveryCount,
+  sellerRefundPendingCount
 } = storeToRefs(notificationSummaryStore)
 
 // 响应式状态
@@ -267,30 +276,35 @@ const unreadDisplay = computed(() => (messageUnread.value > 99 ? '99+' : String(
 const pendingDeliveryDisplay = computed(() => (
   sellerPendingDeliveryCount.value > 99 ? '99+' : String(sellerPendingDeliveryCount.value || 0)
 ))
-const headerAlertCount = computed(() => messageUnread.value + sellerPendingDeliveryCount.value)
+const refundPendingDisplay = computed(() => (
+  sellerRefundPendingCount.value > 99 ? '99+' : String(sellerRefundPendingCount.value || 0)
+))
+const headerAlertCount = computed(() => (
+  messageUnread.value + sellerPendingDeliveryCount.value + sellerRefundPendingCount.value
+))
 const headerAlertDisplay = computed(() => (
   headerAlertCount.value > 99 ? '99+' : String(headerAlertCount.value || 0)
 ))
 const userAlertText = computed(() => {
-  if (messageUnread.value > 0 && sellerPendingDeliveryCount.value > 0) {
-    return `消息 ${unreadDisplay.value} · 待发 ${pendingDeliveryDisplay.value}`
-  }
-  if (sellerPendingDeliveryCount.value > 0) {
-    return `待发 ${pendingDeliveryDisplay.value}`
-  }
-  if (messageUnread.value > 0) {
-    return `未读 ${unreadDisplay.value}`
-  }
-  return ''
+  const parts = []
+  if (messageUnread.value > 0) parts.push(`消息 ${unreadDisplay.value}`)
+  if (sellerPendingDeliveryCount.value > 0) parts.push(`待发 ${pendingDeliveryDisplay.value}`)
+  if (sellerRefundPendingCount.value > 0) parts.push(`售后 ${refundPendingDisplay.value}`)
+  return parts.join(' · ')
 })
+const userAlertStatusText = computed(() => (
+  headerAlertCount.value > 0
+    ? `${userAlertText.value}，共 ${headerAlertCount.value} 项未读或待处理`
+    : '暂无未读消息或待处理事项'
+))
+const userButtonLabel = computed(() => (
+  userAlertText.value ? `${username.value}，${userAlertText.value}，打开用户菜单` : `${username.value}，打开用户菜单`
+))
 const dropdownMenuGroups = computed(() => buildUserDropdownMenuGroups({
   messageUnread: messageUnread.value,
-  sellerPendingDeliveryCount: sellerPendingDeliveryCount.value
+  sellerPendingDeliveryCount: sellerPendingDeliveryCount.value,
+  sellerRefundPendingCount: sellerRefundPendingCount.value
 }))
-const shouldPollMessageUnread = computed(() => (
-  isLoggedIn.value
-  && String(route.name || '') !== 'MyMessages'
-))
 const normalizedSearchQuery = computed(() => searchQuery.value.trim().toLowerCase())
 const filteredSearchHistory = computed(() => {
   if (!normalizedSearchQuery.value) {
@@ -310,8 +324,6 @@ const filteredRecommendedKeywords = computed(() => {
     && !historySet.has(item.toLowerCase())
   ))
 })
-
-let messageUnreadTimer = null
 
 // 下拉菜单控制
 function toggleDropdown() {
@@ -420,80 +432,17 @@ function checkMobile() {
   }
 }
 
-async function updateMessageUnread(force = false) {
-  if (!isLoggedIn.value) {
-    notificationSummaryStore.reset()
-    return
-  }
-  if (!force && document.visibilityState === 'hidden') {
-    return
-  }
-
-  await notificationSummaryStore.refresh({ force })
-}
-
-function startMessageUnreadPolling() {
-  stopMessageUnreadPolling()
-  if (!shouldPollMessageUnread.value) {
-    return
-  }
-  messageUnreadTimer = setInterval(() => {
-    updateMessageUnread()
-  }, 10000)
-}
-
-function stopMessageUnreadPolling() {
-  if (messageUnreadTimer) {
-    clearInterval(messageUnreadTimer)
-    messageUnreadTimer = null
-  }
-}
-
-function handleVisibilityChange() {
-  if (document.visibilityState === 'visible' && shouldPollMessageUnread.value) {
-    updateMessageUnread(true)
-  }
-}
-
 onMounted(() => {
   loadHeaderSearchHistory()
   checkMobile()
-  updateMessageUnread(true)
-  startMessageUnreadPolling()
   window.addEventListener('resize', checkMobile)
   document.addEventListener('click', handleClickOutside)
-  document.addEventListener('visibilitychange', handleVisibilityChange)
 })
 
 onUnmounted(() => {
   window.removeEventListener('resize', checkMobile)
   document.removeEventListener('click', handleClickOutside)
-  document.removeEventListener('visibilitychange', handleVisibilityChange)
-  stopMessageUnreadPolling()
 })
-
-watch(isLoggedIn, (loggedIn) => {
-  if (loggedIn) {
-    updateMessageUnread(true)
-    startMessageUnreadPolling()
-  } else {
-    stopMessageUnreadPolling()
-    notificationSummaryStore.reset()
-  }
-})
-
-watch(
-  () => route.name,
-  () => {
-    if (shouldPollMessageUnread.value) {
-      updateMessageUnread(true)
-      startMessageUnreadPolling()
-      return
-    }
-
-    stopMessageUnreadPolling()
-  }
-)
 </script>
 
 <style scoped>
@@ -772,6 +721,18 @@ watch(
 
 .user-info.has-unread {
   box-shadow: inset 0 0 0 1px rgba(220, 38, 38, 0.28);
+}
+
+.header-alert-status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .user-info:hover {

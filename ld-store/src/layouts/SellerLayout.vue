@@ -165,7 +165,6 @@ const drawerOpen = ref(false)
 const mobileMenuButton = ref(null)
 const sidebarCloseButton = ref(null)
 const sellerMain = ref(null)
-let unreadTimer = null
 
 const displayName = computed(() => userStore.user?.name || userStore.username || '卖家')
 const pageTitle = computed(() => String(route.meta.title || '卖家后台').split(' - ')[0])
@@ -236,15 +235,6 @@ function handleKeydown(event) {
   if (event.key === 'Escape') closeDrawer({ restoreFocus: true })
 }
 
-async function updatePendingDelivery(force = false) {
-  if (!force && document.visibilityState === 'hidden') return
-  await notificationSummaryStore.refresh({ force })
-}
-
-function handleVisibilityChange() {
-  if (document.visibilityState === 'visible') updatePendingDelivery(true)
-}
-
 function logout() {
   notificationSummaryStore.reset()
   userStore.logout()
@@ -262,16 +252,11 @@ watch(drawerOpen, value => {
 
 onMounted(() => {
   document.addEventListener('keydown', handleKeydown)
-  document.addEventListener('visibilitychange', handleVisibilityChange)
-  updatePendingDelivery(true)
-  unreadTimer = window.setInterval(updatePendingDelivery, 60_000)
 })
 
 onUnmounted(() => {
   document.removeEventListener('keydown', handleKeydown)
-  document.removeEventListener('visibilitychange', handleVisibilityChange)
   document.body.style.overflow = ''
-  if (unreadTimer) window.clearInterval(unreadTimer)
 })
 </script>
 

@@ -63,9 +63,10 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useUserStore } from '@/stores/user'
+import { useNotificationSummaryStore } from '@/stores/notificationSummary'
 import { useAnnouncement } from '@/composables/useAnnouncement'
 import AppHeader from '@/components/layout/AppHeader.vue'
 import AnnouncementBar from '@/components/common/AnnouncementBar.vue'
@@ -86,6 +87,7 @@ import {
 
 const route = useRoute()
 const userStore = useUserStore()
+const notificationSummaryStore = useNotificationSummaryStore()
 const { announcementLoaded, fetchAnnouncements } = useAnnouncement()
 const isMaintenanceRoute = computed(() => route.name === 'Maintenance')
 const isSellerRoute = computed(() => route.meta.layout === 'seller')
@@ -140,6 +142,22 @@ onMounted(() => {
   if (!isFullMaintenanceMode()) {
     void fetchAnnouncements().catch(() => [])
   }
+})
+
+watch(
+  [() => userStore.sessionReady, () => userStore.isLoggedIn],
+  ([sessionReady, loggedIn]) => {
+    if (sessionReady && loggedIn) {
+      notificationSummaryStore.startRealtime()
+    } else {
+      notificationSummaryStore.stopRealtime()
+    }
+  },
+  { immediate: true }
+)
+
+onUnmounted(() => {
+  notificationSummaryStore.stopRealtime({ clear: false })
 })
 </script>
 

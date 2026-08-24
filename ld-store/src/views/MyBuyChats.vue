@@ -225,8 +225,10 @@
 
 <script setup>
 import { onMounted, onUnmounted, reactive, ref, computed } from 'vue'
+import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
 import { api } from '@/utils/api'
+import { useNotificationSummaryStore } from '@/stores/notificationSummary'
 import { useToast } from '@/composables/useToast'
 import { formatMessageTime, formatPrice, formatRelativeTime } from '@/utils/format'
 import { fetchMyConversations, resolveConversationPath } from '@/utils/conversation'
@@ -237,6 +239,14 @@ import ExpandableText from '@/components/common/ExpandableText.vue'
 
 const router = useRouter()
 const toast = useToast()
+const notificationSummaryStore = useNotificationSummaryStore()
+const {
+  totalUnread,
+  systemUnread,
+  buyChatUnread,
+  sessionsWithUnread,
+  totalSessions
+} = storeToRefs(notificationSummaryStore)
 const MESSAGE_PAGE_SIZE = 20
 
 const activeTab = ref('system')
@@ -246,13 +256,13 @@ const messageTabs = computed(() => [
   { value: 'buy', label: `求购洽谈${summary.value.buyChatUnread > 0 ? ' ' + unreadDisplay(summary.value.buyChatUnread) : ''}`, icon: '💬' }
 ])
 
-const summary = ref({
-  totalUnread: 0,
-  systemUnread: 0,
-  buyChatUnread: 0,
-  sessionsWithUnread: 0,
-  totalSessions: 0
-})
+const summary = computed(() => ({
+  totalUnread: totalUnread.value,
+  systemUnread: systemUnread.value,
+  buyChatUnread: buyChatUnread.value,
+  sessionsWithUnread: sessionsWithUnread.value,
+  totalSessions: totalSessions.value
+}))
 
 // 系统消息
 const systemLoading = ref(false)
@@ -302,7 +312,8 @@ const sessionStatusOptions = [
   { value: 'cancelled', label: '已取消' }
 ]
 
-let summaryTimer = null
+let unsubscribeRealtime = null
+let realtimeRefreshTimer = null
 
 function unreadDisplay(value) {
   const count = Number(value || 0)
@@ -356,26 +367,6 @@ function isDealCompleted(session) {
   return Number(session?.contactUnlockedAt || 0) > 0
 }
 
-async function loadSummary() {
-  if (document.visibilityState === 'hidden') {
-    return
-  }
-
-  try {
-    const result = await api.get('/api/shop/messages/unread-summary')
-    if (!result.success) return
-    summary.value = {
-      totalUnread: Number(result.data?.totalUnread || 0),
-      systemUnread: Number(result.data?.systemUnread || 0),
-      buyChatUnread: Number(result.data?.buyChatUnread || 0),
-      sessionsWithUnread: Number(result.data?.sessionsWithUnread || 0),
-      totalSessions: Number(result.data?.totalSessions || 0)
-    }
-  } catch (_) {
-    // ignore polling errors
-  }
-}
-
 async function loadSystemMessages(reset = false) {
   if (reset) systemPagination.page = 1
 
@@ -401,12 +392,7 @@ async function loadSystemMessages(reset = false) {
     systemPagination.total = Number(pageData.total || 0)
     systemPagination.totalPages = Number(pageData.totalPages || 0)
 
-    const systemUnread = Number(result.data?.summary?.totalUnread || 0)
-    summary.value = {
-      ...summary.value,
-      systemUnread,
-      totalUnread: systemUnread + Number(summary.value.buyChatUnread || 0)
-    }
+    notificationSummaryStore.setSystemUnread(Number(result.data?.summary?.totalUnread || 0))
   } catch (error) {
     toast.error(error.message || '加载系统消息失败')
   } finally {
@@ -441,12 +427,7 @@ async function markSystemMessageRead(item) {
     item.isRead = true
     item.readAt = Date.now()
 
-    const systemUnread = Math.max(0, Number(summary.value.systemUnread || 0) - 1)
-    summary.value = {
-      ...summary.value,
-      systemUnread,
-      totalUnread: systemUnread + Number(summary.value.buyChatUnread || 0)
-    }
+    notificationSummaryStore.markSystemRead(1)
   } catch (error) {
     toast.error(error.message || '标记已读失败')
   } finally {
@@ -465,7 +446,8 @@ async function markAllSystemRead() {
       return
     }
 
-    await Promise.all([loadSummary(), loadSystemMessages()])
+    notificationSummaryStore.markAllSystemRead()
+    await loadSystemMessages()
     toast.success('已全部标记为已读')
   } catch (error) {
     toast.error(error.message || '全部标记已读失败')
@@ -509,14 +491,11 @@ async function loadSessions(reset = false) {
     buyPagination.total = Number(pageData.total || 0)
     buyPagination.totalPages = Number(pageData.totalPages || 0)
 
-    const buyChatUnread = Number(result.data?.summary?.totalUnread || 0)
-    summary.value = {
-      ...summary.value,
-      buyChatUnread,
+    notificationSummaryStore.setBuyChatSummary({
+      totalUnread: Number(result.data?.summary?.totalUnread || 0),
       sessionsWithUnread: Number(result.data?.summary?.sessionsWithUnread || 0),
-      totalSessions: Number(pageData.total || 0),
-      totalUnread: Number(summary.value.systemUnread || 0) + buyChatUnread
-    }
+      totalSessions: Number(pageData.total || 0)
+    })
   } catch (error) {
     toast.error(error.message || '加载会话失败')
   } finally {
@@ -557,36 +536,28 @@ async function switchTab(tab) {
   }
 }
 
-function startSummaryPolling() {
-  stopSummaryPolling()
-  summaryTimer = setInterval(() => {
-    loadSummary()
-  }, 10000)
-}
-
-function stopSummaryPolling() {
-  if (summaryTimer) {
-    clearInterval(summaryTimer)
-    summaryTimer = null
-  }
-}
-
-function handleVisibilityChange() {
-  if (document.visibilityState === 'visible') {
-    loadSummary()
-  }
+function handleRealtimeEvent(event) {
+  if (document.visibilityState === 'hidden') return
+  const shouldReloadSystem = event.type === 'system-message.changed' && activeTab.value === 'system'
+  const shouldReloadBuy = event.type === 'buy-message.created' && activeTab.value === 'buy'
+  if (!shouldReloadSystem && !shouldReloadBuy) return
+  if (realtimeRefreshTimer) clearTimeout(realtimeRefreshTimer)
+  realtimeRefreshTimer = setTimeout(() => {
+    realtimeRefreshTimer = null
+    if (shouldReloadSystem) loadSystemMessages()
+    if (shouldReloadBuy) loadSessions()
+  }, 120)
 }
 
 onMounted(async () => {
-  await loadSummary()
   await Promise.all([loadSystemMessages(true), loadSessions(true)])
-  startSummaryPolling()
-  document.addEventListener('visibilitychange', handleVisibilityChange)
+  unsubscribeRealtime = notificationSummaryStore.subscribeEvents(handleRealtimeEvent)
 })
 
 onUnmounted(() => {
-  stopSummaryPolling()
-  document.removeEventListener('visibilitychange', handleVisibilityChange)
+  unsubscribeRealtime?.()
+  unsubscribeRealtime = null
+  if (realtimeRefreshTimer) clearTimeout(realtimeRefreshTimer)
 })
 </script>
 

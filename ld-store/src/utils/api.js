@@ -194,6 +194,57 @@ async function request(url, options = {}) {
 }
 
 /**
+ * 打开需要 Bearer 鉴权的流式响应。与普通 request() 不同，这里不设置固定超时，
+ * 生命周期由调用方的 AbortSignal 和服务端心跳共同管理。
+ */
+async function openEventStream(url, { signal, headers: extraHeaders = {} } = {}) {
+  const maintenanceBlock = getMaintenanceRequestBlock('GET', url)
+  if (maintenanceBlock) return maintenanceBlockedResponse(maintenanceBlock.message)
+
+  const fullUrl = url.startsWith('http') ? url : `${API_BASE}${url}`
+  const token = storage.get('token')
+  if (!token || isTokenExpired(token)) {
+    if (token) emitAuthExpired({ source: 'event-stream', url, method: 'GET', reason: 'local_token_expired' })
+    return { success: false, error: AUTH_EXPIRED_MESSAGE, status: 401 }
+  }
+
+  try {
+    const response = await fetch(fullUrl, {
+      method: 'GET',
+      headers: {
+        Accept: 'text/event-stream',
+        Authorization: `Bearer ${token}`,
+        ...extraHeaders
+      },
+      credentials: 'include',
+      cache: 'no-store',
+      signal
+    })
+
+    if (!response.ok) {
+      const data = await parseResponseBody(response)
+      if (hasAuthFailure(response.status, data)) {
+        emitAuthExpired({ source: 'event-stream', url, method: 'GET', reason: 'server_unauthorized', status: response.status })
+      }
+      return {
+        success: false,
+        error: normalizeServerErrorMessage(response.status, data),
+        status: response.status
+      }
+    }
+    if (!response.body) return { success: false, error: '浏览器不支持消息实时连接', status: 0 }
+    return { success: true, response }
+  } catch (error) {
+    if (error?.name === 'AbortError') return { success: false, aborted: true, error: '', status: 0 }
+    return {
+      success: false,
+      error: normalizeNetworkErrorMessage(error, '消息实时连接超时'),
+      status: 0
+    }
+  }
+}
+
+/**
  * GET 请求
  */
 function get(url, options = {}) {
@@ -321,6 +372,7 @@ export const api = {
   put,
   delete: del,
   upload,
+  openEventStream,
   all,
   BASE_URL: API_BASE
 }
