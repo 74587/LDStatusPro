@@ -479,6 +479,8 @@ const maxPurchaseQuantityError = computed(() => {
 
 const purchaseLimitPeriodDaysError = computed(() => {
   if (form.value.purchaseLimitType !== 'per_user') return ''
+  const raw = String(form.value.purchaseLimitPeriodDays ?? '').trim()
+  if (!raw) return '请输入滚动周期'
   const value = Number(form.value.purchaseLimitPeriodDays || 0)
   if (value === 0) return ''
   if (!Number.isInteger(value) || value < 1 || value > 365) return '滚动周期必须是 1-365 天之间的整数'

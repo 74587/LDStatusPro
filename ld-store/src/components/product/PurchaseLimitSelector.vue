@@ -67,28 +67,28 @@
         >
           <legend>统计周期</legend>
           <div class="period-options">
-            <label :class="['period-option', { selected: normalizedPeriodDays === 0 }]">
+            <label :class="['period-option', { selected: !isRollingPeriod }]">
               <input
                 :name="periodRadioName"
                 type="radio"
                 value="lifetime"
-                :checked="normalizedPeriodDays === 0"
+                :checked="!isRollingPeriod"
                 @change="selectPeriod('lifetime')"
               />
               <span><strong>永久累计</strong><small>支付成功后始终计入</small></span>
             </label>
-            <label :class="['period-option', { selected: normalizedPeriodDays > 0 }]">
+            <label :class="['period-option', { selected: isRollingPeriod }]">
               <input
                 :name="periodRadioName"
                 type="radio"
                 value="rolling"
-                :checked="normalizedPeriodDays > 0"
+                :checked="isRollingPeriod"
                 @change="selectPeriod('rolling')"
               />
               <span><strong>滚动周期</strong><small>仅统计最近一段时间</small></span>
             </label>
           </div>
-          <label v-if="normalizedPeriodDays > 0" class="period-days-field" :for="periodInputId">
+          <label v-if="isRollingPeriod" class="period-days-field" :for="periodInputId">
             <span>最近</span>
             <input
               ref="periodInput"
@@ -106,8 +106,8 @@
             />
             <span>天内</span>
           </label>
-          <p v-if="normalizedPeriodDays > 0" class="period-summary">
-            最近 {{ periodDays || 7 }} 天内，每位用户最多兑换 {{ quantity || 1 }} 件
+          <p v-if="isRollingPeriod && !periodError" class="period-summary">
+            最近 {{ periodDays }} 天内，每位用户最多兑换 {{ quantity || 1 }} 件
           </p>
           <p v-if="periodError" :id="periodErrorId" class="purchase-limit-error" role="alert">
             {{ periodError }}
@@ -119,8 +119,8 @@
     <p :id="descriptionId" class="purchase-limit-help">
       <template v-if="sharedCdkEnabled">共享模式的限制由系统管理，卖家无需额外设置。</template>
       <template v-else-if="mode === 'per_user'">
-        <template v-if="normalizedPeriodDays > 0">
-          按最近 {{ normalizedPeriodDays }} × 24 小时滚动统计；支付和退款订单会在超出周期后释放额度。
+        <template v-if="isRollingPeriod">
+          按最近 {{ periodDays || 'N' }} × 24 小时滚动统计；支付和退款订单会在超出周期后释放额度。
         </template>
         <template v-else>支付成功后永久计入，即使退款也不恢复。</template>
         待支付订单会暂时占用额度，取消或过期后恢复。
@@ -149,6 +149,7 @@ const props = defineProps({
 const emit = defineEmits(['update:mode', 'update:quantity', 'update:periodDays', 'blur'])
 const quantityInput = ref(null)
 const periodInput = ref(null)
+const rollingSelected = ref(String(props.periodDays ?? '').trim() !== '' && Number(props.periodDays) !== 0)
 
 const options = [
   { mode: 'none', title: '不限制', description: '适合常规库存商品', icon: InfinityIcon },
@@ -167,12 +168,13 @@ const normalizedPeriodDays = computed(() => {
   const value = Number(props.periodDays || 0)
   return Number.isInteger(value) && value >= 0 && value <= 365 ? value : 0
 })
+const isRollingPeriod = computed(() => rollingSelected.value)
 const configuredPolicyLabel = computed(() => {
   const value = Number(props.quantity || 0)
   if (props.mode === 'per_order' && value > 0) return `每笔订单最多 ${value} 件`
   if (props.mode === 'per_user' && value > 0) {
-    return normalizedPeriodDays.value > 0
-      ? `最近 ${normalizedPeriodDays.value} 天每位用户最多 ${value} 件`
+    return isRollingPeriod.value
+      ? `最近 ${props.periodDays || 'N'} 天每位用户最多 ${value} 件`
       : `每位用户永久累计最多 ${value} 件`
   }
   return '不限制'
@@ -195,16 +197,20 @@ function updateQuantity(event) {
 
 async function selectPeriod(periodMode) {
   if (periodMode === 'lifetime') {
+    rollingSelected.value = false
     emit('update:periodDays', 0)
     return
   }
+  rollingSelected.value = true
   if (normalizedPeriodDays.value === 0) emit('update:periodDays', 7)
   await nextTick()
   periodInput.value?.[0]?.focus?.()
 }
 
 function updatePeriodDays(event) {
-  emit('update:periodDays', event.target.value)
+  rollingSelected.value = true
+  const value = event.target.value === '0' ? '' : event.target.value
+  emit('update:periodDays', value)
 }
 
 watch(
@@ -214,6 +220,17 @@ watch(
     if (enabled && props.mode !== 'none' && (!Number.isInteger(value) || value < 1 || value > 1000)) {
       emit('update:quantity', 1)
     }
+  }
+)
+
+watch(
+  () => props.periodDays,
+  value => {
+    const raw = String(value ?? '').trim()
+    if (!raw) return
+    const numeric = Number(raw)
+    if (numeric === 0) rollingSelected.value = false
+    else rollingSelected.value = true
   }
 )
 

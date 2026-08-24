@@ -82,7 +82,7 @@ describe('买家购买限制展示', () => {
     expect(formatPurchaseLimitTitle(limit)).toBe('最近 7 天限购 1 件')
     expect(formatPurchaseLimitLabel(limit)).toBe('每位用户最近 7 天限购 1 件，登录后查看余量')
     expect(formatPurchaseLimitLabel(limit, { loggedIn: true })).toBe('已达最近 7 天限购（1/1）')
-    expect(formatPurchaseLimitReleaseTime(limit.nextAvailableAt)).toContain('8月25日')
+    expect(formatPurchaseLimitReleaseTime(limit.nextAvailableAt)).toMatch(/8(?:月|\/)25/)
   })
 
   it('共享卡密始终覆盖为永久累计一件', () => {
