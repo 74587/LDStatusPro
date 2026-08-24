@@ -1163,23 +1163,25 @@ html.dark .refund-guidance {
   }
   .refund-card h3 { font-size: 18px; }
 
-  /* 进度条移动端优化 - 紧凑布局 */
+  /* 进度条移动端优化 - 修复连接线 */
   .refund-progress {
     grid-template-columns: repeat(4, 1fr);
     gap: 0;
-    margin: 0 -8px 20px;
+    margin: 0 -4px 20px;
   }
   .refund-progress li {
     font-size: 11px;
     gap: 6px;
-    padding: 0 4px;
+    padding: 0 2px;
   }
   .refund-progress__dot {
     width: 24px;
     height: 24px;
+    font-size: 11px;
   }
+  /* 调整连接线位置以匹配缩小的圆点 */
   .refund-progress li::before {
-    top: 12px;
+    top: 12px; /* 24px / 2 */
   }
 
   /* 详情列表单列 */
