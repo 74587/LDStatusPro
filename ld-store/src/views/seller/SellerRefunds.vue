@@ -186,7 +186,7 @@ onMounted(loadRefunds)
 </script>
 
 <style scoped>
-/* 筛选表单 - 更清晰的布局 */
+/* 筛选表单 - 清晰布局 */
 .refund-filter-form {
   width: 100%;
   display: flex;
@@ -194,7 +194,7 @@ onMounted(loadRefunds)
   gap: 12px;
 }
 
-/* 状态标签页 - 温暖海军蓝配色 */
+/* 状态标签页 - 简洁设计 */
 .refund-tabs {
   min-width: 0;
   display: flex;
@@ -206,53 +206,52 @@ onMounted(loadRefunds)
 .refund-tabs::-webkit-scrollbar { display: none; }
 
 .refund-tabs button {
-  min-height: 42px;
+  min-height: 40px;
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 0 16px;
-  border-radius: 999px;
-  color: #5C635D;
-  background: #FFFFFF;
-  border: 1px solid #E7E1D7;
+  padding: 0 14px;
+  border-radius: 8px;
+  color: var(--text-secondary);
+  background: var(--bg-primary);
+  border: 1px solid var(--border-light);
   font-size: 13px;
   font-weight: 600;
   white-space: nowrap;
   cursor: pointer;
-  transition: all 180ms ease;
+  transition: all 0.2s;
 }
 
 .refund-tabs button:hover {
-  background: #FBF9F5;
-  border-color: #C4612F;
-  color: #1F2421;
+  background: var(--bg-secondary);
+  border-color: var(--primary);
+  color: var(--text-primary);
 }
 
 .refund-tabs button span {
-  min-width: 22px;
-  height: 22px;
+  min-width: 20px;
+  height: 20px;
   display: grid;
   place-items: center;
-  padding: 0 6px;
-  border-radius: 999px;
-  color: #5C635D;
-  background: #F7F4EF;
+  padding: 0 5px;
+  border-radius: 4px;
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
   font: 700 11px/1 ui-monospace, monospace;
 }
 
 .refund-tabs button.active {
   color: #FFFFFF;
-  background: #1F2421;
-  border-color: #1F2421;
-  box-shadow: 0 2px 4px rgba(31, 36, 33, 0.15);
+  background: var(--primary);
+  border-color: var(--primary);
 }
 
 .refund-tabs button.active span {
-  color: #1F2421;
-  background: #F2E3D6;
+  color: var(--primary);
+  background: #FFFFFF;
 }
 
-/* 搜索框 - 柔和的聚焦效果 */
+/* 搜索框 - 简洁聚焦 */
 .refund-search {
   min-width: 240px;
   flex: 1;
@@ -260,89 +259,86 @@ onMounted(loadRefunds)
   align-items: center;
   gap: 10px;
   padding: 0 14px;
-  border: 1px solid #E7E1D7;
-  border-radius: 999px;
-  color: #5C635D;
-  background: #FFFFFF;
-  transition: all 180ms ease;
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  background: var(--bg-primary);
+  transition: all 0.2s;
 }
 
 .refund-search:hover {
-  border-color: #C4612F;
-  background: #FBF9F5;
+  border-color: var(--primary);
+  background: var(--bg-secondary);
 }
 
 .refund-search input {
   width: 100%;
-  min-height: 42px;
+  min-height: 40px;
   border: 0;
   outline: 0;
-  color: #1F2421;
+  color: var(--text-primary);
   background: transparent;
   font-size: 14px;
 }
 
 .refund-search input::placeholder {
-  color: #5C635D;
+  color: var(--text-secondary);
 }
 
 .refund-search:focus-within {
-  border-color: #C4612F;
-  box-shadow: 0 0 0 3px rgba(196, 97, 47, 0.15);
-  background: #FFFFFF;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-light);
+  background: var(--bg-primary);
 }
 
 .refund-search-submit,
 .refund-refresh {
-  min-height: 42px;
+  min-height: 40px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 0 18px;
-  border: 1px solid #E7E1D7;
-  border-radius: 999px;
-  color: #1F2421;
-  background: #FFFFFF;
+  padding: 0 16px;
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  color: var(--text-primary);
+  background: var(--bg-primary);
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 180ms ease;
+  transition: all 0.2s;
 }
 
 .refund-search-submit:hover,
 .refund-refresh:hover {
-  background: #C4612F;
-  border-color: #C4612F;
+  background: var(--primary);
+  border-color: var(--primary);
   color: #FFFFFF;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(196, 97, 47, 0.2);
 }
 
 .refund-refresh:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-  transform: none;
 }
 
-/* 摘要统计 - 温暖色调胶囊 */
+/* 摘要统计 - 简洁胶囊 */
 .seller-refunds-page :deep(.seller-filter-summary > span) {
   display: inline-flex;
   align-items: center;
-  min-height: 32px;
-  padding: 0 14px;
-  border: 1px solid #E7E1D7;
-  border-radius: 999px;
-  color: #5C635D;
-  background: #FFFFFF;
+  min-height: 28px;
+  padding: 0 12px;
+  border: 1px solid var(--border-light);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  background: var(--bg-primary);
   font-size: 12px;
   font-weight: 600;
 }
 
 .seller-refunds-page :deep(.seller-filter-summary > span.alert) {
-  border-color: rgba(220, 38, 38, 0.3);
-  color: #dc2626;
-  background: rgba(239, 68, 68, 0.08);
+  border-color: var(--danger-border);
+  color: var(--danger);
+  background: var(--danger-light);
 }
 
 /* 表格单元格内容 - 改进可读性 */
@@ -356,13 +352,13 @@ onMounted(loadRefunds)
 
 .refund-order-link {
   text-decoration: none;
-  transition: opacity 180ms ease;
+  transition: opacity 0.2s;
 }
 
-.refund-order-link:hover { opacity: 0.8; }
+.refund-order-link:hover { opacity: 0.7; }
 
 .refund-order-link strong {
-  color: #1F2421;
+  color: var(--text-primary);
   font: 700 13px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
   overflow-wrap: anywhere;
 }
@@ -370,7 +366,7 @@ onMounted(loadRefunds)
 .refund-order-link small,
 .refund-party small,
 .refund-reason small {
-  color: #5C635D;
+  color: var(--text-secondary);
   font-size: 12px;
   line-height: 1.5;
   overflow: hidden;
@@ -381,92 +377,94 @@ onMounted(loadRefunds)
 .refund-party strong,
 .refund-reason strong {
   overflow: hidden;
-  color: #1F2421;
+  color: var(--text-primary);
   font-size: 14px;
+  font-weight: 600;
   font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .refund-amount-cell {
-  color: #C4612F;
+  color: var(--primary);
   font-variant-numeric: tabular-nums;
   font-weight: 700;
   white-space: nowrap;
 }
 
-/* 详情链接 - terracotta 强调色 */
+/* 详情链接 - 简洁强调 */
 .refund-detail-link {
-  min-height: 40px;
+  min-height: 36px;
   display: inline-flex;
   align-items: center;
   justify-content: flex-end;
   gap: 6px;
-  padding: 8px 14px;
-  border-radius: 999px;
-  color: #C4612F;
+  padding: 6px 12px;
+  border-radius: 6px;
+  color: var(--primary);
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
   white-space: nowrap;
   text-decoration: none;
-  transition: all 180ms ease;
+  transition: all 0.2s;
 }
 
 .refund-detail-link:hover {
-  background: #F2E3D6;
-  transform: translateY(-1px);
+  background: var(--bg-secondary);
 }
 
-/* 错误状态 - 柔和的错误提示 */
+/* 错误状态 - 简洁错误提示 */
 .refund-page-error {
   display: grid;
   grid-template-columns: auto 1fr auto;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
   margin-bottom: 16px;
-  padding: 16px;
-  border: 1px solid rgba(220, 38, 38, 0.25);
-  border-radius: 14px;
-  color: #dc2626;
-  background: rgba(239, 68, 68, 0.08);
+  padding: 14px;
+  border: 1px solid var(--danger-border);
+  border-radius: 8px;
+  color: var(--danger);
+  background: var(--danger-light);
 }
 
 .refund-page-error p {
   margin: 4px 0 0;
-  color: #5C635D;
+  color: var(--text-secondary);
   font-size: 13px;
   line-height: 1.6;
 }
 
 .refund-page-error button {
-  min-height: 44px;
+  min-height: 40px;
   padding: 0 16px;
   border: 1px solid currentColor;
-  border-radius: 999px;
+  border-radius: 8px;
   font-weight: 600;
-  transition: all 180ms ease;
+  transition: all 0.2s;
+  cursor: pointer;
 }
 
 .refund-page-error button:hover {
-  background: rgba(239, 68, 68, 0.1);
+  background: var(--danger-light);
+  opacity: 0.9;
 }
 
-/* 空状态 - 友好的空状态设计 */
+/* 空状态 - 友好空状态 */
 .refund-empty {
   display: grid;
   justify-items: center;
   gap: 12px;
   padding: 48px 20px;
-  color: #5C635D;
+  color: var(--text-secondary);
 }
 
 .refund-empty svg {
-  color: #C4612F;
-  opacity: 0.7;
+  color: var(--primary);
+  opacity: 0.6;
 }
 
 .refund-empty strong {
-  color: #1F2421;
+  color: var(--text-primary);
   font-size: 16px;
 }
 
@@ -477,25 +475,23 @@ onMounted(loadRefunds)
 }
 
 .refund-empty a {
-  min-height: 44px;
+  min-height: 40px;
   display: inline-flex;
   align-items: center;
   margin-top: 8px;
-  padding: 0 20px;
-  border: 1px solid #E7E1D7;
-  border-radius: 999px;
-  color: #1F2421;
+  padding: 0 18px;
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  color: var(--text-primary);
   font-weight: 600;
   text-decoration: none;
-  transition: all 180ms ease;
+  transition: all 0.2s;
 }
 
 .refund-empty a:hover {
-  background: #C4612F;
-  border-color: #C4612F;
+  background: var(--primary);
+  border-color: var(--primary);
   color: #FFFFFF;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(196, 97, 47, 0.2);
 }
 
 /* 移动端卡片布局 - 改进层次 */
@@ -509,59 +505,59 @@ onMounted(loadRefunds)
 }
 
 .refund-mobile-head > a {
-  color: #1F2421;
+  color: var(--text-primary);
   font: 700 13px/1.5 ui-monospace, monospace;
   overflow-wrap: anywhere;
   text-decoration: none;
 }
 
 .refund-mobile-product {
-  margin-top: 14px;
+  margin-top: 12px;
 }
 
 .refund-mobile-product strong {
-  color: #1F2421;
+  color: var(--text-primary);
   font-weight: 600;
 }
 
 .refund-mobile-product span {
-  color: #5C635D;
+  color: var(--text-secondary);
   font-size: 12px;
 }
 
 .refund-mobile-reason {
-  margin: 12px 0;
-  color: #5C635D;
+  margin: 10px 0;
+  color: var(--text-secondary);
   font-size: 13px;
-  line-height: 1.7;
+  line-height: 1.6;
 }
 
 .refund-mobile-foot {
   padding-top: 12px;
-  border-top: 1px solid #E7E1D7;
+  border-top: 1px solid var(--border-light);
 }
 
 .refund-mobile-foot strong {
-  color: #C4612F;
+  color: var(--primary);
   font-weight: 700;
 }
 
 .refund-mobile-foot a {
-  min-height: 40px;
+  min-height: 36px;
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 14px;
-  border-radius: 999px;
-  color: #C4612F;
+  padding: 6px 12px;
+  border-radius: 6px;
+  color: var(--primary);
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
   text-decoration: none;
-  transition: all 180ms ease;
+  transition: all 0.2s;
 }
 
 .refund-mobile-foot a:hover {
-  background: #F2E3D6;
+  background: var(--bg-secondary);
 }
 
 .seller-sr-only {
@@ -615,19 +611,13 @@ onMounted(loadRefunds)
 @media (prefers-reduced-motion: reduce) {
   .spinning { animation: none; }
   .refund-tabs button,
+  .refund-search,
   .refund-search-submit,
   .refund-refresh,
   .refund-detail-link,
   .refund-empty a,
   .refund-mobile-foot a {
     transition: none;
-  }
-  .refund-tabs button:hover,
-  .refund-search-submit:hover,
-  .refund-refresh:hover:not(:disabled),
-  .refund-detail-link:hover,
-  .refund-empty a:hover {
-    transform: none;
   }
 }
 </style>
