@@ -8,8 +8,9 @@
     "test": "vitest run",
     "lint": "eslint . --ext .js,.vue --ignore-pattern dist --ignore-pattern node_modules --ignore-pattern .wrangler",
     "lint:fix": "npm run lint -- --fix",
-    "check": "npm run lint && npm run build",
+    "check": "npm run lint && npm run test && npm run build && npm run validate:og",
     "build": "vite build",
+    "validate:og": "node scripts/validate-open-graph.mjs",
     "build:private-metadata": "bash scripts/build-private-metadata.sh",
     "preview": "vite preview",
     "deploy": "bash scripts/deploy-pages-production.sh"

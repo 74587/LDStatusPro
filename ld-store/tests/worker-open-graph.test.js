@@ -1,8 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import worker, {
   canonicalizePageUrl,
+  handleOgImage,
   handleOembed,
   injectMetadataIntoHtml,
+  parseOgImagePath,
   resolvePageMetadata
 } from '../public/_worker.js'
 
@@ -54,6 +56,16 @@ function htmlAsset() {
   </head><body><div id="app"></div></body></html>`, {
     headers: { 'content-type': 'text/html', 'content-length': '999' }
   })
+}
+
+function pngHeader(width = 1200, height = 630) {
+  const buffer = new ArrayBuffer(24)
+  const bytes = new Uint8Array(buffer)
+  bytes.set([137, 80, 78, 71, 13, 10, 26, 10])
+  const view = new DataView(buffer)
+  view.setUint32(16, width)
+  view.setUint32(20, height)
+  return buffer
 }
 
 afterEach(() => {
@@ -225,5 +237,92 @@ describe('Worker responses and oEmbed', () => {
     })
     expect(response.status).toBe(301)
     expect(response.headers.get('location')).toBe('https://ldcstore.com/product/42?from=old')
+  })
+})
+
+describe('same-origin OG image proxy', () => {
+  it.each([
+    ['/og/product/42.png', { kind: 'product', key: '42' }],
+    ['/og/buy_request/9.png', { kind: 'buy_request', key: '9' }],
+    ['/og/merchant/%E5%BC%A0%E4%B8%89.png', { kind: 'merchant', key: '张三' }],
+    ['/og/default/base.png', { kind: 'default', key: 'base' }]
+  ])('parses %s', (path, expected) => {
+    expect(parseOgImagePath(path)).toEqual(expected)
+  })
+
+  it.each(['/og/product/nope.png', '/og/unknown/42.png', '/og/default/other.png', '/og/product/42.jpg'])('rejects invalid image path %s', path => {
+    expect(parseOgImagePath(path)).toBeNull()
+  })
+
+  it('validates and edge-caches versioned backend PNG responses', async () => {
+    const upstreamFetch = vi.fn(async () => new Response(pngHeader(), {
+      headers: { 'content-type': 'image/png', 'content-length': '24' }
+    }))
+    vi.stubGlobal('fetch', upstreamFetch)
+    const edgeCache = { match: vi.fn(async () => null), put: vi.fn(async () => undefined) }
+    vi.stubGlobal('caches', { default: edgeCache })
+    const pending = []
+    const response = await handleOgImage(
+      new Request('https://ldcstore.com/og/product/42.png?v=abc123'),
+      { ...env, ASSETS: { fetch: vi.fn() } },
+      { waitUntil: promise => pending.push(promise) }
+    )
+    await Promise.all(pending)
+
+    expect(response.status).toBe(200)
+    expect(response.headers.get('content-type')).toBe('image/png')
+    expect(response.headers.get('cache-control')).toContain('max-age=86400')
+    expect(response.headers.get('access-control-allow-origin')).toBe('*')
+    expect(new URL(upstreamFetch.mock.calls[0][0]).pathname).toBe('/api/shop/share-image/product/42')
+    expect(edgeCache.put).toHaveBeenCalledOnce()
+  })
+
+  it('serves cached images to HEAD without contacting the backend', async () => {
+    const upstreamFetch = vi.fn()
+    vi.stubGlobal('fetch', upstreamFetch)
+    vi.stubGlobal('caches', {
+      default: {
+        match: vi.fn(async () => new Response(pngHeader(), {
+          headers: { 'content-type': 'image/png', 'cache-control': 'public, max-age=86400, immutable' }
+        })),
+        put: vi.fn()
+      }
+    })
+    const response = await handleOgImage(
+      new Request('https://ldcstore.com/og/product/42.png?v=abc123', { method: 'HEAD' }),
+      { ...env, ASSETS: { fetch: vi.fn() } }
+    )
+    expect(response.status).toBe(200)
+    expect((await response.arrayBuffer()).byteLength).toBe(0)
+    expect(upstreamFetch).not.toHaveBeenCalled()
+  })
+
+  it('uses a short-lived static fallback and never caches invalid upstream content', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('<html>error</html>', {
+      headers: { 'content-type': 'text/html' }
+    })))
+    const edgeCache = { match: vi.fn(async () => null), put: vi.fn() }
+    vi.stubGlobal('caches', { default: edgeCache })
+    const assetFetch = vi.fn(async () => new Response(pngHeader(), { headers: { 'content-type': 'image/png' } }))
+    const response = await handleOgImage(
+      new Request('https://ldcstore.com/og/coupon/token.png?v=rev1'),
+      { ...env, ASSETS: { fetch: assetFetch } },
+      { waitUntil: vi.fn() }
+    )
+    expect(response.status).toBe(200)
+    expect(response.headers.get('cache-control')).toContain('max-age=300')
+    expect(assetFetch).toHaveBeenCalledOnce()
+    expect(edgeCache.put).not.toHaveBeenCalled()
+  })
+
+  it('rejects malformed routes before any upstream request', async () => {
+    const upstreamFetch = vi.fn()
+    vi.stubGlobal('fetch', upstreamFetch)
+    const response = await handleOgImage(
+      new Request('https://ldcstore.com/og/product/not-a-number.png'),
+      { ...env, ASSETS: { fetch: vi.fn() } }
+    )
+    expect(response.status).toBe(404)
+    expect(upstreamFetch).not.toHaveBeenCalled()
   })
 })
