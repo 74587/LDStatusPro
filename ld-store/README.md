@@ -204,6 +204,9 @@ npm run preview
 
 3. **部署**
    ```bash
+   # 生产发布会拒绝缺失 Faro 配置、公开 source map 或与私有 map 不一致的 JS。
+   # 将公开采集标识写入本机、已忽略的 .env.production.local：
+   # VITE_FARO_API_KEY=<public ingestion identifier>
    npm run deploy
    ```
 

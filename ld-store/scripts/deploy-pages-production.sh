@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+project_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+cd "$project_dir"
+
+# This file is intentionally ignored by Git. It contains a public Faro
+# ingestion identifier, but keeping deployment-only values out of tracked
+# files avoids silently changing the production telemetry contract.
+if [[ -f .env.production.local ]]; then
+  set -a
+  # shellcheck disable=SC1091
+  source .env.production.local
+  set +a
+fi
+
+enabled=$(printf '%s' "${VITE_FARO_ENABLED:-1}" | tr '[:upper:]' '[:lower:]')
+case "$enabled" in
+  1|true|yes|on) ;;
+  *) echo 'Refusing Pages deployment: Faro must remain enabled in production' >&2; exit 1 ;;
+esac
+
+export VITE_FARO_ENABLED=1
+export VITE_FARO_COLLECTOR_URL="${VITE_FARO_COLLECTOR_URL:-https://api1.ldspro.qzz.io/faro/collect}"
+[[ "$VITE_FARO_COLLECTOR_URL" == 'https://api1.ldspro.qzz.io/faro/collect' ]] || {
+  echo 'Refusing Pages deployment: unexpected Faro collector URL' >&2
+  exit 1
+}
+
+faro_api_key=${VITE_FARO_API_KEY:-}
+[[ ${#faro_api_key} -ge 16 ]] || {
+  echo 'Refusing Pages deployment: set VITE_FARO_API_KEY in .env.production.local or the trusted shell' >&2
+  exit 1
+}
+export VITE_FARO_API_KEY=$faro_api_key
+export VITE_FARO_SESSION_SAMPLE_RATE=1
+export VITE_DEPLOYMENT_ENVIRONMENT=production
+export CF_PAGES_COMMIT_SHA=$(git rev-parse HEAD)
+
+npm run build:private-metadata
+private_hashes=$(find dist/assets -type f -name '*.js' -exec shasum -a 256 {} \; | sed 's#  dist/##' | sort)
+npm run build
+public_hashes=$(find dist/assets -type f -name '*.js' -exec shasum -a 256 {} \; | sed 's#  dist/##' | sort)
+[[ "$private_hashes" == "$public_hashes" ]] || {
+  echo 'Refusing Pages deployment: public JavaScript differs from private source-map build' >&2
+  exit 1
+}
+[[ $(find dist -type f -name '*.map' | wc -l | tr -d ' ') == 0 ]] || {
+  echo 'Refusing Pages deployment: public build contains source maps' >&2
+  exit 1
+}
+
+npx wrangler pages deploy dist --project-name=ld-store
+
+release=$(git rev-parse --short=12 HEAD)
+printf 'Pages deployment completed: release=%s source-map artifact=.private-artifacts/ldstore-web-%s.tar.gz\n' "$release" "$release"
