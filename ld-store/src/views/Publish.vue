@@ -57,24 +57,33 @@
       <!-- 测试模式提示弹窗 -->
       <Transition name="modal">
         <div v-if="showTestModeModal" class="guide-modal-overlay" @click.self="cancelTestMode">
-          <div class="guide-modal test-mode-modal">
+          <div
+            class="guide-modal test-mode-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="test-mode-modal-title"
+            aria-describedby="test-mode-modal-description"
+          >
             <div class="guide-modal-header">
-              <div class="guide-modal-icon test-icon">
-                测试模式
+              <div class="guide-modal-icon test-icon" aria-hidden="true">
+                <FlaskConical :size="28" />
               </div>
-              <h3 class="guide-modal-title">开启测试模式</h3>
+              <h3 id="test-mode-modal-title" class="guide-modal-title">开启测试模式</h3>
             </div>
             <div class="guide-modal-body">
-              <p class="guide-modal-text">
+              <p id="test-mode-modal-description" class="guide-modal-text">
                 测试模式下，<strong>只有您自己可以购买此物品</strong>，其他用户将无法购买。
               </p>
-              <div class="test-mode-tips">
-                <p class="tip-item">用于测试 LDC 支付回调通知是否正常</p>
-                <p class="tip-item">购买后会正常扣款和发放 CDK</p>
-                <p class="tip-item">测试完成后请及时下架或删除测试物品</p>
-                <p class="tip-item">测试完成请务必在 <a href="https://credit.linux.do/merchant" target="_blank" style="color: #007bff;">LDC集市</a> 中关闭应用的测试模式</p>
-                <p class="tip-item warning">测试模式商品上架 30 分钟后会自动下架</p>
-              </div>
+              <ul class="test-mode-tips">
+                <li class="tip-item"><CircleCheck :size="16" aria-hidden="true" /><span>用于测试 LDC 支付回调通知是否正常</span></li>
+                <li class="tip-item"><CircleCheck :size="16" aria-hidden="true" /><span>购买后会正常扣款和发放 CDK</span></li>
+                <li class="tip-item"><CircleCheck :size="16" aria-hidden="true" /><span>测试完成后请及时下架或删除测试物品</span></li>
+                <li class="tip-item">
+                  <CircleCheck :size="16" aria-hidden="true" />
+                  <span>测试完成请务必在 <a class="test-mode-link" href="https://credit.linux.do/merchant" target="_blank" rel="noopener noreferrer">LDC 集市</a>中关闭应用的测试模式</span>
+                </li>
+                <li class="tip-item warning"><Clock3 :size="16" aria-hidden="true" /><span>测试模式商品上架 30 分钟后会自动下架</span></li>
+              </ul>
               <p class="guide-modal-warning test-warning">
                 <strong>请确保已在 LDC 应用中开启测试模式</strong>，否则可能无法收到回调通知。
               </p>
@@ -592,7 +601,7 @@
 
 <script setup>
 import { ref, computed, nextTick, onBeforeUnmount, onMounted, watch } from 'vue'
-import { CircleAlert, Cloud, Image as ImageIcon, ShieldAlert } from '@lucide/vue'
+import { CircleAlert, CircleCheck, Clock3, Cloud, FlaskConical, Image as ImageIcon, ShieldAlert } from '@lucide/vue'
 import { onBeforeRouteLeave, useRouter, useRoute } from 'vue-router'
 import { useShopStore } from '@/stores/shop'
 import { useUserStore } from '@/stores/user'
@@ -2855,11 +2864,17 @@ onBeforeUnmount(() => {
 /* 测试模式弹窗 */
 .test-mode-modal {
   max-width: 420px;
+  max-height: calc(100vh - 40px);
+  max-height: calc(100dvh - 40px);
+  overflow-y: auto;
 }
 
 .test-icon {
-  font-size: 32px;
   background: var(--color-info-bg) !important;
+}
+
+.test-icon svg {
+  color: var(--color-info);
 }
 
 .test-mode-tips {
@@ -2867,19 +2882,41 @@ onBeforeUnmount(() => {
   padding: 12px 16px;
   background: var(--bg-secondary);
   border-radius: 12px;
+  list-style: none;
 }
 
 .tip-item {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr);
+  align-items: start;
+  gap: 8px;
   font-size: 13px;
   color: var(--text-secondary);
   margin: 0;
   padding: 4px 0;
   line-height: 1.6;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+.tip-item svg {
+  margin-top: 2px;
+  color: var(--color-success);
 }
 
 .tip-item.warning {
   color: var(--color-warning);
   font-weight: 600;
+}
+
+.tip-item.warning svg {
+  color: currentColor;
+}
+
+.test-mode-link {
+  color: var(--color-info);
+  font-weight: 600;
+  text-underline-offset: 2px;
 }
 
 .test-warning {
