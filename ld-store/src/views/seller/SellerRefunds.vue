@@ -194,29 +194,29 @@ onMounted(loadRefunds)
   gap: 12px;
 }
 
-/* 状态标签页 - 简洁设计 */
+/* 状态标签页 - 清晰视觉层次 */
 .refund-tabs {
   min-width: 0;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   overflow-x: auto;
   scrollbar-width: none;
 }
 .refund-tabs::-webkit-scrollbar { display: none; }
 
 .refund-tabs button {
-  min-height: 40px;
+  min-height: 44px;
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 0 14px;
-  border-radius: 8px;
+  padding: 0 18px;
+  border-radius: 10px;
   color: var(--text-secondary);
-  background: var(--bg-primary);
-  border: 1px solid var(--border-light);
-  font-size: 13px;
-  font-weight: 600;
+  background: white;
+  border: 2px solid var(--border-medium);
+  font-size: 14px;
+  font-weight: 700;
   white-space: nowrap;
   cursor: pointer;
   transition: all 0.2s;
@@ -224,56 +224,57 @@ onMounted(loadRefunds)
 
 .refund-tabs button:hover {
   background: var(--bg-secondary);
-  border-color: var(--primary);
+  border-color: var(--color-primary);
   color: var(--text-primary);
 }
 
 .refund-tabs button span {
-  min-width: 20px;
-  height: 20px;
+  min-width: 22px;
+  height: 22px;
   display: grid;
   place-items: center;
-  padding: 0 5px;
-  border-radius: 4px;
+  padding: 0 6px;
+  border-radius: 6px;
   color: var(--text-secondary);
   background: var(--bg-secondary);
-  font: 700 11px/1 ui-monospace, monospace;
+  font: 700 12px/1 ui-monospace, monospace;
 }
 
 .refund-tabs button.active {
-  color: #FFFFFF;
-  background: var(--primary);
-  border-color: var(--primary);
+  color: white;
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  box-shadow: 0 2px 8px rgba(181, 168, 152, 0.25);
 }
 
 .refund-tabs button.active span {
-  color: var(--primary);
-  background: #FFFFFF;
+  color: var(--color-primary);
+  background: white;
 }
 
-/* 搜索框 - 简洁聚焦 */
+/* 搜索框 - 清晰聚焦效果 */
 .refund-search {
   min-width: 240px;
   flex: 1;
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 0 14px;
-  border: 1px solid var(--border-light);
-  border-radius: 8px;
+  padding: 0 16px;
+  border: 2px solid var(--border-medium);
+  border-radius: 10px;
   color: var(--text-secondary);
-  background: var(--bg-primary);
+  background: white;
   transition: all 0.2s;
 }
 
 .refund-search:hover {
-  border-color: var(--primary);
+  border-color: var(--color-primary);
   background: var(--bg-secondary);
 }
 
 .refund-search input {
   width: 100%;
-  min-height: 40px;
+  min-height: 44px;
   border: 0;
   outline: 0;
   color: var(--text-primary);
@@ -286,34 +287,35 @@ onMounted(loadRefunds)
 }
 
 .refund-search:focus-within {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px var(--primary-light);
-  background: var(--bg-primary);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(181, 168, 152, 0.15);
+  background: white;
 }
 
 .refund-search-submit,
 .refund-refresh {
-  min-height: 40px;
+  min-height: 44px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 0 16px;
-  border: 1px solid var(--border-light);
-  border-radius: 8px;
+  padding: 0 18px;
+  border: 2px solid var(--border-medium);
+  border-radius: 10px;
   color: var(--text-primary);
-  background: var(--bg-primary);
+  background: white;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .refund-search-submit:hover,
 .refund-refresh:hover {
-  background: var(--primary);
-  border-color: var(--primary);
+  background: var(--color-primary);
+  border-color: var(--color-primary);
   color: #FFFFFF;
+  box-shadow: 0 2px 8px rgba(181, 168, 152, 0.25);
 }
 
 .refund-refresh:disabled {
@@ -325,20 +327,20 @@ onMounted(loadRefunds)
 .seller-refunds-page :deep(.seller-filter-summary > span) {
   display: inline-flex;
   align-items: center;
-  min-height: 28px;
-  padding: 0 12px;
-  border: 1px solid var(--border-light);
-  border-radius: 6px;
+  min-height: 32px;
+  padding: 0 14px;
+  border: 2px solid var(--border-medium);
+  border-radius: 8px;
   color: var(--text-secondary);
-  background: var(--bg-primary);
+  background: white;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .seller-refunds-page :deep(.seller-filter-summary > span.alert) {
-  border-color: var(--danger-border);
-  color: var(--danger);
-  background: var(--danger-light);
+  border-color: var(--color-danger-light);
+  color: #991b1b;
+  background: var(--color-danger-bg);
 }
 
 /* 表格单元格内容 - 改进可读性 */
@@ -386,7 +388,7 @@ onMounted(loadRefunds)
 }
 
 .refund-amount-cell {
-  color: var(--primary);
+  color: var(--color-primary);
   font-variant-numeric: tabular-nums;
   font-weight: 700;
   white-space: nowrap;
@@ -394,23 +396,24 @@ onMounted(loadRefunds)
 
 /* 详情链接 - 简洁强调 */
 .refund-detail-link {
-  min-height: 36px;
+  min-height: 40px;
   display: inline-flex;
   align-items: center;
   justify-content: flex-end;
   gap: 6px;
-  padding: 6px 12px;
-  border-radius: 6px;
-  color: var(--primary);
+  padding: 8px 14px;
+  border-radius: 8px;
+  color: var(--color-primary);
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 700;
   white-space: nowrap;
   text-decoration: none;
   transition: all 0.2s;
 }
 
 .refund-detail-link:hover {
-  background: var(--bg-secondary);
+  background: var(--color-primary-light);
+  box-shadow: 0 2px 8px rgba(181, 168, 152, 0.15);
 }
 
 /* 错误状态 - 简洁错误提示 */
@@ -420,11 +423,11 @@ onMounted(loadRefunds)
   align-items: center;
   gap: 12px;
   margin-bottom: 16px;
-  padding: 14px;
-  border: 1px solid var(--danger-border);
-  border-radius: 8px;
-  color: var(--danger);
-  background: var(--danger-light);
+  padding: 16px;
+  border: 2px solid var(--color-danger-light);
+  border-radius: 12px;
+  color: #991b1b;
+  background: var(--color-danger-bg);
 }
 
 .refund-page-error p {
@@ -435,18 +438,18 @@ onMounted(loadRefunds)
 }
 
 .refund-page-error button {
-  min-height: 40px;
-  padding: 0 16px;
-  border: 1px solid currentColor;
-  border-radius: 8px;
-  font-weight: 600;
+  min-height: 44px;
+  padding: 0 18px;
+  border: 2px solid currentColor;
+  border-radius: 10px;
+  font-weight: 700;
   transition: all 0.2s;
   cursor: pointer;
 }
 
 .refund-page-error button:hover {
-  background: var(--danger-light);
-  opacity: 0.9;
+  background: rgba(153, 27, 27, 0.1);
+  box-shadow: 0 2px 8px rgba(153, 27, 27, 0.15);
 }
 
 /* 空状态 - 友好空状态 */
@@ -459,13 +462,14 @@ onMounted(loadRefunds)
 }
 
 .refund-empty svg {
-  color: var(--primary);
+  color: var(--color-primary);
   opacity: 0.6;
 }
 
 .refund-empty strong {
   color: var(--text-primary);
   font-size: 16px;
+  font-weight: 700;
 }
 
 .refund-empty p {
@@ -475,23 +479,24 @@ onMounted(loadRefunds)
 }
 
 .refund-empty a {
-  min-height: 40px;
+  min-height: 44px;
   display: inline-flex;
   align-items: center;
   margin-top: 8px;
-  padding: 0 18px;
-  border: 1px solid var(--border-light);
-  border-radius: 8px;
+  padding: 0 20px;
+  border: 2px solid var(--border-medium);
+  border-radius: 10px;
   color: var(--text-primary);
-  font-weight: 600;
+  font-weight: 700;
   text-decoration: none;
   transition: all 0.2s;
 }
 
 .refund-empty a:hover {
-  background: var(--primary);
-  border-color: var(--primary);
+  background: var(--color-primary);
+  border-color: var(--color-primary);
   color: #FFFFFF;
+  box-shadow: 0 2px 8px rgba(181, 168, 152, 0.25);
 }
 
 /* 移动端卡片布局 - 改进层次 */
@@ -534,30 +539,31 @@ onMounted(loadRefunds)
 
 .refund-mobile-foot {
   padding-top: 12px;
-  border-top: 1px solid var(--border-light);
+  border-top: 2px solid var(--border-medium);
 }
 
 .refund-mobile-foot strong {
-  color: var(--primary);
+  color: var(--color-primary);
   font-weight: 700;
 }
 
 .refund-mobile-foot a {
-  min-height: 36px;
+  min-height: 40px;
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 12px;
-  border-radius: 6px;
-  color: var(--primary);
+  padding: 8px 14px;
+  border-radius: 8px;
+  color: var(--color-primary);
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 700;
   text-decoration: none;
   transition: all 0.2s;
 }
 
 .refund-mobile-foot a:hover {
-  background: var(--bg-secondary);
+  background: var(--color-primary-light);
+  box-shadow: 0 2px 8px rgba(181, 168, 152, 0.15);
 }
 
 .seller-sr-only {
