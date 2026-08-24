@@ -107,10 +107,16 @@ describe('share metadata resolution', () => {
     expect(calledUrl.searchParams.get('path')).toBe(path)
   })
 
-  it('distinguishes a real 404 from a transient upstream failure', async () => {
+  it('uses a privacy-preserving fallback for API 404 and a route fallback for transient failures', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => apiResponse(null, 404)))
-    const missing = await resolvePageMetadata('https://ldcstore.com/product/404', env)
-    expect(missing).toMatchObject({ notFound: true, title: '页面未找到 - LD士多' })
+    const privateOrMissing = await resolvePageMetadata('https://ldcstore.com/product/404', env)
+    expect(privateOrMissing).toMatchObject({
+      notFound: false,
+      title: '商品暂不可公开预览 - LD士多',
+      description: '该商品可能需要登录、满足社区信任等级，或当前已不可用。请打开 LD士多后查看。',
+      product: null
+    })
+    expect(privateOrMissing.image).toBe('https://ldcstore.com/og/default/base.png?v=1')
 
     vi.stubGlobal('fetch', vi.fn(async () => { throw new Error('timeout') }))
     const unavailable = await resolvePageMetadata('https://ldcstore.com/product/42', env)
@@ -206,10 +212,12 @@ describe('Worker responses and oEmbed', () => {
     expect(await head.text()).toBe('')
   })
 
-  it('returns HTTP 404 only for confirmed missing or unknown pages', async () => {
+  it('returns a generic HTTP 200 for private-or-missing dynamic content and 404 for unknown routes', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => apiResponse(null, 404)))
     const workerEnv = { ...env, ASSETS: { fetch: vi.fn(async () => htmlAsset()) } }
-    expect((await worker.fetch(new Request('https://ldcstore.com/product/404'), workerEnv)).status).toBe(404)
+    const privateOrMissing = await worker.fetch(new Request('https://ldcstore.com/product/404'), workerEnv)
+    expect(privateOrMissing.status).toBe(200)
+    expect(await privateOrMissing.text()).toContain('商品暂不可公开预览 - LD士多')
     expect((await worker.fetch(new Request('https://ldcstore.com/unknown'), workerEnv)).status).toBe(404)
   })
 

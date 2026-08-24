@@ -8,12 +8,12 @@ const HTML_CACHE_CONTROL = 'no-store, no-cache, must-revalidate'
 const OEMBED_CACHE_CONTROL = 'public, max-age=300, stale-while-revalidate=3600'
 
 const DYNAMIC_ROUTES = [
-  { pattern: /^\/product\/\d+\/?$/, fallbackTitle: '商品详情 - LD士多', fallbackDescription: '在 LD士多 查看商品详情、价格与兑换方式。' },
-  { pattern: /^\/merchant\/[^/]+\/?$/, fallbackTitle: '商家主页 - LD士多', fallbackDescription: '浏览 LD士多 商家的公开商品与服务。' },
-  { pattern: /^\/shop\/\d+\/?$/, fallbackTitle: '小店详情 - LD士多', fallbackDescription: '发现 LD士多 社区成员经营的小店。' },
-  { pattern: /^\/buy-request\/\d+\/?$/, fallbackTitle: '求购详情 - LD士多', fallbackDescription: '查看并响应 LD士多 社区求购需求。' },
-  { pattern: /^\/coupon\/[^/]+\/?$/, fallbackTitle: '领取优惠券 - LD士多', fallbackDescription: '领取 LD士多 商家发放的优惠券。' },
-  { pattern: /^\/category\/[^/]+\/?$/, fallbackTitle: '分类商品 - LD士多', fallbackDescription: '浏览 LD士多 分类中的公开商品与服务。' }
+  { pattern: /^\/product\/\d+\/?$/, label: '商品', fallbackTitle: '商品详情 - LD士多', fallbackDescription: '在 LD士多 查看商品详情、价格与兑换方式。' },
+  { pattern: /^\/merchant\/[^/]+\/?$/, label: '商家主页', fallbackTitle: '商家主页 - LD士多', fallbackDescription: '浏览 LD士多 商家的公开商品与服务。' },
+  { pattern: /^\/shop\/\d+\/?$/, label: '小店', fallbackTitle: '小店详情 - LD士多', fallbackDescription: '发现 LD士多 社区成员经营的小店。' },
+  { pattern: /^\/buy-request\/\d+\/?$/, label: '求购', fallbackTitle: '求购详情 - LD士多', fallbackDescription: '查看并响应 LD士多 社区求购需求。' },
+  { pattern: /^\/coupon\/[^/]+\/?$/, label: '优惠券', fallbackTitle: '领取优惠券 - LD士多', fallbackDescription: '领取 LD士多 商家发放的优惠券。' },
+  { pattern: /^\/category\/[^/]+\/?$/, label: '分类', fallbackTitle: '分类商品 - LD士多', fallbackDescription: '浏览 LD士多 分类中的公开商品与服务。' }
 ]
 
 const STATIC_ROUTES = [
@@ -123,6 +123,17 @@ function getNotFoundMetadata(url, env) {
   }
 }
 
+function getPrivateFallbackMetadata(url, env, route) {
+  const title = `${route.label}暂不可公开预览 - LD士多`
+  return {
+    ...getDefaultMetadata(url, env),
+    title,
+    description: `该${route.label}可能需要登录、满足社区信任等级，或当前已不可用。请打开 LD士多后查看。`,
+    imageAlt: title,
+    notFound: false
+  }
+}
+
 function absoluteSameOriginPath(rawPath, env, requiredPrefix) {
   const siteUrl = getSiteUrl(env)
   try {
@@ -216,7 +227,10 @@ export async function resolvePageMetadata(input, env = {}) {
     const apiBase = String(env.LD_STORE_META_API_BASE || DEFAULT_API_BASE).trim() || DEFAULT_API_BASE
     const apiUrl = `${apiBase.replace(/\/$/, '')}/api/shop/share-meta?path=${encodeURIComponent(pathname)}`
     const result = await fetchJsonResult(apiUrl)
-    if (result.state === 'not_found') return getNotFoundMetadata(url, env)
+    // The API deliberately uses the same 404 for missing and access-restricted
+    // content. Returning a generic 200 card here prevents both existence leaks
+    // and forum users mistaking a permission boundary for a broken link.
+    if (result.state === 'not_found') return getPrivateFallbackMetadata(url, env, dynamicRoute)
     if (result.state === 'ok') {
       const metadata = normalizeShareMetadata(result.data, url, env)
       if (metadata) return metadata
