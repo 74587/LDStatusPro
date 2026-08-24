@@ -205,7 +205,11 @@ npm run preview
 3. **部署**
    ```bash
    # 生产发布会拒绝缺失 Faro 配置、公开 source map 或与私有 map 不一致的 JS。
-   # 将公开采集标识写入本机、已忽略的 .env.production.local：
+   # npm run deploy 会优先读取本机、已忽略的 .env.production.local；
+   # 在标准 ldspro 工作区中，未配置时还会仅从 ../../ldsp-observability/.env
+   # 读取 FARO_API_KEY（不会 source 或泄露其中任何其他服务凭证）。
+   # 非标准目录可设置 LDSP_OBSERVABILITY_ENV=/绝对路径/.env。
+   # 也可以将公开采集标识写入 .env.production.local：
    # VITE_FARO_API_KEY=<public ingestion identifier>
    npm run deploy
    ```

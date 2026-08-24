@@ -14,6 +14,30 @@ if [[ -f .env.production.local ]]; then
   set +a
 fi
 
+# For this monorepo-style local workspace, allow the storefront release command
+# to read only the public browser ingestion identifier from the observability
+# project's local .env. Do not source that file: it may contain unrelated
+# service credentials and a release must never inherit them accidentally.
+# An explicit VITE_FARO_API_KEY or .env.production.local always takes priority.
+if [[ -z "${VITE_FARO_API_KEY:-}" ]]; then
+  observability_env=${LDSP_OBSERVABILITY_ENV:-"$project_dir/../../ldsp-observability/.env"}
+  if [[ -r "$observability_env" ]]; then
+    workspace_faro_key=$(awk '
+      /^FARO_API_KEY=/ { value = substr($0, length("FARO_API_KEY=") + 1) }
+      END { print value }
+    ' "$observability_env")
+    workspace_faro_key=${workspace_faro_key%$'\r'}
+    workspace_faro_key=${workspace_faro_key#\"}
+    workspace_faro_key=${workspace_faro_key%\"}
+    workspace_faro_key=${workspace_faro_key#\'}
+    workspace_faro_key=${workspace_faro_key%\'}
+    if [[ ${#workspace_faro_key} -ge 16 ]]; then
+      export VITE_FARO_API_KEY=$workspace_faro_key
+      printf '%s\n' 'Using the local observability Faro ingestion identifier.' >&2
+    fi
+  fi
+fi
+
 enabled=$(printf '%s' "${VITE_FARO_ENABLED:-1}" | tr '[:upper:]' '[:lower:]')
 case "$enabled" in
   1|true|yes|on) ;;
@@ -29,7 +53,7 @@ export VITE_FARO_COLLECTOR_URL="${VITE_FARO_COLLECTOR_URL:-https://api1.ldspro.q
 
 faro_api_key=${VITE_FARO_API_KEY:-}
 [[ ${#faro_api_key} -ge 16 ]] || {
-  echo 'Refusing Pages deployment: set VITE_FARO_API_KEY in .env.production.local or the trusted shell' >&2
+  echo 'Refusing Pages deployment: set VITE_FARO_API_KEY in .env.production.local, the trusted shell, or LDSP_OBSERVABILITY_ENV' >&2
   exit 1
 }
 export VITE_FARO_API_KEY=$faro_api_key
