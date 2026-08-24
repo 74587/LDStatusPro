@@ -146,6 +146,9 @@ describe('卖家后台稳定壳层与列表工具', () => {
     expect(resolveSellerStatusTone('rejected')).toBe('danger')
     expect(resolveSellerStatusTone('completed')).toBe('success')
     expect(resolveSellerStatusTone('offline')).toBe('neutral')
+    expect(resolveSellerStatusTone('ai_approved')).toBe('success')
+    expect(resolveSellerStatusTone('manual_approved')).toBe('success')
+    expect(resolveSellerStatusTone('offline_manual')).toBe('neutral')
   })
 
   it('物品价格同时保留原价、折后价与折扣标签', () => {

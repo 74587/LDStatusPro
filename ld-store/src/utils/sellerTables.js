@@ -133,9 +133,10 @@ export function filterAndSortSellerProducts(products = [], filters = {}, accesso
 export function resolveSellerStatusTone(status = '') {
   const value = String(status).toLowerCase()
   if (value.includes('reject') || value.includes('refund')) return 'danger'
-  if (value.includes('pending') || value === 'paid' || value.includes('manual')) return 'warning'
+  if (value.includes('pending') || value === 'paid') return 'warning'
   if (value.includes('approve') || value === 'active' || value === 'delivered' || value === 'completed') return 'success'
   if (value === 'cancelled' || value.includes('offline') || value === 'inactive') return 'neutral'
+  if (value.includes('manual')) return 'warning'
   return 'info'
 }
 
