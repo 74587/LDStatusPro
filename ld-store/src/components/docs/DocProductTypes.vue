@@ -24,7 +24,7 @@
     <h2 id="shared-cdk">共享卡密：重复发放同一内容</h2>
     <ul>
       <li>每笔成交都发放同一份共享内容，不逐条扣减卡密。</li>
-      <li>每位用户在该物品生命周期内累计限购一件，已购买后不能通过拆单再次获得。</li>
+      <li>每位用户在该物品生命周期内永久累计限购一件，已购买后不能通过拆单再次获得。</li>
       <li>商城库存统一显示 <strong>9999</strong>，表示共享模式的展示库存，并非真实生成了 9999 条卡密。</li>
       <li>销量仍按实际成功成交数量累计，不会因为共享模式被固定或重置。</li>
     </ul>
@@ -41,7 +41,7 @@
     </div>
 
     <h2 id="mode-changes">模式改变后会怎样</h2>
-    <p>独立卡密与共享卡密之间可以切换，但会涉及库存暂停、恢复或迁移，并重新进入审核流程。切到共享时，原购买限制会被临时覆盖为每位用户累计一件；切回独立时恢复原配置。操作前先阅读 <router-link to="/docs/inventory-management#switch-cdk-mode">切换卡密模式</router-link>，避免误解库存变化。</p>
+    <p>独立卡密与共享卡密之间可以切换，但会涉及库存暂停、恢复或迁移，并重新进入审核流程。切到共享时，原购买限制会被临时覆盖为每位用户永久累计一件；切回独立时恢复原来的每单、永久累计或滚动周期配置。操作前先阅读 <router-link to="/docs/inventory-management#switch-cdk-mode">切换卡密模式</router-link>，避免误解库存变化。</p>
 
     <div class="help-actions">
       <router-link to="/seller/products/new">发布物品</router-link>
