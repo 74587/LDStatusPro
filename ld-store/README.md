@@ -183,9 +183,11 @@ npm run preview
    ```
    NODE_VERSION: 18
    LD_STORE_META_API_BASE: https://api2.ldspro.qzz.io
-   LD_STORE_SITE_URL: https://ldstore.cc.cd/
-   LD_STORE_DEFAULT_OG_IMAGE: https://img.ldspro.qzz.io/JackyLiii/20260123_og-image_9zs1sl.png
+   LD_STORE_SITE_URL: https://ldcstore.com/
+   LD_STORE_LEGACY_HOSTS: ldstore.cc.cd,ldst0re.qzz.io
    ```
+
+   `LD_STORE_DEFAULT_OG_IMAGE` 通常无需设置；如需覆盖，只接受当前站点 `/og/` 下的同源图片地址。
 
 4. **自动部署**
    - 每次推送到指定分支时自动触发部署
@@ -226,33 +228,16 @@ npm run preview
 
 只需运行 `npm run build` 并上传 `dist` 目录即可。
 
-### 🖼️ 社交分享图片 (og-image)
+静态页面本身可以正常运行；动态 Open Graph 标签与 `/og/*` 图片代理还要求托管平台提供与 `public/_worker.js` 等价的边缘函数能力。直接上传纯静态文件时只会使用 `og-default.png` 通用卡片。
 
-为了在社交媒体和论坛分享时显示预览图，需要准备 `og-image.jpg` 文件：
+### 🖼️ Open Graph / Linux DO 分享预览
 
-1. 在浏览器中打开 `public/generate-og-image.html`
-2. 点击「下载图片」按钮下载 PNG 格式图片
-3. 使用图片工具将 PNG 转换为 JPG 格式
-4. 将 `og-image.jpg` 放到 `public` 目录下
-5. 重新部署
+分享预览由 api2 的无副作用元数据与 1200×630 PNG 渲染服务、Cloudflare Pages Worker 的标签注入与同源图片缓存共同完成。商品、商家、小店、求购、优惠券和分类均支持动态卡片，不再需要手工生成 `og-image.jpg`。
 
-**图片规格要求：**
-- 尺寸：1200 x 630 像素
-- 格式：JPG（推荐）或 PNG
-- 大小：建议 < 500KB
-
-### 🔗 动态链接预览（论坛/社交平台）
-
-项目在 `public/_worker.js` 中提供了动态元信息注入能力：
-
-- 访问 `/product/:id` 时，分享卡片标题会变为 `商品名 - LD士多`
-- 访问 `/shop/:id` 时，分享卡片标题会变为 `店铺名 - LD士多`
-- 访问 `/merchant/:username` 时，分享卡片标题会变为 `用户名的小店 - LD士多`
-- 同步更新 `title`、`og:title`、`twitter:title`、`oembed` 等字段
-
-说明：
-- 本地 `npm run dev` 仍按前端 SPA 行为运行，动态抓取逻辑在 Cloudflare Pages 边缘生效
-- 若使用自定义 API 域名，请同步配置 `LD_STORE_META_API_BASE`
+- 本地 `npm run dev` 仍按 SPA 行为运行；动态抓取与 `/og/*` 图片代理在 Pages Worker 中生效。
+- `npm run check` 会运行全部测试、生产构建和构建后 OG 标签/图片校验。
+- 部署顺序必须为 api2 后端先、Pages 前端后。
+- 完整显示逻辑、安全边界、缓存和 Linux DO 验证方法见 **[Open Graph 功能说明](./docs/open-graph.md)**。
 
 ## 📁 项目结构
 
@@ -260,14 +245,16 @@ npm run preview
 ld-store/
 ├── .editorconfig          # UTF-8（无 BOM）/缩进/换行约束
 ├── docs/
-│   └── README.md          # 文档索引与维护说明
+│   ├── README.md          # 文档索引与维护说明
+│   └── open-graph.md      # Open Graph 显示逻辑与运维说明
 ├── public/                # 静态资源与 Cloudflare Pages 边缘脚本
 │   ├── _headers           # Cloudflare 安全头配置
 │   ├── _redirects         # SPA 路由重定向配置
 │   ├── _worker.js         # Cloudflare Pages 动态元信息注入
+│   ├── og-default.png     # 后端不可用时的同源品牌兜底图
 │   └── oembed.json        # 分享卡片补充元信息
 ├── scripts/
-│   └── generate-og-image.js  # og 图片生成辅助脚本
+│   └── validate-open-graph.mjs # 构建后 OG 标签与图片校验
 ├── src/
 │   ├── components/        # Vue 组件
 │   │   ├── common/        # 通用组件
@@ -303,6 +290,7 @@ ld-store/
 |------|------|
 | **[README.md](./README.md)** | 项目介绍、开发命令、部署说明 |
 | **[docs/README.md](./docs/README.md)** | 前端维护索引、关键配置入口、排查建议 |
+| **[docs/open-graph.md](./docs/open-graph.md)** | 分享显示逻辑、OG Image、安全、缓存与验收 |
 | **[../PROJECT_STRUCTURE.md](../PROJECT_STRUCTURE.md)** | 仓库级职责边界、服务拆分与域名语义 |
 
 如后续需要扩展专项文档，优先围绕“部署、架构、故障排查”补充到 `docs/`，不要继续保留与仓库实际不符的占位说明。
@@ -448,6 +436,6 @@ chore: 构建/工具
 
 ---
 
-**最后更新**: 2026-01-22  
+**最后更新**: 2026-08-24  
 **维护者**: LDStatus Pro 开发团队  
 **项目版本**: 1.0.0

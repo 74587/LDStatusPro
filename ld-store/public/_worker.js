@@ -335,8 +335,6 @@ function shouldBypassHtmlRewrite(pathname) {
   if (pathname.startsWith('/api/')) return true
   if (pathname === '/favicon.svg') return true
   if (pathname === '/robots.txt') return true
-  if (pathname === '/og-image.svg') return true
-  if (pathname === '/generate-og-image.html') return true
   if (pathname === '/_headers') return true
   if (pathname === '/_redirects') return true
   return /\.[a-zA-Z0-9]+$/.test(pathname)
