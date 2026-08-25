@@ -6,7 +6,12 @@ const SANITIZE_OPTIONS = {
   FORBID_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover', 'onfocus', 'onmouseenter']
 }
 
-export function sanitizeHtml(value) {
+export function sanitizeHtml(value, options = {}) {
   if (value === undefined || value === null) return ''
-  return DOMPurify.sanitize(String(value), SANITIZE_OPTIONS)
+  return DOMPurify.sanitize(String(value), {
+    ...SANITIZE_OPTIONS,
+    ...options,
+    FORBID_TAGS: [...SANITIZE_OPTIONS.FORBID_TAGS, ...(options.FORBID_TAGS || [])],
+    FORBID_ATTR: [...SANITIZE_OPTIONS.FORBID_ATTR, ...(options.FORBID_ATTR || [])]
+  })
 }

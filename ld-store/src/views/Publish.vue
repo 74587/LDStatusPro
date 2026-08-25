@@ -201,7 +201,7 @@
               :class="{ 'is-empty': !descriptionPreview }"
               v-html="descriptionPreview || '暂无内容，切换到「编辑」填写物品描述'"
             ></div>
-            <p class="form-hint">支持 Markdown：**加粗**、*斜体*、++下划线++、`代码`；网址自动识别为可点击链接（新窗口打开）</p>
+            <p class="form-hint">支持 Markdown：**加粗**、*斜体*、++下划线++、`代码`；网址和图片语法显示为可点击链接（新窗口打开）</p>
             <p class="form-counter">{{ form.description.length }}/1000</p>
             <p v-if="showError('description', descriptionError)" class="form-error">{{ descriptionError }}</p>
           </div>
