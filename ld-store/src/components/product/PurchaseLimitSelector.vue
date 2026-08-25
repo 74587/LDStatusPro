@@ -126,7 +126,7 @@
         待支付订单会暂时占用额度，取消或过期后恢复。
       </template>
       <template v-else-if="mode === 'per_order'">只限制单笔订单数量，买家仍可再次下单。</template>
-      <template v-else>买家仅受库存和平台单笔 1000 件上限约束。</template>
+      <template v-else>买家受当前可售库存与平台单笔 5000 件上限约束。</template>
     </p>
     <p v-if="error && !sharedCdkEnabled" :id="errorId" class="purchase-limit-error" role="alert">{{ error }}</p>
   </fieldset>

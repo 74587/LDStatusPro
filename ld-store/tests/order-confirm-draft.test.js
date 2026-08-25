@@ -96,12 +96,34 @@ describe('订单确认草稿', () => {
 
   it('切换商品时强制从 1 件开始且不会带入上一件商品的优惠券', () => {
     const store = useCheckoutStore()
-    store.startCheckout({ productId: 1, quantity: 2 })
-    store.updateCheckout(1, { couponClaimId: 99 })
-    store.startCheckout({ productId: 2, quantity: 100 })
+    store.startCheckout({ productId: 11624, quantity: 2000 })
+    store.updateCheckout(11624, { couponClaimId: 99 })
+    store.startCheckout({ productId: 11625, quantity: 100 })
 
-    expect(store.getDraft(1)).toBeNull()
-    expect(store.getDraft(2)).toMatchObject({ quantity: 1, couponClaimId: null, couponSelectionMode: 'auto' })
+    expect(store.getDraft(11624)).toBeNull()
+    expect(store.getDraft(11625)).toMatchObject({ quantity: 1, couponClaimId: null, couponSelectionMode: 'auto' })
+  })
+
+  it('商品编号不受数量上限影响，并保留上限内超过 1000 的兑换数量', () => {
+    expect(normalizeOrderConfirmDraft({
+      productId: 11624,
+      quantity: 2000,
+      updatedAt: Date.now(),
+    })).toMatchObject({
+      productId: 11624,
+      quantity: 2000,
+    })
+  })
+
+  it('草稿中的兑换数量最多归一化为平台单笔 5000 件', () => {
+    expect(normalizeOrderConfirmDraft({
+      productId: 11624,
+      quantity: 5001,
+      updatedAt: Date.now(),
+    })).toMatchObject({
+      productId: 11624,
+      quantity: 5000,
+    })
   })
 
   it('只有直接返回当前商品详情时才保留确认页草稿', () => {

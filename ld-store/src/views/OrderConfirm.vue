@@ -98,7 +98,7 @@
                     type="number"
                     inputmode="numeric"
                     min="1"
-                    :max="maxSelectableQuantity"
+                    :max="hasQuantityMaximum ? maxSelectableQuantity : undefined"
                     :disabled="submitting"
                     @change="commitQuantity"
                     @blur="commitQuantity"
@@ -106,7 +106,7 @@
                   <button
                     type="button"
                     aria-label="增加数量"
-                    :disabled="quantity >= maxSelectableQuantity || submitting"
+                    :disabled="(hasQuantityMaximum && quantity >= maxSelectableQuantity) || submitting"
                     @click="changeQuantity(1)"
                   >
                     <Plus :size="17" aria-hidden="true" />
@@ -324,6 +324,7 @@ import { shouldPreserveCheckoutDraft, useCheckoutStore } from '@/stores/checkout
 import { useToast } from '@/composables/useToast'
 import { isMaintenanceFeatureEnabled, isRestrictedMaintenanceMode } from '@/config/maintenance'
 import { quoteOrderRequest } from '@/services/shop/couponService'
+import { clampCheckoutQuantity, resolveCheckoutQuantityMaximum } from '@/utils/checkoutQuantity'
 import { formatPrice } from '@/utils/format'
 import { createSubmissionGate } from '@/utils/submissionGate'
 import {
@@ -417,17 +418,14 @@ const purchaseLimitTotal = computed(() => (
 ))
 
 const maxSelectableQuantity = computed(() => {
-  const limits = [1000]
-  if (purchaseLimitMaximum.value > 0 || purchaseLimitReached.value) limits.push(purchaseLimitMaximum.value)
-  if (!hasUnlimitedStock.value) {
-    limits.push(Math.max(0, Number(availableStock.value) || 0))
-  } else {
-    const available = Number(availableStock.value)
-    if (Number.isFinite(available) && available > 0) limits.push(available)
-  }
-  const limit = Math.min(...limits)
-  return limit > 0 ? limit : 1
+  return resolveCheckoutQuantityMaximum({
+    purchaseLimitMaximum: purchaseLimitMaximum.value,
+    purchaseLimitReached: purchaseLimitReached.value,
+    unlimitedStock: hasUnlimitedStock.value,
+    availableStock: availableStock.value,
+  })
 })
+const hasQuantityMaximum = computed(() => Number.isInteger(maxSelectableQuantity.value))
 
 const quantityHint = computed(() => {
   const hints = []
@@ -511,7 +509,7 @@ const canSubmit = computed(() => (
   && !quoteLoading.value
   && !submitBlockMessage.value
   && quantity.value >= 1
-  && quantity.value <= maxSelectableQuantity.value
+  && (!hasQuantityMaximum.value || quantity.value <= maxSelectableQuantity.value)
 ))
 const submitButtonText = computed(() => (
   submitting.value
@@ -524,9 +522,7 @@ function formatMoney(value) {
 }
 
 function clampQuantity(value) {
-  const parsed = Number(value)
-  if (!Number.isFinite(parsed)) return 1
-  return Math.min(Math.max(Math.floor(parsed), 1), maxSelectableQuantity.value)
+  return clampCheckoutQuantity(value, maxSelectableQuantity.value)
 }
 
 function commitQuantity() {

@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { normalizeCouponSelectionMode } from '@/utils/checkoutCoupon'
+import { CHECKOUT_QUANTITY_PLATFORM_MAXIMUM } from '@/utils/checkoutQuantity'
 
 export const ORDER_CONFIRM_DRAFT_KEY = 'ld-store-order-confirm-draft'
 export const ORDER_CONFIRM_DRAFT_TTL_MS = 30 * 60 * 1000
@@ -20,10 +21,14 @@ function getSessionStorage() {
   }
 }
 
-function toPositiveInt(value, fallback = 1, max = 1000) {
+function toPositiveInt(value, fallback = 1) {
   const parsed = Number.parseInt(value, 10)
-  if (!Number.isInteger(parsed) || parsed < 1) return fallback
-  return Math.min(parsed, max)
+  if (!Number.isSafeInteger(parsed) || parsed < 1) return fallback
+  return parsed
+}
+
+function toCheckoutQuantity(value, fallback = 1) {
+  return Math.min(toPositiveInt(value, fallback), CHECKOUT_QUANTITY_PLATFORM_MAXIMUM)
 }
 
 function normalizeCouponClaimId(value) {
@@ -46,7 +51,7 @@ export function normalizeOrderConfirmDraft(value) {
   const couponClaimId = normalizeCouponClaimId(value.couponClaimId)
   return {
     productId,
-    quantity: toPositiveInt(value.quantity, 1),
+    quantity: toCheckoutQuantity(value.quantity, 1),
     couponClaimId,
     couponSelectionMode: normalizeCouponSelectionMode(value.couponSelectionMode, couponClaimId),
     sourceFullPath: String(value.sourceFullPath || ''),
@@ -104,7 +109,7 @@ export const useCheckoutStore = defineStore('checkout', () => {
     )
     const normalized = {
       productId: currentProductId,
-      quantity: toPositiveInt(nextDraft.quantity ?? current?.quantity, 1),
+      quantity: toCheckoutQuantity(nextDraft.quantity ?? current?.quantity, 1),
       couponClaimId,
       couponSelectionMode: normalizeCouponSelectionMode(
         nextDraft.couponSelectionMode ?? current?.couponSelectionMode,
