@@ -5,6 +5,13 @@ import { normalizeCouponSelectionMode } from '@/utils/checkoutCoupon'
 export const ORDER_CONFIRM_DRAFT_KEY = 'ld-store-order-confirm-draft'
 export const ORDER_CONFIRM_DRAFT_TTL_MS = 30 * 60 * 1000
 
+export function shouldPreserveCheckoutDraft(to, productId) {
+  const currentProductId = toPositiveInt(productId, 0)
+  return String(to?.name || '') === 'ProductDetail'
+    && currentProductId > 0
+    && toPositiveInt(to?.params?.id, 0) === currentProductId
+}
+
 function getSessionStorage() {
   try {
     return window.sessionStorage
@@ -118,10 +125,14 @@ export const useCheckoutStore = defineStore('checkout', () => {
     const normalizedProductId = toPositiveInt(productId, 0)
     if (!normalizedProductId) return null
 
-    const current = getDraft(normalizedProductId)
+    const activeDraft = getDraft()
+    const switchesProduct = Boolean(activeDraft && activeDraft.productId !== normalizedProductId)
+    const current = switchesProduct ? null : activeDraft
     return setDraft({
       productId: normalizedProductId,
-      quantity,
+      // A checkout draft belongs to one product. Never let a quantity supplied by
+      // a stale caller become the starting quantity of another product.
+      quantity: switchesProduct ? 1 : quantity,
       couponClaimId: current?.couponClaimId ?? null,
       couponSelectionMode: current?.couponSelectionMode ?? 'auto',
       sourceFullPath: sourceFullPath || current?.sourceFullPath || '',

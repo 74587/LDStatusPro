@@ -5,6 +5,7 @@ import {
   ORDER_CONFIRM_DRAFT_TTL_MS,
   normalizeOrderConfirmDraft,
   readStoredOrderConfirmDraft,
+  shouldPreserveCheckoutDraft,
   useCheckoutStore,
 } from '../src/stores/checkout'
 
@@ -93,14 +94,44 @@ describe('订单确认草稿', () => {
     expect(storage.getItem(ORDER_CONFIRM_DRAFT_KEY)).toBeNull()
   })
 
-  it('切换商品时不会把上一件商品的优惠券带过去', () => {
+  it('切换商品时强制从 1 件开始且不会带入上一件商品的优惠券', () => {
     const store = useCheckoutStore()
     store.startCheckout({ productId: 1, quantity: 2 })
     store.updateCheckout(1, { couponClaimId: 99 })
-    store.startCheckout({ productId: 2, quantity: 1 })
+    store.startCheckout({ productId: 2, quantity: 100 })
 
     expect(store.getDraft(1)).toBeNull()
     expect(store.getDraft(2)).toMatchObject({ quantity: 1, couponClaimId: null, couponSelectionMode: 'auto' })
+  })
+
+  it('只有直接返回当前商品详情时才保留确认页草稿', () => {
+    expect(shouldPreserveCheckoutDraft({
+      name: 'ProductDetail',
+      params: { id: '28' },
+    }, 28)).toBe(true)
+    expect(shouldPreserveCheckoutDraft({ name: 'Home' }, 28)).toBe(false)
+    expect(shouldPreserveCheckoutDraft({
+      name: 'ProductDetail',
+      params: { id: '29' },
+    }, 28)).toBe(false)
+  })
+
+  it('返回广场会结束当前确认流程，下一件商品默认 1 件', () => {
+    const store = useCheckoutStore()
+    store.startCheckout({ productId: 28, quantity: 1 })
+    store.updateCheckout(28, { quantity: 100 })
+
+    if (!shouldPreserveCheckoutDraft({ name: 'Home' }, 28)) {
+      store.clearCheckout(28)
+    }
+    store.startCheckout({ productId: 29, quantity: 1 })
+
+    expect(store.getDraft(29)).toMatchObject({
+      productId: 29,
+      quantity: 1,
+      couponClaimId: null,
+      couponSelectionMode: 'auto',
+    })
   })
 
   it('手动不用券的草稿在继续调整数量后仍保持手动模式', () => {

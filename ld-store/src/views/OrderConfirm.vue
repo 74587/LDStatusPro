@@ -320,7 +320,7 @@ import {
 } from '@lucide/vue'
 import { useShopStore } from '@/stores/shop'
 import { useUserStore } from '@/stores/user'
-import { useCheckoutStore } from '@/stores/checkout'
+import { shouldPreserveCheckoutDraft, useCheckoutStore } from '@/stores/checkout'
 import { useToast } from '@/composables/useToast'
 import { isMaintenanceFeatureEnabled, isRestrictedMaintenanceMode } from '@/config/maintenance'
 import { quoteOrderRequest } from '@/services/shop/couponService'
@@ -806,9 +806,11 @@ function goBack() {
 }
 
 onBeforeRouteLeave(to => {
-  if (to.name === 'ProductDetail' && String(to.params.id) === String(productId.value)) {
+  if (shouldPreserveCheckoutDraft(to, productId.value)) {
     checkoutStore.markReturnToProduct(productId.value)
+    return
   }
+  checkoutStore.clearCheckout(productId.value)
 })
 
 onMounted(initializeCheckout)
