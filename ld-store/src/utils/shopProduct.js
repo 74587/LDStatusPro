@@ -108,21 +108,23 @@ export function getTotalStock(source) {
 }
 
 export function isUnlimitedStock(source) {
-  // 共享卡密模式：后端统一返回 stock/availableStock/cdkStats = -1（不限量）。
-  // 任一库存字段为 -1 即视为无限库存（之前"存在 cdkStats 即不算无限"的判定
-  // 会把共享商品误判为已售罄——cdkStats.available=-1 是无限而非真实统计）。
+  // 商品详情接口计算后的 availableStock 是买家侧库存权威值。独立卡密的原始
+  // stock 也可能是 -1，但此时 availableStock/cdkStats 仍是有限的真实卡密数量，
+  // 不能继续回退到 stock 并误判为无限库存。
   const directValue = source?.availableStock
     ?? source?.available_stock
     ?? source?.product?.availableStock
     ?? source?.product?.available_stock
   if (directValue !== null && directValue !== undefined && directValue !== '') {
-    if (toSafeInt(directValue, 0) === -1) return true
+    return toSafeInt(directValue, 0) === -1
   }
 
   if (isCdkProduct(source)) {
     const cdkAvailable = source?.cdkStats?.available ?? source?.product?.cdkStats?.available
     const cdkTotal = source?.cdkStats?.total ?? source?.product?.cdkStats?.total
-    if (cdkAvailable !== null && cdkAvailable !== undefined && toSafeInt(cdkAvailable, 0) === -1) return true
+    if (cdkAvailable !== null && cdkAvailable !== undefined && cdkAvailable !== '') {
+      return toSafeInt(cdkAvailable, 0) === -1
+    }
     if (cdkTotal !== null && cdkTotal !== undefined && toSafeInt(cdkTotal, 0) === -1) return true
   }
 
