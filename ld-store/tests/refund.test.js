@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { URL } from 'node:url'
 import {
@@ -10,7 +11,25 @@ import {
   validateRefundForm
 } from '../src/utils/refund'
 
+const refundPanelSource = readFileSync(new URL('../src/components/order/OrderRefundPanel.vue', import.meta.url), 'utf8')
+
+function getRefundRequestButtonSource() {
+  const controlsIndex = refundPanelSource.indexOf('aria-controls="refund-request-form"')
+  const buttonStart = refundPanelSource.lastIndexOf('<button', controlsIndex)
+  const buttonEnd = refundPanelSource.indexOf('</button>', controlsIndex)
+  return refundPanelSource.slice(buttonStart, buttonEnd + '</button>'.length)
+}
+
 describe('订单退款买家流程', () => {
+  it('始终展示退款入口，并用禁用态说明申请资格', () => {
+    const requestButton = getRefundRequestButtonSource()
+
+    expect(requestButton).not.toContain('v-if=')
+    expect(requestButton).toContain(':disabled="!canApplyRefund"')
+    expect(requestButton).toContain('aria-describedby="refund-action-availability"')
+    expect(refundPanelSource).toContain('联系卖家是可选的协商方式，不影响申请资格')
+  })
+
   it('校验原因与 10-500 字问题说明', () => {
     expect(validateRefundForm({ reasonCode: '', reasonDetail: '太短' })).toEqual({
       reasonCode: '请选择退款原因',

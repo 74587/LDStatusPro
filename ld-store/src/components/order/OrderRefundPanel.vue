@@ -22,25 +22,36 @@
     <template v-else-if="!refund">
       <div v-if="isBuyer" class="refund-preflight">
         <div class="refund-preflight__intro">
-          <MessageCircleMore :size="22" aria-hidden="true" />
+          <ShieldQuestion :size="22" aria-hidden="true" />
           <div>
-            <strong>物品遇到问题？先与卖家沟通</strong>
-            <p>说明业务单号和具体问题并保留沟通记录。多数售后可以更快地通过协商解决。</p>
+            <strong>退款入口无需先联系卖家</strong>
+            <p>你可以直接申请全额退款，也可以先私信卖家协商。联系卖家不会影响退款申请资格。</p>
           </div>
         </div>
 
-        <div class="refund-preflight__steps" aria-label="申请退款前的建议步骤">
+        <div class="refund-preflight__steps" aria-label="退款售后处理方式">
           <article>
-            <span>1</span>
-            <div><strong>私信卖家协商</strong><p>确认问题、处理方式和预计时间。</p></div>
+            <span><RotateCcw :size="16" aria-hidden="true" /></span>
+            <div><strong>直接申请退款</strong><p>系统将按订单实付金额发起全额退款。</p></div>
           </article>
           <article>
-            <span>2</span>
-            <div><strong>仍未解决再申请</strong><p>系统将按订单实付金额全额退款。</p></div>
+            <span><MessageCircleMore :size="16" aria-hidden="true" /></span>
+            <div><strong>联系卖家（可选）</strong><p>适合希望先确认问题、处理方式和预计时间的情况。</p></div>
           </article>
         </div>
 
         <div class="refund-actions refund-actions--intro">
+          <button
+            type="button"
+            class="refund-btn refund-btn--primary"
+            :disabled="!canApplyRefund"
+            :aria-expanded="canApplyRefund ? formOpen : false"
+            aria-describedby="refund-action-availability"
+            aria-controls="refund-request-form"
+            @click="toggleForm"
+          >
+            <RotateCcw :size="17" aria-hidden="true" />{{ formOpen ? '收起申请表' : '申请退款' }}
+          </button>
           <a
             v-if="counterpartyMessageUrl"
             :href="counterpartyMessageUrl"
@@ -48,22 +59,17 @@
             rel="noopener"
             class="refund-btn refund-btn--secondary"
           >
-            <MessageCircleMore :size="17" aria-hidden="true" />私信卖家
+            <MessageCircleMore :size="17" aria-hidden="true" />私信卖家（可选）
           </a>
-          <button
-            v-if="eligibility?.canApply"
-            type="button"
-            class="refund-btn refund-btn--primary"
-            :aria-expanded="formOpen"
-            aria-controls="refund-request-form"
-            @click="toggleForm"
-          >
-            <RotateCcw :size="17" aria-hidden="true" />{{ formOpen ? '收起申请表' : '申请退款' }}
-          </button>
         </div>
 
-        <p v-if="eligibility && !eligibility.canApply" class="refund-unavailable">
-          <Info :size="16" aria-hidden="true" />{{ eligibility.message }}
+        <p
+          id="refund-action-availability"
+          :class="['refund-availability', { 'is-available': canApplyRefund }]"
+        >
+          <CircleCheckBig v-if="canApplyRefund" :size="16" aria-hidden="true" />
+          <Info v-else :size="16" aria-hidden="true" />
+          {{ refundAvailabilityMessage }}
         </p>
 
         <form v-if="formOpen" id="refund-request-form" class="refund-form" novalidate @submit.prevent="submitRefund">
@@ -346,6 +352,10 @@ const orderNo = computed(() => props.order?.order_no || props.order?.orderNo || 
 const isBuyer = computed(() => props.role === 'buyer')
 const refund = computed(() => refundState.value?.refund || null)
 const eligibility = computed(() => refundState.value?.eligibility || null)
+const canApplyRefund = computed(() => eligibility.value?.canApply === true)
+const refundAvailabilityMessage = computed(() => canApplyRefund.value
+  ? '当前可直接申请全额退款；联系卖家是可选的协商方式，不影响申请资格。'
+  : `暂不可提交：${eligibility.value?.message || '未能确认退款申请资格，请刷新后重试。'}`)
 const disputeGuideUrl = computed(() => refundState.value?.disputeGuideUrl || 'https://credit.linux.do/docs/how-to-use#争议处理')
 const statusMeta = computed(() => getRefundStatusMeta(refund.value?.status))
 const stages = computed(() => buildRefundStages(refund.value?.status, Boolean(refund.value)))
@@ -391,6 +401,7 @@ async function loadRefund() {
 }
 
 function toggleForm() {
+  if (!canApplyRefund.value) return
   formOpen.value = !formOpen.value
   errors.value = {}
 }
@@ -880,8 +891,9 @@ onMounted(loadRefund)
   outline-offset: 2px;
 }
 
-.refund-unavailable { display: flex; align-items: flex-start; gap: 8px; margin: 0; color: var(--text-secondary); font-size: 13px; line-height: 1.55; }
-.refund-unavailable svg { flex: 0 0 auto; }
+.refund-availability { display: flex; align-items: flex-start; gap: 8px; margin: 0; color: var(--text-secondary); font-size: 13px; line-height: 1.55; }
+.refund-availability svg { flex: 0 0 auto; margin-top: 2px; color: var(--refund-warning); }
+.refund-availability.is-available svg { color: var(--refund-success); }
 
 .refund-form {
   display: grid;
