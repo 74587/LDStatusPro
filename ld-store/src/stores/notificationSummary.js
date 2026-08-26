@@ -2,6 +2,7 @@ import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { api } from '@/utils/api'
 import { consumeSseStream } from '@/utils/sse'
+import { createNotificationTabCoordinator } from '@/utils/notificationTabCoordinator'
 
 const STREAM_PATH = '/api/shop/notifications/stream'
 const FALLBACK_INTERVAL_MS = 60_000
@@ -10,6 +11,8 @@ const CONNECT_TIMEOUT_MS = 15_000
 const STREAM_STALE_MS = 70_000
 const STREAM_WATCHDOG_INTERVAL_MS = 15_000
 const RECONNECT_DELAYS_MS = [1_000, 2_000, 5_000, 10_000, 30_000]
+const CONNECTION_LIMIT_RETRY_MS = 60_000
+const RECOVERY_SNAPSHOT_MIN_INTERVAL_MS = 60_000
 
 function normalizeCount(value) {
   const count = Number(value)
@@ -39,7 +42,7 @@ export const useNotificationSummaryStore = defineStore('notification-summary', (
   const totalSessions = ref(0)
   const connectionState = ref('idle')
   const lastSuccessfulSyncAt = ref(0)
-  const isRealtimeConnected = computed(() => connectionState.value === 'open')
+  const isRealtimeConnected = computed(() => ['open', 'shared'].includes(connectionState.value))
 
   let activeRequest = null
   let latestRequestId = 0
@@ -52,11 +55,42 @@ export const useNotificationSummaryStore = defineStore('notification-summary', (
   let connectTimer = null
   let streamWatchdogTimer = null
   let lastStreamActivityAt = 0
+  let lastRecoverySnapshotAt = 0
+  let streamCloseReason = ''
+  let streamCloseRetryAfterMs = 0
+  let tabCoordinator = null
+  let isConnectionOwner = true
   let started = false
   let listenersAttached = false
   const eventSubscribers = new Set()
 
-  function commitSummary(data, { trackSync = true } = {}) {
+  function currentSummary() {
+    return {
+      totalUnread: totalUnread.value,
+      systemUnread: systemUnread.value,
+      buyChatUnread: buyChatUnread.value,
+      sellerPendingDeliveryCount: sellerPendingDeliveryCount.value,
+      sellerRefundPendingCount: sellerRefundPendingCount.value,
+      sessionsWithUnread: sessionsWithUnread.value,
+      totalSessions: totalSessions.value,
+      generatedAt: lastSuccessfulSyncAt.value
+    }
+  }
+
+  function broadcast(message) {
+    if (isConnectionOwner) tabCoordinator?.broadcast(message)
+  }
+
+  function broadcastSummary() {
+    broadcast({ type: 'summary.updated', data: currentSummary() })
+  }
+
+  function setConnectionState(nextState) {
+    connectionState.value = nextState
+    broadcast({ type: 'connection.state', state: nextState })
+  }
+
+  function commitSummary(data, { trackSync = true, share = true } = {}) {
     const summary = normalizeNotificationSummary(data)
     totalUnread.value = summary.totalUnread
     systemUnread.value = summary.systemUnread
@@ -66,6 +100,7 @@ export const useNotificationSummaryStore = defineStore('notification-summary', (
     sessionsWithUnread.value = summary.sessionsWithUnread
     totalSessions.value = summary.totalSessions
     if (trackSync) lastSuccessfulSyncAt.value = summary.generatedAt || Date.now()
+    if (share) broadcastSummary()
   }
 
   function applyServerSummary(data) {
@@ -77,6 +112,7 @@ export const useNotificationSummaryStore = defineStore('notification-summary', (
     latestRequestId += 1
     systemUnread.value = normalizeCount(value)
     totalUnread.value = systemUnread.value + buyChatUnread.value
+    broadcastSummary()
   }
 
   function setBuyChatSummary(data = {}) {
@@ -85,18 +121,21 @@ export const useNotificationSummaryStore = defineStore('notification-summary', (
     sessionsWithUnread.value = normalizeCount(data.sessionsWithUnread)
     if (data.totalSessions !== undefined) totalSessions.value = normalizeCount(data.totalSessions)
     totalUnread.value = systemUnread.value + buyChatUnread.value
+    broadcastSummary()
   }
 
   function markSystemRead(count = 1) {
     latestRequestId += 1
     systemUnread.value = Math.max(0, systemUnread.value - normalizeCount(count))
     totalUnread.value = systemUnread.value + buyChatUnread.value
+    broadcastSummary()
   }
 
   function markAllSystemRead() {
     latestRequestId += 1
     systemUnread.value = 0
     totalUnread.value = buyChatUnread.value
+    broadcastSummary()
   }
 
   function markBuyChatRead(count = 0) {
@@ -104,6 +143,7 @@ export const useNotificationSummaryStore = defineStore('notification-summary', (
     buyChatUnread.value = Math.max(0, buyChatUnread.value - normalizeCount(count))
     if (count > 0) sessionsWithUnread.value = Math.max(0, sessionsWithUnread.value - 1)
     totalUnread.value = systemUnread.value + buyChatUnread.value
+    broadcastSummary()
   }
 
   async function refresh({ force = false } = {}) {
@@ -123,7 +163,7 @@ export const useNotificationSummaryStore = defineStore('notification-summary', (
     }
   }
 
-  function emitDomainEvent(event) {
+  function emitDomainEvent(event, { share = true } = {}) {
     for (const subscriber of [...eventSubscribers]) {
       try {
         subscriber(event)
@@ -131,6 +171,7 @@ export const useNotificationSummaryStore = defineStore('notification-summary', (
         // 页面订阅者异常不得中断全局消息流。
       }
     }
+    if (share) broadcast({ type: 'domain.event', event })
   }
 
   function handleSseEvent(frame) {
@@ -146,6 +187,11 @@ export const useNotificationSummaryStore = defineStore('notification-summary', (
     }
     if (frame.event === 'ready') {
       reconnectAttempt = 0
+      return
+    }
+    if (frame.event === 'stream.closed') {
+      streamCloseReason = String(data.reason || 'server_closed')
+      streamCloseRetryAfterMs = normalizeCount(data.retryAfterMs)
       return
     }
     if (['system-message.changed', 'buy-message.created', 'seller-task.changed'].includes(frame.event)) {
@@ -181,23 +227,33 @@ export const useNotificationSummaryStore = defineStore('notification-summary', (
   }
 
   function startFallbackPolling() {
-    if (fallbackTimer || typeof window === 'undefined') return
+    if (!isConnectionOwner || fallbackTimer || typeof window === 'undefined') return
     fallbackTimer = window.setInterval(() => {
-      if (!started || connectionState.value === 'open' || document.visibilityState === 'hidden' || !navigator.onLine) return
+      if (!started || !isConnectionOwner || connectionState.value === 'open' || document.visibilityState === 'hidden' || !navigator.onLine) return
       refresh({ force: true })
     }, FALLBACK_INTERVAL_MS)
   }
 
-  function scheduleReconnect() {
-    if (!started || typeof window === 'undefined' || document.visibilityState === 'hidden' || !navigator.onLine) return
+  function scheduleReconnect(minimumDelayMs = 0) {
+    if (!started || !isConnectionOwner || typeof window === 'undefined' || document.visibilityState === 'hidden' || !navigator.onLine) return
     clearReconnectTimer()
-    const delay = RECONNECT_DELAYS_MS[Math.min(reconnectAttempt, RECONNECT_DELAYS_MS.length - 1)]
+    const backoffDelay = RECONNECT_DELAYS_MS[Math.min(reconnectAttempt, RECONNECT_DELAYS_MS.length - 1)]
+    const delay = Math.max(backoffDelay, normalizeCount(minimumDelayMs))
     reconnectAttempt += 1
-    connectionState.value = 'retrying'
+    setConnectionState(minimumDelayMs >= CONNECTION_LIMIT_RETRY_MS ? 'limited' : 'retrying')
     reconnectTimer = window.setTimeout(() => {
       reconnectTimer = null
       connectStream()
     }, delay)
+  }
+
+  function refreshRecoverySnapshot() {
+    if (!isConnectionOwner) return
+    const now = Date.now()
+    if (now - lastRecoverySnapshotAt < RECOVERY_SNAPSHOT_MIN_INTERVAL_MS) return
+    if (lastSuccessfulSyncAt.value > 0 && now - lastSuccessfulSyncAt.value < RECOVERY_SNAPSHOT_MIN_INTERVAL_MS) return
+    lastRecoverySnapshotAt = now
+    void refresh({ force: true })
   }
 
   function abortStream(nextState = 'idle') {
@@ -206,18 +262,20 @@ export const useNotificationSummaryStore = defineStore('notification-summary', (
     const controller = streamController
     streamController = null
     if (controller && !controller.signal.aborted) controller.abort()
-    connectionState.value = nextState
+    setConnectionState(nextState)
   }
 
   async function connectStream() {
-    if (!started || streamController || typeof window === 'undefined') return
+    if (!started || !isConnectionOwner || streamController || typeof window === 'undefined') return
     if (document.visibilityState === 'hidden' || !navigator.onLine) return
 
     clearReconnectTimer()
     const generation = ++streamGeneration
     const controller = new AbortController()
     streamController = controller
-    connectionState.value = 'connecting'
+    streamCloseReason = ''
+    streamCloseRetryAfterMs = 0
+    setConnectionState('connecting')
 
     connectTimer = window.setTimeout(() => {
       if (streamController === controller && !controller.signal.aborted) controller.abort()
@@ -229,9 +287,9 @@ export const useNotificationSummaryStore = defineStore('notification-summary', (
     if (generation !== streamGeneration) return
     if (controller.signal.aborted) {
       streamController = null
-      if (started && document.visibilityState !== 'hidden' && navigator.onLine) {
+      if (started && isConnectionOwner && document.visibilityState !== 'hidden' && navigator.onLine) {
         startFallbackPolling()
-        void refresh({ force: true })
+        refreshRecoverySnapshot()
         scheduleReconnect()
       }
       return
@@ -239,16 +297,16 @@ export const useNotificationSummaryStore = defineStore('notification-summary', (
     if (!result?.success) {
       streamController = null
       if (result?.status === 401) {
-        connectionState.value = 'idle'
+        setConnectionState('idle')
         return
       }
       startFallbackPolling()
-      void refresh({ force: true })
+      refreshRecoverySnapshot()
       scheduleReconnect()
       return
     }
 
-    connectionState.value = 'open'
+    setConnectionState('open')
     clearFallbackTimer()
     startStreamWatchdog(controller)
     try {
@@ -263,13 +321,68 @@ export const useNotificationSummaryStore = defineStore('notification-summary', (
       clearStreamTimers()
       if (generation === streamGeneration) {
         streamController = null
-        if (started && document.visibilityState !== 'hidden' && navigator.onLine) {
+        if (started && isConnectionOwner && document.visibilityState !== 'hidden' && navigator.onLine) {
           startFallbackPolling()
-          void refresh({ force: true })
-          scheduleReconnect()
+          refreshRecoverySnapshot()
+          const retryAfterMs = streamCloseReason === 'connection_limit'
+            ? Math.max(CONNECTION_LIMIT_RETRY_MS, streamCloseRetryAfterMs)
+            : streamCloseRetryAfterMs
+          scheduleReconnect(retryAfterMs)
         }
       }
     }
+  }
+
+  function handleCoordinatorMessage(message) {
+    if (!message || typeof message !== 'object') return
+    if (message.type === 'state.request') {
+      if (isConnectionOwner) {
+        broadcastSummary()
+        broadcast({ type: 'connection.state', state: connectionState.value })
+      }
+      return
+    }
+    if (isConnectionOwner) return
+
+    if (message.type === 'summary.updated') {
+      latestRequestId += 1
+      commitSummary(message.data, { share: false })
+      return
+    }
+    if (message.type === 'domain.event') {
+      emitDomainEvent(message.event, { share: false })
+      return
+    }
+    if (message.type === 'connection.state') {
+      connectionState.value = message.state === 'open' ? 'shared' : String(message.state || 'shared')
+    }
+  }
+
+  function handleLeadershipChange(isLeader) {
+    if (!started) return
+    if (isLeader) {
+      isConnectionOwner = true
+      setConnectionState('idle')
+      startFallbackPolling()
+      connectStream()
+      return
+    }
+
+    isConnectionOwner = false
+    clearReconnectTimer()
+    clearFallbackTimer()
+    abortStream('shared')
+    tabCoordinator?.requestState()
+  }
+
+  function startTabCoordinator() {
+    tabCoordinator = createNotificationTabCoordinator({
+      onLeadershipChange: handleLeadershipChange,
+      onMessage: handleCoordinatorMessage
+    })
+    tabCoordinator.start({
+      isEligible: document.visibilityState !== 'hidden' && navigator.onLine
+    })
   }
 
   function handleVisibilityChange() {
@@ -277,24 +390,35 @@ export const useNotificationSummaryStore = defineStore('notification-summary', (
       if (hiddenTimer) window.clearTimeout(hiddenTimer)
       hiddenTimer = window.setTimeout(() => {
         hiddenTimer = null
-        if (document.visibilityState === 'hidden') abortStream('paused')
+        if (document.visibilityState === 'hidden') {
+          tabCoordinator?.setEligible(false)
+          if (!tabCoordinator) abortStream('paused')
+        }
       }, HIDDEN_DISCONNECT_MS)
       return
     }
     if (hiddenTimer) window.clearTimeout(hiddenTimer)
     hiddenTimer = null
-    void refresh({ force: true })
-    connectStream()
+    tabCoordinator?.setEligible(navigator.onLine)
+    tabCoordinator?.requestState()
+    if (!tabCoordinator) {
+      refreshRecoverySnapshot()
+      connectStream()
+    }
   }
 
   function handleOnline() {
-    void refresh({ force: true })
-    connectStream()
+    tabCoordinator?.setEligible(document.visibilityState !== 'hidden')
+    tabCoordinator?.requestState()
+    if (!tabCoordinator) {
+      refreshRecoverySnapshot()
+      connectStream()
+    }
   }
 
   function handleOffline() {
-    abortStream('offline')
-    startFallbackPolling()
+    tabCoordinator?.setEligible(false)
+    if (!tabCoordinator) abortStream('offline')
   }
 
   function attachLifecycleListeners() {
@@ -317,13 +441,15 @@ export const useNotificationSummaryStore = defineStore('notification-summary', (
     if (started || typeof window === 'undefined') return
     started = true
     attachLifecycleListeners()
-    startFallbackPolling()
     void refresh({ force: true })
-    connectStream()
+    startTabCoordinator()
   }
 
   function stopRealtime({ clear = true } = {}) {
     started = false
+    tabCoordinator?.stop()
+    tabCoordinator = null
+    isConnectionOwner = true
     clearReconnectTimer()
     clearFallbackTimer()
     if (hiddenTimer) window.clearTimeout(hiddenTimer)
@@ -331,6 +457,9 @@ export const useNotificationSummaryStore = defineStore('notification-summary', (
     detachLifecycleListeners()
     abortStream('idle')
     reconnectAttempt = 0
+    streamCloseReason = ''
+    streamCloseRetryAfterMs = 0
+    lastRecoverySnapshotAt = 0
     if (clear) reset()
   }
 

@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { TextEncoder } from 'node:util'
 import { createPinia, setActivePinia } from 'pinia'
 import { api } from '../src/utils/api'
 import {
@@ -151,5 +152,138 @@ describe('通知汇总状态', () => {
 
     store.stopRealtime()
     expect(store.connectionState).toBe('idle')
+  })
+
+  it('同源多标签页只由租约持有者建立实时连接', async () => {
+    vi.useFakeTimers()
+    const listeners = new Map()
+    const storageValues = new Map()
+    const channels = new Map()
+    class TestBroadcastChannel {
+      constructor(name) {
+        this.name = name
+        this.handlers = new Set()
+        const peers = channels.get(name) || new Set()
+        peers.add(this)
+        channels.set(name, peers)
+      }
+
+      addEventListener(_name, handler) { this.handlers.add(handler) }
+      removeEventListener(_name, handler) { this.handlers.delete(handler) }
+      postMessage(data) {
+        for (const peer of channels.get(this.name) || []) {
+          if (peer !== this) peer.handlers.forEach(handler => handler({ data }))
+        }
+      }
+      close() { channels.get(this.name)?.delete(this) }
+    }
+    const addListener = (name, handler) => {
+      const handlers = listeners.get(name) || new Set()
+      handlers.add(handler)
+      listeners.set(name, handlers)
+    }
+    const removeListener = (name, handler) => listeners.get(name)?.delete(handler)
+    vi.stubGlobal('BroadcastChannel', TestBroadcastChannel)
+    vi.stubGlobal('window', {
+      BroadcastChannel: TestBroadcastChannel,
+      localStorage: {
+        getItem: key => storageValues.get(key) ?? null,
+        setItem: (key, value) => storageValues.set(key, value),
+        removeItem: key => storageValues.delete(key)
+      },
+      setTimeout: (...args) => globalThis.setTimeout(...args),
+      clearTimeout: timer => globalThis.clearTimeout(timer),
+      setInterval: (...args) => globalThis.setInterval(...args),
+      clearInterval: timer => globalThis.clearInterval(timer),
+      addEventListener: addListener,
+      removeEventListener: removeListener
+    })
+    vi.stubGlobal('document', {
+      visibilityState: 'visible',
+      addEventListener: addListener,
+      removeEventListener: removeListener
+    })
+    vi.stubGlobal('navigator', { onLine: true })
+    api.get.mockResolvedValue({ success: true, data: {} })
+    api.openEventStream.mockImplementation(() => new Promise(() => {}))
+
+    setActivePinia(createPinia())
+    const leaderStore = useNotificationSummaryStore()
+    leaderStore.startRealtime()
+    setActivePinia(createPinia())
+    const followerStore = useNotificationSummaryStore()
+    followerStore.startRealtime()
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(api.openEventStream).toHaveBeenCalledTimes(1)
+    expect(followerStore.connectionState).toBe('connecting')
+    leaderStore.setSystemUnread(4)
+    expect(followerStore.systemUnread).toBe(4)
+    expect(followerStore.totalUnread).toBe(4)
+
+    leaderStore.stopRealtime()
+    await vi.advanceTimersByTimeAsync(5_000)
+    expect(api.openEventStream).toHaveBeenCalledTimes(2)
+
+    followerStore.stopRealtime()
+  })
+
+  it('连接上限关闭后不立即重连或放大汇总请求', async () => {
+    vi.useFakeTimers()
+    const listeners = new Map()
+    vi.stubGlobal('BroadcastChannel', undefined)
+    vi.stubGlobal('window', {
+      setTimeout: (...args) => globalThis.setTimeout(...args),
+      clearTimeout: timer => globalThis.clearTimeout(timer),
+      setInterval: (...args) => globalThis.setInterval(...args),
+      clearInterval: timer => globalThis.clearInterval(timer),
+      addEventListener: (name, handler) => listeners.set(name, handler),
+      removeEventListener: name => listeners.delete(name)
+    })
+    vi.stubGlobal('document', {
+      visibilityState: 'visible',
+      addEventListener: (name, handler) => listeners.set(name, handler),
+      removeEventListener: name => listeners.delete(name)
+    })
+    vi.stubGlobal('navigator', { onLine: true })
+    api.get.mockResolvedValue({ success: true, data: {} })
+    const encoder = new TextEncoder()
+    api.openEventStream.mockResolvedValue({
+      success: true,
+      response: {
+        body: {
+          getReader() {
+            let sent = false
+            return {
+              read: vi.fn(async () => {
+                if (sent) return { done: true, value: undefined }
+                sent = true
+                return {
+                  done: false,
+                  value: encoder.encode('event: stream.closed\ndata: {"reason":"connection_limit","retryAfterMs":60000}\n\n')
+                }
+              }),
+              cancel: vi.fn(),
+              releaseLock: vi.fn()
+            }
+          }
+        }
+      }
+    })
+
+    const store = useNotificationSummaryStore()
+    store.startRealtime()
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(store.connectionState).toBe('limited')
+    expect(api.openEventStream).toHaveBeenCalledTimes(1)
+    expect(api.get).toHaveBeenCalledTimes(1)
+
+    await vi.advanceTimersByTimeAsync(59_999)
+    expect(api.openEventStream).toHaveBeenCalledTimes(1)
+    await vi.advanceTimersByTimeAsync(1)
+    expect(api.openEventStream).toHaveBeenCalledTimes(2)
+
+    store.stopRealtime()
   })
 })

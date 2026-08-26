@@ -8,6 +8,7 @@ const DEFAULT_API_ORIGINS = [
   'https://api1.ldspro.qzz.io',
   'https://api2.ldspro.qzz.io'
 ]
+const NOTIFICATION_STREAM_PATTERN = /\/api\/shop\/notifications\/stream(?:\?|$)/
 const pendingErrors = []
 const BUILD_VERSION = import.meta.env.VITE_BUILD_VERSION
 
@@ -99,6 +100,10 @@ export function resolveTraceHeaderCorsUrls(
   }))].map((origin) => new RegExp(`^${escapeRegExp(origin)}(?:/|$)`))
 }
 
+export function resolveTelemetryIgnoreUrls() {
+  return [NOTIFICATION_STREAM_PATTERN]
+}
+
 function routeViewName(route) {
   const routeRecord = route?.matched?.[route.matched.length - 1]
   return String(routeRecord?.path || route?.name || 'unknown').slice(0, 120)
@@ -138,6 +143,9 @@ export function initializeStorefrontTelemetry(router) {
     faroInstance = initializeFaro({
       url: config.collectorUrl,
       apiKey: config.apiKey,
+      // OTel FetchInstrumentation 会 clone 并持续消费响应体；无限 SSE 必须排除，
+      // 否则每条通知连接都会留下一个永不结束的 fetch span/reader。
+      ignoreUrls: resolveTelemetryIgnoreUrls(),
       app: {
         name: 'ldstore-web',
         version: config.version,

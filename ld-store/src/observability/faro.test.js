@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { resolveTelemetryConfig, resolveTraceHeaderCorsUrls } from './faro'
+import {
+  resolveTelemetryConfig,
+  resolveTelemetryIgnoreUrls,
+  resolveTraceHeaderCorsUrls
+} from './faro'
 
 const locationLike = { origin: 'https://store.ldspro.qzz.io' }
 
@@ -15,6 +19,14 @@ describe('frontend infrastructure configuration', () => {
       expect(matchers.some((matcher) => matcher.test(`${apiOrigin}/api/health`))).toBe(true)
     }
     expect(matchers.some((matcher) => matcher.test('https://example.com/api/health'))).toBe(false)
+  })
+
+  it('excludes the infinite notification stream from fetch tracing', () => {
+    const matchers = resolveTelemetryIgnoreUrls()
+
+    expect(matchers.some(matcher => matcher.test('https://api2.ldspro.qzz.io/api/shop/notifications/stream'))).toBe(true)
+    expect(matchers.some(matcher => matcher.test('https://api2.ldspro.qzz.io/api/shop/notifications/stream?resume=1'))).toBe(true)
+    expect(matchers.some(matcher => matcher.test('https://api2.ldspro.qzz.io/api/shop/messages/unread-summary'))).toBe(false)
   })
 
   it('stays disabled unless the feature and endpoint are both configured', () => {
