@@ -76,13 +76,20 @@
             :class="{ unread: !item.isRead }"
           >
             <div class="system-top">
-              <div class="system-title-row">
-                <h3 class="system-title">{{ item.title || '系统消息' }}</h3>
+              <h3 class="system-title">{{ item.title || '系统消息' }}</h3>
+              <div class="system-heading-meta">
+                <time
+                  class="system-time"
+                  :aria-label="formatMessageTime(item.createdAt)"
+                  :title="formatMessageTime(item.createdAt)"
+                >
+                  <span class="system-time-relative">{{ formatRelativeTime(item.createdAt) }}</span>
+                  <span class="system-time-exact" aria-hidden="true">· {{ formatStandardDateTime(item.createdAt) }}</span>
+                </time>
                 <span class="status-pill" :class="item.isRead ? 'read' : 'unread'">
                   {{ item.isRead ? '已读' : '未读' }}
                 </span>
               </div>
-              <span class="system-time">{{ formatMessageTime(item.createdAt) }}</span>
             </div>
 
             <ExpandableText
@@ -92,7 +99,7 @@
             />
 
             <div class="system-bottom">
-              <span class="system-meta">
+              <span class="system-meta" :title="systemMessageTypeText(item.messageType)">
                 {{ systemMessageTypeText(item.messageType) }}
               </span>
               <div class="system-actions">
@@ -230,7 +237,7 @@ import { useRouter } from 'vue-router'
 import { api } from '@/utils/api'
 import { useNotificationSummaryStore } from '@/stores/notificationSummary'
 import { useToast } from '@/composables/useToast'
-import { formatMessageTime, formatPrice, formatRelativeTime } from '@/utils/format'
+import { formatMessageTime, formatPrice, formatRelativeTime, formatStandardDateTime } from '@/utils/format'
 import { fetchMyConversations, resolveConversationPath } from '@/utils/conversation'
 import AppSelect from '@/components/common/AppSelect.vue'
 import LiquidTabs from '@/components/common/LiquidTabs.vue'
@@ -795,33 +802,49 @@ onUnmounted(() => {
 .system-top {
   display: flex;
   justify-content: space-between;
+  align-items: flex-start;
   gap: 10px;
 }
 
-.system-title-row {
+.system-heading-meta {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex: 0 0 auto;
 }
 
 .system-title {
   margin: 0;
+  min-width: 0;
+  flex: 1 1 auto;
   font-size: 16px;
+  line-height: 1.45;
   color: var(--text-primary);
+  overflow-wrap: anywhere;
 }
 
 .system-time {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
   font-size: 12px;
   color: var(--text-tertiary);
   line-height: 1.5;
   text-align: right;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .status-pill {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
   font-size: 11px;
+  line-height: 1.4;
   border-radius: 999px;
   padding: 2px 8px;
+  white-space: nowrap;
 }
 
 .status-pill.unread {
@@ -852,6 +875,7 @@ onUnmounted(() => {
 }
 
 .system-meta {
+  min-width: 0;
   font-size: 12px;
   color: var(--text-tertiary);
 }
@@ -1174,8 +1198,20 @@ onUnmounted(() => {
     border-radius: 12px;
   }
 
+  .system-heading-meta {
+    gap: 6px;
+  }
+
   .system-title {
     font-size: 14px;
+  }
+
+  .system-time {
+    font-size: 11px;
+  }
+
+  .system-time-exact {
+    display: none;
   }
 
   .system-content {
@@ -1186,13 +1222,23 @@ onUnmounted(() => {
 
   .system-bottom {
     margin-top: 8px;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 6px;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .system-meta {
+    flex: 1 1 auto;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .system-actions {
-    width: 100%;
+    width: auto;
+    margin-left: auto;
+    flex: 0 0 auto;
+    justify-content: flex-end;
   }
 
   .mini-btn {
@@ -1263,6 +1309,17 @@ onUnmounted(() => {
   .pager button {
     padding: 4px 8px;
     font-size: 12px;
+  }
+}
+
+@media (max-width: 360px) {
+  .toolbar {
+    flex-wrap: wrap;
+  }
+
+  .toolbar-search {
+    order: 2;
+    flex: 1 0 100%;
   }
 }
 </style>

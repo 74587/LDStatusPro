@@ -34,6 +34,24 @@ describe('seller mobile horizontal overflow containment', () => {
     expect(tableWrap).toMatch(/overflow-x:\s*auto/)
   })
 
+  it('keeps long publish form values inside the mobile grid track', () => {
+    const source = readSource('../src/styles/seller.css')
+    const formGrid = cssDeclarations(source, '.seller-shell .seller-product-form,\n.seller-shell .seller-edit-form')
+    const formCards = cssDeclarations(source, '.seller-shell .seller-product-form > .form-card,\n.seller-shell .seller-edit-form > .form-card')
+    const formInputs = cssDeclarations(
+      source,
+      '.seller-shell .seller-product-form .form-input,\n.seller-shell .seller-product-form .form-textarea,\n.seller-shell .seller-edit-form .form-input,\n.seller-shell .seller-edit-form .form-textarea'
+    )
+
+    expect(formGrid).toMatch(/grid-template-columns:\s*minmax\(0, 1fr\)/)
+    expect(formGrid).toMatch(/max-width:\s*100%/)
+    expect(formGrid).toMatch(/min-width:\s*0/)
+    expect(formCards).toMatch(/max-width:\s*100%/)
+    expect(formCards).toMatch(/min-width:\s*0/)
+    expect(formInputs).toMatch(/max-width:\s*100%/)
+    expect(formInputs).toMatch(/min-width:\s*0/)
+  })
+
   it('resets both scroll axes on ordinary route navigation', () => {
     const source = readSource('../src/router/index.js')
 

@@ -64,6 +64,10 @@
 .seller-shell .seller-product-form,
 .seller-shell .seller-edit-form {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   gap: 18px;
   align-items: start;
 }
@@ -71,6 +75,9 @@
 .seller-shell .seller-product-form > .form-card,
 .seller-shell .seller-edit-form > .form-card {
   grid-column: 1;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
   margin: 0;
   padding: clamp(20px, 2.3vw, 28px);
   border: 1px solid var(--seller-border);
@@ -97,10 +104,17 @@
 .seller-shell .seller-product-form .form-textarea,
 .seller-shell .seller-edit-form .form-input,
 .seller-shell .seller-edit-form .form-textarea {
+  min-width: 0;
+  max-width: 100%;
   border-color: var(--seller-border);
   border-radius: 10px;
   background: var(--seller-surface-strong);
   color: var(--seller-ink);
+}
+
+.seller-shell .seller-product-form .form-group,
+.seller-shell .seller-edit-form .form-group {
+  min-width: 0;
 }
 
 .seller-shell .seller-product-form .form-input:focus,
