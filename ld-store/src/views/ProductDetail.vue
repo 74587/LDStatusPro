@@ -115,13 +115,14 @@
             
             <!-- 物品状态信息 -->
             <div class="status-row">
-              <div class="status-item">
-                <Eye class="status-icon" :size="16" aria-hidden="true" />
-                <span class="status-text">{{ product.view_count || 0 }} 浏览</span>
-              </div>
+              <ProductStockIndicator v-if="isPlatformOrder" :product="product" />
               <div v-if="isPlatformOrder && soldCount > 0" class="status-item hot">
                 <Flame class="status-icon" :size="16" aria-hidden="true" />
                 <span class="status-text">已售 {{ soldCount }}</span>
+              </div>
+              <div class="status-item">
+                <Eye class="status-icon" :size="16" aria-hidden="true" />
+                <span class="status-text">{{ product.view_count || 0 }} 浏览</span>
               </div>
               <div class="status-item">
                 <CalendarClock class="status-icon" :size="16" aria-hidden="true" />
@@ -991,6 +992,7 @@ import { prepareNewTab, openInNewTab, cleanupPreparedTab } from '@/utils/newTab'
 import AvatarImage from '@/components/common/AvatarImage.vue'
 import StarRatingDisplay from '@/components/common/StarRatingDisplay.vue'
 import StarRatingInput from '@/components/common/StarRatingInput.vue'
+import ProductStockIndicator from '@/components/product/ProductStockIndicator.vue'
 import { buildAvatarCandidates } from '@/utils/avatar'
 import { api } from '@/utils/api'
 import {
@@ -3256,8 +3258,9 @@ async function handleOpenStore() {
 /* 状态信息 */
 .status-row {
   display: flex;
+  align-items: center;
   flex-wrap: wrap;
-  gap: 16px;
+  gap: 10px 16px;
 }
 
 .detail-main--landscape .status-row {

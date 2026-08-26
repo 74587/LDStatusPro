@@ -64,8 +64,7 @@
                 </div>
                 <div class="product-copy">
                   <div class="product-badges">
-                    <span>{{ isCdk ? '自动发卡' : '手动履约' }}</span>
-                    <span>{{ stockLabel }}</span>
+                    <span class="product-type-badge">{{ isCdk ? '自动发卡' : '手动履约' }}</span>
                   </div>
                   <h3>{{ productName }}</h3>
                   <p class="seller-name">卖家 @{{ sellerUsername }}</p>
@@ -80,7 +79,12 @@
 
               <div class="quantity-row">
                 <div>
-                  <label for="checkout-quantity">兑换数量</label>
+                  <div class="quantity-heading">
+                    <label for="checkout-quantity">兑换数量</label>
+                    <span class="quantity-stock">
+                      <ProductStockIndicator :product="product" size="sm" />
+                    </span>
+                  </div>
                   <p>{{ quantityHint }} · 数量仅用于试算，确认兑换时校验库存</p>
                 </div>
                 <div class="quantity-control">
@@ -336,7 +340,6 @@ import {
 } from '@/utils/checkoutCoupon'
 import {
   getAvailableStock,
-  getStockDisplay,
   isCdkProduct,
   isOutOfStock as isProductOutOfStock,
   isPlatformOrderProduct,
@@ -345,6 +348,7 @@ import {
 import { cleanupPreparedTab, openPaymentPopup, preparePaymentPopup, watchPaymentPopup } from '@/utils/newTab'
 import CouponPickerDialog from '@/components/checkout/CouponPickerDialog.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
+import ProductStockIndicator from '@/components/product/ProductStockIndicator.vue'
 import {
   formatPurchaseLimitLabel,
   formatPurchaseLimitReleaseTime,
@@ -397,7 +401,6 @@ const originalSubtotal = computed(() => Number(couponQuote.value?.originalPrice 
 const availableStock = computed(() => getAvailableStock(product.value))
 const hasUnlimitedStock = computed(() => isUnlimitedStock(product.value))
 const isOutOfStock = computed(() => isProductOutOfStock(product.value))
-const stockLabel = computed(() => `库存 ${getStockDisplay(product.value)}`)
 
 const purchaseLimit = computed(() => getPurchaseLimit(couponQuote.value || product.value))
 const purchaseLimitReached = computed(() => isPurchaseLimitReached(purchaseLimit.value))
@@ -432,7 +435,6 @@ const quantityHint = computed(() => {
   if (purchaseLimit.value.mode !== 'none') {
     hints.push(formatPurchaseLimitLabel(purchaseLimit.value, { loggedIn: true }))
   }
-  if (!hasUnlimitedStock.value) hints.push(stockLabel.value)
   return hints.length ? hints.join(' · ') : '可按需要调整本次兑换数量'
 })
 
@@ -966,7 +968,7 @@ onBeforeUnmount(() => {
   margin-bottom: 8px;
 }
 
-.product-badges span {
+.product-type-badge {
   min-height: 26px;
   display: inline-flex;
   align-items: center;
@@ -1037,6 +1039,20 @@ onBeforeUnmount(() => {
   color: var(--text-primary);
   font-size: 15px;
   font-weight: 700;
+}
+
+.quantity-heading {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.quantity-stock {
+  display: inline-flex;
+  align-items: center;
+  padding-left: 10px;
+  border-left: 1px solid var(--border-medium);
 }
 
 .quantity-row p {

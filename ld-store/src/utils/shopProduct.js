@@ -157,6 +157,30 @@ export function getStockDisplay(source) {
   return `${available}`
 }
 
+export function getStockIndicatorState(source, threshold = 5) {
+  const display = getStockDisplay(source)
+  if (!display) return { label: '', tone: 'available' }
+
+  if (isOutOfStock(source)) {
+    return {
+      label: `已售罄 · 库存 ${display}`,
+      tone: 'out'
+    }
+  }
+
+  if (isLowStock(source, threshold)) {
+    return {
+      label: `库存仅剩 ${display}`,
+      tone: 'low'
+    }
+  }
+
+  return {
+    label: `库存 ${display}`,
+    tone: 'available'
+  }
+}
+
 export function requiresBuyerContact(source) {
   if (typeof source?.requires_buyer_contact === 'boolean') {
     return source.requires_buyer_contact
