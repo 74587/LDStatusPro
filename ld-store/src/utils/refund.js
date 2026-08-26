@@ -20,12 +20,150 @@ const STATUS_META = Object.freeze({
   rejected: { label: '卖家已拒绝', tone: 'danger', description: '请先查看卖家说明；协商仍无法解决时，可到 Credit 发起争议。' }
 })
 
-export const REFUND_PROGRESS_STEPS = Object.freeze([
-  '优先协商',
-  '申请退款',
-  '卖家处理',
-  '处理完成'
+const REFUND_STAGE_DEFINITIONS = Object.freeze([
+  { key: 'request', label: '申请已提交' },
+  { key: 'seller', label: '卖家处理' },
+  { key: 'execution', label: '退款执行' },
+  { key: 'result', label: '处理结果' }
 ])
+
+const REFUND_EVENT_META = Object.freeze({
+  requested: { label: '买家提交退款申请', tone: 'brand', icon: 'request' },
+  contacted: { label: '卖家联系买家协商', tone: 'info', icon: 'contact' },
+  approved: { label: '卖家同意全额退款', tone: 'info', icon: 'approved' },
+  rejected: { label: '卖家拒绝退款申请', tone: 'danger', icon: 'rejected' },
+  refund_succeeded: { label: 'LDC 积分退款成功', tone: 'success', icon: 'success' },
+  refund_failed: { label: '退款执行失败', tone: 'danger', icon: 'failed' },
+  refund_unknown: { label: '退款结果等待核对', tone: 'warning', icon: 'unknown' }
+})
+
+function createStage(index, state = 'pending', options = {}) {
+  const definition = REFUND_STAGE_DEFINITIONS[index]
+  return {
+    ...definition,
+    state,
+    tone: options.tone || (state === 'done' ? 'success' : 'neutral'),
+    description: options.description || (state === 'pending' ? '尚未开始' : ''),
+    current: options.current === true
+  }
+}
+
+export function buildRefundStages(status, hasRefund = true) {
+  if (!hasRefund) return []
+
+  const value = String(status || '')
+  const pending = index => createStage(index)
+  const done = (index, description) => createStage(index, 'done', { description })
+  const current = (index, description, tone = 'info') => createStage(index, 'current', {
+    description,
+    tone,
+    current: true
+  })
+  const error = (index, description, tone = 'danger') => createStage(index, 'error', {
+    description,
+    tone,
+    current: true
+  })
+
+  if (value === 'requested') {
+    return [
+      done(0, '申请信息已送达'),
+      current(1, '等待卖家响应', 'warning'),
+      pending(2),
+      pending(3)
+    ]
+  }
+
+  if (value === 'negotiating') {
+    return [
+      done(0, '申请信息已送达'),
+      current(1, '双方正在协商'),
+      pending(2),
+      pending(3)
+    ]
+  }
+
+  if (value === 'processing') {
+    return [
+      done(0, '申请信息已送达'),
+      done(1, '卖家已同意退款'),
+      current(2, '正在提交 Credit'),
+      pending(3)
+    ]
+  }
+
+  if (value === 'refunded') {
+    const result = done(3, 'LDC 已原路退回')
+    result.label = '已退款'
+    result.current = true
+    return [
+      done(0, '申请信息已送达'),
+      done(1, '卖家已同意退款'),
+      done(2, 'Credit 已确认退款'),
+      result
+    ]
+  }
+
+  if (value === 'rejected') {
+    const skipped = createStage(2, 'skipped', {
+      description: '未执行积分退款',
+      tone: 'neutral'
+    })
+    const result = error(3, '查看卖家说明')
+    result.label = '已拒绝'
+    return [
+      done(0, '申请信息已送达'),
+      done(1, '卖家已作出决定'),
+      skipped,
+      result
+    ]
+  }
+
+  if (value === 'failed') {
+    return [
+      done(0, '申请信息已送达'),
+      done(1, '卖家已同意退款'),
+      error(2, '可检查原因后重试'),
+      pending(3)
+    ]
+  }
+
+  if (value === 'unknown') {
+    return [
+      done(0, '申请信息已送达'),
+      done(1, '卖家已同意退款'),
+      error(2, '需人工核对 Credit', 'warning'),
+      pending(3)
+    ]
+  }
+
+  return [
+    current(0, '售后状态待确认', 'warning'),
+    pending(1),
+    pending(2),
+    pending(3)
+  ]
+}
+
+export function getRefundEventMeta(action) {
+  return REFUND_EVENT_META[String(action || '')] || {
+    label: '售后状态更新',
+    tone: 'neutral',
+    icon: 'update'
+  }
+}
+
+export function getRefundActorLabel(event = {}) {
+  const type = String(event.actorType || '').toLowerCase()
+  const roleLabel = {
+    buyer: '买家',
+    seller: '卖家',
+    system: '系统',
+    admin: '平台'
+  }[type] || '售后记录'
+  const actorName = String(event.actorName || '').trim().replace(/^@/, '')
+  return actorName ? `${roleLabel} · @${actorName}` : roleLabel
+}
 
 export function getRefundReasonLabel(code) {
   return REASON_LABELS[String(code || '')] || '其他问题'
@@ -37,15 +175,6 @@ export function getRefundStatusMeta(status) {
     tone: 'neutral',
     description: '请刷新页面后重试。'
   }
-}
-
-export function getRefundProgressIndex(status, hasRefund = true) {
-  if (!hasRefund) return 0
-  const value = String(status || '')
-  if (value === 'requested') return 1
-  if (['negotiating', 'processing', 'failed', 'unknown'].includes(value)) return 2
-  if (['refunded', 'rejected'].includes(value)) return 3
-  return 0
 }
 
 export function validateRefundForm(form = {}) {
