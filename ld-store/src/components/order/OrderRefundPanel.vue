@@ -24,19 +24,19 @@
         <div class="refund-preflight__intro">
           <ShieldQuestion :size="22" aria-hidden="true" />
           <div>
-            <strong>退款入口无需先联系卖家</strong>
-            <p>你可以直接申请全额退款，也可以先私信卖家协商。联系卖家不会影响退款申请资格。</p>
+            <strong>建议优先联系卖家协商处理</strong>
+            <p>你可以直接先私信卖家协商，也可以直接申请全额退款。</p>
           </div>
         </div>
 
         <div class="refund-preflight__steps" aria-label="退款售后处理方式">
           <article>
             <span><RotateCcw :size="16" aria-hidden="true" /></span>
-            <div><strong>直接申请退款</strong><p>系统将按订单实付金额发起全额退款。</p></div>
+            <div><strong>直接申请退款</strong><p>待卖家同意退款后，系统将按订单实付金额发起全额退款。</p></div>
           </article>
           <article>
             <span><MessageCircleMore :size="16" aria-hidden="true" /></span>
-            <div><strong>联系卖家（可选）</strong><p>适合希望先确认问题、处理方式和预计时间的情况。</p></div>
+            <div><strong>联系卖家</strong><p>通常联系卖家协商处理可以更快解决误会和问题。</p></div>
           </article>
         </div>
 
