@@ -71,12 +71,13 @@ export async function fetchOrderDetailRequest(orderNo, role = 'buyer') {
   return api.get(`/api/shop/orders/${orderNo}?role=${role}`)
 }
 
-export async function createOrderRequest(productId, quantity = 1, couponClaimId = null) {
+export async function createOrderRequest(productId, quantity = 1, couponClaimId = null, discoveryToken = '') {
   try {
     return await api.post('/api/shop/orders', {
       productId,
       quantity,
-      ...(couponClaimId ? { couponClaimId } : {})
+      ...(couponClaimId ? { couponClaimId } : {}),
+      ...(discoveryToken ? { discoveryToken } : {})
     })
   } catch (error) {
     return toRequestError(error, '创建订单失败，请稍后重试')

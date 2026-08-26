@@ -5,22 +5,58 @@
         <!-- 搜索框 -->
         <div class="search-header">
           <div class="search-box">
-            <span class="search-icon">🔍</span>
+            <span class="search-icon" aria-hidden="true">🔍</span>
             <input
               ref="searchInput"
               v-model="keyword"
               type="text"
               class="search-input"
               placeholder="搜索物品..."
+              role="combobox"
+              aria-autocomplete="list"
+              :aria-expanded="showSuggestions"
+              aria-controls="search-suggestion-list"
+              :aria-activedescendant="activeSuggestionId"
               @input="handleSearch"
-              @keyup.enter="doSearch"
+              @focus="handleSearchFocus"
+              @blur="handleSearchBlur"
+              @keydown.down.prevent="moveSuggestion(1)"
+              @keydown.up.prevent="moveSuggestion(-1)"
+              @keydown.esc="closeSuggestions"
+              @keydown.enter.prevent="handleSearchEnter"
             />
             <button
               v-if="keyword"
+              type="button"
               class="clear-btn"
+              aria-label="清空搜索内容"
               @click="clearSearch"
             >
               ✕
+            </button>
+          </div>
+          <div
+            v-if="showSuggestions"
+            id="search-suggestion-list"
+            class="suggestion-list"
+            role="listbox"
+            aria-label="搜索建议"
+            :aria-busy="suggestionLoading"
+          >
+            <button
+              v-for="(suggestion, index) in suggestions"
+              :id="suggestionId(index)"
+              :key="`${suggestion.type}-${suggestion.productId || ''}-${suggestion.value}`"
+              type="button"
+              role="option"
+              class="suggestion-item"
+              :class="{ active: activeSuggestionIndex === index }"
+              :aria-selected="activeSuggestionIndex === index"
+              @mouseenter="activeSuggestionIndex = index"
+              @mousedown.prevent="selectSuggestion(suggestion)"
+            >
+              <span class="suggestion-label">{{ suggestion.label || suggestion.value }}</span>
+              <span class="suggestion-kind">{{ suggestionTypeLabel(suggestion.type) }}</span>
             </button>
           </div>
         </div>
@@ -153,7 +189,6 @@
               v-for="product in results"
               :key="product.id"
               :product="product"
-              @click="viewProduct(product)"
             />
           </div>
           <div v-if="hasMore" class="load-more">
@@ -170,16 +205,16 @@
 
 <script setup>
 import { computed, ref, onMounted, onBeforeUnmount, watch } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { useShopStore } from '@/stores/shop'
 import { useToast } from '@/composables/useToast'
 import { storage } from '@/utils/storage'
 import { DEFAULT_SEARCH_KEYWORDS, loadSearchHistory, saveSearchHistory, clearSearchHistory as clearStoredSearchHistory } from '@/utils/search'
+import { fetchSearchSuggestionsRequest, recordSearchOutcome } from '@/services/shop/discoveryService'
 import ProductCard from '@/components/product/ProductCard.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 import Skeleton from '@/components/common/Skeleton.vue'
 
-const router = useRouter()
 const route = useRoute()
 const shopStore = useShopStore()
 const toast = useToast()
@@ -211,7 +246,11 @@ const sortTabs = [
   { value: 'sales', label: '销量' }
 ]
 
-const hotKeywords = DEFAULT_SEARCH_KEYWORDS
+const hotKeywords = ref([...DEFAULT_SEARCH_KEYWORDS])
+const suggestions = ref([])
+const suggestionsOpen = ref(false)
+const activeSuggestionIndex = ref(-1)
+const suggestionLoading = ref(false)
 
 const sortLabel = computed(() => {
   const active = sortTabs.find(item => item.value === currentSort.value)
@@ -246,7 +285,20 @@ const emptyHint = computed(() => {
 const gridColumns = ref(2)
 
 let searchTimer = null
+let suggestionTimer = null
+let suggestionCloseTimer = null
 let latestSearchRequestId = 0
+let latestSuggestionRequestId = 0
+let lastCompletedQuery = ''
+
+const showSuggestions = computed(() => (
+  suggestionsOpen.value && keyword.value.trim().length > 0 && suggestions.value.length > 0
+))
+const activeSuggestionId = computed(() => (
+  showSuggestions.value && activeSuggestionIndex.value >= 0
+    ? suggestionId(activeSuggestionIndex.value)
+    : undefined
+))
 
 function formatPriceFilterInput(value) {
   return value === null || value === undefined || value === '' ? '' : String(value)
@@ -309,6 +361,9 @@ function resetSearchState() {
   searchError.value = ''
   hasSearched.value = false
   page.value = 1
+  suggestions.value = []
+  suggestionsOpen.value = false
+  activeSuggestionIndex.value = -1
 }
 
 async function doSearch(options = {}) {
@@ -320,6 +375,7 @@ async function doSearch(options = {}) {
 
   const requestPage = Number.isFinite(Number(options.page)) ? Number(options.page) : 1
   const append = options.append === true && requestPage > 1
+  if (options.closeSuggestions !== false) closeSuggestions()
 
   if (options.saveHistory !== false && !append) {
     saveHistory(trimmedKeyword)
@@ -341,10 +397,22 @@ async function doSearch(options = {}) {
     if (requestId !== latestSearchRequestId) return
 
     const nextResults = Array.isArray(result.products) ? result.products : []
-    results.value = append ? [...results.value, ...nextResults] : nextResults
+    const effectiveAppend = append && !result.cursorRestarted
+    results.value = effectiveAppend ? [...results.value, ...nextResults] : nextResults
     totalResults.value = Number(result.total || nextResults.length)
     hasMore.value = Boolean(result.hasMore)
-    page.value = requestPage
+    page.value = Number(result.page || requestPage)
+
+    if (!append) {
+      const reformulation = Boolean(lastCompletedQuery && lastCompletedQuery !== trimmedKeyword)
+      recordSearchOutcome({
+        query: trimmedKeyword,
+        products: nextResults,
+        zeroResult: nextResults.length === 0,
+        reformulation
+      })
+      lastCompletedQuery = trimmedKeyword
+    }
 
     const latestError = shopStore.consumeLastError?.() || ''
     if (latestError) {
@@ -395,15 +463,21 @@ async function fetchSearchResults(searchKeyword, requestPage = 1) {
   return {
     products: result?.products || [],
     total: result?.total || 0,
-    hasMore: Boolean(result?.hasMore)
+    hasMore: Boolean(result?.hasMore),
+    page: Number(result?.page || requestPage),
+    cursorRestarted: result?.cursorRestarted === true
   }
 }
 
 function handleSearch() {
   clearTimeout(searchTimer)
+  clearTimeout(suggestionTimer)
+  activeSuggestionIndex.value = -1
+  suggestionsOpen.value = Boolean(keyword.value.trim())
+  suggestionTimer = setTimeout(() => void loadSuggestions(keyword.value), 140)
   searchTimer = setTimeout(() => {
     if (keyword.value.trim()) {
-      doSearch({ saveHistory: false })
+      doSearch({ saveHistory: false, closeSuggestions: false })
       return
     }
 
@@ -411,8 +485,76 @@ function handleSearch() {
   }, 300)
 }
 
+async function loadSuggestions(value = '') {
+  const query = String(value || '').trim()
+  const requestId = ++latestSuggestionRequestId
+  suggestionLoading.value = true
+  try {
+    const result = await fetchSearchSuggestionsRequest(query)
+    if (requestId !== latestSuggestionRequestId) return
+    const next = Array.isArray(result?.data?.suggestions) ? result.data.suggestions : []
+    if (!query) {
+      const trending = next.map(item => item.label || item.value).filter(Boolean)
+      if (trending.length > 0) hotKeywords.value = trending
+      return
+    }
+    suggestions.value = next
+    suggestionsOpen.value = next.length > 0
+  } finally {
+    if (requestId === latestSuggestionRequestId) suggestionLoading.value = false
+  }
+}
+
+function suggestionId(index) {
+  return `search-suggestion-${index}`
+}
+
+function suggestionTypeLabel(type) {
+  return ({ product: '物品', category: '分类', alias: '相关搜索', query: '热门' })[type] || '建议'
+}
+
+function moveSuggestion(direction) {
+  if (!showSuggestions.value) {
+    suggestionsOpen.value = suggestions.value.length > 0
+    return
+  }
+  const count = suggestions.value.length
+  activeSuggestionIndex.value = (activeSuggestionIndex.value + direction + count) % count
+}
+
+function selectSuggestion(suggestion) {
+  keyword.value = String(suggestion?.value || suggestion?.label || '').trim()
+  closeSuggestions()
+  doSearch()
+}
+
+function handleSearchEnter() {
+  const selected = suggestions.value[activeSuggestionIndex.value]
+  if (showSuggestions.value && selected) {
+    selectSuggestion(selected)
+    return
+  }
+  closeSuggestions()
+  doSearch()
+}
+
+function handleSearchFocus() {
+  clearTimeout(suggestionCloseTimer)
+  if (keyword.value.trim() && suggestions.value.length > 0) suggestionsOpen.value = true
+}
+
+function handleSearchBlur() {
+  suggestionCloseTimer = setTimeout(closeSuggestions, 120)
+}
+
+function closeSuggestions() {
+  suggestionsOpen.value = false
+  activeSuggestionIndex.value = -1
+}
+
 function searchFromHistory(item) {
   keyword.value = item
+  closeSuggestions()
   doSearch()
 }
 
@@ -472,7 +614,7 @@ function clearAllFilters() {
 }
 
 function fillSuggestedKeyword() {
-  const suggested = hotKeywords[0] || ''
+  const suggested = hotKeywords.value[0] || ''
   if (!suggested) return
   keyword.value = suggested
   doSearch()
@@ -486,10 +628,6 @@ function retrySearch() {
 async function loadMore() {
   if (loadingMore.value || !hasMore.value || !keyword.value.trim()) return
   await doSearch({ saveHistory: false, page: page.value + 1, append: true })
-}
-
-function viewProduct(product) {
-  router.push(`/product/${product.id}`)
 }
 
 watch(() => route.query.q, (q) => {
@@ -511,10 +649,13 @@ onMounted(() => {
   syncPriceFilterInputs(appliedPriceMin.value, appliedPriceMax.value)
   window.addEventListener('resize', updateGridColumns)
   searchInput.value?.focus()
+  void loadSuggestions('')
 })
 
 onBeforeUnmount(() => {
   clearTimeout(searchTimer)
+  clearTimeout(suggestionTimer)
+  clearTimeout(suggestionCloseTimer)
   window.removeEventListener('resize', updateGridColumns)
   latestSearchRequestId++
 })
@@ -539,6 +680,7 @@ onBeforeUnmount(() => {
 
 .search-header {
   margin-bottom: 24px;
+  position: relative;
 }
 
 .search-box {
@@ -549,6 +691,10 @@ onBeforeUnmount(() => {
   background: var(--bg-card);
   border-radius: 28px;
   box-shadow: var(--shadow-sm);
+}
+
+.search-box:focus-within {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 18%, transparent), var(--shadow-sm);
 }
 
 .search-icon {
@@ -570,8 +716,8 @@ onBeforeUnmount(() => {
 }
 
 .clear-btn {
-  width: 24px;
-  height: 24px;
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -582,6 +728,60 @@ onBeforeUnmount(() => {
   color: var(--text-tertiary);
   cursor: pointer;
   transition: all 0.2s;
+}
+
+.clear-btn:focus-visible,
+.suggestion-item:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.suggestion-list {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  max-height: min(360px, 52vh);
+  overflow-y: auto;
+  padding: 8px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  box-shadow: var(--shadow-lg);
+}
+
+.suggestion-item {
+  width: 100%;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  color: var(--text-primary);
+  background: transparent;
+  border: 0;
+  border-radius: 10px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.suggestion-item:hover,
+.suggestion-item.active {
+  background: var(--bg-secondary);
+}
+
+.suggestion-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.suggestion-kind {
+  flex: 0 0 auto;
+  color: var(--text-tertiary);
+  font-size: 12px;
 }
 
 .clear-btn:hover {

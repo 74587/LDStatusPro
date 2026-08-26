@@ -1,6 +1,7 @@
 import { storage } from './storage'
 import { getMaintenanceRequestBlock } from '@/config/maintenance'
 import { emitAuthExpired, isAuthErrorCode, isTokenExpired } from './auth'
+import { getDiscoveryRequestHeaders } from './discovery'
 
 // API 基础地址
 // 开发环境使用相对路径（通过 Vite 代理），生产环境使用完整 URL
@@ -127,6 +128,7 @@ async function request(url, options = {}) {
   const headers = {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
+    ...getDiscoveryRequestHeaders(url),
     ...options.headers
   }
   

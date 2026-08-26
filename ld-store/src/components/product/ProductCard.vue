@@ -15,6 +15,7 @@
     @mouseenter="handleMouseEnter"
     @mousemove="handleMouseMove"
     @mouseleave="handleMouseLeave"
+    @click="handleCardClick"
   >
     <!-- 3D 光泽效果层 -->
     <div class="tilt-glare" :style="glareStyle"></div>
@@ -116,7 +117,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import {
   Eye,
   Gamepad2,
@@ -131,6 +132,7 @@ import { useShopStore } from '@/stores/shop'
 import AvatarImage from '@/components/common/AvatarImage.vue'
 import { formatCompactCount, formatNumber, formatRelativeTime, formatPrice } from '@/utils/format'
 import { buildAvatarCandidates } from '@/utils/avatar'
+import { recordProductClick, recordProductImpression } from '@/services/shop/discoveryService'
 import {
   getAvailableStock,
   getStockDisplay,
@@ -181,6 +183,40 @@ let currentScale = 1
 let currentShadow = 0 // 阴影强度 0-1
 let animationFrame = null
 let resetTimer = null
+let impressionTimer = null
+let impressionObserver = null
+let impressionRecorded = false
+
+function cardElement() {
+  return cardRef.value?.$el || cardRef.value || null
+}
+
+function handleCardClick() {
+  recordProductClick(props.product)
+}
+
+onMounted(() => {
+  const element = cardElement()
+  const token = props.product?.discovery_token || props.product?.discoveryToken
+  if (!element || !token || typeof IntersectionObserver === 'undefined') return
+  impressionObserver = new IntersectionObserver((entries) => {
+    const visible = entries.some((entry) => entry.isIntersecting && entry.intersectionRatio >= 0.5)
+    if (!visible) {
+      if (impressionTimer) window.clearTimeout(impressionTimer)
+      impressionTimer = null
+      return
+    }
+    if (impressionRecorded || impressionTimer) return
+    impressionTimer = window.setTimeout(() => {
+      impressionTimer = null
+      if (impressionRecorded) return
+      impressionRecorded = true
+      recordProductImpression(props.product)
+      impressionObserver?.disconnect()
+    }, 500)
+  }, { threshold: [0.5] })
+  impressionObserver.observe(element)
+})
 
 function lerp(start, end, factor) {
   return start + (end - start) * factor
@@ -271,6 +307,8 @@ function handleMouseLeave() {
 onUnmounted(() => {
   if (animationFrame) cancelAnimationFrame(animationFrame)
   if (resetTimer) window.clearTimeout(resetTimer)
+  if (impressionTimer) window.clearTimeout(impressionTimer)
+  impressionObserver?.disconnect()
 })
 
 // 商品类型

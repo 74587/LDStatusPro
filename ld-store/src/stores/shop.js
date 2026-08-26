@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { useUserStore } from '@/stores/user'
 import { useNotificationSummaryStore } from '@/stores/notificationSummary'
 import { storage } from '@/utils/storage'
+import { clearDiscoveryTokenForProduct, getDiscoveryTokenForProduct } from '@/services/shop/discoveryService'
 import {
   addFavoriteRequest,
   blockProductRequest,
@@ -115,12 +116,16 @@ export const useShopStore = defineStore('shop', () => {
   const hasMore = ref(true)
   const page = ref(1)
   const total = ref(0)
+  const catalogCursor = ref('')
+  const rankingContext = ref(null)
   const pageSize = DEFAULT_PAGE_SIZE
 
   // 搜索状态
   const searchQuery = ref('')
   const searchResults = ref([])
   const searchLoading = ref(false)
+  const searchCursor = ref('')
+  const searchRankingContext = ref(null)
 
   // 我的商品
   const myProducts = ref([])
@@ -265,6 +270,8 @@ export const useShopStore = defineStore('shop', () => {
       currentPriceMax.value = requestedPriceMax
       page.value = requestedPage || 1
       hasMore.value = true
+      catalogCursor.value = ''
+      rankingContext.value = null
       products.value = []
     } else if (requestedPage) {
       page.value = requestedPage
@@ -287,7 +294,8 @@ export const useShopStore = defineStore('shop', () => {
         sort: requestSort,
         inStockOnly: requestInStockOnly,
         priceMin: requestPriceMin,
-        priceMax: requestPriceMax
+        priceMax: requestPriceMax,
+        cursor: requestPage > 1 ? catalogCursor.value : ''
       })
 
       if (requestId !== latestProductsRequestId) {
@@ -297,9 +305,16 @@ export const useShopStore = defineStore('shop', () => {
       if (result.success && Array.isArray(result.data?.products)) {
         const newProducts = toSafeArray(result.data.products)
         const previousProducts = toSafeArray(products.value)
+        const cursorRestarted = result.data.cursorRestarted === true
+        const effectivePage = cursorRestarted ? 1 : requestPage
         total.value = result.data.pagination?.total || result.data.total || newProducts.length
-        hasMore.value = (requestPage * pageSize) < total.value
-        products.value = requestPage === 1 ? newProducts : [...previousProducts, ...newProducts]
+        catalogCursor.value = result.data.pagination?.nextCursor || ''
+        rankingContext.value = result.data.rankingContext || null
+        hasMore.value = typeof result.data.pagination?.hasMore === 'boolean'
+          ? result.data.pagination.hasMore
+          : (effectivePage * pageSize) < total.value
+        products.value = effectivePage === 1 ? newProducts : [...previousProducts, ...newProducts]
+        page.value = effectivePage
         setLastError('')
 
         return {
@@ -307,7 +322,9 @@ export const useShopStore = defineStore('shop', () => {
           products: newProducts,
           total: total.value,
           hasMore: hasMore.value,
-          page: requestPage
+          page: effectivePage,
+          cursorRestarted,
+          rankingContext: rankingContext.value
         }
       }
 
@@ -348,6 +365,8 @@ export const useShopStore = defineStore('shop', () => {
     products.value = restoredProducts
     total.value = Number.isFinite(Number(snapshot.total)) ? Number(snapshot.total) : restoredProducts.length
     hasMore.value = typeof snapshot.hasMore === 'boolean' ? snapshot.hasMore : false
+    catalogCursor.value = String(snapshot.cursor || '')
+    rankingContext.value = snapshot.rankingContext || null
     page.value = Number.isFinite(Number(snapshot.page)) ? Number(snapshot.page) : 1
     currentSort.value = snapshot.sort || 'default'
     currentPriceMin.value = normalizedPriceRange.priceMin
@@ -612,6 +631,8 @@ export const useShopStore = defineStore('shop', () => {
     const keyword = typeof query === 'string' ? query.trim() : ''
     if (!keyword) {
       searchResults.value = []
+      searchCursor.value = ''
+      searchRankingContext.value = null
       setLastError('')
       return {
         products: [],
@@ -643,20 +664,29 @@ export const useShopStore = defineStore('shop', () => {
         sort,
         inStockOnly: onlyInStock,
         priceMin: normalizedPriceRange.priceMin,
-        priceMax: normalizedPriceRange.priceMax
+        priceMax: normalizedPriceRange.priceMax,
+        cursor: Number(searchPage) > 1 ? searchCursor.value : ''
       })
 
       if (result.success && Array.isArray(result.data?.products)) {
         const nextProducts = result.data.products
+        const cursorRestarted = result.data.cursorRestarted === true
+        const effectivePage = cursorRestarted ? 1 : Number(searchPage)
         const totalCount = result.data.pagination?.total || result.data.total || nextProducts.length
-        const nextHasMore = (Number(searchPage) * Number(searchPageSize)) < Number(totalCount)
+        searchCursor.value = result.data.pagination?.nextCursor || ''
+        searchRankingContext.value = result.data.rankingContext || null
+        const nextHasMore = typeof result.data.pagination?.hasMore === 'boolean'
+          ? result.data.pagination.hasMore
+          : (effectivePage * Number(searchPageSize)) < Number(totalCount)
         searchResults.value = nextProducts
         setLastError('')
         return {
           products: nextProducts,
           total: totalCount,
           hasMore: nextHasMore,
-          page: Number(searchPage)
+          page: effectivePage,
+          cursorRestarted,
+          rankingContext: searchRankingContext.value
         }
       }
 
@@ -689,6 +719,8 @@ export const useShopStore = defineStore('shop', () => {
   function clearSearch() {
     searchQuery.value = ''
     searchResults.value = []
+    searchCursor.value = ''
+    searchRankingContext.value = null
   }
 
   // ======== 我的商品 ========
@@ -847,7 +879,10 @@ export const useShopStore = defineStore('shop', () => {
   }
 
   async function createOrder(productId, quantity = 1, couponClaimId = null) {
-    return createOrderRequest(productId, quantity, couponClaimId)
+    const discoveryToken = getDiscoveryTokenForProduct(productId)
+    const result = await createOrderRequest(productId, quantity, couponClaimId, discoveryToken)
+    if (result?.success) clearDiscoveryTokenForProduct(productId)
+    return result
   }
 
   async function cancelOrder(orderNo) {
@@ -927,6 +962,8 @@ export const useShopStore = defineStore('shop', () => {
     products.value = []
     page.value = 1
     hasMore.value = true
+    catalogCursor.value = ''
+    rankingContext.value = null
   }
 
   async function fetchPublicStats() {
@@ -989,9 +1026,13 @@ export const useShopStore = defineStore('shop', () => {
     hasMore,
     page,
     total,
+    catalogCursor,
+    rankingContext,
     searchQuery,
     searchResults,
     searchLoading,
+    searchCursor,
+    searchRankingContext,
     myProducts,
     myProductsLoading,
     myOrders,

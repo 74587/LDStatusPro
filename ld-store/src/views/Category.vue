@@ -76,7 +76,6 @@
           v-for="product in products"
           :key="product.id"
           :product="product"
-          @click="viewProduct(product)"
         />
       </div>
 
@@ -91,7 +90,7 @@
 
 <script setup>
 import { ref, computed, watch, onActivated, onDeactivated, nextTick } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { useShopStore } from '@/stores/shop'
 import { useToast } from '@/composables/useToast'
 import { fetchProductsRequest } from '@/services/shop/catalogService'
@@ -104,7 +103,6 @@ import LiquidTabs from '@/components/common/LiquidTabs.vue'
 defineOptions({ name: 'Category' })
 
 const route = useRoute()
-const router = useRouter()
 const shopStore = useShopStore()
 const toast = useToast()
 
@@ -114,6 +112,7 @@ const products = ref([])
 const page = ref(1)
 const total = ref(0)
 const hasMore = ref(false)
+const nextCursor = ref('')
 const currentSort = ref('default')
 const pageSize = 20
 
@@ -220,6 +219,7 @@ async function loadProducts(append = false) {
     if (!append) {
       loading.value = true
       page.value = 1
+      nextCursor.value = ''
     } else {
       loadingMore.value = true
     }
@@ -239,7 +239,8 @@ async function loadProducts(append = false) {
       pageSize,
       sort: currentSort.value,
       priceMin: appliedPriceMin.value,
-      priceMax: appliedPriceMax.value
+      priceMax: appliedPriceMax.value,
+      cursor: append ? nextCursor.value : ''
     })
 
     if (!result?.success || !Array.isArray(result.data?.products)) {
@@ -254,14 +255,19 @@ async function loadProducts(append = false) {
 
     const nextProducts = result.data.products || []
     const pagination = result.data.pagination || {}
-    if (append) {
+    const cursorRestarted = result.data.cursorRestarted === true
+    if (append && !cursorRestarted) {
       products.value.push(...nextProducts)
     } else {
       products.value = nextProducts
     }
 
+    if (cursorRestarted) page.value = 1
+    nextCursor.value = pagination.nextCursor || ''
     total.value = pagination.total || nextProducts.length
-    hasMore.value = (pagination.page || page.value) < (pagination.totalPages || 0)
+    hasMore.value = typeof pagination.hasMore === 'boolean'
+      ? pagination.hasMore
+      : (pagination.page || page.value) < (pagination.totalPages || 0)
     syncPriceFilterInputs(appliedPriceMin.value, appliedPriceMax.value)
     return true
   } catch (error) {
@@ -306,10 +312,6 @@ function clearPriceFilter() {
   appliedPriceMax.value = null
   syncPriceFilterInputs(null, null)
   loadProducts()
-}
-
-function viewProduct(product) {
-  router.push(`/product/${product.id}`)
 }
 
 watch(() => route.params.name, async (newCategory) => {

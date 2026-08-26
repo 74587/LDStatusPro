@@ -32,11 +32,14 @@ export async function fetchProductsRequest(options = {}) {
     inStockOnly = false,
     priceMin = null,
     priceMax = null,
-    search = ''
+    search = '',
+    cursor = '',
+    cursorRetry = true
   } = options
 
-  params.set('page', String(page))
+  if (!cursor) params.set('page', String(page))
   params.set('pageSize', String(pageSize))
+  if (cursor) params.set('cursor', String(cursor))
 
   const safeCategoryId = String(categoryId || '').trim()
   if (safeCategoryId) {
@@ -49,8 +52,11 @@ export async function fetchProductsRequest(options = {}) {
   }
 
   const sortConfig = productSortMapping[sort] || productSortMapping.default
-  params.set('sortBy', sortConfig.sortBy)
-  params.set('sortOrder', sortConfig.sortOrder)
+  if (sort !== 'default') {
+    params.set('sortBy', sortConfig.sortBy)
+    params.set('sortOrder', sortConfig.sortOrder)
+  }
+  if (sort === 'default' || safeSearch) params.set('ranking', 'auto')
 
   if (inStockOnly) {
     params.set('inStock', 'true')
@@ -64,7 +70,15 @@ export async function fetchProductsRequest(options = {}) {
     params.set('priceMax', String(priceMax))
   }
 
-  return api.get(`/api/shop/products?${params.toString()}`)
+  const result = await api.get(`/api/shop/products?${params.toString()}`)
+  if (cursor && cursorRetry && result?.status === 409 && result?.errorCode === 'RANKING_CURSOR_STALE') {
+    const restarted = await fetchProductsRequest({ ...options, cursor: '', page: 1, cursorRetry: false })
+    if (restarted?.success && restarted.data) {
+      restarted.data = { ...restarted.data, cursorRestarted: true }
+    }
+    return restarted
+  }
+  return result
 }
 
 export async function fetchProductRequest(id) {

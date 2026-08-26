@@ -194,6 +194,28 @@
           <button type="button" class="delete-btn" @click="deleteConfig">删除配置</button>
         </section>
       </div>
+
+      <section class="discovery-preference-card" aria-labelledby="discovery-preference-title">
+        <div class="discovery-preference-copy">
+          <p class="panel-eyebrow">浏览体验</p>
+          <h2 id="discovery-preference-title">个性化物品推荐</h2>
+          <p>开启后会根据近期购买、收藏和浏览改善默认排序；关闭后使用全站趋势，不再保存与你账号关联的新发现事件。</p>
+          <p v-if="discoveryPreferenceError" class="form-error" role="status">{{ discoveryPreferenceError }}</p>
+        </div>
+        <button
+          type="button"
+          class="preference-switch"
+          :class="{ active: personalizationEnabled }"
+          role="switch"
+          :aria-checked="personalizationEnabled"
+          :aria-label="personalizationEnabled ? '关闭个性化物品推荐' : '开启个性化物品推荐'"
+          :disabled="discoveryPreferenceLoading || discoveryPreferenceSaving"
+          @click="toggleDiscoveryPreference"
+        >
+          <span class="preference-switch-track" aria-hidden="true"><span /></span>
+          <span>{{ discoveryPreferenceSaving ? '保存中…' : (personalizationEnabled ? '已开启' : '已关闭') }}</span>
+        </button>
+      </section>
     </div>
   </div>
 </template>
@@ -206,6 +228,7 @@ import { useToast } from '@/composables/useToast'
 import { useDialog } from '@/composables/useDialog'
 import { api } from '@/utils/api'
 import { PRODUCT_PUBLISH_PAYMENT_SOURCE } from '@/utils/productPublishDraft'
+import { fetchDiscoveryPreferenceRequest, updateDiscoveryPreferenceRequest } from '@/services/shop/discoveryService'
 import SellerStatusBadge from '@/components/seller/SellerStatusBadge.vue'
 import { ArrowLeft, CircleAlert, Copy, Eye, EyeOff, LockKeyhole, PackageCheck, Send } from '@lucide/vue'
 
@@ -235,6 +258,10 @@ const showKey = ref(false)
 const loadError = ref('')
 const saveError = ref('')
 const testResult = ref(null)
+const personalizationEnabled = ref(true)
+const discoveryPreferenceLoading = ref(true)
+const discoveryPreferenceSaving = ref(false)
+const discoveryPreferenceError = ref('')
 
 // 是否已配置
 const isConfigured = computed(() => !!config.value.configured)
@@ -393,8 +420,45 @@ async function deleteConfig() {
   }
 }
 
+async function loadDiscoveryPreference() {
+  discoveryPreferenceLoading.value = true
+  discoveryPreferenceError.value = ''
+  try {
+    const result = await fetchDiscoveryPreferenceRequest()
+    if (result?.success && typeof result.data?.personalizationEnabled === 'boolean') {
+      personalizationEnabled.value = result.data.personalizationEnabled
+    } else {
+      discoveryPreferenceError.value = result?.error || '个性化偏好暂时无法读取'
+    }
+  } catch (error) {
+    discoveryPreferenceError.value = error?.message || '个性化偏好暂时无法读取'
+  } finally {
+    discoveryPreferenceLoading.value = false
+  }
+}
+
+async function toggleDiscoveryPreference() {
+  if (discoveryPreferenceLoading.value || discoveryPreferenceSaving.value) return
+  const nextValue = !personalizationEnabled.value
+  discoveryPreferenceSaving.value = true
+  discoveryPreferenceError.value = ''
+  try {
+    const result = await updateDiscoveryPreferenceRequest(nextValue)
+    if (!result?.success) {
+      discoveryPreferenceError.value = result?.error || '保存失败，请稍后重试'
+      return
+    }
+    personalizationEnabled.value = result.data?.personalizationEnabled === true
+    toast.success(personalizationEnabled.value ? '已开启个性化推荐' : '已关闭个性化推荐')
+  } catch (error) {
+    discoveryPreferenceError.value = error?.message || '保存失败，请稍后重试'
+  } finally {
+    discoveryPreferenceSaving.value = false
+  }
+}
+
 onMounted(() => {
-  loadSettings()
+  void Promise.allSettled([loadSettings(), loadDiscoveryPreference()])
 })
 </script>
 
@@ -430,6 +494,106 @@ html.dark .settings-page {
   max-width: 600px;
   margin: 0 auto;
   padding: 16px;
+}
+
+.discovery-preference-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-top: 16px;
+  padding: 20px 22px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  box-shadow: var(--shadow-sm);
+}
+
+.discovery-preference-copy {
+  min-width: 0;
+}
+
+.discovery-preference-copy h2 {
+  margin: 2px 0 6px;
+  color: var(--text-primary);
+  font-size: 16px;
+}
+
+.discovery-preference-copy > p:not(.panel-eyebrow):not(.form-error) {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.preference-switch {
+  min-width: 108px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex: 0 0 auto;
+  padding: 8px 12px;
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.preference-switch.active {
+  color: var(--settings-tone-sage-text);
+  background: var(--settings-tone-sage-bg);
+  border-color: var(--settings-tone-sage-border);
+}
+
+.preference-switch:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.preference-switch:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.preference-switch-track {
+  width: 30px;
+  height: 18px;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  background: var(--text-tertiary);
+  border-radius: 999px;
+}
+
+.preference-switch-track span {
+  width: 14px;
+  height: 14px;
+  background: var(--bg-card);
+  border-radius: 50%;
+  transform: translateX(0);
+  transition: transform 0.2s ease;
+}
+
+.preference-switch.active .preference-switch-track {
+  background: var(--settings-tone-sage-text);
+}
+
+.preference-switch.active .preference-switch-track span {
+  transform: translateX(12px);
+}
+
+@media (max-width: 560px) {
+  .discovery-preference-card {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .preference-switch {
+    width: 100%;
+  }
 }
 
 .publish-return-card {

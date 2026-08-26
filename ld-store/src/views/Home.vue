@@ -871,6 +871,8 @@ function saveCache(categoryId, sortKey, filters = buildCatalogFilters()) {
     total: Number.isFinite(Number(shopStore.total)) ? Number(shopStore.total) : productsToCache.length,
     hasMore: !!shopStore.hasMore,
     page: Number.isFinite(Number(shopStore.page)) ? Number(shopStore.page) : 1,
+    cursor: shopStore.catalogCursor || '',
+    rankingContext: shopStore.rankingContext || null,
     sort: sortKey || 'default',
     inStockOnly: !!filters.inStockOnly,
     priceMin: filters.priceMin ?? null,
