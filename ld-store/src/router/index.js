@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useUserStore } from '@/stores/user'
+import { useMerchantEnforcementStore } from '@/stores/merchantEnforcement'
 import {
   MAINTENANCE_STATE,
   ensureMaintenanceStatusLoaded,
@@ -257,13 +258,13 @@ const routes = [
         name: 'SellerPublish',
         component: () => import('@/views/Publish.vue'),
         props: { initialMode: 'product', lockedMode: true },
-        meta: { title: '发布物品 - LD士多卖家后台' }
+        meta: { title: '发布物品 - LD士多卖家后台', requiresSelling: true }
       },
       {
         path: 'products/:id/edit',
         name: 'SellerEdit',
         component: () => import('@/views/Edit.vue'),
-        meta: { title: '编辑物品 - LD士多卖家后台' }
+        meta: { title: '编辑物品 - LD士多卖家后台', requiresSelling: true }
       },
       {
         path: 'coupons',
@@ -352,7 +353,7 @@ function refreshMaintenanceStatus() {
 }
 
 // 路由守卫
-router.beforeEach((to) => {
+router.beforeEach(async (to) => {
   if (to.name === 'Orders' && String(to.query.tab || '').toLowerCase() === 'seller') {
     const query = { ...to.query }
     delete query.tab
@@ -397,6 +398,18 @@ router.beforeEach((to) => {
       return {
         name: 'Login',
         query
+      }
+    }
+
+    if (to.meta.requiresSelling) {
+      const enforcementStore = useMerchantEnforcementStore()
+      await enforcementStore.refresh({ force: true })
+      if (enforcementStore.sellingDisabled) {
+        return {
+          name: 'SellerProducts',
+          query: { sellingDisabled: '1' },
+          replace: true
+        }
       }
     }
   }

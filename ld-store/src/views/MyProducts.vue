@@ -2,7 +2,8 @@
   <div class="my-products-page">
     <SellerPageToolbar eyebrow="商品台账" description="集中查看物品状态、价格、库存与经营数据。筛选条件会保留在地址中，返回时仍能继续处理。">
       <template #actions>
-        <router-link to="/seller/products/new" class="seller-primary-button"><Plus :size="17" aria-hidden="true" />发布物品</router-link>
+        <button v-if="sellingDisabled" type="button" class="seller-primary-button" disabled title="卖家功能已被平台禁用，暂时无法发布物品"><Plus :size="17" aria-hidden="true" />暂无法发布</button>
+        <router-link v-else to="/seller/products/new" class="seller-primary-button"><Plus :size="17" aria-hidden="true" />发布物品</router-link>
       </template>
       <form class="product-search" role="search" @submit.prevent="applyProductFilters({ resetPage: true })">
         <Search :size="17" aria-hidden="true" />
@@ -123,7 +124,7 @@
         </dl>
         <ProductRowActions :product="product" mobile :can-manage-cdk="isCdkItem(product)" :can-toggle="canToggleStatus(product)" :busy="isProductBusy(product)" :restricted="isRestrictedProductManagement" :toggle-label="getToggleLabel(product)" :delete-label="getDeleteLabel(product)" @edit="editProduct" @cdk="manageCdk" @toggle="toggleStatus" @delete="deleteProduct" />
       </template>
-      <template #empty><div class="seller-empty-ledger"><PackageOpen :size="32" aria-hidden="true" /><strong>{{ products.length ? '当前筛选下没有物品' : '还没有发布物品' }}</strong><p>{{ products.length ? '调整或清除筛选条件后再试。' : '发布第一件物品，开始建立你的经营台账。' }}</p><button v-if="products.length" type="button" class="seller-secondary-button" @click="clearProductFilters">清除筛选</button><router-link v-else to="/seller/products/new" class="seller-primary-button">发布物品</router-link></div></template>
+      <template #empty><div class="seller-empty-ledger"><PackageOpen :size="32" aria-hidden="true" /><strong>{{ products.length ? '当前筛选下没有物品' : '还没有发布物品' }}</strong><p>{{ products.length ? '调整或清除筛选条件后再试。' : (sellingDisabled ? '卖家功能已被平台禁用，暂时无法发布物品。' : '发布第一件物品，开始建立你的经营台账。') }}</p><button v-if="products.length" type="button" class="seller-secondary-button" @click="clearProductFilters">清除筛选</button><button v-else-if="sellingDisabled" type="button" class="seller-primary-button" disabled>暂无法发布</button><router-link v-else to="/seller/products/new" class="seller-primary-button">发布物品</router-link></div></template>
       <template #footer><SellerPagination :page="productPagination.page" :total-pages="productPagination.totalPages" :total="productPagination.total" @change="changeProductPage" /></template>
     </SellerDataTable>
     
@@ -273,6 +274,7 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { Check, CircleAlert, Copy, Download, Hash, KeyRound, Link2, Package, PackageOpen, Plus, Search, Store, Tag, X } from '@lucide/vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useShopStore } from '@/stores/shop'
+import { useMerchantEnforcementStore } from '@/stores/merchantEnforcement'
 import { isMaintenanceFeatureEnabled, isRestrictedMaintenanceMode } from '@/config/maintenance'
 import { useToast } from '@/composables/useToast'
 import { useDialog } from '@/composables/useDialog'
@@ -299,6 +301,7 @@ import {
 const router = useRouter()
 const route = useRoute()
 const shopStore = useShopStore()
+const merchantEnforcementStore = useMerchantEnforcementStore()
 const toast = useToast()
 const dialog = useDialog()
 
@@ -343,8 +346,13 @@ const clearingAllCdks = ref(false)
 const exportingCdks = ref(false)
 const productAction = ref({ id: null, type: '' })
 const isRestrictedProductManagement = computed(() =>
-  isRestrictedMaintenanceMode() && !isMaintenanceFeatureEnabled('productManage')
+  merchantEnforcementStore.sellingDisabled
+  || (isRestrictedMaintenanceMode() && !isMaintenanceFeatureEnabled('productManage'))
 )
+const sellingDisabled = computed(() => merchantEnforcementStore.sellingDisabled)
+const restrictedProductMessage = computed(() => sellingDisabled.value
+  ? '卖家功能已被平台禁用，暂时无法修改或重新发布物品'
+  : '受限维护中，当前仅开放商品 CDK 管理')
 
 const productStatusFilterLabel = computed(() => ({ approved: '已上架', pending: '审核中', rejected: '未通过', offline: '已下架' })[productStatusFilter.value] || productStatusFilter.value)
 const productTypeFilterLabel = computed(() => ({ normal: '普通物品', cdk: '自动发卡' })[productTypeFilter.value] || productTypeFilter.value)
@@ -466,7 +474,7 @@ function viewProduct(product) {
 // 编辑物品
 function editProduct(product) {
   if (isRestrictedProductManagement.value) {
-    toast.warning('受限维护中，当前仅开放商品 CDK 管理')
+    toast.warning(restrictedProductMessage.value)
     return
   }
   router.push(`/seller/products/${product.id}/edit`)
@@ -482,7 +490,7 @@ function isProductActive(product) {
 
 async function toggleStatus(product) {
   if (isRestrictedProductManagement.value) {
-    toast.warning('受限维护中，当前仅开放商品 CDK 管理')
+    toast.warning(restrictedProductMessage.value)
     return
   }
   if (isProductBusy(product)) return
@@ -563,7 +571,7 @@ async function toggleStatus(product) {
 
 async function deleteProduct(product) {
   if (isRestrictedProductManagement.value) {
-    toast.warning('受限维护中，当前仅开放商品 CDK 管理')
+    toast.warning(restrictedProductMessage.value)
     return
   }
   if (isProductBusy(product)) return

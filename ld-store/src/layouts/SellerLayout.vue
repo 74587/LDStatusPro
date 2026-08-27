@@ -21,27 +21,37 @@
       <nav class="seller-nav">
         <section v-for="group in navigation" :key="group.label" class="seller-nav-group">
           <h2>{{ group.label }}</h2>
-          <router-link
-            v-for="item in group.items"
-            :key="item.to"
-            :to="item.to"
-            class="seller-nav-item"
-            :class="{ active: isNavigationActive(item) }"
-            @click="closeDrawer"
-          >
-            <component :is="item.icon" :size="18" :stroke-width="1.8" aria-hidden="true" />
-            <span>{{ item.label }}</span>
-            <span
-              v-if="item.badge?.value"
-              class="seller-nav-badge"
-              role="status"
-              aria-live="polite"
-              aria-atomic="true"
-              :aria-label="`${item.badgeLabel || item.label}有 ${item.badge.value} 项待处理`"
+          <template v-for="item in group.items" :key="item.to">
+            <router-link
+              v-if="!item.disabled"
+              :to="item.to"
+              class="seller-nav-item"
+              :class="{ active: isNavigationActive(item) }"
+              @click="closeDrawer"
             >
-              {{ formatBadge(item.badge.value) }}
+              <component :is="item.icon" :size="18" :stroke-width="1.8" aria-hidden="true" />
+              <span>{{ item.label }}</span>
+              <span
+                v-if="item.badge?.value"
+                class="seller-nav-badge"
+                role="status"
+                aria-live="polite"
+                aria-atomic="true"
+                :aria-label="`${item.badgeLabel || item.label}有 ${item.badge.value} 项待处理`"
+              >
+                {{ formatBadge(item.badge.value) }}
+              </span>
+            </router-link>
+            <span
+              v-else
+              class="seller-nav-item is-disabled"
+              aria-disabled="true"
+              :title="item.disabledReason"
+            >
+              <component :is="item.icon" :size="18" :stroke-width="1.8" aria-hidden="true" />
+              <span>{{ item.label }}</span>
             </span>
-          </router-link>
+          </template>
         </section>
       </nav>
 
@@ -105,6 +115,15 @@
         </div>
       </header>
 
+      <section v-if="sellingDisabled" class="seller-enforcement" role="alert" aria-live="assertive">
+        <ShieldAlert :size="20" aria-hidden="true" />
+        <div>
+          <strong>卖家功能已被平台禁用</strong>
+          <p>{{ enforcement.reason || '平台已暂停你的卖家权限。' }} 已有物品保持下架，暂时无法发布或编辑物品；购买其他商家的物品不受影响，已付款订单仍可继续履约和退款。</p>
+        </div>
+        <router-link to="/seller/orders?source=product">处理已付款订单</router-link>
+      </section>
+
       <section v-if="restrictedMaintenance" class="seller-maintenance" role="status">
         <AlertTriangle :size="18" aria-hidden="true" />
         <div>
@@ -144,10 +163,12 @@ import {
   RotateCcw,
   Sparkles,
   Store,
+  ShieldAlert,
   X
 } from '@lucide/vue'
 import { useUserStore } from '@/stores/user'
 import { useNotificationSummaryStore } from '@/stores/notificationSummary'
+import { useMerchantEnforcementStore } from '@/stores/merchantEnforcement'
 import ThemeToggle from '@/components/common/ThemeToggle.vue'
 import AvatarImage from '@/components/common/AvatarImage.vue'
 import { MAINTENANCE_STATE, isRestrictedMaintenanceMode } from '@/config/maintenance'
@@ -157,14 +178,17 @@ const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
 const notificationSummaryStore = useNotificationSummaryStore()
+const merchantEnforcementStore = useMerchantEnforcementStore()
 const {
   sellerPendingDeliveryCount: pendingDeliveryCount,
   sellerRefundPendingCount: refundPendingCount
 } = storeToRefs(notificationSummaryStore)
+const { enforcement, sellingDisabled } = storeToRefs(merchantEnforcementStore)
 const drawerOpen = ref(false)
 const mobileMenuButton = ref(null)
 const sidebarCloseButton = ref(null)
 const sellerMain = ref(null)
+let enforcementPollTimer = 0
 
 const displayName = computed(() => userStore.user?.name || userStore.username || '卖家')
 const pageTitle = computed(() => String(route.meta.title || '卖家后台').split(' - ')[0])
@@ -190,7 +214,15 @@ const navigation = computed(() => [
     label: '商品',
     items: [
       { label: '我的物品', to: '/seller/products', activeRouteNames: ['SellerProducts', 'SellerEdit'], icon: Package },
-      { label: '发布物品', to: '/seller/products/new', activeRouteNames: ['SellerPublish'], matchChildren: false, icon: PlusCircle }
+      {
+        label: '发布物品',
+        to: '/seller/products/new',
+        activeRouteNames: ['SellerPublish'],
+        matchChildren: false,
+        icon: PlusCircle,
+        disabled: sellingDisabled.value,
+        disabledReason: '卖家功能已被平台禁用，暂时无法发布物品'
+      }
     ]
   },
   {
@@ -237,12 +269,17 @@ function handleKeydown(event) {
 
 function logout() {
   notificationSummaryStore.reset()
+  merchantEnforcementStore.reset()
   userStore.logout()
   router.replace('/')
 }
 
 watch(() => route.path, async () => {
   closeDrawer()
+  await merchantEnforcementStore.refresh()
+  if (sellingDisabled.value && ['SellerPublish', 'SellerEdit'].includes(String(route.name || ''))) {
+    await router.replace({ name: 'SellerProducts', query: { sellingDisabled: '1' } })
+  }
   await nextTick()
   sellerMain.value?.focus({ preventScroll: true })
 })
@@ -252,11 +289,14 @@ watch(drawerOpen, value => {
 
 onMounted(() => {
   document.addEventListener('keydown', handleKeydown)
+  merchantEnforcementStore.refresh({ force: true })
+  enforcementPollTimer = window.setInterval(() => merchantEnforcementStore.refresh({ force: true }), 30_000)
 })
 
 onUnmounted(() => {
   document.removeEventListener('keydown', handleKeydown)
   document.body.style.overflow = ''
+  if (enforcementPollTimer) window.clearInterval(enforcementPollTimer)
 })
 </script>
 
@@ -401,6 +441,7 @@ html.dark .seller-shell {
 .seller-nav-item > span:not(.seller-nav-badge) { min-width: 0; align-self: center; line-height: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .seller-nav-item:hover { color: #fff; background: rgba(255,255,255,.06); transform: translateX(2px); }
 .seller-nav-item.active { color: #fff; background: rgba(145,178,154,.18); box-shadow: inset 3px 0 0 var(--seller-jade); }
+.seller-nav-item.is-disabled { color: rgba(240,244,246,.34); cursor: not-allowed; }
 .seller-nav-badge { min-width: 22px; height: 22px; padding: 0 6px; display: grid; place-items: center; border-radius: 999px; background: #e8d4b8; color: #3d3021; font: 700 11px/1 ui-monospace, SFMono-Regular, Menlo, monospace; }
 
 .seller-sidebar-footer { margin-top: auto; padding-top: 20px; }
@@ -432,6 +473,11 @@ html.dark .seller-shell {
 
 .seller-maintenance { gap: 10px; margin: 18px clamp(18px, 3vw, 38px) 0; padding: 13px 16px; border: 1px solid color-mix(in srgb, var(--seller-warning) 45%, var(--seller-border)); border-radius: 12px; color: var(--seller-warning); background: color-mix(in srgb, var(--seller-warning) 9%, var(--seller-surface)); }
 .seller-maintenance p { margin: 2px 0 0; color: var(--seller-muted); font-size: 13px; }
+.seller-enforcement { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: start; gap: 12px; margin: 18px clamp(18px, 3vw, 38px) 0; padding: 14px 16px; border: 1px solid color-mix(in srgb, var(--seller-danger) 52%, var(--seller-border)); border-radius: 12px; color: var(--seller-danger); background: color-mix(in srgb, var(--seller-danger) 10%, var(--seller-surface)); }
+.seller-enforcement strong { display: block; font-size: 14px; }
+.seller-enforcement p { max-width: 78ch; margin: 3px 0 0; color: var(--seller-ink); font-size: 13px; line-height: 1.65; }
+.seller-enforcement a { min-height: 44px; display: inline-flex; align-items: center; padding: 0 12px; border: 1px solid color-mix(in srgb, var(--seller-danger) 45%, var(--seller-border)); border-radius: 10px; color: var(--seller-danger); background: var(--seller-surface); font-size: 13px; font-weight: 600; }
+.seller-enforcement a:focus-visible { outline: 3px solid var(--seller-danger); outline-offset: 2px; }
 .seller-main { width: min(100%, 1480px); margin: 0 auto; padding: clamp(20px, 3vw, 38px); outline: none; }
 .seller-view-stage { min-height: calc(100dvh - 148px); display: grid; isolation: isolate; }
 .seller-view-stage > * { min-width: 0; grid-area: 1 / 1; }
@@ -458,6 +504,8 @@ html.dark .seller-shell {
   .seller-main { padding: 18px 14px 32px; }
   .seller-view-stage { min-height: calc(100dvh - 114px); }
   .seller-maintenance { margin: 14px 14px 0; }
+  .seller-enforcement { grid-template-columns: auto minmax(0, 1fr); margin: 14px 14px 0; }
+  .seller-enforcement a { grid-column: 1 / -1; justify-content: center; }
 }
 
 @media (prefers-reduced-motion: reduce) {
