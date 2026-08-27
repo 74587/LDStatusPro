@@ -1,4 +1,6 @@
+import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
+import { URL } from 'node:url'
 import {
   COUPON_SELECTION_AUTO,
   COUPON_SELECTION_MANUAL,
@@ -8,11 +10,19 @@ import {
   resolveCouponSelectionAfterQuoteFailure,
 } from '../src/utils/checkoutCoupon'
 
+const orderConfirmSource = readFileSync(new URL('../src/views/OrderConfirm.vue', import.meta.url), 'utf8')
+
 function coupon(claimId, { eligible = true, couponDiscountAmount = 0 } = {}) {
   return { claimId, eligible, couponDiscountAmount }
 }
 
 describe('确认订单优惠券选择', () => {
+  it('订单确认页直接进入核对内容，不重复展示大标题与说明', () => {
+    expect(orderConfirmSource).not.toContain('class="checkout-header"')
+    expect(orderConfirmSource).not.toContain('确认物品、数量与优惠后提交兑换。')
+    expect(orderConfirmSource).toContain('aria-label="订单确认"')
+  })
+
   it('自动模式沿用报价接口排序选择最优惠的可用券', () => {
     const selection = resolveCouponSelection({
       coupons: [coupon(8, { couponDiscountAmount: 20 }), coupon(3, { couponDiscountAmount: 12 })],

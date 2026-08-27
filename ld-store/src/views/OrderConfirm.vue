@@ -1,17 +1,10 @@
 <template>
   <div class="checkout-page">
-    <div class="checkout-shell" aria-labelledby="checkout-title">
+    <section class="checkout-shell" aria-label="订单确认">
       <button type="button" class="back-button" @click="goBack">
         <ArrowLeft :size="18" aria-hidden="true" />
         <span>返回物品详情</span>
       </button>
-
-      <header class="checkout-header">
-        <div>
-          <h1 id="checkout-title">确认订单</h1>
-          <p>确认物品、数量与优惠后提交兑换。</p>
-        </div>
-      </header>
 
       <div v-if="loading" class="checkout-loading" aria-live="polite">
         <div class="skeleton skeleton-product"></div>
@@ -281,7 +274,7 @@
           </aside>
         </div>
       </template>
-    </div>
+    </section>
 
     <div v-if="product" class="mobile-confirm-bar">
       <div>
@@ -852,22 +845,8 @@ onBeforeUnmount(() => {
   color: var(--text-primary);
 }
 
-.checkout-header {
-  margin: 30px 0 24px;
-}
-
-.checkout-header h1 {
-  margin: 0;
-  color: var(--text-primary);
-  font-size: clamp(30px, 5vw, 42px);
-  line-height: 1.15;
-  letter-spacing: -.025em;
-}
-
-.checkout-header > div:first-child > p:last-child {
-  margin: 10px 0 0;
-  color: var(--text-secondary);
-  font-size: 15px;
+.checkout-shell > .back-button {
+  margin-bottom: 24px;
 }
 
 .checkout-grid {
@@ -1578,11 +1557,8 @@ button.order-option-row:disabled {
     padding: 20px 12px calc(126px + env(safe-area-inset-bottom, 0px));
   }
 
-  .checkout-header {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 16px;
-    margin-top: 22px;
+  .checkout-shell > .back-button {
+    margin-bottom: 18px;
   }
 
   .checkout-grid,
@@ -1664,8 +1640,6 @@ button.order-option-row:disabled {
 }
 
 @media (max-width: 520px) {
-  .checkout-header h1 { font-size: 30px; }
-
   .product-summary {
     grid-template-columns: 72px minmax(0, 1fr);
     gap: 12px;
