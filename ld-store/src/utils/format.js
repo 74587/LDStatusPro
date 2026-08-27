@@ -200,6 +200,7 @@ export function formatOrderStatus(status) {
     'paid': { text: '待发货', color: 'warning', icon: '📦' },
     'delivered': { text: '已发货', color: 'success', icon: '✅' },
     'refunded': { text: '已退款', color: 'info', icon: '↩️' },
+    'external_dispute': { text: '已转 Credit 处理', color: 'warning', icon: 'shield-alert' },
     'expired': { text: '已过期', color: 'default', icon: '⌛' },
     'cancelled': { text: '已取消', color: 'danger', icon: '❌' }
   }

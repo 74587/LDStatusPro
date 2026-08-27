@@ -132,6 +132,7 @@ export function filterAndSortSellerProducts(products = [], filters = {}, accesso
 
 export function resolveSellerStatusTone(status = '') {
   const value = String(status).toLowerCase()
+  if (value === 'external_dispute') return 'warning'
   if (value.includes('reject') || value.includes('refund')) return 'danger'
   if (value.includes('pending') || value === 'paid') return 'warning'
   if (value.includes('approve') || value === 'active' || value === 'delivered' || value === 'completed') return 'success'

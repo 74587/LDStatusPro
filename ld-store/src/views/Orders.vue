@@ -308,6 +308,7 @@ import {
   RefreshCw,
   RotateCcw,
   Search,
+  ShieldAlert,
   ShoppingBag,
   ShoppingCart,
   Truck
@@ -400,13 +401,14 @@ const timeRangeOptions = [
   { value: '6m', label: '最近半年' },
   { value: '1y', label: '最近一年' }
 ]
-const VALID_STATUS_FILTERS = ['paid', 'delivered', 'cancelled', 'refunded']
+const VALID_STATUS_FILTERS = ['paid', 'delivered', 'cancelled', 'refunded', 'external_dispute']
 const statusTabs = computed(() => [
   { value: '', label: '全部', iconComponent: props.sellerMode ? null : ClipboardList },
   { value: 'paid', label: '待发货', iconComponent: props.sellerMode ? null : Package },
   { value: 'delivered', label: '已发货', iconComponent: props.sellerMode ? null : Truck },
   { value: 'cancelled', label: '已取消', iconComponent: props.sellerMode ? null : CircleX },
-  { value: 'refunded', label: '已退款', iconComponent: props.sellerMode ? null : RotateCcw }
+  { value: 'refunded', label: '已退款', iconComponent: props.sellerMode ? null : RotateCcw },
+  { value: 'external_dispute', label: 'Credit 处理', iconComponent: props.sellerMode ? null : ShieldAlert }
 ])
 const cancellingOrderId = ref(null)
 const deliverFormOrderId = ref(null)
@@ -1008,6 +1010,7 @@ function getStatusText(status, orderData) {
     completed: '已完成',
     cancelled: '已取消',
     refunded: '已退款',
+    external_dispute: '已转 Credit 处理',
     delivered: '已发货',
     expired: '已过期',
     uploaded: '已上传'
@@ -1024,6 +1027,7 @@ function getStatusClass(status) {
     completed: 'status-completed',
     cancelled: 'status-cancelled',
     refunded: 'status-refunded',
+    external_dispute: 'status-external-dispute',
     delivered: 'status-delivered',
     expired: 'status-expired',
     uploaded: 'status-completed'
@@ -1716,6 +1720,11 @@ onUnmounted(() => {
 .status-refunded {
   background: var(--color-danger-light);
   color: var(--color-danger);
+}
+
+.status-external-dispute {
+  background: var(--color-warning-light);
+  color: var(--color-warning);
 }
 
 .status-expired {

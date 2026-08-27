@@ -169,14 +169,14 @@ const serviceStatus = computed(() => {
       tone: 'warning',
     },
     {
-      name: '后端服务迁移',
-      description: '数据与服务正在整体迁移，迁移完成前暂停全部业务。',
-      state: '迁移中',
+      name: '站点服务',
+      description: '站点正在进行停机维护，维护期间暂停全部业务。',
+      state: '维护中',
       tone: 'warning',
     },
     {
       name: '恢复通知',
-      description: '迁移完成后将自动恢复正常访问。',
+      description: '维护完成后将恢复正常访问。',
       state: '关注中',
       tone: 'info',
     },
@@ -196,7 +196,7 @@ const noticeItems = computed(() => {
   return [
     `本次维护原因：${MAINTENANCE_STATE.reason}`,
     '恢复时间与可用性将通过状态页同步。',
-    '迁移完成后将自动恢复正常访问。',
+    '维护完成后将恢复正常访问。',
   ]
 })
 

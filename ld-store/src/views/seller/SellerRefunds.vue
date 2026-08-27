@@ -29,6 +29,7 @@
         <span>待响应 {{ summary.requested || 0 }}</span>
         <span>协商中 {{ summary.negotiating || 0 }}</span>
         <span :class="{ alert: summary.exception }">执行异常 {{ summary.exception || 0 }}</span>
+        <span :class="{ alert: summary.externalDispute }">Credit 处理 {{ summary.externalDispute || 0 }}</span>
         <span>已结束 {{ summary.closed || 0 }}</span>
       </template>
     </SellerPageToolbar>
@@ -103,7 +104,7 @@ const errorMessage = ref('')
 const refunds = ref([])
 const status = ref(String(route.query.status || 'action_required'))
 const search = ref(String(route.query.search || ''))
-const summary = reactive({ total: 0, requested: 0, negotiating: 0, exception: 0, closed: 0, actionRequired: 0 })
+const summary = reactive({ total: 0, requested: 0, negotiating: 0, exception: 0, externalDispute: 0, closed: 0, actionRequired: 0 })
 const pagination = reactive({ page: Number(route.query.page) || 1, pageSize: 20, total: 0, totalPages: 0 })
 
 const columns = Object.freeze([
@@ -120,6 +121,7 @@ const statusTabs = [
   { value: 'requested', label: '待响应', countKey: 'requested' },
   { value: 'negotiating', label: '协商中', countKey: 'negotiating' },
   { value: 'exception', label: '执行异常', countKey: 'exception' },
+  { value: 'external_dispute', label: 'Credit 处理', countKey: 'externalDispute' },
   { value: 'closed', label: '已结束', countKey: 'closed' },
   { value: 'all', label: '全部', countKey: 'total' }
 ]

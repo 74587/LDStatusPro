@@ -366,6 +366,7 @@ import {
   RefreshCw,
   RotateCcw,
   SearchX,
+  ShieldAlert,
   ShoppingBag,
   TimerOff,
   UserRound,
@@ -638,6 +639,7 @@ function getLogIcon(action) {
     deliver: PackageCheck,
     refund_request: RotateCcw,
     refund_reject: CircleX,
+    refund_external_dispute: ShieldAlert,
     refund: RotateCcw,
     cancel: CircleX,
     expire: TimerOff,
@@ -656,6 +658,7 @@ function getLogText(log) {
     deliver: '发货完成',
     refund_request: '买家申请退款',
     refund_reject: '卖家拒绝退款',
+    refund_external_dispute: '订单已转 Credit 处理',
     refund: '订单退款',
     cancel: '取消订单',
     expire: '订单过期',
@@ -697,6 +700,7 @@ function getStatusTimestamp(orderData, logs = []) {
     completed: getTimelineTimestampFromLogs(logs, ['deliver']),
     paid: getTimelineTimestampFromLogs(logs, ['pay']),
     refunded: getTimelineTimestampFromLogs(logs, ['refund']),
+    external_dispute: getTimelineTimestampFromLogs(logs, ['refund_external_dispute']),
     cancelled: getTimelineTimestampFromLogs(logs, ['cancel']),
     expired: getTimelineTimestampFromLogs(logs, ['expire'])
   }
@@ -705,6 +709,7 @@ function getStatusTimestamp(orderData, logs = []) {
     completed: orderData.completed_at || orderData.completedAt || orderData.delivered_at || orderData.deliveredAt,
     paid: orderData.paid_at || orderData.paidAt,
     refunded: orderData.refunded_at || orderData.refundedAt,
+    external_dispute: orderData.updated_at || orderData.updatedAt,
     cancelled: orderData.cancelled_at || orderData.cancelledAt,
     expired: orderData.expired_at || orderData.expiredAt || orderData.pay_expired_at || orderData.payExpiredAt || orderData.expire_at || orderData.expireAt,
     pending: orderData.created_at || orderData.createdAt,
@@ -720,6 +725,7 @@ function getStatusTimeLabel(orderData) {
     completed: '完成时间',
     paid: '支付时间',
     refunded: '退款时间',
+    external_dispute: '检测时间',
     cancelled: '取消时间',
     expired: '过期时间',
     pending: '创建时间',
@@ -737,6 +743,7 @@ function getStatusText(status) {
     completed: '已完成',
     cancelled: '已取消',
     refunded: '已退款',
+    external_dispute: '已转 Credit 处理',
     delivered: '已发货',
     expired: '已过期'
   }
@@ -752,6 +759,7 @@ function getStatusIcon(status) {
     completed: BadgeCheck,
     cancelled: CircleX,
     refunded: RotateCcw,
+    external_dispute: ShieldAlert,
     delivered: PackageCheck,
     expired: TimerOff
   }
@@ -767,6 +775,7 @@ function getStatusClass(status) {
     completed: 'status-success',
     cancelled: 'status-cancelled',
     refunded: 'status-refunded',
+    external_dispute: 'status-external-dispute',
     delivered: 'status-info',
     expired: 'status-cancelled'
   }
@@ -1097,6 +1106,10 @@ onUnmounted(() => {
   background: var(--color-danger-bg);
 }
 
+.status-card.status-external-dispute {
+  background: var(--color-warning-bg);
+}
+
 .status-icon {
   width: 56px;
   height: 56px;
@@ -1128,6 +1141,10 @@ onUnmounted(() => {
 
 .status-card.status-refunded .status-icon {
   color: var(--color-danger);
+}
+
+.status-card.status-external-dispute .status-icon {
+  color: var(--color-warning);
 }
 
 .status-card__main {

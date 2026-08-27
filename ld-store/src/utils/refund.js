@@ -17,7 +17,12 @@ const STATUS_META = Object.freeze({
   failed: { label: '退款执行失败', tone: 'danger', description: '本次自动退款未完成，卖家可以查看原因并重试。' },
   unknown: { label: '退款结果待核对', tone: 'danger', description: '无法确认 Credit 是否已完成退款，为避免重复退回，系统已停止自动重试。' },
   refunded: { label: '已退款', tone: 'success', description: 'LDC 积分已由 LINUX DO Credit 原路退回。' },
-  rejected: { label: '卖家已拒绝', tone: 'danger', description: '请先查看卖家说明；协商仍无法解决时，可到 Credit 发起争议。' }
+  rejected: { label: '卖家已拒绝', tone: 'danger', description: '请先查看卖家说明；协商仍无法解决时，可到 Credit 发起争议。' },
+  external_dispute: {
+    label: '已转 Credit 处理',
+    tone: 'warning',
+    description: 'Credit 中的原订单已不再是 success 状态，LD 士多已停止本地退款流程；这不代表积分已退回。'
+  }
 })
 
 const REFUND_STAGE_DEFINITIONS = Object.freeze([
@@ -34,7 +39,8 @@ const REFUND_EVENT_META = Object.freeze({
   rejected: { label: '卖家拒绝退款申请', tone: 'danger', icon: 'rejected' },
   refund_succeeded: { label: 'LDC 积分退款成功', tone: 'success', icon: 'success' },
   refund_failed: { label: '退款执行失败', tone: 'danger', icon: 'failed' },
-  refund_unknown: { label: '退款结果等待核对', tone: 'warning', icon: 'unknown' }
+  refund_unknown: { label: '退款结果等待核对', tone: 'warning', icon: 'unknown' },
+  external_dispute_detected: { label: '检测到 Credit 外部处理', tone: 'warning', icon: 'external' }
 })
 
 function createStage(index, state = 'pending', options = {}) {
@@ -134,6 +140,25 @@ export function buildRefundStages(status, hasRefund = true) {
       done(1, '卖家已同意退款'),
       error(2, '需人工核对 Credit', 'warning'),
       pending(3)
+    ]
+  }
+
+  if (value === 'external_dispute') {
+    const seller = createStage(1, 'skipped', {
+      description: 'LD 士多未继续卖家决策',
+      tone: 'neutral'
+    })
+    const execution = createStage(2, 'skipped', {
+      description: '未从 LD 士多发起退款',
+      tone: 'neutral'
+    })
+    const result = current(3, '请前往 Credit 核对实际结果', 'warning')
+    result.label = 'Credit 处理'
+    return [
+      done(0, '申请信息已记录'),
+      seller,
+      execution,
+      result
     ]
   }
 

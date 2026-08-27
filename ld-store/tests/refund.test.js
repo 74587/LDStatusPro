@@ -12,6 +12,9 @@ import {
 } from '../src/utils/refund'
 
 const refundPanelSource = readFileSync(new URL('../src/components/order/OrderRefundPanel.vue', import.meta.url), 'utf8')
+const ordersSource = readFileSync(new URL('../src/views/Orders.vue', import.meta.url), 'utf8')
+const orderDetailSource = readFileSync(new URL('../src/views/OrderDetail.vue', import.meta.url), 'utf8')
+const sellerRefundsSource = readFileSync(new URL('../src/views/seller/SellerRefunds.vue', import.meta.url), 'utf8')
 
 function getRefundRequestButtonSource() {
   const controlsIndex = refundPanelSource.indexOf('aria-controls="refund-request-form"')
@@ -64,9 +67,32 @@ describe('订单退款买家流程', () => {
     expect(getRefundStatusMeta('unknown')).toMatchObject({ tone: 'danger', label: '退款结果待核对' })
   })
 
+  it('将 Credit 外部处理展示为独立终态，不冒充已退款', () => {
+    expect(getRefundStatusMeta('external_dispute')).toMatchObject({
+      tone: 'warning',
+      label: '已转 Credit 处理'
+    })
+    expect(getRefundStatusMeta('external_dispute').description).toContain('不代表积分已退回')
+
+    const stages = buildRefundStages('external_dispute')
+    expect(stages.map(stage => stage.state)).toEqual(['done', 'skipped', 'skipped', 'current'])
+    expect(stages[2].description).toBe('未从 LD 士多发起退款')
+    expect(stages[3]).toMatchObject({ label: 'Credit 处理', tone: 'warning' })
+    expect(refundPanelSource).toContain('不代表争议已通过或积分已退回')
+    expect(refundPanelSource).toContain("refundState.value?.refund?.status === 'external_dispute'")
+  })
+
+  it('在订单、日志和卖家工作台中提供外部争议筛选与独立计数', () => {
+    expect(ordersSource).toContain("{ value: 'external_dispute', label: 'Credit 处理'")
+    expect(orderDetailSource).toContain("refund_external_dispute: '订单已转 Credit 处理'")
+    expect(sellerRefundsSource).toContain('Credit 处理 {{ summary.externalDispute || 0 }}')
+    expect(sellerRefundsSource).toContain("{ value: 'external_dispute', label: 'Credit 处理'")
+  })
+
   it('为时间线事件提供稳定的语义色调与操作者标签', () => {
     expect(getRefundEventMeta('refund_succeeded')).toMatchObject({ tone: 'success', icon: 'success' })
     expect(getRefundEventMeta('rejected')).toMatchObject({ tone: 'danger', label: '卖家拒绝退款申请' })
+    expect(getRefundEventMeta('external_dispute_detected')).toMatchObject({ tone: 'warning', icon: 'external' })
     expect(getRefundEventMeta('not_supported')).toMatchObject({ tone: 'neutral', label: '售后状态更新' })
     expect(getRefundActorLabel({ actorType: 'seller', actorName: '@alice' })).toBe('卖家 · @alice')
     expect(getRefundActorLabel({ actorType: 'system' })).toBe('系统')

@@ -176,6 +176,17 @@
               <div><strong>{{ buyerGuidance.title }}</strong><p>{{ buyerGuidance.description }}</p></div>
             </div>
 
+            <div v-if="refund.status === 'external_dispute'" class="refund-dispute">
+              <ShieldAlert :size="22" aria-hidden="true" />
+              <div>
+                <strong>请到 Credit 核对实际处理结果</strong>
+                <p>此状态只表示 LD 士多检测到原订单已由 Credit 侧处理，并已停止本站退款流程；不代表争议已通过或积分已退回。</p>
+                <div class="refund-actions">
+                  <a :href="disputeGuideUrl" target="_blank" rel="noopener" class="refund-btn refund-btn--primary">查看 Credit 争议指引<ExternalLink :size="15" aria-hidden="true" /></a>
+                </div>
+              </div>
+            </div>
+
             <div v-if="isBuyer && refund.status === 'rejected'" class="refund-dispute">
               <ShieldQuestion :size="22" aria-hidden="true" />
               <div>
@@ -276,7 +287,7 @@
           </form>
           </section>
 
-          <section v-else-if="isBuyer && counterpartyMessageUrl && !['refunded', 'rejected'].includes(refund.status)" class="refund-actions-area refund-buyer-contact" aria-labelledby="refund-contact-title">
+          <section v-else-if="isBuyer && counterpartyMessageUrl && !['refunded', 'rejected', 'external_dispute'].includes(refund.status)" class="refund-actions-area refund-buyer-contact" aria-labelledby="refund-contact-title">
             <header><p>需要沟通？</p><h4 id="refund-contact-title">联系卖家</h4></header>
             <p>请在私信中说明业务单号和最新情况，并保留双方沟通记录。</p>
             <a :href="counterpartyMessageUrl" target="_blank" rel="noopener" class="refund-btn refund-btn--secondary refund-btn--block">
@@ -301,6 +312,7 @@ import {
   LoaderCircle,
   MessageCircleMore,
   RotateCcw,
+  ShieldAlert,
   ShieldQuestion,
   TriangleAlert
 } from '@lucide/vue'
@@ -370,6 +382,7 @@ const counterpartyMessageUrl = computed(() => buildLinuxDoMessageUrl(
 ))
 const statusIcon = computed(() => {
   if (refund.value?.status === 'refunded') return CircleCheckBig
+  if (refund.value?.status === 'external_dispute') return ShieldAlert
   if (['failed', 'unknown', 'rejected'].includes(refund.value?.status)) return TriangleAlert
   if (refund.value?.status === 'processing') return LoaderCircle
   return Clock3
@@ -385,7 +398,8 @@ const buyerGuidance = computed(() => {
     processing: { title: '系统正在执行退款', description: '请等待 Credit 返回结果，期间无需重复操作。', tone: 'info' },
     refunded: { title: '退款已经完成', description: 'LDC 已按原订单退回，可在 Credit 中核对余额与记录。', tone: 'success' },
     failed: { title: '本次退款执行失败', description: '卖家可查看失败原因并重试；你可以私信卖家确认下一步。', tone: 'danger' },
-    unknown: { title: '退款结果正在人工核对', description: '为避免重复退款，系统已停止自动重试，请等待卖家或平台确认。', tone: 'warning' }
+    unknown: { title: '退款结果正在人工核对', description: '为避免重复退款，系统已停止自动重试，请等待卖家或平台确认。', tone: 'warning' },
+    external_dispute: { title: '本站退款流程已结束', description: '请前往 Credit 核对争议状态、交易记录与积分余额；本站状态不代表积分已经退回。', tone: 'warning' }
   }
   return guidance[refund.value?.status] || null
 })
@@ -443,7 +457,11 @@ async function submitRefund() {
   }
   refundState.value = result.data || result
   formOpen.value = false
-  toast.success('退款申请已提交')
+  if (refundState.value?.refund?.status === 'external_dispute') {
+    toast.warning('检测到订单已转 Credit 处理，请前往 Credit 核对实际结果')
+  } else {
+    toast.success('退款申请已提交')
+  }
   emit('updated')
 }
 
@@ -469,7 +487,11 @@ async function applySellerResult(result, successMessage) {
   }
   refundState.value = result.data || result
   closeSellerAction()
-  toast.success(successMessage)
+  if (refundState.value?.refund?.status === 'external_dispute') {
+    toast.warning('检测到订单已转 Credit 处理，LD 士多未继续同意或拒绝退款')
+  } else {
+    toast.success(successMessage)
+  }
   emit('updated')
   if (!isBuyer.value) notificationSummaryStore.refresh({ force: true })
   return true

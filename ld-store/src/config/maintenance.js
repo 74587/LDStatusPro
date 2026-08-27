@@ -16,7 +16,7 @@ const TEMPORARY_MAINTENANCE_ENABLED = false
 
 // Frontend force-maintenance override. When enabled, the frontend always
 // shows the maintenance page regardless of backend system-status (used when
-// the backend itself must go offline, e.g. service migration). Set
+// the backend itself must go offline, e.g. planned downtime). Set
 // FORCE_MAINTENANCE_ENABLED to false to restore normal operation. Local dev
 // (`vite dev`) is always exempt so the site can be tested normally while
 // production stays in maintenance.
@@ -24,9 +24,9 @@ const FORCE_MAINTENANCE_ENABLED = false
 const FRONTEND_FORCE_MAINTENANCE = Object.freeze({
   enabled: FORCE_MAINTENANCE_ENABLED && !import.meta.env.DEV,
   mode: MAINTENANCE_MODES.FULL,
-  title: 'LD士多服务迁移中',
-  message: '站点因后端数据与服务整体迁移暂时关闭，请稍后再试。',
-  reason: '后端数据与服务整体迁移中，迁移完成前暂停全部业务。',
+  title: 'LD士多停机维护中',
+  message: '站点正在进行停机维护，维护期间暂停访问，请稍后再试。',
+  reason: '停机维护',
   eta: '恢复时间待定，请关注状态页或稍后刷新页面。',
   statusUrl: 'https://status.ldspro.qzz.io/status/ldstatus',
 })
@@ -318,7 +318,7 @@ export async function ensureMaintenanceStatusLoaded(options = {}) {
   const now = Date.now()
 
   // Force-maintenance is fully local: skip the backend status fetch so the
-  // page renders even when the backend is unreachable mid-migration.
+  // page renders even when the backend is unreachable during downtime.
   if (FRONTEND_FORCE_MAINTENANCE.enabled) {
     applyMaintenanceStatus({})
     hasFetched = true

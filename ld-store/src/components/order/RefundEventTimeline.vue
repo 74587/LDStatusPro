@@ -64,6 +64,7 @@ const eventIcons = Object.freeze({
   rejected: CircleX,
   failed: TriangleAlert,
   unknown: ShieldAlert,
+  external: ShieldAlert,
   update: Clock3
 })
 

@@ -34,6 +34,7 @@
     <ul>
       <li><strong>执行失败：</strong>页面已收到明确失败结果。卖家按提示检查原收款凭证或订单状态后，可从订单详情重试。</li>
       <li><strong>结果待核实：</strong>请求可能已送达 Credit，但商城未获得可确认结果。为防止重复退款，页面不提供重试；双方应保留订单号并联系 LD 士多核实。</li>
+      <li><strong>已转 Credit 处理：</strong>Credit 中的原订单已不再是 success 状态，LD 士多会结束本地退款流程。这不代表积分已退回，请到 Credit 核对争议状态、交易记录和余额。</li>
       <li>在结果明确前，卖家不要通过其他入口对同一订单重复操作，买家也不必重复提交申请。</li>
     </ul>
 
@@ -87,6 +88,7 @@ const statusRows = [
   { status: '退款中', meaning: '系统正在向 Credit 提交全额退款', next: '不要重复操作，等待结果' },
   { status: '已退款', meaning: 'Credit 已返回成功，订单和退款记录已完成', next: '买家到 Credit 余额或交易记录核对' },
   { status: '已拒绝', meaning: '卖家已给出拒绝理由', next: '继续协商；仍有争议时到 Credit 发起争议' },
+  { status: '已转 Credit 处理', meaning: 'Credit 原订单已不是 success，本站已结束退款流程', next: '到 Credit 核对实际争议或退回结果' },
   { status: '执行失败 / 结果待核实', meaning: '退款未能正常确认', next: '按页面的差异化提示处理，待核实状态不要重试' }
 ]
 </script>
