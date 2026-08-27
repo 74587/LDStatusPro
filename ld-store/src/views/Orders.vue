@@ -303,12 +303,11 @@ import {
   CircleX,
   ClipboardList,
   ClipboardPenLine,
+  MoreHorizontal,
   Package,
   PackageCheck,
   RefreshCw,
-  RotateCcw,
   Search,
-  ShieldAlert,
   ShoppingBag,
   ShoppingCart,
   Truck
@@ -341,6 +340,7 @@ import {
   clearOrderScrollState
 } from '@/utils/orderListScroll'
 import { resolveOrderArea } from '@/utils/sellerNavigation'
+import { normalizeOrderStatusFilter, toOrderApiStatusFilter } from '@/utils/orderFilters'
 import {
   buildSellerOrderQuery,
   buildSellerOrderTabQuery,
@@ -401,14 +401,12 @@ const timeRangeOptions = [
   { value: '6m', label: '最近半年' },
   { value: '1y', label: '最近一年' }
 ]
-const VALID_STATUS_FILTERS = ['paid', 'delivered', 'cancelled', 'refunded', 'external_dispute']
 const statusTabs = computed(() => [
   { value: '', label: '全部', iconComponent: props.sellerMode ? null : ClipboardList },
   { value: 'paid', label: '待发货', iconComponent: props.sellerMode ? null : Package },
   { value: 'delivered', label: '已发货', iconComponent: props.sellerMode ? null : Truck },
   { value: 'cancelled', label: '已取消', iconComponent: props.sellerMode ? null : CircleX },
-  { value: 'refunded', label: '已退款', iconComponent: props.sellerMode ? null : RotateCcw },
-  { value: 'external_dispute', label: 'Credit 处理', iconComponent: props.sellerMode ? null : ShieldAlert }
+  { value: 'other', label: '其他', iconComponent: props.sellerMode ? null : MoreHorizontal }
 ])
 const cancellingOrderId = ref(null)
 const deliverFormOrderId = ref(null)
@@ -449,8 +447,7 @@ function syncRouteState() {
     ? String(route.query.categoryName || `分类 #${activeCategoryId.value}`).trim()
     : ''
   onlyDealOrders.value = currentRole.value === 'buy' ? false : parseRouteBoolean(route.query.dealOnly)
-  statusFilter.value = currentRole.value === 'buy' ? ''
-    : (VALID_STATUS_FILTERS.includes(String(route.query.status || '').trim()) ? String(route.query.status).trim() : '')
+  statusFilter.value = currentRole.value === 'buy' ? '' : normalizeOrderStatusFilter(route.query.status)
   timeRange.value = ['1m', '6m', '1y'].includes(String(route.query.timeRange || '').trim())
     ? String(route.query.timeRange).trim()
     : '1m'
@@ -624,9 +621,7 @@ function switchRole(role) {
 
 // 选择状态筛选（写入 URL，由 watcher 统一重载）
 function selectStatus(status) {
-  const normalizedStatus = VALID_STATUS_FILTERS.includes(String(status || '').trim())
-    ? String(status).trim()
-    : ''
+  const normalizedStatus = normalizeOrderStatusFilter(status)
   if (props.sellerMode) {
     if (currentRole.value === 'buy') return
     const intent = { source: 'product', status: normalizedStatus }
@@ -655,7 +650,7 @@ function buildOrderQueryOptions() {
       source: currentRole.value === 'buy' ? 'service' : 'product',
       search: orderSearch.value,
       timeRange: timeRange.value,
-      status: statusFilter.value,
+      status: toOrderApiStatusFilter(statusFilter.value),
       categoryId: activeCategoryId.value,
       dealOnly: onlyDealOrders.value
     })
@@ -673,7 +668,7 @@ function buildOrderQueryOptions() {
     options.dealOnly = true
   }
   if (currentRole.value !== 'buy' && statusFilter.value) {
-    options.status = statusFilter.value
+    options.status = toOrderApiStatusFilter(statusFilter.value)
   }
   if (currentRole.value === 'buy') {
     options.role = props.sellerMode ? 'provider' : 'requester'
@@ -1419,7 +1414,15 @@ onUnmounted(() => {
 /* 状态筛选 */
 .status-tabs {
   width: 100%;
+  min-width: 0;
   margin-bottom: 16px;
+}
+
+.status-tabs :deep(.liquid-tab) {
+  min-width: 44px;
+  flex: 1 1 0;
+  justify-content: center;
+  padding-inline: 8px;
 }
 
 .orders-filters {
@@ -2339,6 +2342,12 @@ onUnmounted(() => {
 
   .deliver-hint {
     font-size: 11px;
+  }
+}
+
+@media (max-width: 360px) {
+  .status-tabs :deep(.tab-icon) {
+    display: none;
   }
 }
 

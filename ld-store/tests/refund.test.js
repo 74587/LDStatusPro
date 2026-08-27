@@ -82,8 +82,8 @@ describe('订单退款买家流程', () => {
     expect(refundPanelSource).toContain("refundState.value?.refund?.status === 'external_dispute'")
   })
 
-  it('在订单、日志和卖家工作台中提供外部争议筛选与独立计数', () => {
-    expect(ordersSource).toContain("{ value: 'external_dispute', label: 'Credit 处理'")
+  it('订单列表归并终态，详情与卖家退款台账保留独立语义', () => {
+    expect(ordersSource).toContain("{ value: 'other', label: '其他'")
     expect(orderDetailSource).toContain("refund_external_dispute: '订单已转 Credit 处理'")
     expect(sellerRefundsSource).toContain('Credit 处理 {{ summary.externalDispute || 0 }}')
     expect(sellerRefundsSource).toContain("{ value: 'external_dispute', label: 'Credit 处理'")
