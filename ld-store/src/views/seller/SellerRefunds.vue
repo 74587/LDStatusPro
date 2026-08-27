@@ -25,13 +25,6 @@
         </label>
         <button type="submit" class="refund-search-submit">搜索</button>
       </form>
-      <template #summary>
-        <span>待响应 {{ summary.requested || 0 }}</span>
-        <span>协商中 {{ summary.negotiating || 0 }}</span>
-        <span :class="{ alert: summary.exception }">执行异常 {{ summary.exception || 0 }}</span>
-        <span :class="{ alert: summary.externalDispute }">Credit 处理 {{ summary.externalDispute || 0 }}</span>
-        <span>已结束 {{ summary.closed || 0 }}</span>
-      </template>
     </SellerPageToolbar>
 
     <div v-if="errorMessage" class="refund-page-error" role="alert">
@@ -323,26 +316,6 @@ onMounted(loadRefunds)
 .refund-refresh:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-}
-
-/* 摘要统计 - 简洁胶囊 */
-.seller-refunds-page :deep(.seller-filter-summary > span) {
-  display: inline-flex;
-  align-items: center;
-  min-height: 32px;
-  padding: 0 14px;
-  border: 2px solid var(--border-medium);
-  border-radius: 8px;
-  color: var(--text-secondary);
-  background: white;
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.seller-refunds-page :deep(.seller-filter-summary > span.alert) {
-  border-color: var(--color-danger-light);
-  color: #991b1b;
-  background: var(--color-danger-bg);
 }
 
 /* 表格单元格内容 - 改进可读性 */
