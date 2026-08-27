@@ -89,6 +89,12 @@ describe('订单退款买家流程', () => {
     expect(sellerRefundsSource).toContain("{ value: 'external_dispute', label: 'Credit 处理'")
   })
 
+  it('按退款板块实际宽度切换布局，避免窄详情页被桌面视口强制分栏', () => {
+    expect(refundPanelSource).toContain('container-type: inline-size')
+    expect(refundPanelSource).toContain('@container (min-width: 760px)')
+    expect(refundPanelSource).not.toContain('@media (min-width: 960px)')
+  })
+
   it('为时间线事件提供稳定的语义色调与操作者标签', () => {
     expect(getRefundEventMeta('refund_succeeded')).toMatchObject({ tone: 'success', icon: 'success' })
     expect(getRefundEventMeta('rejected')).toMatchObject({ tone: 'danger', label: '卖家拒绝退款申请' })

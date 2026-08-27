@@ -549,7 +549,10 @@ onMounted(loadRefund)
   --refund-info: var(--color-info, #277da1);
   --refund-warning: var(--color-warning, #a66b24);
   --refund-danger: var(--color-danger, #b54a4a);
+  width: 100%;
   min-width: 0;
+  box-sizing: border-box;
+  container-type: inline-size;
   margin-bottom: 20px;
   padding: clamp(18px, 3vw, 26px);
   border: 1px solid var(--border-medium);
@@ -984,7 +987,7 @@ onMounted(loadRefund)
 .refund-spin-icon { animation: refund-spin 800ms linear infinite; }
 @keyframes refund-spin { to { transform: rotate(360deg); } }
 
-@media (min-width: 960px) {
+@container (min-width: 760px) {
   .refund-workspace {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(300px, 350px);
