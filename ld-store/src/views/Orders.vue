@@ -25,7 +25,23 @@
         <template #cell-order="{ row: order }">
           <router-link :to="getOrderDetailTarget(order)" class="seller-order-id" @click="handleOrderCardClick"><strong>{{ getOrderKey(order) }}</strong><small>{{ formatDate(order.created_at || order.createdAt) }}</small></router-link>
         </template>
-        <template #cell-subject="{ row: order }"><div class="seller-order-subject"><strong :title="getOrderDisplayName(order)">{{ getOrderDisplayName(order) }}</strong><small>{{ currentRole === 'buy' ? '求购服务' : `${getSellerOrderTypeText(order.product_type || order.product?.product_type)}${isPlatformOrder(order) ? ` · ×${getOrderQuantity(order)}` : ''}` }}</small></div></template>
+        <template #cell-subject="{ row: order }">
+          <div class="seller-order-subject">
+            <router-link
+              v-if="getOrderSubjectTarget(order)"
+              :to="getOrderSubjectTarget(order)"
+              class="seller-order-subject-link"
+              target="_blank"
+              rel="noopener noreferrer"
+              :aria-label="`在新标签页打开${currentRole === 'buy' ? '求购' : '物品'}详情：${getOrderDisplayName(order)}`"
+              :title="getOrderDisplayName(order)"
+            >
+              <strong>{{ getOrderDisplayName(order) }}</strong><ArrowUpRight :size="13" aria-hidden="true" />
+            </router-link>
+            <strong v-else :title="getOrderDisplayName(order)">{{ getOrderDisplayName(order) }}</strong>
+            <small>{{ currentRole === 'buy' ? '求购服务' : `${getSellerOrderTypeText(order.product_type || order.product?.product_type)}${isPlatformOrder(order) ? ` · ×${getOrderQuantity(order)}` : ''}` }}</small>
+          </div>
+        </template>
         <template #cell-buyer="{ row: order }">
           <SellerOrderPartyIdentity :order="order" :role="isBuyRequestOrder(order) ? 'counterparty' : 'buyer'" />
         </template>
@@ -40,7 +56,21 @@
           </div>
         </template>
         <template #mobile-row="{ row: order }">
-          <div class="seller-order-mobile-head"><div><strong>{{ getOrderDisplayName(order) }}</strong><small>{{ getOrderKey(order) }}</small></div><SellerStatusBadge :tone="resolveSellerStatusTone(order.status)" :label="getStatusText(order.status, order)" /></div>
+          <div class="seller-order-mobile-head">
+            <div>
+              <router-link
+                v-if="getOrderSubjectTarget(order)"
+                :to="getOrderSubjectTarget(order)"
+                class="seller-order-subject-link"
+                target="_blank"
+                rel="noopener noreferrer"
+                :aria-label="`在新标签页打开${currentRole === 'buy' ? '求购' : '物品'}详情：${getOrderDisplayName(order)}`"
+              ><strong>{{ getOrderDisplayName(order) }}</strong><ArrowUpRight :size="13" aria-hidden="true" /></router-link>
+              <strong v-else>{{ getOrderDisplayName(order) }}</strong>
+              <small>{{ getOrderKey(order) }}</small>
+            </div>
+            <SellerStatusBadge :tone="resolveSellerStatusTone(order.status)" :label="getStatusText(order.status, order)" />
+          </div>
           <dl class="seller-order-mobile-grid"><div><dt>{{ isBuyRequestOrder(order) ? '求购方' : '买家' }}</dt><dd class="seller-order-mobile-party"><SellerOrderPartyIdentity :order="order" :role="isBuyRequestOrder(order) ? 'counterparty' : 'buyer'" /></dd></div><div><dt>金额</dt><dd>{{ order.total_price || order.amount || 0 }} LDC</dd></div><div><dt>时间</dt><dd>{{ formatDate(order.created_at || order.createdAt) }}</dd></div><div><dt>来源</dt><dd>{{ currentRole === 'buy' ? '求购服务' : '商品订单' }}</dd></div></dl>
           <p v-if="order.status === 'pending'" class="seller-order-mobile-expiry">{{ getExpireCountdownText(order) }}</p>
           <div class="seller-order-mobile-actions"><button v-if="showManualDeliver(order)" type="button" class="seller-row-primary" :aria-expanded="isDeliverFormVisible(order)" @click="openDeliverForm(order)"><PackageCheck :size="15" aria-hidden="true" />立即发货</button><button v-if="isBuyRequestOrder(order) && (order.status === 'pending' || order.status === 'paid') && !isPaymentMaintenanceBlocked" type="button" class="seller-row-secondary" :disabled="refreshingBuyOrderId === getOrderKey(order)" @click="handleRefreshBuyOrder(order)"><RefreshCw :size="15" aria-hidden="true" />刷新</button><button v-if="currentRole === 'seller' && order.status === 'pending'" type="button" class="seller-row-danger" :disabled="cancellingOrderId === getOrderKey(order)" @click="handleCancelOrder(order)">取消订单</button><router-link :to="getOrderDetailTarget(order)" class="seller-row-detail" @click="handleOrderCardClick">订单详情<ArrowUpRight :size="14" aria-hidden="true" /></router-link></div>
@@ -341,6 +371,7 @@ import {
 } from '@/utils/orderListScroll'
 import { resolveOrderArea } from '@/utils/sellerNavigation'
 import { normalizeOrderStatusFilter, toOrderApiStatusFilter } from '@/utils/orderFilters'
+import { resolveOrderSubjectTarget } from '@/utils/orderNavigation'
 import {
   buildSellerOrderQuery,
   buildSellerOrderTabQuery,
@@ -1079,6 +1110,10 @@ function getOrderQuantity(order) {
 function getOrderProductId(order) {
   const value = Number(order?.product_id ?? order?.product?.id ?? 0)
   return Number.isInteger(value) && value > 0 ? value : 0
+}
+
+function getOrderSubjectTarget(order) {
+  return resolveOrderSubjectTarget(order)
 }
 
 function canReviewOrder(order) {
@@ -2375,6 +2410,10 @@ onUnmounted(() => {
 .seller-order-id strong { overflow: hidden; color: var(--seller-ink); font: 650 12px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; text-overflow: ellipsis; white-space: nowrap; }
 .seller-order-id small, .seller-order-subject small, .seller-order-unit { margin-top: 5px; color: var(--seller-muted); font-size: 10px; }
 .seller-order-subject strong { overflow: hidden; color: var(--seller-ink); font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
+.seller-order-subject-link { min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 5px; color: var(--seller-ink); text-decoration: none; }
+.seller-order-subject-link svg { flex: 0 0 auto; color: var(--seller-jade); }
+.seller-order-subject-link:hover strong { color: var(--seller-jade); text-decoration: underline; text-underline-offset: 3px; }
+.seller-order-subject-link:focus-visible { border-radius: 5px; outline: 2px solid var(--seller-jade); outline-offset: 3px; }
 .seller-order-amount, .seller-order-unit { display: block; font-variant-numeric: tabular-nums; }
 .seller-order-amount { color: var(--seller-ink); font: 700 14px/1.3 ui-monospace, SFMono-Regular, Menlo, monospace; }
 .seller-order-expiry { display: block; margin-top: 6px; color: var(--seller-warning); font-size: 10px; line-height: 1.35; }
