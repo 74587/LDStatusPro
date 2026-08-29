@@ -43,6 +43,11 @@
           折扣券每笔订单仅优惠一件，其余商品仍按当前商品折后售价结算。
         </p>
 
+        <p v-if="coupon.state === 'paused'" class="pause-notice" role="status">
+          <strong>卖家暂时暂停领取</strong>
+          已经领取且仍在有效期内的优惠券可以继续使用，请稍后再来看看。
+        </p>
+
         <div class="claim-actions">
           <template v-if="coupon.claimed">
             <div class="claimed-status" role="status">
@@ -52,7 +57,10 @@
             <router-link class="primary-button" :to="claimedActionPath">{{ claimedActionText }}</router-link>
             <router-link class="text-button" to="/user/coupons">查看我的优惠券</router-link>
           </template>
-          <button v-else-if="userStore.isLoggedIn" type="button" class="primary-button" :disabled="claiming || !coupon.claimable" @click="claimCoupon">
+          <button v-else-if="!coupon.claimable" type="button" class="primary-button" disabled>
+            {{ claimButtonText }}
+          </button>
+          <button v-else-if="userStore.isLoggedIn" type="button" class="primary-button" :disabled="claiming" @click="claimCoupon">
             {{ claiming ? '领取中…' : claimButtonText }}
           </button>
           <router-link v-else class="primary-button" :to="loginPath">登录后领取</router-link>
@@ -83,7 +91,7 @@ const scopeText = computed(() => coupon.value?.scopeType === 'product'
   : `${coupon.value?.sellerUsername || '该卖家'}店铺内平台商品`)
 const usePath = computed(() => getCouponUsePath(coupon.value))
 const loginPath = computed(() => ({ name: 'Login', query: { redirect: route.fullPath } }))
-const claimUsable = computed(() => coupon.value?.claim?.status === 'available' && ['active', 'closed', 'sold_out'].includes(coupon.value?.state))
+const claimUsable = computed(() => coupon.value?.claim?.status === 'available' && ['active', 'paused', 'closed', 'sold_out'].includes(coupon.value?.state))
 const claimedStatusText = computed(() => {
   if (coupon.value?.claim?.status === 'reserved') return '这张优惠券正被待支付订单占用'
   if (coupon.value?.claim?.status === 'used') return '这张优惠券已使用'
@@ -107,7 +115,8 @@ const claimButtonText = computed(() => {
   const state = coupon.value?.state
   if (state === 'scheduled') return '尚未开始领取'
   if (state === 'expired') return '优惠券已过期'
-  if (state === 'closed') return '已停止领取'
+  if (state === 'paused') return '卖家暂时暂停领取'
+  if (state === 'closed') return '已永久停止领取'
   if (state === 'sold_out') return '优惠券已领完'
   if (state === 'disabled') return '优惠券已停用'
   return '领取优惠券'
@@ -131,6 +140,7 @@ async function claimCoupon() {
     await loadCoupon()
   } else {
     toast.error(result.error || '领取失败，请稍后重试')
+    if (result.status === 409 || String(result.errorCode || '').startsWith('COUPON_')) await loadCoupon()
   }
   claiming.value = false
 }
@@ -156,6 +166,7 @@ h1 { margin: 0; font-size: clamp(24px, 5vw, 34px); line-height: 1.25; }
 .rule-list div { display: grid; grid-template-columns: 92px 1fr; gap: 16px; padding: 13px 0; border-bottom: 1px solid var(--border-light); }
 .rule-list div:last-child { border-bottom: 0; }.rule-list dt { color: var(--text-tertiary); }.rule-list dd { margin: 0; text-align: right; color: var(--text-primary); font-weight: 550; overflow-wrap: anywhere; }
 .notice { margin: 18px 0 0; padding: 14px 16px; border-radius: 14px; color: var(--color-warning); background: var(--color-warning-bg); font-size: 13px; line-height: 1.65; text-align: left; }
+.pause-notice { display: grid; gap: 4px; margin: 14px 0 0; padding: 14px 16px; border: 1px solid var(--color-warning-light); border-radius: 14px; color: var(--text-secondary); background: var(--color-warning-bg); font-size: 13px; line-height: 1.6; text-align: left; }.pause-notice strong { color: var(--color-warning); }
 .claim-actions { display: grid; gap: 10px; margin-top: 28px; }
 .primary-button, .secondary-button { min-height: 48px; display: inline-flex; align-items: center; justify-content: center; border-radius: 14px; font-weight: 650; transition: transform .2s ease, opacity .2s ease, box-shadow .2s ease; }
 .primary-button { padding: 0 22px; background: var(--publish-btn-bg); color: var(--publish-btn-color); box-shadow: var(--publish-btn-shadow); }

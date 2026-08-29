@@ -19,10 +19,10 @@ defineProps({
   gap: 6px;
   min-height: 32px;
   padding: 6px 14px;
-  border: 2px solid var(--border-medium);
+  border: 1px solid var(--seller-border);
   border-radius: 8px;
-  color: var(--text-secondary);
-  background: white;
+  color: var(--seller-muted);
+  background: var(--seller-surface-strong);
   font-size: 12px;
   font-weight: 700;
   white-space: nowrap;
@@ -35,38 +35,32 @@ defineProps({
   background: currentColor;
 }
 
-/* 成功色调 */
 .tone-success {
-  color: #15803d;
-  border-color: #86efac;
-  background: #f0fdf4;
+  color: var(--seller-jade-strong);
+  border-color: color-mix(in srgb, var(--seller-jade) 42%, var(--seller-border));
+  background: var(--seller-jade-soft);
 }
 
-/* 警告色调 */
 .tone-warning {
-  color: #b45309;
-  border-color: #fcd34d;
-  background: #fffbeb;
+  color: var(--seller-warning);
+  border-color: color-mix(in srgb, var(--seller-warning) 42%, var(--seller-border));
+  background: color-mix(in srgb, var(--seller-warning) 9%, var(--seller-surface));
 }
 
-/* 危险色调 */
 .tone-danger {
-  color: #991b1b;
-  border-color: #fca5a5;
-  background: #fef2f2;
+  color: var(--seller-danger);
+  border-color: color-mix(in srgb, var(--seller-danger) 42%, var(--seller-border));
+  background: color-mix(in srgb, var(--seller-danger) 9%, var(--seller-surface));
 }
 
-/* 信息色调 */
 .tone-info {
-  color: #0c4a6e;
-  border-color: #7dd3fc;
-  background: #f0f9ff;
+  color: var(--seller-navy-soft);
+  border-color: color-mix(in srgb, var(--seller-navy-soft) 32%, var(--seller-border));
+  background: color-mix(in srgb, var(--seller-navy-soft) 7%, var(--seller-surface));
 }
 
-/* 深色模式适配 */
-html.dark .seller-status-badge {
-  background: var(--bg-secondary);
-  border-color: var(--border-dark);
-  color: var(--text-tertiary);
+.tone-neutral {
+  color: var(--seller-muted);
+  background: var(--seller-surface-soft);
 }
 </style>

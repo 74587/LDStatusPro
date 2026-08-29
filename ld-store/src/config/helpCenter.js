@@ -228,7 +228,7 @@ export const HELP_SEARCH_ENTRIES = Object.freeze([
   { articleId: 'buyer-coupons', anchor: 'coupon-reservation', title: '优惠券被订单占用与自动释放', keywords: ['订单占用中', '取消释放', '过期释放', 'reserved'] },
   { articleId: 'buyer-coupons', anchor: 'coupon-rules', title: '多件购买时优惠券如何计算', keywords: ['一单一券', '只优惠一件', '减额一次'] },
   { articleId: 'seller-coupons', anchor: 'coupon-types', title: '商品券、店铺券与两种优惠方式', keywords: ['固定减额', '单件折扣', '店铺范围'] },
-  { articleId: 'seller-coupons', anchor: 'manage-campaign', title: '查看领取、占用、核销和累计让利', keywords: ['增加发行量', '停止领取', '领完'] },
+  { articleId: 'seller-coupons', anchor: 'manage-campaign', title: '查看领取、占用、核销和累计让利', keywords: ['增加发行量', '暂停领取', '恢复领取', '领完'] },
   { articleId: 'seller-center', anchor: 'dashboard', title: '查看卖家经营概览与待办', keywords: ['实收积分', '成交订单', '服务买家', '物品浏览'] },
   { articleId: 'seller-orders', anchor: 'pending-delivery', title: '处理待发货订单', keywords: ['卖家提醒', '普通物品发货', '补发CDK'] },
   { articleId: 'payment-settings', anchor: 'callback-urls', title: '配置通知地址和回调地址', keywords: ['notify', 'return url', '自动发货失败'] },

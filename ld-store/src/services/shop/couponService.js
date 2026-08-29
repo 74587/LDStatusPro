@@ -33,6 +33,10 @@ export function getSellerCouponRequest(id) {
   return api.get(`/api/shop/merchant/coupons/${id}`)
 }
 
+export function fetchSellerCouponClaimsRequest(id, params = {}) {
+  return api.get(`/api/shop/merchant/coupons/${id}/claims${buildQuery(params)}`)
+}
+
 export function createCouponRequest(data) {
   return api.post('/api/shop/merchant/coupons', data)
 }
@@ -46,6 +50,13 @@ export function increaseCouponQuotaRequest(id, totalQuantity) {
 
 export function closeCouponRequest(id) {
   return api.post(`/api/shop/merchant/coupons/${id}/close`)
+}
+
+export function setCouponClaimingRequest(id, enabled) {
+  return api.request(`/api/shop/merchant/coupons/${id}/claiming`, {
+    method: 'PATCH',
+    body: { enabled: Boolean(enabled) }
+  })
 }
 
 export function formatCouponRule(campaign = {}) {
