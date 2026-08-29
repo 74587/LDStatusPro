@@ -582,7 +582,7 @@ import { ArrowRight, CircleHelp, LayoutGrid, Megaphone, ReceiptText, RefreshCw }
 import { api } from '@/utils/api'
 import { useToast } from '@/composables/useToast'
 import { useDialog } from '@/composables/useDialog'
-import { preparePaymentPopup, openPaymentPopup, watchPaymentPopup } from '@/utils/newTab'
+import { cleanupPreparedTab, preparePaymentPopup, openPaymentPopup, watchPaymentPopup } from '@/utils/newTab'
 
 const route = useRoute()
 const router = useRouter()
@@ -1022,12 +1022,19 @@ async function submitOrder() {
   submitting.value = true
   const preparedWindow = preparePaymentPopup()
   try {
-    const result = unwrap(await api.post('/api/shop/top-service/orders', {
+    const response = await api.post('/api/shop/top-service/orders', {
       productId: Number(selectedProduct.value.id),
       packageType: selectedConfig.value.packageType,
       durationDays: Number(selectedConfig.value.durationDays)
-    }))
+    })
+    if (!response?.success) {
+      cleanupPreparedTab(preparedWindow)
+      toast.error(response?.error || '创建置顶订单失败')
+      return
+    }
+    const result = response.data
     if (!result?.paymentUrl) {
+      cleanupPreparedTab(preparedWindow)
       toast.error('支付链接生成失败')
       return
     }
@@ -1041,6 +1048,7 @@ async function submitOrder() {
     }
     toast.success('支付窗口已打开')
   } catch (error) {
+    cleanupPreparedTab(preparedWindow)
     console.error('Create top service order failed:', error)
     toast.error(error?.message || '创建置顶订单失败')
   } finally {
