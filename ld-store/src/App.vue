@@ -52,7 +52,7 @@
     <CornerActionMenu v-if="showDecorativeShell" v-model="showDoodleBg" />
 
     <!-- 全局消息提示 -->
-    <Toast v-if="!isMaintenanceRoute" />
+    <Toast v-if="!isMaintenanceRoute" :below-header="showHeader" />
 
     <!-- 全局对话框 -->
     <Dialog v-if="!isMaintenanceRoute" />

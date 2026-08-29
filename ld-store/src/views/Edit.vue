@@ -887,16 +887,22 @@ async function submitForm() {
     return
   }
   
+  let imageValidationToastId = null
   if (!imageValidated.value || lastValidatedUrl.value !== imageUrl) {
-    const loadingToastId = toast.loading('正在验证图片...')
+    imageValidationToastId = toast.loading('正在验证图片...')
     await validateImageLoad()
-    toast.close(loadingToastId)
   }
   
   if (imageLoadError.value || !imageValidated.value || lastValidatedUrl.value !== imageUrl) {
-    toast.error(imageLoadError.value || '图片验证未完成，请重试')
+    const message = imageLoadError.value || '图片验证未完成，请重试'
+    if (imageValidationToastId) {
+      toast.update(imageValidationToastId, { type: 'error', message })
+    } else {
+      toast.error(message)
+    }
     return
   }
+  if (imageValidationToastId) toast.close(imageValidationToastId)
   
   submitting.value = true
   

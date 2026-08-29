@@ -7,11 +7,11 @@ export function useToast() {
   const uiStore = useUiStore()
 
   // 显示普通消息
-  function show(message, duration = 3000) {
+  function show(message, duration = 4000) {
     return uiStore.showToast(message, 'info', duration)
   }
 
-  function info(message, duration = 3000) {
+  function info(message, duration = 4000) {
     return show(message, duration)
   }
 
@@ -21,12 +21,12 @@ export function useToast() {
   }
 
   // 显示错误消息
-  function error(message, duration = 4000) {
+  function error(message, duration = 5000) {
     return uiStore.showToast(message, 'error', duration)
   }
 
   // 显示警告消息
-  function warning(message, duration = 3500) {
+  function warning(message, duration = 5000) {
     return uiStore.showToast(message, 'warning', duration)
   }
 
@@ -40,6 +40,11 @@ export function useToast() {
     uiStore.removeToast(id)
   }
 
+  // 原位更新指定 Toast；目标已被移除时会创建新的结果提醒
+  function update(id, options) {
+    return uiStore.updateToast(id, options)
+  }
+
   return {
     show,
     info,
@@ -47,6 +52,7 @@ export function useToast() {
     error,
     warning,
     loading,
+    update,
     close
   }
 }

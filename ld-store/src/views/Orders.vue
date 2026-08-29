@@ -1200,13 +1200,16 @@ async function handleRepay(order) {
 
     if (!result?.success || !paymentUrl) {
       cleanupPreparedTab(preparedWindow)
-      toast.error(extractErrorMessage(result, '获取支付链接失败'))
+      toast.update(loadingId, {
+        type: 'error',
+        message: extractErrorMessage(result, '获取支付链接失败')
+      })
       return
     }
 
     if (!isValidLdcPaymentUrl(paymentUrl)) {
       cleanupPreparedTab(preparedWindow)
-      toast.error('支付链接异常，请稍后重试')
+      toast.update(loadingId, { type: 'error', message: '支付链接异常，请稍后重试' })
       return
     }
 
@@ -1224,12 +1227,11 @@ async function handleRepay(order) {
         toast.info('支付窗口已关闭，已自动检查订单状态')
       })
     }
-    toast.success('支付窗口已打开')
+    toast.update(loadingId, { type: 'success', message: '支付窗口已打开' })
   } catch (error) {
     cleanupPreparedTab(preparedWindow)
-    toast.error(error?.message || '获取支付链接失败')
+    toast.update(loadingId, { type: 'error', message: error?.message || '获取支付链接失败' })
   } finally {
-    toast.close(loadingId)
     payingOrderId.value = null
   }
 }
@@ -1324,13 +1326,12 @@ async function handleCancelOrder(order) {
 
   try {
     await shopStore.cancelOrder(orderNo)
-    toast.success('订单已取消')
+    toast.update(loadingId, { type: 'success', message: '订单已取消' })
     // 刷新订单列表
     await loadOrders()
   } catch (error) {
-    toast.error(error.message || '取消失败')
+    toast.update(loadingId, { type: 'error', message: error.message || '取消失败' })
   } finally {
-    toast.close(loadingId)
     cancellingOrderId.value = null
   }
 }
@@ -1351,16 +1352,21 @@ async function submitManualDeliver(order) {
   try {
     const result = await shopStore.deliverOrder(orderNo, content)
     if (result?.success === false) {
-      toast.error(result?.error?.message || result?.error || '发货失败')
+      toast.update(loadingId, {
+        type: 'error',
+        message: result?.error?.message || result?.error || '发货失败'
+      })
       return
     }
-    toast.success(result?.message || '发货成功')
+    toast.update(loadingId, { type: 'success', message: result?.message || '发货成功' })
     closeDeliverForm()
     await loadOrders()
   } catch (error) {
-    toast.error('发货失败: ' + (error.message || '未知错误'))
+    toast.update(loadingId, {
+      type: 'error',
+      message: '发货失败: ' + (error.message || '未知错误')
+    })
   } finally {
-    toast.close(loadingId)
     deliveringOrderId.value = null
   }
 }

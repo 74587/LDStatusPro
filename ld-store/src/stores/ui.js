@@ -1,22 +1,132 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
+export const TOAST_TYPES = Object.freeze(['success', 'error', 'warning', 'info', 'loading'])
+export const TOAST_DURATIONS = Object.freeze({
+  success: 3000,
+  error: 5000,
+  warning: 5000,
+  info: 4000,
+  loading: 0
+})
+export const MAX_ACTIVE_TOASTS = 3
+
 export const useUiStore = defineStore('ui', () => {
   // Toast
   const toasts = ref([])
+  const toastTimers = new Map()
+  const pausedToastIds = new Set()
   let toastId = 0
 
-  function showToast(message, type = 'info', duration = 3000) {
-    const id = ++toastId
-    toasts.value.push({ id, message, type, duration })
-    
-    if (duration > 0) {
-      setTimeout(() => {
-        removeToast(id)
-      }, duration)
+  function normalizeToastType(type) {
+    return TOAST_TYPES.includes(type) ? type : 'info'
+  }
+
+  function resolveToastDuration(type, duration) {
+    if (duration === undefined) return TOAST_DURATIONS[type]
+    const normalized = Number(duration)
+    return Number.isFinite(normalized) ? Math.max(0, normalized) : TOAST_DURATIONS[type]
+  }
+
+  function clearToastTimer(id) {
+    const timer = toastTimers.get(id)
+    if (timer?.handle) clearTimeout(timer.handle)
+    toastTimers.delete(id)
+  }
+
+  function startToastTimer(id, remaining) {
+    clearToastTimer(id)
+    if (remaining <= 0) return
+
+    const timer = {
+      handle: null,
+      remaining,
+      startedAt: 0
     }
-    
+
+    if (!pausedToastIds.has(id)) {
+      timer.startedAt = Date.now()
+      timer.handle = setTimeout(() => removeToast(id), remaining)
+    }
+
+    toastTimers.set(id, timer)
+  }
+
+  function showToast(message, type = 'info', duration) {
+    const normalizedType = normalizeToastType(type)
+    const normalizedMessage = String(message ?? '')
+    const normalizedDuration = resolveToastDuration(normalizedType, duration)
+    const duplicate = toasts.value.find(toast => (
+      toast.type === normalizedType && toast.message === normalizedMessage
+    ))
+
+    if (duplicate) {
+      duplicate.duration = normalizedDuration
+      startToastTimer(duplicate.id, normalizedDuration)
+      return duplicate.id
+    }
+
+    while (toasts.value.length >= MAX_ACTIVE_TOASTS) {
+      removeToast(toasts.value[0].id)
+    }
+
+    const id = ++toastId
+    toasts.value.push({
+      id,
+      message: normalizedMessage,
+      type: normalizedType,
+      duration: normalizedDuration
+    })
+    startToastTimer(id, normalizedDuration)
     return id
+  }
+
+  function updateToast(id, updates = {}) {
+    const index = toasts.value.findIndex(toast => toast.id === id)
+    if (index < 0) {
+      if (updates.message === undefined) return null
+      return showToast(updates.message, updates.type || 'info', updates.duration)
+    }
+
+    const current = toasts.value[index]
+    const nextType = normalizeToastType(updates.type ?? current.type)
+    const nextMessage = updates.message === undefined
+      ? current.message
+      : String(updates.message ?? '')
+    const nextDuration = resolveToastDuration(nextType, updates.duration)
+
+    toasts.value[index] = {
+      ...current,
+      message: nextMessage,
+      type: nextType,
+      duration: nextDuration
+    }
+    startToastTimer(id, nextDuration)
+    return id
+  }
+
+  function pauseToast(id) {
+    pausedToastIds.add(id)
+    const timer = toastTimers.get(id)
+    if (!timer?.handle) return
+
+    clearTimeout(timer.handle)
+    timer.remaining = Math.max(0, timer.remaining - (Date.now() - timer.startedAt))
+    timer.startedAt = 0
+    timer.handle = null
+    if (timer.remaining <= 0) removeToast(id)
+  }
+
+  function resumeToast(id) {
+    pausedToastIds.delete(id)
+    const timer = toastTimers.get(id)
+    if (!timer || timer.handle) return
+    if (timer.remaining <= 0) {
+      removeToast(id)
+      return
+    }
+
+    startToastTimer(id, timer.remaining)
   }
 
   function removeToast(id) {
@@ -24,6 +134,14 @@ export const useUiStore = defineStore('ui', () => {
     if (index > -1) {
       toasts.value.splice(index, 1)
     }
+    pausedToastIds.delete(id)
+    clearToastTimer(id)
+  }
+
+  function clearToasts() {
+    toasts.value.forEach(toast => clearToastTimer(toast.id))
+    pausedToastIds.clear()
+    toasts.value = []
   }
 
   // Dialog
@@ -127,7 +245,11 @@ export const useUiStore = defineStore('ui', () => {
     // Toast
     toasts,
     showToast,
+    updateToast,
+    pauseToast,
+    resumeToast,
     removeToast,
+    clearToasts,
     // Dialog
     dialog,
     showDialog,

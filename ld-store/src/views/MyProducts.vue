@@ -516,11 +516,14 @@ async function toggleStatus(product) {
       // 下架操作
       const result = await shopStore.offlineProduct(product.id)
       if (result?.success === false) {
-        toast.error(result?.error?.message || result?.error || '下架失败')
+        toast.update(loadingId, {
+          type: 'error',
+          message: result?.error?.message || result?.error || '下架失败'
+        })
         return
       }
       product.status = 'offline_manual'
-      toast.success('物品已下架')
+      toast.update(loadingId, { type: 'success', message: '物品已下架' })
     } else {
       // 重新上架操作（重新提交审核）
       const result = await shopStore.updateProduct(product.id, {
@@ -553,16 +556,21 @@ async function toggleStatus(product) {
         )
       })
       if (result?.success === false) {
-        toast.error(result?.error?.message || result?.error || '上架失败')
+        toast.update(loadingId, {
+          type: 'error',
+          message: result?.error?.message || result?.error || '上架失败'
+        })
         return
       }
       product.status = 'pending_ai'
-      toast.success('已重新提交审核')
+      toast.update(loadingId, { type: 'success', message: '已重新提交审核' })
     }
   } catch (error) {
-    toast.error(`${action}失败: ${error.message || '未知错误'}`)
+    toast.update(loadingId, {
+      type: 'error',
+      message: `${action}失败: ${error.message || '未知错误'}`
+    })
   } finally {
-    toast.close(loadingId)
     productAction.value = { id: null, type: '' }
   }
 }
@@ -594,15 +602,20 @@ async function deleteProduct(product) {
   try {
     const result = await shopStore.deleteProduct(product.id)
     if (result?.success === false) {
-      toast.error(result?.error?.message || result?.error || '删除失败')
+      toast.update(loadingId, {
+        type: 'error',
+        message: result?.error?.message || result?.error || '删除失败'
+      })
       return
     }
     products.value = products.value.filter(p => p.id !== product.id)
-    toast.success(result?.message || '物品已删除')
+    toast.update(loadingId, { type: 'success', message: result?.message || '物品已删除' })
   } catch (error) {
-    toast.error('删除失败: ' + (error.message || '未知错误'))
+    toast.update(loadingId, {
+      type: 'error',
+      message: '删除失败: ' + (error.message || '未知错误')
+    })
   } finally {
-    toast.close(loadingId)
     productAction.value = { id: null, type: '' }
   }
 }
@@ -718,11 +731,9 @@ async function exportCdks() {
     link.click()
     document.body.removeChild(link)
     URL.revokeObjectURL(url)
-    toast.close(loadingId)
-    toast.success('CDK TXT 导出成功')
+    toast.update(loadingId, { type: 'success', message: 'CDK TXT 导出成功' })
   } catch (error) {
-    toast.close(loadingId)
-    toast.error(error.message || '导出 CDK 失败')
+    toast.update(loadingId, { type: 'error', message: error.message || '导出 CDK 失败' })
   } finally {
     exportingCdks.value = false
   }
@@ -1023,7 +1034,7 @@ async function deleteCdkItem(cdk) {
   try {
     await shopStore.deleteProductCdk(currentProduct.value.id, cdk.id)
     cdkList.value = cdkList.value.filter(item => item.id !== cdk.id)
-    toast.success('CDK 已删除')
+    toast.update(loadingId, { type: 'success', message: 'CDK 已删除' })
 
     // 更新库存
     const index = products.value.findIndex(p => p.id === currentProduct.value.id)
@@ -1031,9 +1042,8 @@ async function deleteCdkItem(cdk) {
       products.value[index].availableStock--
     }
   } catch (error) {
-    toast.error('删除 CDK 失败')
+    toast.update(loadingId, { type: 'error', message: '删除 CDK 失败' })
   } finally {
-    toast.close(loadingId)
     deletingCdkId.value = null
   }
 }
@@ -1076,7 +1086,10 @@ async function clearAllCdks() {
     // 重新加载 CDK 列表和统计
     await loadCdkList()
     
-    toast.success(`已清空 ${result?.deleted || availableCount} 个 CDK`)
+    toast.update(loadingId, {
+      type: 'success',
+      message: `已清空 ${result?.deleted || availableCount} 个 CDK`
+    })
     
     // 更新产品库存
     const index = products.value.findIndex(p => p.id === currentProduct.value.id)
@@ -1086,9 +1099,11 @@ async function clearAllCdks() {
     }
   } catch (error) {
     console.error('Clear CDK error:', error)
-    toast.error('清空 CDK 失败: ' + (error.message || '未知错误'))
+    toast.update(loadingId, {
+      type: 'error',
+      message: '清空 CDK 失败: ' + (error.message || '未知错误')
+    })
   } finally {
-    toast.close(loadingId)
     clearingAllCdks.value = false
   }
 }

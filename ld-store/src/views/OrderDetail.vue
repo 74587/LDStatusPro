@@ -880,13 +880,16 @@ async function handleRepay() {
 
     if (!result?.success || !paymentUrl) {
       cleanupPreparedTab(preparedWindow)
-      toast.error(extractErrorMessage(result, '获取支付链接失败'))
+      toast.update(loadingId, {
+        type: 'error',
+        message: extractErrorMessage(result, '获取支付链接失败')
+      })
       return
     }
 
     if (!isValidLdcPaymentUrl(paymentUrl)) {
       cleanupPreparedTab(preparedWindow)
-      toast.error('支付链接异常，请稍后重试')
+      toast.update(loadingId, { type: 'error', message: '支付链接异常，请稍后重试' })
       return
     }
 
@@ -897,12 +900,11 @@ async function handleRepay() {
         handleRefreshPaymentStatus()
       })
     }
-    toast.success('支付窗口已打开')
+    toast.update(loadingId, { type: 'success', message: '支付窗口已打开' })
   } catch (error) {
     cleanupPreparedTab(preparedWindow)
-    toast.error(error?.message || '获取支付链接失败')
+    toast.update(loadingId, { type: 'error', message: error?.message || '获取支付链接失败' })
   } finally {
-    toast.close(loadingId)
     paying.value = false
   }
 }
