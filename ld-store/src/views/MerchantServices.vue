@@ -205,7 +205,8 @@
                   <li>士多甄选会优先展示在对应甄选位中；进入“全部”的分类共用 4 个共享甄选名额，入站与卡券各自拥有 6 个独立甄选名额。</li>
                   <li>士多优选只在所属分类顶部展示，入站与卡券各自有 6 个优选名额，其余分类各有 4 个优选名额。</li>
                   <li>订单支付成功时间即为置顶服务生效时间。</li>
-                  <li>待支付订单在支付超时前也会临时占用名额；页面展示的剩余名额已经包含这部分占位。</li>
+                  <li>待支付订单会临时占用名额，创建后 5 分钟未支付即自动过期并释放；页面展示的剩余名额已经包含这部分占位。</li>
+                  <li>卖家可在“购买记录”中手动取消尚未支付的订单并立即释放名额；已生效服务不能自行取消。</li>
                   <li>同一物品同一时间只能有一条生效中或待支付的置顶服务。</li>
                   <li>所有付费置顶都会绑定下单时的所属分类；切换到其他分类后，服务会暂停展示，但仍占用原开通分类的名额；切回原分类后会在剩余有效期内恢复。</li>
                   <li>入站与卡券分类的士多甄选使用各自独立甄选池；即使把物品切换到服务等共享池分类，也不会继承“全部分类共享甄选池”的全站展示资格。</li>
@@ -223,10 +224,12 @@
                 <h3>当前服务状态</h3>
                 <p>该物品已存在 {{ selectedProduct.currentTopOrder.packageName }} 订单。</p>
                 <p>订单状态：{{ getOrderStatusText(selectedProduct.currentTopOrder.status) }}</p>
+                <p v-if="selectedProduct.currentTopOrder.status === 'pending'">支付截止：{{ getPaymentDeadlineText(selectedProduct.currentTopOrder) }}</p>
+                <p v-if="selectedProduct.currentTopOrder.status === 'pending'" class="payment-countdown">剩余 {{ formatPaymentCountdown(selectedProduct.currentTopOrder) }}</p>
                 <p v-if="selectedProduct.currentTopOrder.categoryBindingApplies">开通分类：{{ selectedProduct.currentTopOrder.boundCategoryName || '未分类' }}</p>
                 <p v-if="selectedProduct.currentTopOrder.categoryBindingApplies">当前分类：{{ selectedProduct.currentTopOrder.currentCategoryName || selectedProduct.categoryName || '未分类' }}</p>
                 <p>展示状态：{{ getTopEffectivenessText(selectedProduct.currentTopOrder) }}</p>
-                <p>到期：{{ selectedProduct.currentTopOrder.expiredAt || '永久置顶' }}</p>
+                <p v-if="selectedProduct.currentTopOrder.status !== 'pending'">到期：{{ selectedProduct.currentTopOrder.expiredAt || '永久置顶' }}</p>
                 <p :class="['current-top-card-highlight', { 'current-top-card-highlight--warning': isCurrentTopOrderSuspended(selectedProduct.currentTopOrder) }]">
                   {{ getTopOrderBindingHint(selectedProduct.currentTopOrder) }}
                 </p>
@@ -532,12 +535,26 @@
                       <td><strong>{{ order.packageName }}</strong><span>{{ order.durationDays ? `${order.durationDays} 天` : '永久置顶' }}</span></td>
                       <td><strong class="table-amount">{{ Number(order.amount || 0).toFixed(2) }} LDC</strong><span>{{ order.createdAt || '—' }}</span></td>
                       <td><SellerStatusBadge :label="getOrderStatusText(order.status)" :tone="getOrderStatusTone(order.status)" /><span :class="{ 'order-meta-warning': order.isSuspendedForCategory }">{{ getTopEffectivenessText(order) }}</span></td>
-                      <td><span>生效 {{ order.effectiveAt || '待支付' }}</span><span>到期 {{ order.expiredAt || '永久' }}</span></td>
                       <td>
-                        <div v-if="order.status === 'pending'" class="table-actions">
-                          <button class="action-btn primary" @click="repayOrder(order)">继续支付</button>
-                          <button class="action-btn" @click="refreshOrder(order)">刷新</button>
+                        <template v-if="order.status === 'pending'">
+                          <span>支付截止 {{ getPaymentDeadlineText(order) }}</span>
+                          <span class="payment-countdown">剩余 {{ formatPaymentCountdown(order) }}</span>
+                        </template>
+                        <template v-else>
+                          <span>生效 {{ order.effectiveAt || '—' }}</span>
+                          <span>到期 {{ order.expiredAt || '永久' }}</span>
+                        </template>
+                        <span v-if="getPaymentReversalText(order)" class="order-meta-warning">{{ getPaymentReversalText(order) }}</span>
+                      </td>
+                      <td>
+                        <div v-if="order.status === 'pending' && isOrderPaymentWindowOpen(order)" class="table-actions">
+                          <button class="action-btn primary" :disabled="isOrderActionBusy(order) || !canOrderPay(order)" @click="repayOrder(order)">{{ isOrderAction(order, 'pay') ? '打开中…' : '继续支付' }}</button>
+                          <button class="action-btn danger" :disabled="isOrderActionBusy(order) || !canOrderCancel(order)" @click="cancelPendingOrder(order)">
+                            {{ isOrderCancelling(order) ? '取消中…' : '取消订单' }}
+                          </button>
+                          <button class="action-btn" :disabled="isOrderActionBusy(order)" @click="refreshOrder(order)">{{ isOrderAction(order, 'refresh') ? '刷新中…' : '刷新' }}</button>
                         </div>
+                        <button v-else-if="order.status === 'pending'" class="action-btn" :disabled="ordersLoading" @click="refreshOrder(order)">支付已超时，刷新状态</button>
                         <span v-else class="table-no-action">—</span>
                       </td>
                     </tr>
@@ -555,14 +572,21 @@
                     <div><span>服务方案</span><strong>{{ order.packageName }} · {{ order.durationDays ? `${order.durationDays} 天` : '永久' }}</strong></div>
                     <div><span>支付金额</span><strong>{{ Number(order.amount || 0).toFixed(2) }} LDC</strong></div>
                     <div><span>创建时间</span><strong>{{ order.createdAt || '—' }}</strong></div>
-                    <div><span>到期时间</span><strong>{{ order.expiredAt || '永久置顶' }}</strong></div>
+                    <div v-if="order.status === 'pending'"><span>支付截止</span><strong>{{ getPaymentDeadlineText(order) }}</strong></div>
+                    <div v-if="order.status === 'pending'"><span>支付剩余</span><strong class="payment-countdown">{{ formatPaymentCountdown(order) }}</strong></div>
+                    <div v-else><span>到期时间</span><strong>{{ order.expiredAt || '永久置顶' }}</strong></div>
                     <div class="order-meta-wide"><span>展示状态</span><strong :class="{ 'order-meta-warning': order.isSuspendedForCategory }">{{ getTopEffectivenessText(order) }}</strong></div>
                   </div>
                   <p v-if="getTopOrderBindingHint(order)" :class="['order-binding-hint', { 'order-binding-hint--warning': order.isSuspendedForCategory }]">{{ getTopOrderBindingHint(order) }}</p>
-                  <div v-if="order.status === 'pending'" class="order-actions">
-                    <button class="action-btn primary" @click="repayOrder(order)">继续支付</button>
-                    <button class="action-btn" @click="refreshOrder(order)">刷新状态</button>
+                  <p v-if="getPaymentReversalText(order)" class="order-binding-hint order-binding-hint--warning">{{ getPaymentReversalText(order) }}</p>
+                  <div v-if="order.status === 'pending' && isOrderPaymentWindowOpen(order)" class="order-actions">
+                    <button class="action-btn primary" :disabled="isOrderActionBusy(order) || !canOrderPay(order)" @click="repayOrder(order)">{{ isOrderAction(order, 'pay') ? '打开中…' : '继续支付' }}</button>
+                    <button class="action-btn danger" :disabled="isOrderActionBusy(order) || !canOrderCancel(order)" @click="cancelPendingOrder(order)">
+                      {{ isOrderCancelling(order) ? '取消中…' : '取消订单' }}
+                    </button>
+                    <button class="action-btn" :disabled="isOrderActionBusy(order)" @click="refreshOrder(order)">{{ isOrderAction(order, 'refresh') ? '刷新中…' : '刷新状态' }}</button>
                   </div>
+                  <button v-else-if="order.status === 'pending'" class="action-btn order-expired-refresh" :disabled="ordersLoading" @click="refreshOrder(order)">支付已超时，刷新状态</button>
                 </article>
               </div>
             </template>
@@ -574,12 +598,18 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppSelect from '@/components/common/AppSelect.vue'
 import SellerStatusBadge from '@/components/seller/SellerStatusBadge.vue'
 import { ArrowRight, CircleHelp, LayoutGrid, Megaphone, ReceiptText, RefreshCw } from '@lucide/vue'
 import { api } from '@/utils/api'
+import { escapeHtml } from '@/utils/security'
+import {
+  formatTopServicePaymentCountdown,
+  getTopServicePaymentDeadlineMs,
+  getTopServicePaymentRemainingSeconds
+} from '@/utils/topServiceOrder'
 import { useToast } from '@/composables/useToast'
 import { useDialog } from '@/composables/useDialog'
 import { cleanupPreparedTab, preparePaymentPopup, openPaymentPopup, watchPaymentPopup } from '@/utils/newTab'
@@ -607,6 +637,8 @@ const packages = ref([])
 const products = ref([])
 const orders = ref([])
 const ordersLoading = ref(false)
+const orderClockMs = ref(Date.now())
+const orderAction = ref({ orderNo: '', type: '' })
 const quotaBoardLoading = ref(false)
 const quotaBoardLoaded = ref(false)
 const quotaBoard = ref({
@@ -621,6 +653,9 @@ const selectedPackageType = ref('')
 const selectedDurationDays = ref(0)
 const orderFilterStatus = ref('')
 const quotaBoardCategoryId = ref('all')
+let orderClockTimer = null
+let expiredOrdersRefreshTimer = null
+let expiredOrdersRefreshInFlight = false
 
 const serviceMetrics = computed(() => {
   const currentOrders = products.value.map((item) => item.currentTopOrder).filter(Boolean)
@@ -855,6 +890,55 @@ function selectPackage(type, durationDays) {
   selectedDurationDays.value = Number(durationDays || 0)
 }
 
+function getPaymentDeadlineMs(order = {}) {
+  return getTopServicePaymentDeadlineMs(order)
+}
+
+function getPaymentDeadlineText(order = {}) {
+  return order.payExpiredAt || '创建后 5 分钟'
+}
+
+function getPaymentRemainingSeconds(order = {}) {
+  return getTopServicePaymentRemainingSeconds(order, orderClockMs.value)
+}
+
+function formatPaymentCountdown(order = {}) {
+  return formatTopServicePaymentCountdown(order, orderClockMs.value)
+}
+
+function isOrderPaymentWindowOpen(order = {}) {
+  return order.status === 'pending' && getPaymentRemainingSeconds(order) > 0
+}
+
+function canOrderPay(order = {}) {
+  return isOrderPaymentWindowOpen(order) && order.canPay !== false
+}
+
+function canOrderCancel(order = {}) {
+  return isOrderPaymentWindowOpen(order) && order.canCancel !== false
+}
+
+function isOrderCancelling(order = {}) {
+  return isOrderAction(order, 'cancel')
+}
+
+function isOrderAction(order = {}, type = '') {
+  return orderAction.value.type === type && orderAction.value.orderNo === order.orderNo
+}
+
+function isOrderActionBusy(order = {}) {
+  return orderAction.value.orderNo === order.orderNo
+}
+
+function getPaymentReversalText(order = {}) {
+  return {
+    pending: '已收到付款，但服务未能生效，积分正在退回',
+    refunded: '服务未能生效，积分已退回',
+    unknown: '退款结果暂不确定，请联系管理员核对',
+    failed: '积分自动退回失败，请联系管理员处理'
+  }[order.paymentReversalStatus] || ''
+}
+
 function getOrderStatusText(status = '') {
   return {
     pending: '待支付',
@@ -957,11 +1041,45 @@ async function loadOptions() {
   }
 }
 
+function scheduleExpiredOrdersRefresh() {
+  if (expiredOrdersRefreshTimer || expiredOrdersRefreshInFlight) return
+  expiredOrdersRefreshTimer = window.setTimeout(async () => {
+    expiredOrdersRefreshTimer = null
+    expiredOrdersRefreshInFlight = true
+    try {
+      const tasks = [loadOptions(), loadOrders(1)]
+      if (quotaBoardLoaded.value) tasks.push(loadQuotaBoard())
+      await Promise.all(tasks)
+    } finally {
+      expiredOrdersRefreshInFlight = false
+    }
+  }, 250)
+}
+
+function tickOrderClock() {
+  const previousNow = orderClockMs.value
+  const nextNow = Date.now()
+  orderClockMs.value = nextNow
+  const currentProductOrders = products.value
+    .map((product) => product.currentTopOrder)
+    .filter(Boolean)
+  const crossedDeadline = [...orders.value, ...currentProductOrders].some((order) => {
+    if (order.status !== 'pending') return false
+    const deadlineMs = getPaymentDeadlineMs(order)
+    return deadlineMs > previousNow && deadlineMs <= nextNow
+  })
+  if (crossedDeadline) scheduleExpiredOrdersRefresh()
+}
+
 async function loadOrders(page = 1) {
   ordersLoading.value = true
   try {
     const result = unwrap(await api.get(`/api/shop/top-service/orders?status=${encodeURIComponent(orderFilterStatus.value)}&page=${page}&pageSize=20`))
     orders.value = Array.isArray(result?.orders) ? result.orders : []
+    orderClockMs.value = Date.now()
+    if (orders.value.some(order => order.status === 'pending' && !isOrderPaymentWindowOpen(order))) {
+      scheduleExpiredOrdersRefresh()
+    }
   } catch (error) {
     console.error('Load merchant service orders failed:', error)
     toast.error('加载置顶订单失败')
@@ -1002,10 +1120,10 @@ async function submitOrder() {
   const confirmed = await dialog.confirm(
     [
       '<div style="line-height:1.8;text-align:left">',
-      `<div><strong>套餐：</strong>${selectedConfig.value.groupName}</div>`,
+      `<div><strong>套餐：</strong>${escapeHtml(String(selectedConfig.value.groupName || '推广服务'))}</div>`,
       `<div><strong>天数：</strong>${selectedConfig.value.durationDays} 天</div>`,
-      `<div><strong>物品：</strong>${selectedProduct.value.name}</div>`,
-      `<div><strong>绑定分类：</strong>${selectedProduct.value.categoryName || '当前分类'}</div>`,
+      `<div><strong>物品：</strong>${escapeHtml(String(selectedProduct.value.name || '当前物品'))}</div>`,
+      `<div><strong>绑定分类：</strong>${escapeHtml(String(selectedProduct.value.categoryName || '当前分类'))}</div>`,
       '<div><strong>生效时间：</strong>订单支付成功时间</div>',
       `<div><strong>金额：</strong>${Number(selectedConfig.value.price || 0).toFixed(2)} LDC</div>`,
       '<div style="margin-top:8px;color:#9b6c13">付费置顶会绑定当前分类；若后续切换到其他分类，服务会暂停展示，切回原分类后恢复，过期时间不变。</div>',
@@ -1057,10 +1175,14 @@ async function submitOrder() {
 }
 
 async function repayOrder(order) {
+  if (!canOrderPay(order) || isOrderActionBusy(order)) return
+  orderAction.value = { orderNo: order.orderNo, type: 'pay' }
   try {
-    const result = unwrap(await api.get(`/api/shop/top-service/orders/${encodeURIComponent(order.orderNo)}/payment-url`))
+    const response = await api.get(`/api/shop/top-service/orders/${encodeURIComponent(order.orderNo)}/payment-url`)
+    const result = unwrap(response)
     if (!result?.paymentUrl) {
-      toast.error('支付链接不存在')
+      toast.error(response?.error || '支付链接不存在或已经过期')
+      await Promise.all([loadOptions(), loadOrders(1)])
       return
     }
     const { popup, isPopup } = openPaymentPopup(result.paymentUrl)
@@ -1074,22 +1196,74 @@ async function repayOrder(order) {
   } catch (error) {
     console.error('Repay top order failed:', error)
     toast.error(error?.message || '获取支付链接失败')
+  } finally {
+    orderAction.value = { orderNo: '', type: '' }
+  }
+}
+
+async function cancelPendingOrder(order) {
+  if (!canOrderCancel(order) || isOrderActionBusy(order)) return
+  const confirmed = await dialog.confirm(
+    [
+      '<div style="line-height:1.8;text-align:left">',
+      `<div><strong>服务：</strong>${escapeHtml(String(order.packageName || '推广服务'))} · ${Number(order.durationDays || 0)} 天</div>`,
+      `<div><strong>物品：</strong>${escapeHtml(String(order.productName || '当前物品'))}</div>`,
+      `<div><strong>订单号：</strong>${escapeHtml(String(order.orderNo || ''))}</div>`,
+      '<div style="margin-top:8px;color:#b3495d">取消后会立即释放名额，操作不可撤销。若已经打开 Credit 支付页，请不要再继续付款。</div>',
+      '</div>'
+    ].join(''),
+    {
+      title: '取消待支付订单',
+      confirmText: '确认取消',
+      cancelText: '保留订单',
+      danger: true
+    }
+  )
+  if (!confirmed) return
+
+  orderAction.value = { orderNo: order.orderNo, type: 'cancel' }
+  try {
+    const response = await api.post(`/api/shop/top-service/orders/${encodeURIComponent(order.orderNo)}/cancel`)
+    if (!response?.success) {
+      toast.error(response?.error || '取消订单失败，请刷新后重试')
+      return
+    }
+    toast.success(response.data?.message || '订单已取消，名额已释放')
+  } catch (error) {
+    console.error('Cancel top order failed:', error)
+    toast.error(error?.message || '取消订单失败，请稍后重试')
+  } finally {
+    orderAction.value = { orderNo: '', type: '' }
+    const tasks = [loadOptions(), loadOrders(1)]
+    if (quotaBoardLoaded.value) tasks.push(loadQuotaBoard())
+    await Promise.all(tasks)
   }
 }
 
 async function refreshOrder(order) {
+  if (isOrderActionBusy(order)) return
+  orderAction.value = { orderNo: order.orderNo, type: 'refresh' }
   try {
-    const result = unwrap(await api.post(`/api/shop/top-service/orders/${encodeURIComponent(order.orderNo)}/refresh`))
-    toast.success(result?.message || '订单状态已刷新')
+    const response = await api.post(`/api/shop/top-service/orders/${encodeURIComponent(order.orderNo)}/refresh`)
+    const result = unwrap(response)
+    if (!result) {
+      toast.error(response?.error || '刷新订单状态失败')
+      return
+    }
+    toast.success(result.message || '订单状态已刷新')
     await loadOptions()
     await loadOrders(1)
   } catch (error) {
     console.error('Refresh top order failed:', error)
     toast.error(error?.message || '刷新订单状态失败')
+  } finally {
+    orderAction.value = { orderNo: '', type: '' }
   }
 }
 
 onMounted(async () => {
+  orderClockMs.value = Date.now()
+  orderClockTimer = window.setInterval(tickOrderClock, 1000)
   const tasks = [loadOptions()]
   if (activeTab.value === 'orders') {
     tasks.push(loadOrders(1))
@@ -1098,6 +1272,13 @@ onMounted(async () => {
     tasks.push(loadQuotaBoard())
   }
   await Promise.all(tasks)
+})
+
+onUnmounted(() => {
+  if (orderClockTimer) window.clearInterval(orderClockTimer)
+  if (expiredOrdersRefreshTimer) window.clearTimeout(expiredOrdersRefreshTimer)
+  orderClockTimer = null
+  expiredOrdersRefreshTimer = null
 })
 </script>
 
@@ -3381,9 +3562,35 @@ onMounted(async () => {
 .table-order-no { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
 
 .table-actions { display: grid; gap: 7px; }
-.table-actions .action-btn { min-height: 36px; padding: 0 10px; font-size: 12px; }
+.table-actions .action-btn { min-height: 44px; padding: 0 10px; font-size: 12px; }
 .table-no-action { text-align: center; }
 .orders-mobile-list { display: none; }
+
+.payment-countdown {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.action-btn.danger {
+  border-color: color-mix(in srgb, var(--seller-danger) 34%, var(--seller-border));
+  color: var(--seller-danger);
+  background: color-mix(in srgb, var(--seller-danger) 7%, var(--seller-surface));
+}
+
+.action-btn.danger:hover:not(:disabled) {
+  border-color: var(--seller-danger);
+  background: color-mix(in srgb, var(--seller-danger) 12%, var(--seller-surface));
+}
+
+.action-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.order-expired-refresh {
+  width: 100%;
+  margin-top: 8px;
+}
 
 .empty-state {
   min-height: 220px;
