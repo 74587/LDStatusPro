@@ -62,6 +62,8 @@ export const useUiStore = defineStore('ui', () => {
 
     if (duplicate) {
       duplicate.duration = normalizedDuration
+      duplicate.timerRevision = (duplicate.timerRevision || 0) + 1
+      duplicate.paused = pausedToastIds.has(duplicate.id)
       startToastTimer(duplicate.id, normalizedDuration)
       return duplicate.id
     }
@@ -75,7 +77,9 @@ export const useUiStore = defineStore('ui', () => {
       id,
       message: normalizedMessage,
       type: normalizedType,
-      duration: normalizedDuration
+      duration: normalizedDuration,
+      timerRevision: 1,
+      paused: false
     })
     startToastTimer(id, normalizedDuration)
     return id
@@ -99,14 +103,20 @@ export const useUiStore = defineStore('ui', () => {
       ...current,
       message: nextMessage,
       type: nextType,
-      duration: nextDuration
+      duration: nextDuration,
+      timerRevision: (current.timerRevision || 0) + 1,
+      paused: pausedToastIds.has(id)
     }
     startToastTimer(id, nextDuration)
     return id
   }
 
   function pauseToast(id) {
+    const toast = toasts.value.find(item => item.id === id)
+    if (!toast) return
+
     pausedToastIds.add(id)
+    toast.paused = true
     const timer = toastTimers.get(id)
     if (!timer?.handle) return
 
@@ -119,6 +129,10 @@ export const useUiStore = defineStore('ui', () => {
 
   function resumeToast(id) {
     pausedToastIds.delete(id)
+    const toast = toasts.value.find(item => item.id === id)
+    if (!toast) return
+
+    toast.paused = false
     const timer = toastTimers.get(id)
     if (!timer || timer.handle) return
     if (timer.remaining <= 0) {

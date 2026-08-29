@@ -9,7 +9,11 @@
         <div
           v-for="toast in toasts"
           :key="toast.id"
-          :class="['toast', `toast-${toast.type}`]"
+          :class="[
+            'toast',
+            `toast-${toast.type}`,
+            { 'toast--paused': toast.paused }
+          ]"
           :role="toast.type === 'error' ? 'alert' : 'status'"
           aria-atomic="true"
           :aria-busy="toast.type === 'loading' ? 'true' : undefined"
@@ -35,6 +39,17 @@
           >
             <X :size="17" :stroke-width="2" aria-hidden="true" />
           </button>
+          <span
+            v-if="toast.duration > 0"
+            :key="`${toast.id}-${toast.timerRevision}`"
+            class="toast-progress"
+            aria-hidden="true"
+          >
+            <span
+              class="toast-progress-bar"
+              :style="{ '--toast-duration': `${toast.duration}ms` }"
+            />
+          </span>
         </div>
       </TransitionGroup>
     </div>
@@ -136,11 +151,12 @@ onBeforeUnmount(() => {
 .toast-container {
   position: fixed;
   top: max(16px, calc(env(safe-area-inset-top, 0px) + 16px));
-  right: 24px;
+  left: 50%;
   z-index: 9999;
   width: clamp(320px, 32vw, 420px);
   max-width: calc(100vw - 48px);
   pointer-events: none;
+  transform: translateX(-50%);
 }
 
 .toast-container--below-header {
@@ -148,6 +164,7 @@ onBeforeUnmount(() => {
 }
 
 .toast-list {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -157,6 +174,7 @@ onBeforeUnmount(() => {
   --toast-accent: var(--color-info);
   --toast-tint: var(--color-info-bg);
 
+  position: relative;
   display: grid;
   grid-template-columns: 32px minmax(0, 1fr) 36px;
   align-items: center;
@@ -173,6 +191,33 @@ onBeforeUnmount(() => {
   border-radius: 14px;
   box-shadow: var(--dropdown-shadow);
   pointer-events: auto;
+}
+
+.toast-progress {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--toast-accent) 10%, transparent);
+  border-radius: 0 0 14px 14px;
+}
+
+.toast-progress-bar {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--toast-accent);
+  opacity: 0.72;
+  transform: scaleX(1);
+  transform-origin: left center;
+  animation: toastCountdown var(--toast-duration) linear forwards;
+  will-change: transform;
+}
+
+.toast--paused .toast-progress-bar {
+  animation-play-state: paused;
 }
 
 .toast-success {
@@ -253,13 +298,25 @@ onBeforeUnmount(() => {
 }
 
 .toast-enter-active {
-  animation: toastIn 180ms ease-out;
+  transition: opacity 180ms ease-out, transform 180ms ease-out;
 }
 
 .toast-leave-active {
   position: absolute;
   width: 100%;
-  animation: toastOut 120ms ease-in;
+  pointer-events: none;
+  transition: opacity 120ms ease-in, transform 120ms ease-in;
+  will-change: opacity, transform;
+}
+
+.toast-enter-from {
+  opacity: 0;
+  transform: translateY(-8px) scale(0.985);
+}
+
+.toast-leave-to {
+  opacity: 0;
+  transform: translateY(-4px) scale(0.985);
 }
 
 @keyframes toastSpin {
@@ -268,34 +325,23 @@ onBeforeUnmount(() => {
   }
 }
 
-@keyframes toastIn {
+@keyframes toastCountdown {
   from {
-    opacity: 0;
-    transform: translateY(-8px);
+    transform: scaleX(1);
   }
   to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes toastOut {
-  from {
-    opacity: 1;
-    transform: translateY(0);
-  }
-  to {
-    opacity: 0;
-    transform: translateY(-4px);
+    transform: scaleX(0);
   }
 }
 
 @media (max-width: 640px) {
   .toast-container {
     top: max(12px, calc(env(safe-area-inset-top, 0px) + 12px));
+    left: 12px;
     right: 12px;
-    width: calc(100% - 24px);
+    width: auto;
     max-width: none;
+    transform: none;
   }
 
   .toast-container--below-header {
@@ -310,6 +356,10 @@ onBeforeUnmount(() => {
     border-radius: 13px;
   }
 
+  .toast-progress {
+    border-radius: 0 0 13px 13px;
+  }
+
   .toast-close {
     width: 44px;
     height: 44px;
@@ -320,6 +370,7 @@ onBeforeUnmount(() => {
   .toast-move,
   .toast-enter-active,
   .toast-leave-active,
+  .toast-progress-bar,
   .toast-icon-svg--loading {
     animation: none;
     transition: none;

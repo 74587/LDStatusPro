@@ -27,7 +27,9 @@ describe('Toast 状态与计时', () => {
 
     expect(uiStore.toasts[0]).toMatchObject({
       id: successId,
-      duration: TOAST_DURATIONS.success
+      duration: TOAST_DURATIONS.success,
+      timerRevision: 1,
+      paused: false
     })
 
     vi.advanceTimersByTime(TOAST_DURATIONS.success - 1)
@@ -79,6 +81,7 @@ describe('Toast 状态与计时', () => {
 
     expect(duplicateId).toBe(firstId)
     expect(uiStore.toasts).toHaveLength(1)
+    expect(uiStore.toasts[0].timerRevision).toBe(2)
     vi.advanceTimersByTime(TOAST_DURATIONS.error - 1)
     expect(uiStore.toasts).toHaveLength(1)
     vi.advanceTimersByTime(1)
@@ -101,10 +104,12 @@ describe('Toast 状态与计时', () => {
 
     vi.advanceTimersByTime(1500)
     uiStore.pauseToast(id)
+    expect(uiStore.toasts[0].paused).toBe(true)
     vi.advanceTimersByTime(10_000)
     expect(uiStore.toasts).toHaveLength(1)
 
     uiStore.resumeToast(id)
+    expect(uiStore.toasts[0].paused).toBe(false)
     vi.advanceTimersByTime(TOAST_DURATIONS.info - 1501)
     expect(uiStore.toasts).toHaveLength(1)
     vi.advanceTimersByTime(1)
@@ -146,5 +151,19 @@ describe('Toast 组件语义与视觉约束', () => {
     expect(toastSource).toContain('env(safe-area-inset-top')
     expect(toastSource).toMatch(/\.toast-close\s*\{[^}]*width:\s*44px;[^}]*height:\s*44px;/s)
     expect(toastSource).toContain('@media (prefers-reduced-motion: reduce)')
+  })
+
+  it('顶部居中展示，并用可暂停的倒计时条表达剩余时间', () => {
+    expect(toastSource).toContain('left: 50%')
+    expect(toastSource).toContain('transform: translateX(-50%)')
+    expect(toastSource).toContain('class="toast-progress"')
+    expect(toastSource).toContain('animation-play-state: paused')
+    expect(toastSource).toContain('toast.duration > 0')
+  })
+
+  it('使用 Vue 退场目标态维持透明度，避免动画结束闪回', () => {
+    expect(toastSource).toContain('.toast-leave-to')
+    expect(toastSource).toMatch(/\.toast-leave-to\s*\{[^}]*opacity:\s*0;/s)
+    expect(toastSource).not.toContain('animation: toastOut')
   })
 })
