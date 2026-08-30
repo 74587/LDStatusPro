@@ -1,4 +1,5 @@
 import { api } from '@/utils/api'
+import { beginCatalogRotation, rememberCatalogSlate } from '@/utils/catalogRotation'
 
 export const productSortMapping = {
   default: { sortBy: 'updated_at', sortOrder: 'DESC' },
@@ -57,6 +58,12 @@ export async function fetchProductsRequest(options = {}) {
     params.set('sortOrder', sortConfig.sortOrder)
   }
   if (sort === 'default' || safeSearch) params.set('ranking', 'auto')
+  const rotating = sort === 'default' && !safeSearch && !cursor && Number(page) === 1
+  if (rotating) {
+    const rotation = options.rotationId ? options : beginCatalogRotation(options)
+    if (rotation.rotationId) params.set('rotationId', rotation.rotationId)
+    if (rotation.previousSlateId) params.set('previousSlateId', rotation.previousSlateId)
+  }
 
   if (inStockOnly) {
     params.set('inStock', 'true')
@@ -71,6 +78,7 @@ export async function fetchProductsRequest(options = {}) {
   }
 
   const result = await api.get(`/api/shop/products?${params.toString()}`)
+  if (rotating && result?.success) rememberCatalogSlate(options, result.data?.rankingContext?.slateId)
   if (cursor && cursorRetry && result?.status === 409 && result?.errorCode === 'RANKING_CURSOR_STALE') {
     const restarted = await fetchProductsRequest({ ...options, cursor: '', page: 1, cursorRetry: false })
     if (restarted?.success && restarted.data) {

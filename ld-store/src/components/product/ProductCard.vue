@@ -117,7 +117,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import {
   Eye,
   Gamepad2,
@@ -195,7 +195,11 @@ function handleCardClick() {
   recordProductClick(props.product)
 }
 
-onMounted(() => {
+function setupImpressionObserver() {
+  impressionObserver?.disconnect()
+  if (impressionTimer) window.clearTimeout(impressionTimer)
+  impressionTimer = null
+  impressionRecorded = false
   const element = cardElement()
   const token = props.product?.discovery_token || props.product?.discoveryToken
   if (!element || !token || typeof IntersectionObserver === 'undefined') return
@@ -216,7 +220,9 @@ onMounted(() => {
     }, 500)
   }, { threshold: [0.5] })
   impressionObserver.observe(element)
-})
+}
+onMounted(setupImpressionObserver)
+watch(() => props.product?.discovery_token || props.product?.discoveryToken, setupImpressionObserver, { flush: 'post' })
 
 function lerp(start, end, factor) {
   return start + (end - start) * factor

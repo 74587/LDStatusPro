@@ -6,6 +6,8 @@ const appFiles = ['src/**/*.{js,vue}']
 const toolFiles = [
   'eslint.config.js',
   'vite.config.js',
+  'vitest.config.js',
+  'tests/network-sandbox.js',
   'postcss.config.js',
   'tailwind.config.js',
   'scripts/**/*.js'

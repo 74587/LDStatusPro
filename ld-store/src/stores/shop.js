@@ -223,6 +223,9 @@ export const useShopStore = defineStore('shop', () => {
 
   // 获取商品列表
   async function fetchProducts(categoryInput = '', forceRefresh = false, sort = '') {
+    const preserveRequested = categoryInput?.preserveProducts === true
+    const previousCatalog = { products: products.value, page: page.value, total: total.value,
+      hasMore: hasMore.value, cursor: catalogCursor.value, rankingContext: rankingContext.value }
     let categoryId = categoryInput
     let requestedSort = sort
     let requestedPage = null
@@ -252,6 +255,16 @@ export const useShopStore = defineStore('shop', () => {
 
     const sortChanged = requestedSort && requestedSort !== currentSort.value
     const priceFilterChanged = requestedPriceMin !== currentPriceMin.value || requestedPriceMax !== currentPriceMax.value
+    const preserveCurrent = preserveRequested && categoryId === currentCategory.value && !sortChanged && !priceFilterChanged
+    const restorePrevious = () => {
+      if (!preserveCurrent) return
+      products.value = previousCatalog.products
+      page.value = previousCatalog.page
+      total.value = previousCatalog.total
+      hasMore.value = previousCatalog.hasMore
+      catalogCursor.value = previousCatalog.cursor
+      rankingContext.value = previousCatalog.rankingContext
+    }
     const shouldReset =
       categoryId !== currentCategory.value
       || forceRefresh
@@ -272,7 +285,7 @@ export const useShopStore = defineStore('shop', () => {
       hasMore.value = true
       catalogCursor.value = ''
       rankingContext.value = null
-      products.value = []
+      if (!preserveCurrent) products.value = []
     } else if (requestedPage) {
       page.value = requestedPage
     }
@@ -333,15 +346,19 @@ export const useShopStore = defineStore('shop', () => {
         : (result.error || '加载物品失败，请稍后重试')
 
       if (requestPage === 1) {
-        products.value = []
-        total.value = 0
-        hasMore.value = false
+        if (preserveCurrent) restorePrevious()
+        else {
+          products.value = []
+          total.value = 0
+          hasMore.value = false
+        }
       }
 
       setLastError(errorMessage)
       return { success: false, error: errorMessage, products: [] }
     } catch (error) {
       if (requestId === latestProductsRequestId) {
+        restorePrevious()
         console.error('Fetch products failed:', error)
         const errorMessage = error.message || '加载物品失败，请稍后重试'
         setLastError(errorMessage)
