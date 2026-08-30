@@ -25,7 +25,7 @@ import {
 } from '../src/utils/sellerTables'
 
 describe('买卖功能分区', () => {
-  it('右上角菜单严格按买家、系统与卖家入口分组', () => {
+  it('右上角菜单保持分组，我的物品位于第二组我的订单上方', () => {
     const groups = buildUserDropdownMenuGroups({
       messageUnread: 3,
       sellerPendingDeliveryCount: 7,
@@ -33,11 +33,12 @@ describe('买卖功能分区', () => {
     })
     expect(groups.map(group => group.map(item => item.label))).toEqual([
       ['我的消息', '收藏与拉黑'],
-      ['我的订单', '我的优惠券', '我的举报', '我的求购'],
+      ['我的物品', '我的订单', '我的优惠券', '我的举报', '我的求购'],
       ['士多图床'],
       ['卖家后台']
     ])
-    expect(groups[1][0].badge).toBe('')
+    expect(groups[1][0]).toMatchObject({ path: '/seller/products', badge: '', withUnread: false })
+    expect(groups[1][1]).toMatchObject({ path: '/user/orders', badge: '' })
     expect(groups[3][0].badge).toBe('9')
   })
 

@@ -142,11 +142,19 @@
         
         <!-- 用户信息 -->
         <template v-if="isLoggedIn">
-          <div class="user-dropdown" ref="dropdownRef">
+          <div
+            class="user-dropdown"
+            ref="dropdownRef"
+            @keydown="handleDropdownKeydown"
+            @focusout="handleDropdownFocusOut"
+          >
             <button
+              ref="dropdownTriggerRef"
+              type="button"
               class="user-info"
-              :class="{ 'has-unread': headerAlertCount > 0 }"
+              :class="{ 'has-unread': headerAlertCount > 0, 'is-open': showDropdown }"
               :aria-expanded="showDropdown"
+              aria-controls="header-user-menu"
               :aria-label="userButtonLabel"
               @click="toggleDropdown"
             >
@@ -155,7 +163,7 @@
                 :candidates="userStore.avatarCandidates"
                 :seed="username || 'user'"
                 :size="128"
-                alt="avatar"
+                alt=""
                 class="user-avatar"
                 loading-mode="eager"
               />
@@ -173,51 +181,63 @@
             </span>
             
             <!-- 下拉菜单 -->
-            <div v-show="showDropdown" class="dropdown-menu">
-              <router-link to="/user" class="dropdown-header" @click="closeDropdown">
-                <AvatarImage
-                  :src="avatar"
-                  :candidates="userStore.avatarCandidates"
-                  :seed="username || 'user'"
-                  :size="128"
-                  alt="avatar"
-                  class="dropdown-avatar"
-                  loading-mode="eager"
-                />
-                <div class="dropdown-user-info">
-                  <div class="dropdown-username">{{ username }}</div>
-                  <div class="dropdown-trust" v-if="trustLevelText">信任等级: {{ trustLevelText }}</div>
-                </div>
-              </router-link>
-              
-              <div
-                v-for="(group, groupIndex) in dropdownMenuGroups"
-                :key="`dropdown-group-${groupIndex}`"
-                class="dropdown-group"
+            <Transition name="user-menu">
+              <nav
+                v-show="showDropdown"
+                id="header-user-menu"
+                ref="dropdownMenuRef"
+                class="dropdown-menu"
+                aria-label="个人菜单"
+                :aria-hidden="!showDropdown"
+                :inert="!showDropdown"
               >
-                <a
-                  v-for="item in group"
-                  :key="item.path"
-                  :href="item.path"
-                  class="dropdown-item"
-                  :class="{ 'with-unread': item.withUnread }"
-                  @click.prevent="navigateTo(item.path)"
-                >
-                  <span class="dropdown-item-icon" aria-hidden="true">
-                    <component :is="item.iconComponent" :size="18" :stroke-width="2" />
-                  </span>
-                  <span class="dropdown-item-text">{{ item.label }}</span>
-                  <span v-if="item.badge" class="dropdown-badge">{{ item.badge }}</span>
-                </a>
-              </div>
-              
-              <div class="dropdown-divider"></div>
-              
-              <button class="dropdown-item logout" @click="handleLogout">
-                <LogOut class="dropdown-item-icon" :size="18" :stroke-width="2" aria-hidden="true" />
-                <span class="dropdown-item-text">退出登录</span>
-              </button>
-            </div>
+                <div class="dropdown-content">
+                  <router-link to="/user" class="dropdown-header" @click="closeDropdown">
+                    <AvatarImage
+                      :src="avatar"
+                      :candidates="userStore.avatarCandidates"
+                      :seed="username || 'user'"
+                      :size="128"
+                      alt=""
+                      class="dropdown-avatar"
+                      loading-mode="eager"
+                    />
+                    <div class="dropdown-user-info">
+                      <div class="dropdown-username">{{ username }}</div>
+                      <div class="dropdown-trust" v-if="trustLevelText">信任等级: {{ trustLevelText }}</div>
+                    </div>
+                  </router-link>
+
+                  <div
+                    v-for="(group, groupIndex) in dropdownMenuGroups"
+                    :key="`dropdown-group-${groupIndex}`"
+                    class="dropdown-group"
+                  >
+                    <router-link
+                      v-for="item in group"
+                      :key="item.path"
+                      :to="item.path"
+                      class="dropdown-item"
+                      :class="{ 'with-unread': item.withUnread }"
+                      @click="closeDropdown"
+                    >
+                      <span class="dropdown-item-icon" aria-hidden="true">
+                        <component :is="item.iconComponent" :size="18" :stroke-width="2" />
+                      </span>
+                      <span class="dropdown-item-text">{{ item.label }}</span>
+                      <span v-if="item.badge" class="dropdown-badge">{{ item.badge }}</span>
+                    </router-link>
+                  </div>
+
+                  <div class="dropdown-divider"></div>
+
+                  <button type="button" class="dropdown-item logout" @click="handleLogout">
+                    <LogOut class="dropdown-item-icon" :size="18" :stroke-width="2" aria-hidden="true" />
+                    <span class="dropdown-item-text">退出登录</span>
+                  </button>
+                </div>
+              </nav>
+            </Transition>
           </div>
         </template>
         <template v-else>
@@ -231,10 +251,10 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { ChevronDown, LogOut } from '@lucide/vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { useNotificationSummaryStore } from '@/stores/notificationSummary'
 import ThemeToggle from '@/components/common/ThemeToggle.vue'
@@ -242,8 +262,10 @@ import AvatarImage from '@/components/common/AvatarImage.vue'
 import { storage } from '@/utils/storage'
 import { DEFAULT_SEARCH_KEYWORDS, loadSearchHistory, saveSearchHistory, clearSearchHistory } from '@/utils/search'
 import { buildUserDropdownMenuGroups } from '@/config/userMenu'
+import { useDropdownMenu } from '@/composables/useDropdownMenu'
 
 const router = useRouter()
+const route = useRoute()
 const userStore = useUserStore()
 const notificationSummaryStore = useNotificationSummaryStore()
 const {
@@ -255,8 +277,16 @@ const {
 // 响应式状态
 const searchQuery = ref('')
 const isMobile = ref(false)
-const showDropdown = ref(false)
-const dropdownRef = ref(null)
+const {
+  isOpen: showDropdown,
+  rootRef: dropdownRef,
+  triggerRef: dropdownTriggerRef,
+  menuRef: dropdownMenuRef,
+  close: closeDropdown,
+  toggle: toggleDropdown,
+  handleKeydown: handleDropdownKeydown,
+  handleFocusOut: handleDropdownFocusOut
+} = useDropdownMenu()
 const showMoreMenu = ref(false)
 const moreDropdownRef = ref(null)
 const searchBoxRef = ref(null)
@@ -297,9 +327,11 @@ const userAlertStatusText = computed(() => (
     ? `${userAlertText.value}，共 ${headerAlertCount.value} 项未读或待处理`
     : '暂无未读消息或待处理事项'
 ))
-const userButtonLabel = computed(() => (
-  userAlertText.value ? `${username.value}，${userAlertText.value}，打开用户菜单` : `${username.value}，打开用户菜单`
-))
+const userButtonLabel = computed(() => [
+  username.value,
+  userAlertText.value,
+  showDropdown.value ? '收起用户菜单' : '打开用户菜单'
+].filter(Boolean).join('，'))
 const dropdownMenuGroups = computed(() => buildUserDropdownMenuGroups({
   messageUnread: messageUnread.value,
   sellerPendingDeliveryCount: sellerPendingDeliveryCount.value,
@@ -326,14 +358,17 @@ const filteredRecommendedKeywords = computed(() => {
 })
 
 // 下拉菜单控制
-function toggleDropdown() {
-  showDropdown.value = !showDropdown.value
+watch(showDropdown, (isOpen) => {
+  if (!isOpen) return
   showMoreMenu.value = false
-}
+  closeSearchPanel()
+  if (dropdownMenuRef.value) dropdownMenuRef.value.scrollTop = 0
+})
 
-function closeDropdown() {
-  showDropdown.value = false
-}
+watch(() => route.fullPath, () => closeDropdown())
+watch(isLoggedIn, (loggedIn) => {
+  if (!loggedIn) closeDropdown()
+})
 
 // 更多菜单控制
 function toggleMoreMenu() {
@@ -343,13 +378,6 @@ function toggleMoreMenu() {
 
 function closeMoreMenu() {
   showMoreMenu.value = false
-}
-
-function navigateTo(path) {
-  closeDropdown()
-  closeMoreMenu()
-  closeSearchPanel()
-  router.push(path)
 }
 
 function handleClickOutside(e) {
@@ -704,6 +732,8 @@ onUnmounted(() => {
 /* 用户下拉菜单 */
 .user-dropdown {
   position: relative;
+  --user-menu-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --user-menu-viewport-offset: 92px;
 }
 
 .user-info {
@@ -711,12 +741,15 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 8px;
+  min-height: 44px;
+  min-width: 44px;
   padding: 6px 12px 6px 6px;
   background: var(--input-bg);
   border: none;
   border-radius: 20px;
   cursor: pointer;
-  transition: background 0.2s;
+  touch-action: manipulation;
+  transition: background 160ms ease, transform 140ms var(--user-menu-ease);
 }
 
 .user-info.has-unread {
@@ -735,8 +768,26 @@ onUnmounted(() => {
   border: 0;
 }
 
-.user-info:hover {
+.user-info:hover,
+.user-info.is-open {
   background: var(--bg-tertiary);
+}
+
+.user-info:active {
+  transform: scale(0.98);
+}
+
+.user-info:focus-visible,
+.dropdown-header:focus-visible,
+.dropdown-item:focus-visible {
+  outline: 2px solid var(--text-secondary);
+  outline-offset: 2px;
+}
+
+.dropdown-header:focus-visible,
+.dropdown-item:focus-visible {
+  outline-offset: -2px;
+  background: var(--bg-secondary);
 }
 
 .user-avatar {
@@ -793,6 +844,12 @@ onUnmounted(() => {
   font-size: 10px;
   color: var(--text-tertiary);
   margin-left: 4px;
+  transition: transform 200ms var(--user-menu-ease), color 160ms ease;
+}
+
+.user-info.is-open .dropdown-arrow {
+  transform: rotate(180deg);
+  color: var(--text-primary);
 }
 
 /* 下拉菜单内容 */
@@ -800,14 +857,53 @@ onUnmounted(() => {
   position: absolute;
   top: calc(100% + 8px);
   right: 0;
-  min-width: 220px;
+  width: min(240px, calc(100vw - 24px));
+  max-height: calc(100vh - var(--user-menu-viewport-offset) - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+  max-height: calc(100dvh - var(--user-menu-viewport-offset) - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   background: var(--dropdown-bg);
   border-radius: 16px;
   box-shadow: var(--dropdown-shadow);
   border: 1px solid var(--border-light);
   padding: 8px;
   z-index: 1000;
-  animation: dropdownFadeIn 0.2s ease;
+  transform-origin: calc(100% - 22px) -8px;
+}
+
+/* A quiet two-layer reveal from the capsule. Content settles before the surface. */
+.user-menu-enter-active {
+  transition: opacity 180ms ease-out, transform 240ms var(--user-menu-ease);
+}
+
+.user-menu-leave-active {
+  pointer-events: none;
+  transition: opacity 120ms ease-in, transform 140ms cubic-bezier(0.4, 0, 1, 1);
+}
+
+.user-menu-enter-from {
+  opacity: 0;
+  transform: translateY(-6px) scale(0.985);
+}
+
+.user-menu-leave-to {
+  opacity: 0;
+  transform: translateY(-4px) scale(0.99);
+}
+
+.user-menu-enter-active .dropdown-content {
+  transition: opacity 160ms ease-out 24ms, transform 180ms var(--user-menu-ease) 24ms;
+}
+
+.user-menu-leave-active .dropdown-content {
+  transition: opacity 100ms ease-in, transform 120ms ease-in;
+}
+
+.user-menu-enter-from .dropdown-content,
+.user-menu-leave-to .dropdown-content {
+  opacity: 0;
+  transform: translateY(-3px);
 }
 
 @keyframes dropdownFadeIn {
@@ -859,7 +955,7 @@ onUnmounted(() => {
 
 .dropdown-trust {
   font-size: 12px;
-  color: var(--text-tertiary);
+  color: var(--text-secondary);
   margin-top: 2px;
 }
 
@@ -880,6 +976,7 @@ onUnmounted(() => {
   align-items: center;
   gap: 10px;
   width: 100%;
+  min-height: 44px;
   padding: 12px;
   background: transparent;
   border: none;
@@ -888,7 +985,7 @@ onUnmounted(() => {
   color: var(--text-primary);
   text-decoration: none;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: background 140ms ease;
   text-align: left;
   touch-action: manipulation;
 }
@@ -909,6 +1006,11 @@ onUnmounted(() => {
 
 .dropdown-item:hover {
   background: var(--bg-secondary);
+}
+
+.dropdown-item:active,
+.dropdown-header:active {
+  background: var(--bg-tertiary);
 }
 
 .dropdown-item.with-unread {
@@ -1033,6 +1135,7 @@ onUnmounted(() => {
 
   .user-info {
     padding: 2px;
+    justify-content: center;
   }
 
   .user-avatar {
@@ -1044,12 +1147,39 @@ onUnmounted(() => {
     display: none;
   }
 
-  .dropdown-menu {
-    max-height: calc(100vh - 74px - env(safe-area-inset-bottom, 0px));
-    max-height: calc(100dvh - 74px - env(safe-area-inset-bottom, 0px));
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    -webkit-overflow-scrolling: touch;
+  .user-dropdown {
+    --user-menu-viewport-offset: 84px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .user-info,
+  .dropdown-arrow,
+  .dropdown-header,
+  .dropdown-item {
+    transition: none;
+  }
+
+  .user-info:active {
+    transform: none;
+  }
+
+  .user-menu-enter-active,
+  .user-menu-leave-active {
+    transition: opacity 80ms linear;
+  }
+
+  .user-menu-enter-from,
+  .user-menu-leave-to,
+  .user-menu-enter-from .dropdown-content,
+  .user-menu-leave-to .dropdown-content {
+    transform: none;
+  }
+
+  .user-menu-enter-active .dropdown-content,
+  .user-menu-leave-active .dropdown-content {
+    opacity: 1;
+    transition: none;
   }
 }
 </style>

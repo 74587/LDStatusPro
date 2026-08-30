@@ -5,6 +5,7 @@ import {
   Heart,
   Image as ImageIcon,
   MessageCircle,
+  Package,
   Store,
   TicketPercent
 } from '@lucide/vue'
@@ -32,6 +33,7 @@ export function buildUserDropdownMenuGroups({
       item('/user/favorites', Heart, '收藏与拉黑')
     ],
     [
+      item('/seller/products', Package, '我的物品'),
       item('/user/orders', ClipboardList, '我的订单'),
       item('/user/coupons', TicketPercent, '我的优惠券'),
       item('/user/reports', Flag, '我的举报'),
