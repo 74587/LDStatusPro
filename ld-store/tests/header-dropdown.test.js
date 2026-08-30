@@ -128,15 +128,25 @@ describe('个人菜单动效和无障碍接线', () => {
     expect(source).toContain('.dropdown-item:focus-visible')
   })
 
-  it('搜索、图标按钮、主题和胶囊使用同一高度基准，手机保留触摸尺寸', () => {
-    expect(source).toContain('--header-control-size: 36px')
-    expect(source).toContain('--header-control-size: 44px')
-    for (const selector of ['.search-input', '.search-btn', '.github-btn', '.action-btn', '.user-info', '.login-btn', '.header-theme :deep(.theme-btn)']) {
+  it('桌面普通控件为 38px、胶囊为 40px，手机统一保留 44px 触摸尺寸', () => {
+    expect(source).toContain('--header-control-size: 38px')
+    expect(source).toContain('--header-profile-size: 40px')
+    for (const selector of ['.search-input', '.search-btn', '.github-btn', '.action-btn', '.login-btn', '.header-theme :deep(.theme-btn)']) {
       const block = source.slice(source.indexOf(`${selector} {`)).split('}')[0]
       expect(block, selector).toContain('height: var(--header-control-size)')
       expect(block, selector).not.toContain('transition: all')
     }
-    expect(source).toContain('@media (max-width: 767px)')
+    const capsule = source.slice(source.indexOf('.user-info {')).split('}')[0]
+    expect(capsule).toContain('height: var(--header-profile-size)')
+    expect(capsule).toContain('padding: 4px 12px 4px 8px')
+    expect(capsule).not.toContain('transition: all')
+    const mobile = source.slice(source.indexOf('@media (max-width: 767px)'))
+    expect(mobile).toContain('--header-control-size: 44px')
+    expect(mobile).toContain('--header-profile-size: 44px')
+    for (const selector of ['.header-content', '.header-center', '.header-actions']) {
+      const block = source.slice(source.indexOf(`${selector} {`)).split('}')[0]
+      expect(block, selector).toContain('align-items: center')
+    }
     expect(source).toContain('v-if="!isMobile" class="user-identity"')
   })
 
@@ -148,12 +158,36 @@ describe('个人菜单动效和无障碍接线', () => {
     expect(source).not.toContain('animation: user')
   })
 
-  it('昵称、等级与账号在胶囊和菜单内一致，完整通知详情仍可见', () => {
+  it('胶囊只显示昵称和账号，信任等级保留在菜单内且可被读屏获取', () => {
     expect(source.match(/userIdentity.displayName }}/g)).toHaveLength(2)
     expect(source.match(/userIdentity.handle }}/g)).toHaveLength(2)
-    expect(source.match(/userIdentity.trustLabel }}/g)).toHaveLength(2)
+    expect(source.match(/userIdentity.trustLabel }}/g)).toHaveLength(1)
+    const capsule = source.slice(source.indexOf('<span v-if="!isMobile" class="user-identity">'), source.indexOf('<ChevronDown'))
+    expect(capsule).not.toContain('trustLabel')
+    expect(capsule).toContain('class="user-handle user-account"')
+    expect(source).toContain(':aria-label="userProfileLabel"')
+    const profileLabel = source.slice(source.indexOf('const userProfileLabel'), source.indexOf('const dropdownMenuGroups'))
+    expect(profileLabel).toContain('信任等级 ${userIdentity.value.trustLabel}')
     expect(source).toContain('class="dropdown-alert-summary"')
     expect(source).toContain(':title="userButtonLabel"')
+  })
+
+  it('长昵称和账号不能撑宽胶囊，展开菜单可完整换行阅读', () => {
+    const capsule = source.slice(source.indexOf('.user-info {')).split('}')[0]
+    expect(capsule).toContain('width: 180px')
+    const identity = source.slice(source.indexOf('.user-identity {')).split('}')[0]
+    expect(identity).toContain('min-width: 0')
+    for (const selector of ['.user-name', '.user-handle']) {
+      const block = source.slice(source.indexOf(`${selector} {`)).split('}')[0]
+      expect(block, selector).toContain('min-width: 0')
+      expect(block, selector).toContain('text-overflow: ellipsis')
+      expect(block, selector).toContain('white-space: nowrap')
+    }
+    for (const selector of ['.dropdown-username', '.dropdown-meta .user-handle']) {
+      const block = source.slice(source.indexOf(`${selector} {`)).split('}')[0]
+      expect(block, selector).toContain('overflow-wrap: anywhere')
+      expect(block, selector).not.toContain('line-clamp')
+    }
   })
 })
 

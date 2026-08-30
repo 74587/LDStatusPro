@@ -173,14 +173,7 @@
               </span>
               <span v-if="!isMobile" class="user-identity">
                 <span class="user-name">{{ userIdentity.displayName }}</span>
-                <span class="user-meta">
-                  <span
-                    v-if="userIdentity.trustLabel"
-                    class="user-trust-badge"
-                    :aria-label="`信任等级 ${userIdentity.trustLabel}`"
-                  >{{ userIdentity.trustLabel }}</span>
-                  <span v-if="userIdentity.handle" class="user-handle">{{ userIdentity.handle }}</span>
-                </span>
+                <span v-if="userIdentity.handle" class="user-handle user-account">{{ userIdentity.handle }}</span>
               </span>
               <ChevronDown class="dropdown-arrow" :size="14" :stroke-width="2" aria-hidden="true" />
               <span v-if="headerAlertCount > 0" class="user-unread-badge" aria-hidden="true">
@@ -206,7 +199,7 @@
                   <router-link
                     to="/user"
                     class="dropdown-header"
-                    :aria-label="`${userIdentity.displayName}，${userIdentity.handle}，个人中心`"
+                    :aria-label="userProfileLabel"
                     @click="closeDropdown"
                   >
                     <AvatarImage
@@ -356,9 +349,14 @@ const userAlertStatusText = computed(() => (
 const userButtonLabel = computed(() => [
   userIdentity.value.displayName,
   userIdentity.value.handle,
-  userIdentity.value.trustLabel ? `信任等级 ${userIdentity.value.trustLabel}` : '',
   userAlertText.value,
   showDropdown.value ? '收起用户菜单' : '打开用户菜单'
+].filter(Boolean).join('，'))
+const userProfileLabel = computed(() => [
+  userIdentity.value.displayName,
+  userIdentity.value.handle,
+  userIdentity.value.trustLabel ? `信任等级 ${userIdentity.value.trustLabel}` : '',
+  '个人中心'
 ].filter(Boolean).join('，'))
 const dropdownMenuGroups = computed(() => buildUserDropdownMenuGroups({
   messageUnread: messageUnread.value,
@@ -503,7 +501,8 @@ onUnmounted(() => {
 
 <style scoped>
 .app-header {
-  --header-control-size: 36px;
+  --header-control-size: 38px;
+  --header-profile-size: 40px;
   position: sticky;
   top: 0;
   left: 0;
@@ -773,7 +772,7 @@ onUnmounted(() => {
   position: relative;
   --user-menu-ease: cubic-bezier(0.22, 1, 0.36, 1);
   --user-menu-spring: cubic-bezier(0.22, 1.4, 0.36, 1);
-  --user-menu-viewport-offset: calc(var(--header-control-size) + 44px);
+  --user-menu-viewport-offset: calc(var(--header-profile-size) + 44px);
 }
 
 .user-info {
@@ -782,9 +781,9 @@ onUnmounted(() => {
   align-items: center;
   gap: 8px;
   box-sizing: border-box;
-  width: 196px;
-  height: var(--header-control-size);
-  padding: 2px 10px 2px 4px;
+  width: 180px;
+  height: var(--header-profile-size);
+  padding: 4px 12px 4px 8px;
   background: var(--input-bg);
   border: none;
   border-radius: 999px;
@@ -873,6 +872,7 @@ onUnmounted(() => {
 
 .user-name {
   display: block;
+  min-width: 0;
   font-size: 13px;
   line-height: 16px;
   font-weight: 600;
@@ -918,8 +918,17 @@ onUnmounted(() => {
   white-space: nowrap;
 }
 
+.user-account {
+  font-size: 12px;
+  line-height: 15px;
+  color: var(--text-secondary);
+}
+
 .user-unread-badge {
   position: absolute;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   top: -4px;
   right: -4px;
   min-width: 18px;
@@ -929,7 +938,8 @@ onUnmounted(() => {
   color: #fff;
   font-size: 11px;
   font-weight: 700;
-  line-height: 18px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
   text-align: center;
   padding: 0 5px;
   border: 2px solid var(--bg-primary);
@@ -1234,6 +1244,7 @@ onUnmounted(() => {
 @media (max-width: 767px) {
   .app-header {
     --header-control-size: 44px;
+    --header-profile-size: 44px;
   }
 
   .header-content {
@@ -1255,8 +1266,8 @@ onUnmounted(() => {
   }
 
   .user-info {
-    width: var(--header-control-size);
-    padding: 2px;
+    width: var(--header-profile-size);
+    padding: 8px;
     justify-content: center;
   }
 
