@@ -135,14 +135,6 @@
             <span v-if="inStockOnly" class="filter-tag">有库存</span>
             <span v-if="hasActivePriceFilter" class="filter-tag price-tag">{{ activePriceFilterLabel }}</span>
           </span>
-          <button
-            v-if="currentSort === 'default' && !isProductListHiddenByMaintenance"
-            type="button"
-            class="catalog-rotate-btn"
-            :disabled="loading || initialLoading || rotatingCatalog"
-            :aria-busy="rotatingCatalog"
-            @click="rotateCatalog"
-          >{{ rotatingCatalog ? '正在换一批…' : '换一批' }}</button>
         </div>
         
         <!-- 物品列表 -->
@@ -150,7 +142,7 @@
           <Skeleton type="card" :count="6" :columns="gridColumns" />
         </div>
         
-        <div v-else-if="marketProducts.length > 0" class="products-grid" :aria-busy="rotatingCatalog">
+        <div v-else-if="marketProducts.length > 0" class="products-grid" :aria-busy="loading">
           <ProductCard
             v-for="product in marketProducts"
             :key="product.id"
@@ -899,7 +891,6 @@ const currentSort = computed({
 })
 const inStockOnly = computed(() => shopStore.inStockOnly)
 const loading = computed(() => shopStore.loading)
-const rotatingCatalog = ref(false)
 const hasMore = computed(() => shopStore.hasMore)
 const total = computed(() => shopStore.total)
 const hasActivePriceFilter = computed(() => shopStore.currentPriceMin !== null || shopStore.currentPriceMax !== null)
@@ -1252,26 +1243,6 @@ async function handleCategorySelect(categoryId) {
   if (!result?.success && !result?.cancelled) {
     toast.error(result?.error || consumeStoreError('加载物品失败，请稍后重试'))
   }
-}
-
-async function rotateCatalog() {
-  if (loading.value || rotatingCatalog.value) return
-  rotatingCatalog.value = true
-  const actionId = ++latestCatalogActionId
-  const categoryId = shopStore.currentCategory
-  const filters = buildCatalogFilters()
-  try {
-    const result = await shopStore.fetchProducts({ categoryId, sort: 'default', forceRefresh: true,
-      preserveProducts: true, priceMin: filters.priceMin, priceMax: filters.priceMax })
-    if (actionId !== latestCatalogActionId) return
-    if (!result?.success) {
-      if (!result?.cancelled) toast.error(result?.error || '换批失败，已保留当前物品')
-      return
-    }
-    saveCache(categoryId, 'default', filters)
-    await nextTick()
-    setupInfiniteScroll()
-  } finally { rotatingCatalog.value = false }
 }
 
 async function handleSortChange(sort) {
@@ -1961,20 +1932,6 @@ function clearTrendHover() {
   flex-wrap: wrap;
   gap: 12px;
 }
-
-.catalog-rotate-btn {
-  min-height: 44px;
-  min-width: 88px;
-  padding: 8px 16px;
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  background: var(--bg-card);
-  color: var(--text-primary);
-  font: inherit;
-  cursor: pointer;
-}
-.catalog-rotate-btn:disabled { opacity: 0.6; cursor: wait; }
-.catalog-rotate-btn:focus-visible { outline: 2px solid var(--color-primary, #4f46e5); outline-offset: 3px; }
 
 .products-count {
   font-size: 13px;

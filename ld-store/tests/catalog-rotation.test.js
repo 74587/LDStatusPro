@@ -1,5 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
+import { readFileSync } from 'node:fs'
+import { URL } from 'node:url'
+import { parse, compileTemplate } from '@vue/compiler-sfc'
 import { beginCatalogRotation, catalogRotationKey, rememberCatalogSlate } from '../src/utils/catalogRotation'
 import { fetchProductsRequest } from '../src/services/shop/catalogService'
 import { useShopStore } from '../src/stores/shop'
@@ -48,6 +51,32 @@ describe('V2.2 recommendation rotation', () => {
       await fetchProductsRequest(options)
       expect(api.get.mock.lastCall[0]).not.toMatch(/rotationId|previousSlateId/)
     }
+  })
+  it('page reload rotates automatically while retaining the prior slate for overlap control', async () => {
+    const response = { success: true, data: { products: [{ id: 1 }], pagination: { total: 1, hasMore: false },
+      rankingContext: { slateId: first } } }
+    api.get.mockResolvedValue(response)
+    await useShopStore().fetchProducts({ forceRefresh: true })
+    const initial = new URL(api.get.mock.lastCall[0], 'http://localhost')
+    expect(initial.searchParams.get('rotationId')).toBe(first)
+    expect(initial.searchParams.has('previousSlateId')).toBe(false)
+
+    // A full page reload recreates Pinia but retains this tab's sessionStorage.
+    setActivePinia(createPinia())
+    await useShopStore().fetchProducts({ forceRefresh: true })
+    const reloaded = new URL(api.get.mock.lastCall[0], 'http://localhost')
+    expect(reloaded.searchParams.get('rotationId')).toBe(second)
+    expect(reloaded.searchParams.get('previousSlateId')).toBe(first)
+  })
+  it('home has no manual catalog rotation control or stale rotation state', () => {
+    const source = readFileSync(new URL('../src/views/Home.vue', import.meta.url), 'utf8')
+    const { descriptor, errors } = parse(source)
+    expect(errors).toEqual([])
+    expect(compileTemplate({ source: descriptor.template.content, filename: 'Home.vue', id: 'home' }).errors).toEqual([])
+    expect(source).not.toMatch(/catalog-rotate-btn|rotatingCatalog|rotateCatalog/)
+    expect(descriptor.template.content).toContain('class="products-grid" :aria-busy="loading"')
+    // The unrelated buy-request refresh control is intentionally unchanged.
+    expect(descriptor.template.content).toContain('@click="loadBuyRequests(false)"')
   })
   it('failed rotation retains the visible list, page, context, and cursor', async () => {
     const store = useShopStore()
