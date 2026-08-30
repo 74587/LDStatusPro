@@ -19,12 +19,13 @@
             type="text"
             class="search-input"
             placeholder="搜索商品..."
+            aria-label="搜索商品"
             @focus="openSearchPanel"
             @input="handleSearchInput"
             @keydown.esc="closeSearchPanel"
             @keyup.enter="handleSearch"
           />
-          <button class="search-btn" @click="handleSearch">
+          <button type="button" class="search-btn" aria-label="搜索" @click="handleSearch">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="11" cy="11" r="8"/>
               <line x1="21" y1="21" x2="16.65" y2="16.65"/>
@@ -98,7 +99,7 @@
       <!-- 右侧操作区 -->
       <div class="header-actions">
         <!-- 主题切换 -->
-        <ThemeToggle :showArrow="false" />
+        <ThemeToggle class="header-theme" :showArrow="false" />
         
         <!-- 更多菜单（移动端） -->
         <div v-if="isMobile" class="more-dropdown" ref="moreDropdownRef">
@@ -108,7 +109,7 @@
               <line x1="21" y1="21" x2="16.65" y2="16.65"/>
             </svg>
           </button>
-          <button class="action-btn" @click="toggleMoreMenu">
+          <button type="button" class="action-btn" aria-label="更多选项" :aria-expanded="showMoreMenu" @click="toggleMoreMenu">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="12" cy="12" r="1"/>
               <circle cx="12" cy="5" r="1"/>
@@ -133,7 +134,7 @@
         </div>
         
         <!-- 发布按钮 -->
-        <button v-if="isLoggedIn" class="action-btn publish-btn" @click="goToPublish">
+        <button v-if="isLoggedIn" type="button" class="action-btn publish-btn" aria-label="发布商品" title="发布商品" @click="goToPublish">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <line x1="12" y1="5" x2="12" y2="19"/>
             <line x1="5" y1="12" x2="19" y2="12"/>
@@ -156,23 +157,33 @@
               :aria-expanded="showDropdown"
               aria-controls="header-user-menu"
               :aria-label="userButtonLabel"
+              :title="userButtonLabel"
               @click="toggleDropdown"
             >
-              <AvatarImage
-                :src="avatar"
-                :candidates="userStore.avatarCandidates"
-                :seed="username || 'user'"
-                :size="128"
-                alt=""
-                class="user-avatar"
-                loading-mode="eager"
-              />
-              <span class="user-name" v-if="!isMobile">{{ username }}</span>
-              <span v-if="userAlertText && !isMobile" class="user-unread-inline">
-                {{ userAlertText }}
+              <span class="user-avatar-motion">
+                <AvatarImage
+                  :src="avatar"
+                  :candidates="userStore.avatarCandidates"
+                  :seed="username || 'user'"
+                  :size="128"
+                  alt=""
+                  class="user-avatar"
+                  loading-mode="eager"
+                />
+              </span>
+              <span v-if="!isMobile" class="user-identity">
+                <span class="user-name">{{ userIdentity.displayName }}</span>
+                <span class="user-meta">
+                  <span
+                    v-if="userIdentity.trustLabel"
+                    class="user-trust-badge"
+                    :aria-label="`信任等级 ${userIdentity.trustLabel}`"
+                  >{{ userIdentity.trustLabel }}</span>
+                  <span v-if="userIdentity.handle" class="user-handle">{{ userIdentity.handle }}</span>
+                </span>
               </span>
               <ChevronDown class="dropdown-arrow" :size="14" :stroke-width="2" aria-hidden="true" />
-              <span v-if="headerAlertCount > 0 && isMobile" class="user-unread-badge">
+              <span v-if="headerAlertCount > 0" class="user-unread-badge" aria-hidden="true">
                 {{ headerAlertDisplay }}
               </span>
             </button>
@@ -192,7 +203,12 @@
                 :inert="!showDropdown"
               >
                 <div class="dropdown-content">
-                  <router-link to="/user" class="dropdown-header" @click="closeDropdown">
+                  <router-link
+                    to="/user"
+                    class="dropdown-header"
+                    :aria-label="`${userIdentity.displayName}，${userIdentity.handle}，个人中心`"
+                    @click="closeDropdown"
+                  >
                     <AvatarImage
                       :src="avatar"
                       :candidates="userStore.avatarCandidates"
@@ -203,10 +219,18 @@
                       loading-mode="eager"
                     />
                     <div class="dropdown-user-info">
-                      <div class="dropdown-username">{{ username }}</div>
-                      <div class="dropdown-trust" v-if="trustLevelText">信任等级: {{ trustLevelText }}</div>
+                      <div class="dropdown-username" :title="userIdentity.displayName">{{ userIdentity.displayName }}</div>
+                      <div class="user-meta dropdown-meta">
+                        <span
+                          v-if="userIdentity.trustLabel"
+                          class="user-trust-badge"
+                          :aria-label="`信任等级 ${userIdentity.trustLabel}`"
+                        >{{ userIdentity.trustLabel }}</span>
+                        <span v-if="userIdentity.handle" class="user-handle" :title="userIdentity.handle">{{ userIdentity.handle }}</span>
+                      </div>
                     </div>
                   </router-link>
+                  <div v-if="userAlertText" class="dropdown-alert-summary" aria-hidden="true">{{ userAlertText }}</div>
 
                   <div
                     v-for="(group, groupIndex) in dropdownMenuGroups"
@@ -263,6 +287,7 @@ import { storage } from '@/utils/storage'
 import { DEFAULT_SEARCH_KEYWORDS, loadSearchHistory, saveSearchHistory, clearSearchHistory } from '@/utils/search'
 import { buildUserDropdownMenuGroups } from '@/config/userMenu'
 import { useDropdownMenu } from '@/composables/useDropdownMenu'
+import { buildUserIdentity } from '@/utils/userIdentity'
 
 const router = useRouter()
 const route = useRoute()
@@ -298,10 +323,11 @@ const recommendedKeywords = DEFAULT_SEARCH_KEYWORDS
 const isLoggedIn = computed(() => userStore.isLoggedIn)
 const username = computed(() => userStore.username)
 const avatar = computed(() => userStore.avatar)
-const trustLevel = computed(() => userStore.trustLevel)
-const trustLevelText = computed(() => (
-  trustLevel.value === null || trustLevel.value === undefined ? '' : `TL${trustLevel.value}`
-))
+const userIdentity = computed(() => buildUserIdentity({
+  name: userStore.currentUser?.name,
+  username: username.value,
+  trustLevel: userStore.trustLevel
+}))
 const unreadDisplay = computed(() => (messageUnread.value > 99 ? '99+' : String(messageUnread.value || 0)))
 const pendingDeliveryDisplay = computed(() => (
   sellerPendingDeliveryCount.value > 99 ? '99+' : String(sellerPendingDeliveryCount.value || 0)
@@ -328,7 +354,9 @@ const userAlertStatusText = computed(() => (
     : '暂无未读消息或待处理事项'
 ))
 const userButtonLabel = computed(() => [
-  username.value,
+  userIdentity.value.displayName,
+  userIdentity.value.handle,
+  userIdentity.value.trustLabel ? `信任等级 ${userIdentity.value.trustLabel}` : '',
   userAlertText.value,
   showDropdown.value ? '收起用户菜单' : '打开用户菜单'
 ].filter(Boolean).join('，'))
@@ -475,6 +503,7 @@ onUnmounted(() => {
 
 <style scoped>
 .app-header {
+  --header-control-size: 36px;
   position: sticky;
   top: 0;
   left: 0;
@@ -505,6 +534,7 @@ onUnmounted(() => {
   gap: 8px;
   text-decoration: none;
   flex-shrink: 0;
+  min-height: var(--header-control-size);
 }
 
 .header-logo {
@@ -524,24 +554,31 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   flex: 1;
+  min-width: 0;
   max-width: 450px;
   gap: 8px;
 }
 
 .header-search {
   flex: 1;
+  min-width: 0;
+  height: var(--header-control-size);
   position: relative;
 }
 
 .search-input {
+  display: block;
+  box-sizing: border-box;
   width: 100%;
-  padding: 10px 44px 10px 16px;
+  height: var(--header-control-size);
+  padding: 0 40px 0 12px;
   background: var(--input-bg);
   border: 1px solid var(--input-border);
-  border-radius: 12px;
+  border-radius: 10px;
   font-size: 14px;
+  line-height: 1.4;
   color: var(--text-primary);
-  transition: all 0.2s;
+  transition: background 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
 }
 
 .search-input:focus {
@@ -556,10 +593,15 @@ onUnmounted(() => {
 
 .search-btn {
   position: absolute;
-  right: 8px;
-  top: 50%;
-  transform: translateY(-50%);
-  padding: 6px;
+  right: 0;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--header-control-size);
+  height: var(--header-control-size);
+  padding: 0;
+  border-radius: 10px;
   background: transparent;
   border: none;
   cursor: pointer;
@@ -648,46 +690,41 @@ onUnmounted(() => {
   color: var(--text-tertiary);
 }
 
-.docs-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  margin-left: 8px;
-  background: var(--input-bg);
-  border: none;
-  border-radius: 10px;
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: all 0.2s;
-  text-decoration: none;
-}
-
-.docs-btn:hover {
-  background: var(--bg-tertiary);
-  color: var(--text-primary);
-}
-
+.docs-btn,
 .github-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
-  margin-left: 8px;
+  width: var(--header-control-size);
+  height: var(--header-control-size);
+  flex-shrink: 0;
   background: var(--input-bg);
   border: none;
   border-radius: 10px;
   color: var(--text-secondary);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: background 160ms ease, color 160ms ease;
   text-decoration: none;
 }
 
+.docs-btn:hover,
 .github-btn:hover {
   background: var(--bg-tertiary);
   color: var(--text-primary);
+}
+
+.header-theme {
+  display: flex;
+  align-items: center;
+  height: var(--header-control-size);
+}
+
+/* Scope the shared theme button size to this header only. */
+.header-theme :deep(.theme-btn) {
+  width: var(--header-control-size);
+  height: var(--header-control-size);
+  border-radius: 10px;
+  transition: background 160ms ease, color 160ms ease;
 }
 
 .header-actions {
@@ -698,8 +735,10 @@ onUnmounted(() => {
 }
 
 .action-btn {
-  width: 40px;
-  height: 40px;
+  width: var(--header-control-size);
+  height: var(--header-control-size);
+  flex-shrink: 0;
+  padding: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -709,7 +748,7 @@ onUnmounted(() => {
   font-size: 16px;
   color: var(--text-secondary);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: background 160ms ease, color 160ms ease, box-shadow 160ms ease;
 }
 
 .action-btn:hover {
@@ -733,7 +772,8 @@ onUnmounted(() => {
 .user-dropdown {
   position: relative;
   --user-menu-ease: cubic-bezier(0.22, 1, 0.36, 1);
-  --user-menu-viewport-offset: 92px;
+  --user-menu-spring: cubic-bezier(0.22, 1.4, 0.36, 1);
+  --user-menu-viewport-offset: calc(var(--header-control-size) + 44px);
 }
 
 .user-info {
@@ -741,15 +781,17 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 8px;
-  min-height: 44px;
-  min-width: 44px;
-  padding: 6px 12px 6px 6px;
+  box-sizing: border-box;
+  width: 196px;
+  height: var(--header-control-size);
+  padding: 2px 10px 2px 4px;
   background: var(--input-bg);
   border: none;
-  border-radius: 20px;
+  border-radius: 999px;
   cursor: pointer;
   touch-action: manipulation;
-  transition: background 160ms ease, transform 140ms var(--user-menu-ease);
+  transform: scale(1);
+  transition: background 160ms ease, transform 380ms var(--user-menu-spring);
 }
 
 .user-info.has-unread {
@@ -774,9 +816,16 @@ onUnmounted(() => {
 }
 
 .user-info:active {
-  transform: scale(0.98);
+  transform: scale(0.965);
+  transition: background 80ms ease, transform 80ms ease-out;
 }
 
+.search-btn:focus-visible,
+.docs-btn:focus-visible,
+.github-btn:focus-visible,
+.action-btn:focus-visible,
+.login-btn:focus-visible,
+.header-theme :deep(.theme-btn:focus-visible),
 .user-info:focus-visible,
 .dropdown-header:focus-visible,
 .dropdown-item:focus-visible {
@@ -790,6 +839,21 @@ onUnmounted(() => {
   background: var(--bg-secondary);
 }
 
+.user-avatar-motion {
+  display: flex;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  transform: rotate(0deg);
+  transition: transform 300ms var(--user-menu-spring);
+}
+
+.user-info.is-open .user-avatar-motion {
+  transform: rotate(30deg);
+  transition-duration: 420ms;
+}
+
 .user-avatar {
   width: 28px;
   height: 28px;
@@ -797,35 +861,67 @@ onUnmounted(() => {
   object-fit: cover;
 }
 
+.user-identity {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1px;
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+}
+
 .user-name {
-  font-size: 14px;
-  font-weight: 500;
+  display: block;
+  font-size: 13px;
+  line-height: 16px;
+  font-weight: 600;
   color: var(--text-primary);
-  max-width: 80px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.user-unread-inline {
+.user-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-size: 11px;
+  line-height: 14px;
+  color: var(--text-secondary);
+}
+
+.user-trust-badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 46px;
-  height: 20px;
-  padding: 0 8px;
-  border-radius: 999px;
-  background: rgba(220, 38, 38, 0.12);
-  color: #dc2626;
-  font-size: 11px;
-  font-weight: 700;
-  line-height: 1;
+  flex-shrink: 0;
+  min-height: 14px;
+  padding: 0 4px;
+  border: 1px solid var(--border-light);
+  border-radius: 4px;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  font-size: 9px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 12px;
+  letter-spacing: 0.02em;
+}
+
+.user-handle {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .user-unread-badge {
   position: absolute;
-  top: -6px;
-  right: -8px;
+  top: -4px;
+  right: -4px;
   min-width: 18px;
   height: 18px;
   border-radius: 999px;
@@ -841,10 +937,11 @@ onUnmounted(() => {
 }
 
 .dropdown-arrow {
+  flex-shrink: 0;
   font-size: 10px;
   color: var(--text-tertiary);
-  margin-left: 4px;
-  transition: transform 200ms var(--user-menu-ease), color 160ms ease;
+  margin-left: 0;
+  transition: transform 340ms var(--user-menu-spring), color 160ms ease;
 }
 
 .user-info.is-open .dropdown-arrow {
@@ -874,7 +971,7 @@ onUnmounted(() => {
 
 /* A quiet two-layer reveal from the capsule. Content settles before the surface. */
 .user-menu-enter-active {
-  transition: opacity 180ms ease-out, transform 240ms var(--user-menu-ease);
+  transition: opacity 180ms ease-out, transform 320ms var(--user-menu-spring);
 }
 
 .user-menu-leave-active {
@@ -920,8 +1017,8 @@ onUnmounted(() => {
 .dropdown-header {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px;
+  gap: 10px;
+  padding: 10px;
   text-decoration: none;
   border-radius: 10px;
   cursor: pointer;
@@ -933,6 +1030,9 @@ onUnmounted(() => {
 }
 
 .dropdown-avatar {
+  flex-shrink: 0;
+  align-self: flex-start;
+  margin-top: 2px;
   width: 40px;
   height: 40px;
   border-radius: 50%;
@@ -948,15 +1048,34 @@ onUnmounted(() => {
   font-size: 15px;
   font-weight: 600;
   color: var(--text-primary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  line-height: 20px;
 }
 
-.dropdown-trust {
+.dropdown-meta {
+  align-items: flex-start;
   font-size: 12px;
+  line-height: 18px;
+  margin-top: 4px;
+}
+
+.dropdown-meta .user-handle {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.dropdown-meta .user-trust-badge {
+  font-size: 10px;
+  line-height: 14px;
+}
+
+.dropdown-alert-summary {
+  margin: 0 10px 6px;
   color: var(--text-secondary);
-  margin-top: 2px;
+  font-size: 11px;
+  line-height: 16px;
 }
 
 .dropdown-divider {
@@ -1041,7 +1160,11 @@ onUnmounted(() => {
 }
 
 .login-btn {
-  padding: 8px 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--header-control-size);
+  padding: 0 16px;
   background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
   color: white;
   border-radius: 10px;
@@ -1108,7 +1231,11 @@ onUnmounted(() => {
 }
 
 /* 移动端适配 */
-@media (max-width: 768px) {
+@media (max-width: 767px) {
+  .app-header {
+    --header-control-size: 44px;
+  }
+
   .header-content {
     padding: 10px 12px;
   }
@@ -1127,13 +1254,8 @@ onUnmounted(() => {
     flex-wrap: nowrap;
   }
 
-  .action-btn {
-    width: 32px;
-    height: 32px;
-    flex-shrink: 0;
-  }
-
   .user-info {
+    width: var(--header-control-size);
     padding: 2px;
     justify-content: center;
   }
@@ -1152,15 +1274,25 @@ onUnmounted(() => {
   }
 }
 
+@media (max-width: 359px) {
+  .header-title {
+    display: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .user-info,
+  .user-info:active,
+  .user-avatar-motion,
+  .user-info.is-open .user-avatar-motion,
   .dropdown-arrow,
   .dropdown-header,
   .dropdown-item {
     transition: none;
   }
 
-  .user-info:active {
+  .user-info:active,
+  .user-info.is-open .user-avatar-motion {
     transform: none;
   }
 

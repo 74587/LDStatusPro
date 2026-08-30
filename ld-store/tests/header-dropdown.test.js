@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import { URL } from 'node:url'
 import { describe, expect, it, vi } from 'vitest'
 import { useDropdownMenu } from '../src/composables/useDropdownMenu'
+import { buildUserIdentity } from '../src/utils/userIdentity'
 
 function createMenu() {
   const menu = useDropdownMenu()
@@ -121,8 +122,63 @@ describe('个人菜单动效和无障碍接线', () => {
     expect(reducedMotion).toContain('transition: opacity 80ms linear')
     expect(reducedMotion).toContain('transform: none')
     expect(reducedMotion).toContain('transition: none')
+    expect(reducedMotion).toContain('.user-info.is-open .user-avatar-motion')
     expect(source).toContain('100dvh - var(--user-menu-viewport-offset)')
     expect(source).toContain('overscroll-behavior: contain')
     expect(source).toContain('.dropdown-item:focus-visible')
+  })
+
+  it('搜索、图标按钮、主题和胶囊使用同一高度基准，手机保留触摸尺寸', () => {
+    expect(source).toContain('--header-control-size: 36px')
+    expect(source).toContain('--header-control-size: 44px')
+    for (const selector of ['.search-input', '.search-btn', '.github-btn', '.action-btn', '.user-info', '.login-btn', '.header-theme :deep(.theme-btn)']) {
+      const block = source.slice(source.indexOf(`${selector} {`)).split('}')[0]
+      expect(block, selector).toContain('height: var(--header-control-size)')
+      expect(block, selector).not.toContain('transition: all')
+    }
+    expect(source).toContain('@media (max-width: 767px)')
+    expect(source).toContain('v-if="!isMobile" class="user-identity"')
+  })
+
+  it('头像轻转和回弹只使用可中断的 transform，不移动布局或延迟菜单操作', () => {
+    expect(source).toContain('transform: rotate(30deg)')
+    expect(source).toContain('transform: scale(0.965)')
+    expect(source).toContain('transform 380ms var(--user-menu-spring)')
+    expect(source).toContain('transform 320ms var(--user-menu-spring)')
+    expect(source).not.toContain('animation: user')
+  })
+
+  it('昵称、等级与账号在胶囊和菜单内一致，完整通知详情仍可见', () => {
+    expect(source.match(/userIdentity.displayName }}/g)).toHaveLength(2)
+    expect(source.match(/userIdentity.handle }}/g)).toHaveLength(2)
+    expect(source.match(/userIdentity.trustLabel }}/g)).toHaveLength(2)
+    expect(source).toContain('class="dropdown-alert-summary"')
+    expect(source).toContain(':title="userButtonLabel"')
+  })
+})
+
+describe('个人身份展示字段', () => {
+  it('优先展示昵称，同时单独保留账号和信任等级', () => {
+    expect(buildUserIdentity({ name: ' 林间杂货铺 ', username: 'forest_shop', trustLevel: 3 })).toEqual({
+      displayName: '林间杂货铺', handle: '@forest_shop', trustLabel: 'TL3'
+    })
+  })
+
+  it('昵称缺失时回退到账号，正确保留 TL0', () => {
+    expect(buildUserIdentity({ name: ' ', username: ' @forest_shop ', trustLevel: 0 })).toEqual({
+      displayName: 'forest_shop', handle: '@forest_shop', trustLabel: 'TL0'
+    })
+  })
+
+  it.each([null, undefined, '', 'unknown', -1, 1.5])('不伪造未知或无效等级 %s', trustLevel => {
+    expect(buildUserIdentity({ trustLevel }).trustLabel).toBe('')
+  })
+
+  it('兼容数字字符串等级，长昵称不在数据层截断', () => {
+    const name = '这是一个需要在窄屏省略但仍应保留完整信息的昵称'
+    expect(buildUserIdentity({ name, username: 'very_long_username_for_preview', trustLevel: '2' })).toEqual({
+      displayName: name, handle: '@very_long_username_for_preview', trustLabel: 'TL2'
+    })
+    expect(buildUserIdentity()).toEqual({ displayName: '用户', handle: '', trustLabel: '' })
   })
 })
