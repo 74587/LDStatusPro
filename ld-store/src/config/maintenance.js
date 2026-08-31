@@ -20,13 +20,13 @@ const TEMPORARY_MAINTENANCE_ENABLED = false
 // FORCE_MAINTENANCE_ENABLED to false to restore normal operation. Local dev
 // (`vite dev`) is always exempt so the site can be tested normally while
 // production stays in maintenance.
-const FORCE_MAINTENANCE_ENABLED = false
+const FORCE_MAINTENANCE_ENABLED = true
 const FRONTEND_FORCE_MAINTENANCE = Object.freeze({
   enabled: FORCE_MAINTENANCE_ENABLED && !import.meta.env.DEV,
   mode: MAINTENANCE_MODES.FULL,
-  title: 'LD士多停机维护中',
-  message: '站点正在进行停机维护，维护期间暂停访问，请稍后再试。',
-  reason: '停机维护',
+  title: 'LD士多停机维护',
+  message: 'LD士多停机维护，请稍后再试。',
+  reason: 'LD士多停机维护',
   eta: '恢复时间待定，请关注状态页或稍后刷新页面。',
   statusUrl: 'https://status.ldspro.qzz.io/status/ldstatus',
 })
