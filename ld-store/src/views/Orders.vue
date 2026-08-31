@@ -2,8 +2,9 @@
   <div class="orders-page" :class="{ 'seller-orders-page': sellerMode }">
     <template v-if="sellerMode">
       <SellerPageToolbar eyebrow="交易台账" description="统一处理商品订单与求购服务订单。筛选、页码与来源会保留在地址中。">
-        <LiquidTabs :modelValue="currentRole" :tabs="roleTabs" class="seller-source-tabs" size="sm" aria-label="订单来源" :class="{ 'is-switching': sellerTabPending }" :aria-busy="sellerTabPending" @update:modelValue="switchRole" />
-        <LiquidTabs v-if="currentRole !== 'buy'" :modelValue="statusFilter" :tabs="statusTabs" class="seller-status-tabs" size="sm" aria-label="订单状态" :class="{ 'is-switching': sellerTabPending }" :aria-busy="sellerTabPending" @update:modelValue="selectStatus" />
+        <!-- Tab selection/focus belongs to each control; pending feedback belongs to the list. -->
+        <LiquidTabs :modelValue="currentRole" :tabs="roleTabs" class="seller-source-tabs" size="sm" aria-label="订单来源" @update:modelValue="switchRole" />
+        <LiquidTabs v-if="currentRole !== 'buy'" :modelValue="statusFilter" :tabs="statusTabs" class="seller-status-tabs" size="sm" aria-label="订单状态" @update:modelValue="selectStatus" />
         <AppSelect v-model="timeRange" class="seller-order-select" :options="timeRangeOptions" placeholder="选择时间范围" @change="applyFilters" />
         <form class="seller-order-search" role="search" @submit.prevent="applyFilters">
           <Search :size="17" aria-hidden="true" />
@@ -21,7 +22,7 @@
         </template>
       </SellerPageToolbar>
 
-      <SellerDataTable class="seller-order-ledger" :class="{ 'is-filter-pending': sellerTabPending }" :inert="sellerTabPending ? '' : null" caption="卖家订单管理列表" :columns="sellerOrderColumns" :rows="orders" :loading="loading" :row-key="getOrderKey" :expanded-row-key="deliverFormOrderId || ''">
+      <SellerDataTable class="seller-order-ledger" :class="{ 'is-filter-pending': sellerTabPending }" :aria-busy="sellerTabPending || loading" :inert="sellerTabPending ? '' : null" caption="卖家订单管理列表" :columns="sellerOrderColumns" :rows="orders" :loading="loading" :row-key="getOrderKey" :expanded-row-key="deliverFormOrderId || ''">
         <template #cell-order="{ row: order }">
           <router-link :to="getOrderDetailTarget(order)" class="seller-order-id" @click="handleOrderCardClick"><strong>{{ getOrderKey(order) }}</strong><small>{{ formatDate(order.created_at || order.createdAt) }}</small></router-link>
         </template>
@@ -2373,8 +2374,6 @@ onUnmounted(() => {
 .seller-orders-page { min-height: auto; padding-bottom: 24px; background: transparent; }
 .seller-source-tabs { flex: 0 0 auto; }
 .seller-status-tabs { flex: 1 1 360px; }
-.seller-source-tabs.is-switching,
-.seller-status-tabs.is-switching { --liquid-tabs-shell-border: color-mix(in srgb, var(--seller-jade) 52%, var(--seller-border)); }
 .seller-order-ledger { transition: opacity 140ms ease; }
 .seller-order-ledger.is-filter-pending { opacity: .58; pointer-events: none; }
 .seller-order-select { min-width: 142px; }

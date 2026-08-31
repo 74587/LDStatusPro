@@ -157,6 +157,61 @@ describe('migrated seller pages', () => {
     expect(requests.get).toHaveBeenCalledTimes(count)
   })
 
+  it('keeps order tab selection and focus independent from list loading feedback', async () => {
+    const { wrapper } = await page(Orders, '/seller/orders?source=product&page=3', { sellerMode: true })
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    let finish
+    requests.get.mockImplementationOnce(() => new Promise(resolve => { finish = resolve }))
+    const [sources, statuses] = wrapper.findAllComponents(LiquidTabs)
+    const ledger = wrapper.get('.seller-order-ledger')
+    const paid = buttonByText(statuses, '待发货')
+    paid.element.focus()
+    await paid.trigger('click')
+
+    for (const tabs of [sources, statuses]) {
+      expect(tabs.classes()).not.toContain('is-switching')
+      expect(tabs.attributes('aria-busy')).toBeUndefined()
+    }
+    expect(document.activeElement).toBe(paid.element)
+    expect(sources.props('modelValue')).toBe('seller')
+    expect(buttonByText(sources, '商品订单').attributes('aria-pressed')).toBe('true')
+    expect(statuses.props('modelValue')).toBe('paid')
+    expect(ledger.attributes('aria-busy')).toBe('true')
+    expect(ledger.classes()).toContain('is-filter-pending')
+    expect(ledger.attributes('inert')).toBe('')
+
+    await vi.advanceTimersByTimeAsync(150)
+    await flushPromises()
+    // The debounce ended, but the list is still waiting for its response.
+    expect(ledger.classes()).not.toContain('is-filter-pending')
+    expect(ledger.attributes('aria-busy')).toBe('true')
+    expect(document.activeElement).toBe(paid.element)
+    finish(previewResponse('/api/shop/orders'))
+    await flushPromises()
+    expect(ledger.attributes('aria-busy')).toBe('false')
+    expect(ledger.attributes('inert')).toBeUndefined()
+  })
+
+  it('does not highlight the status shell when returning to product orders', async () => {
+    const { wrapper, router } = await page(Orders, '/seller/orders?source=service', { sellerMode: true })
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    const sources = wrapper.findComponent(LiquidTabs)
+    const product = buttonByText(sources, '商品订单')
+    product.element.focus()
+    await product.trigger('click')
+    const statuses = wrapper.findAllComponents(LiquidTabs)[1]
+    expect(sources.classes()).not.toContain('is-switching')
+    expect(statuses.classes()).not.toContain('is-switching')
+    expect(statuses.attributes('aria-busy')).toBeUndefined()
+    expect(statuses.element.contains(document.activeElement)).toBe(false)
+    expect(buttonByText(statuses, '全部').attributes('aria-pressed')).toBe('true')
+    expect(wrapper.get('.seller-order-ledger').attributes('aria-busy')).toBe('true')
+    await vi.advanceTimersByTimeAsync(150)
+    await flushPromises()
+    expect(router.currentRoute.value.query.source).toBe('product')
+    expect(wrapper.get('.seller-order-ledger').attributes('aria-busy')).toBe('false')
+  })
+
   it('retains debounced order switching, page reset, and the other-status API mapping', async () => {
     const { wrapper, router } = await page(Orders, '/seller/orders?source=product&page=4', { sellerMode: true })
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
