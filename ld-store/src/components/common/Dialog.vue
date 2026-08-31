@@ -2,16 +2,16 @@
   <Teleport to="body">
     <Transition name="dialog">
       <div v-if="dialog.visible" class="dialog-overlay" @click.self="handleCancel">
-        <div class="dialog-container">
+        <div ref="container" class="dialog-container" role="dialog" aria-modal="true" aria-labelledby="app-dialog-title" aria-describedby="app-dialog-content" tabindex="-1" @keydown="handleKeydown">
           <div class="dialog-header">
             <span v-if="dialog.icon" class="dialog-icon" aria-hidden="true">
               <component v-if="dialogIconComponent" :is="dialogIconComponent" :size="40" :stroke-width="1.7" />
               <template v-else>{{ dialog.icon }}</template>
             </span>
-            <h3 class="dialog-title">{{ dialog.title }}</h3>
+            <h3 id="app-dialog-title" class="dialog-title">{{ dialog.title }}</h3>
           </div>
           
-          <div class="dialog-body" v-html="dialog.content"></div>
+          <div id="app-dialog-content" class="dialog-body" v-html="dialog.content"></div>
           
           <div class="dialog-footer">
             <button
@@ -42,12 +42,46 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
 import { LockKeyhole, ShieldAlert, Trash2 } from '@lucide/vue'
 import { useUiStore } from '@/stores/ui'
 
 const uiStore = useUiStore()
 const dialog = computed(() => uiStore.dialog)
+const container = ref(null)
+let returnFocus = null
+watch(() => dialog.value.visible, async visible => {
+  if (visible) {
+    returnFocus = document.activeElement
+    await nextTick()
+    await nextTick()
+    // Prefer the safe action for destructive confirmations.
+    if (dialog.value.visible) (container.value?.querySelector('.dialog-btn-cancel') || container.value?.querySelector('button') || container.value)?.focus()
+  } else {
+    await nextTick()
+    // The caller may clear its busy state in the confirmation promise's finally.
+    await nextTick()
+    restoreFocus()
+  }
+}, { flush: 'sync' })
+function restoreFocus() {
+  if (returnFocus?.isConnected) {
+    const target = returnFocus.disabled ? returnFocus.closest('[tabindex="-1"]') : returnFocus
+    target?.focus({ preventScroll: true })
+  }
+  returnFocus = null
+}
+function handleKeydown(event) {
+  if (event.key === 'Escape') { event.preventDefault(); handleCancel(); return }
+  if (event.key !== 'Tab') return
+  const controls = [...container.value.querySelectorAll('a[href], button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])')]
+  const first = controls[0]
+  const last = controls.at(-1)
+  if (!first) { event.preventDefault(); container.value.focus(); return }
+  if (event.shiftKey && (document.activeElement === first || document.activeElement === container.value)) { event.preventDefault(); last.focus() }
+  else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus() }
+}
+onUnmounted(restoreFocus)
 const dialogIconMap = {
   'lock-keyhole': LockKeyhole,
   'shield-alert': ShieldAlert,
@@ -139,12 +173,13 @@ function handleSecondary() {
 }
 
 .dialog-btn {
+  min-height: 44px;
   flex: 1;
   padding: 14px;
   font-size: 15px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: background-color 0.2s;
   border: none;
   background: transparent;
 }
@@ -189,7 +224,7 @@ function handleSecondary() {
 }
 
 .dialog-enter-active .dialog-container {
-  animation: dialogContainerIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: dialogContainerIn 0.2s ease-out;
 }
 
 .dialog-leave-active .dialog-container {
@@ -247,5 +282,10 @@ function handleSecondary() {
     max-width: 100%;
     margin-bottom: env(safe-area-inset-bottom, 0);
   }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dialog-enter-active, .dialog-leave-active,
+  .dialog-enter-active .dialog-container, .dialog-leave-active .dialog-container { animation: none; }
+  .dialog-btn { transition: none; }
 }
 </style>

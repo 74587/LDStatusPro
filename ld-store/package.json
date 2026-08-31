@@ -14,6 +14,7 @@
     "build:private-metadata": "bash scripts/build-private-metadata.sh",
     "preview": "vite preview",
     "preview:tabs": "vite --config tests/fixtures/liquid-tabs-preview/vite.config.js",
+    "preview:services": "vite --config tests/fixtures/top-service-preview/vite.config.js",
     "deploy": "bash scripts/deploy-pages-production.sh"
   },
   "engines": {

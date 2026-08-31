@@ -1,0 +1,17 @@
+/* Shared by the purchase page and its dialog outside the routed page layer. */
+.top-service-theme {
+  --service-gold:#cfa76f;
+  --service-gold-ink:#805c40;
+  --service-gold-soft:#f2e8d4;
+  --service-rose:#ad9090;
+  --service-rose-ink:#7a5f5f;
+  --service-rose-soft:#ebe2e2;
+}
+html.dark .top-service-theme {
+  --service-gold:#dcbe8f;
+  --service-gold-ink:#e8d5b4;
+  --service-gold-soft:#3a3023;
+  --service-rose:#ad9090;
+  --service-rose-ink:#dccece;
+  --service-rose-soft:#34292c;
+}
