@@ -22,8 +22,8 @@
       </svg>
     </button>
     
-    <!-- 下拉菜单 -->
-    <Transition name="menu">
+    <!-- 只等待菜单动画，避免全局主题颜色过渡延迟菜单移除。 -->
+    <Transition name="menu" type="animation">
       <div v-if="showMenu" class="theme-menu">
         <button 
           v-for="option in themeOptions" 
@@ -226,7 +226,7 @@ onUnmounted(() => {
 }
 
 .menu-leave-active {
-  animation: menuOut 0.15s ease-in;
+  animation: menuOut 0.15s ease-in forwards;
 }
 
 @keyframes menuIn {
