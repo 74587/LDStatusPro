@@ -2,8 +2,8 @@
   <div class="orders-page" :class="{ 'seller-orders-page': sellerMode }">
     <template v-if="sellerMode">
       <SellerPageToolbar eyebrow="交易台账" description="统一处理商品订单与求购服务订单。筛选、页码与来源会保留在地址中。">
-        <LiquidTabs :modelValue="currentRole" :tabs="roleTabs" class="seller-source-tabs" :class="{ 'is-switching': sellerTabPending }" :aria-busy="sellerTabPending" @update:modelValue="switchRole" />
-        <LiquidTabs v-if="currentRole !== 'buy'" :modelValue="statusFilter" :tabs="statusTabs" class="seller-status-tabs" :class="{ 'is-switching': sellerTabPending }" :aria-busy="sellerTabPending" @update:modelValue="selectStatus" />
+        <LiquidTabs :modelValue="currentRole" :tabs="roleTabs" class="seller-source-tabs" size="sm" aria-label="订单来源" :class="{ 'is-switching': sellerTabPending }" :aria-busy="sellerTabPending" @update:modelValue="switchRole" />
+        <LiquidTabs v-if="currentRole !== 'buy'" :modelValue="statusFilter" :tabs="statusTabs" class="seller-status-tabs" size="sm" aria-label="订单状态" :class="{ 'is-switching': sellerTabPending }" :aria-busy="sellerTabPending" @update:modelValue="selectStatus" />
         <AppSelect v-model="timeRange" class="seller-order-select" :options="timeRangeOptions" placeholder="选择时间范围" @change="applyFilters" />
         <form class="seller-order-search" role="search" @submit.prevent="applyFilters">
           <Search :size="17" aria-hidden="true" />
@@ -93,6 +93,8 @@
         :modelValue="currentRole"
         :tabs="roleTabs"
         class="role-tabs"
+        layout="equal"
+        aria-label="订单来源"
         @update:modelValue="switchRole"
       />
 
@@ -102,6 +104,9 @@
         :modelValue="statusFilter"
         :tabs="statusTabs"
         class="status-tabs"
+        layout="equal"
+        size="sm"
+        aria-label="订单状态"
         @update:modelValue="selectStatus"
       />
 
@@ -1447,23 +1452,11 @@ onUnmounted(() => {
   margin-bottom: 16px;
 }
 
-.role-tabs :deep(.liquid-tab) {
-  flex: 1;
-  justify-content: center;
-}
-
 /* 状态筛选 */
 .status-tabs {
   width: 100%;
   min-width: 0;
   margin-bottom: 16px;
-}
-
-.status-tabs :deep(.liquid-tab) {
-  min-width: 44px;
-  flex: 1 1 0;
-  justify-content: center;
-  padding-inline: 8px;
 }
 
 .orders-filters {
@@ -2157,15 +2150,6 @@ onUnmounted(() => {
     margin-bottom: 12px;
   }
 
-  .role-tabs :deep(.liquid-tab) {
-    padding: 8px 10px;
-    font-size: 13px;
-  }
-
-  .role-tabs :deep(.tab-icon) {
-    font-size: 14px;
-  }
-
   /* orders-filters single row */
   .orders-filters {
     gap: 6px;
@@ -2386,17 +2370,9 @@ onUnmounted(() => {
   }
 }
 
-@media (max-width: 360px) {
-  .status-tabs :deep(.tab-icon) {
-    display: none;
-  }
-}
-
 .seller-orders-page { min-height: auto; padding-bottom: 24px; background: transparent; }
 .seller-source-tabs { flex: 0 0 auto; }
 .seller-status-tabs { flex: 1 1 360px; }
-.seller-source-tabs :deep(.liquid-indicator),
-.seller-status-tabs :deep(.liquid-indicator) { transition-duration: 180ms, 160ms, 120ms; }
 .seller-source-tabs.is-switching,
 .seller-status-tabs.is-switching { --liquid-tabs-shell-border: color-mix(in srgb, var(--seller-jade) 52%, var(--seller-border)); }
 .seller-order-ledger { transition: opacity 140ms ease; }
@@ -2460,9 +2436,6 @@ onUnmounted(() => {
     min-height: 54px;
     flex: 0 0 auto;
     align-self: stretch;
-  }
-  .seller-status-tabs :deep(.liquid-tab) {
-    min-height: 44px;
   }
   .seller-order-search, .seller-order-select { width: 100%; }
   .seller-order-total { margin-left: 0; }

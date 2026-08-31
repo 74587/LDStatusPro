@@ -1,3 +1,20 @@
+.seller-shell {
+  --liquid-tabs-radius: 14px;
+  --liquid-tab-radius: 10px;
+  --liquid-tabs-shell-bg: var(--seller-surface-soft);
+  --liquid-tabs-shell-border: var(--seller-border);
+  --liquid-tabs-shell-shadow: var(--seller-shadow-sm), inset 0 1px 0 var(--glass-shine);
+  --liquid-indicator-bg: var(--seller-surface-strong);
+  --liquid-indicator-border: var(--seller-border);
+  --liquid-indicator-shadow: var(--seller-shadow-sm), inset 0 1px 0 var(--glass-shine-strong);
+  --liquid-shine-bg: linear-gradient(180deg, var(--glass-shine) 0%, transparent 100%);
+  --liquid-tab-text: var(--seller-muted);
+  --liquid-tab-active-text: var(--seller-ink);
+  --liquid-tab-focus: var(--seller-jade-strong);
+  --liquid-badge-bg: var(--seller-surface);
+  --liquid-badge-active-bg: var(--seller-jade-soft);
+}
+
 .seller-shell .seller-main .page-container {
   width: 100%;
   max-width: 1200px;

@@ -27,6 +27,8 @@
         :modelValue="activeTab"
         :tabs="messageTabs"
         class="tab-switch"
+        layout="equal"
+        aria-label="消息分类"
         @update:modelValue="switchTab"
       />
 
@@ -640,11 +642,6 @@ onUnmounted(() => {
   margin-bottom: 12px;
 }
 
-.tab-switch :deep(.liquid-tab) {
-  flex: 1;
-  justify-content: center;
-}
-
 .panel-wrap {
   background: transparent;
 }
@@ -1122,15 +1119,6 @@ onUnmounted(() => {
 
   .summary-value {
     font-size: 18px;
-  }
-
-  .tab-switch :deep(.liquid-tab) {
-    padding: 8px 10px;
-    font-size: 13px;
-  }
-
-  .tab-switch :deep(.tab-icon) {
-    font-size: 14px;
   }
 
   /* toolbar single row */

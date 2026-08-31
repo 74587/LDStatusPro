@@ -1,336 +1,325 @@
 <template>
-  <div class="liquid-tabs" ref="tabsContainer">
-    <!-- 液态背景指示器 -->
-    <div 
-      class="liquid-indicator"
-      :style="indicatorStyle"
-    >
+  <div
+    ref="tabsContainer"
+    class="liquid-tabs"
+    :class="[`liquid-tabs--${size}`, `liquid-tabs--${layout}`]"
+    :role="mode === 'tabs' ? 'tablist' : 'group'"
+    :aria-label="ariaLabel"
+    :aria-disabled="disabled || undefined"
+    @focusout="handleFocusOut"
+  >
+    <div class="liquid-indicator" :style="indicatorStyle" aria-hidden="true">
       <div class="liquid-glass"></div>
       <div class="liquid-shine"></div>
     </div>
-    
-    <!-- Tab 按钮 -->
     <button
-      v-for="(tab, index) in tabs"
+      v-for="tab in tabs"
+      :id="tabId(tab)"
       :key="tab.value"
-      :ref="el => setTabRef(el, index)"
+      :ref="el => setTabRef(el, tab.value)"
       type="button"
-      :class="['liquid-tab', { active: modelValue === tab.value }]"
-      :aria-pressed="modelValue === tab.value"
-      @click="selectTab(tab.value)"
+      :class="['liquid-tab', { active: modelValue === tab.value, 'has-description': tab.description }]"
+      :disabled="isDisabled(tab)"
+      :role="mode === 'tabs' ? 'tab' : undefined"
+      :aria-selected="mode === 'tabs' ? modelValue === tab.value : undefined"
+      :aria-pressed="mode === 'select' ? modelValue === tab.value : undefined"
+      :aria-controls="mode === 'tabs' ? tab.panelId : undefined"
+      :aria-describedby="tab.description ? `${tabId(tab)}-description` : undefined"
+      :tabindex="mode === 'tabs' ? (tab.value === focusEntryValue ? 0 : -1) : undefined"
+      @click="activateTab(tab)"
+      @keydown="handleKeydown($event, tab)"
+      @focus="handleFocus(tab)"
     >
       <span v-if="tab.iconComponent || tab.icon" class="tab-icon" aria-hidden="true">
-        <component
-          :is="tab.iconComponent"
-          v-if="tab.iconComponent"
-          :size="16"
-          :stroke-width="2"
-        />
+        <component :is="tab.iconComponent" v-if="tab.iconComponent" :size="16" :stroke-width="2" />
         <template v-else>{{ tab.icon }}</template>
       </span>
-      <span class="tab-text">{{ tab.label }}</span>
+      <span class="tab-copy">
+        <span class="tab-text">{{ tab.label }}</span>
+        <span v-if="tab.description" :id="`${tabId(tab)}-description`" class="tab-description">{{ tab.description }}</span>
+      </span>
+      <span v-if="tab.badge !== undefined && tab.badge !== null" class="tab-badge">{{ tab.badge }}</span>
     </button>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
+import { computed, getCurrentInstance, onActivated, onDeactivated, onMounted, onUnmounted, ref, watch } from 'vue'
 
+// Panels stay with the caller. In tabs mode supply each item's id/panelId and
+// connect the panel's aria-labelledby to that id; filters use select mode.
 const props = defineProps({
-  tabs: {
-    type: Array,
-    required: true,
-    // [{ value: 'xxx', label: '标签', icon: '字符图标' | iconComponent: VueComponent }]
-  },
-  modelValue: {
-    type: String,
-    required: true
-  }
+  tabs: { type: Array, required: true },
+  modelValue: { type: [String, Number], required: true },
+  mode: { type: String, default: 'select', validator: value => ['select', 'tabs'].includes(value) },
+  activation: { type: String, default: 'manual', validator: value => ['manual', 'automatic'].includes(value) },
+  size: { type: String, default: 'md', validator: value => ['sm', 'md'].includes(value) },
+  layout: { type: String, default: 'content', validator: value => ['content', 'equal'].includes(value) },
+  disabled: { type: Boolean, default: false },
+  ariaLabel: { type: String, default: '选项切换' }
 })
-
-const emit = defineEmits(['update:modelValue'])
-
+const emit = defineEmits(['update:modelValue', 'activate'])
+const instanceId = `liquid-tabs-${getCurrentInstance().uid}`
 const tabsContainer = ref(null)
-const tabRefs = ref([])
-const indicatorStyle = ref({
-  transform: 'translateX(0)',
-  width: '0px',
-  opacity: 0
-})
-let selectionRevision = 0
+const tabRefs = new Map()
+const focusedValue = ref(undefined)
+const indicatorStyle = ref({ opacity: 0 })
+let resizeObserver = null
+let frameId = null
+let observing = false
+let revealPending = false
 
-// 设置 Tab 引用
-function setTabRef(el, index) {
-  if (el) {
-    tabRefs.value[index] = el
-  }
+const enabledTabs = computed(() => props.tabs.filter(tab => !isDisabled(tab)))
+const focusEntryValue = computed(() => {
+  const enabled = enabledTabs.value
+  if (enabled.some(tab => tab.value === focusedValue.value)) return focusedValue.value
+  if (enabled.some(tab => tab.value === props.modelValue)) return props.modelValue
+  return enabled[0]?.value
+})
+
+function tabId(tab) {
+  return tab.id || `${instanceId}-${typeof tab.value}-${encodeURIComponent(tab.value)}`
 }
 
-// 计算当前选中的索引
-const currentIndex = computed(() => {
-  return props.tabs.findIndex(tab => tab.value === props.modelValue)
-})
+function isDisabled(tab) {
+  return props.disabled || Boolean(tab.disabled)
+}
 
-// 更新指示器位置到当前选中
+function setTabRef(element, value) {
+  const previous = tabRefs.get(value)
+  if (previous === element) return
+  if (previous) resizeObserver?.unobserve(previous)
+  if (element) {
+    tabRefs.set(value, element)
+    resizeObserver?.observe(element)
+  } else {
+    tabRefs.delete(value)
+  }
+  scheduleMeasure()
+}
+
 function updateIndicator() {
-  const index = currentIndex.value
-  if (index < 0 || !tabRefs.value[index] || !tabsContainer.value) {
+  const container = tabsContainer.value
+  const tab = tabRefs.get(props.modelValue)
+  if (!container || !tab || !container.clientWidth || !tab.offsetWidth || !tab.offsetHeight) {
     indicatorStyle.value = { ...indicatorStyle.value, opacity: 0 }
     return
   }
-  
-  const tab = tabRefs.value[index]
-  const container = tabsContainer.value
-  const containerRect = container.getBoundingClientRect()
-  const tabRect = tab.getBoundingClientRect()
-  
-  const scrollLeft = container.scrollLeft || 0
-  const left = tabRect.left - containerRect.left + scrollLeft
-  const width = tabRect.width
-  
+  // Offset geometry is local to the scroll container, unaffected by viewport
+  // scrolling, border widths, or the drawer's entrance animation.
   indicatorStyle.value = {
-    transform: `translateX(${left}px)`,
-    width: `${width}px`,
-    opacity: 1
+    transform: `translate(${tab.offsetLeft}px, ${tab.offsetTop}px)`,
+    width: `${tab.offsetWidth}px`,
+    height: `${tab.offsetHeight}px`,
+    opacity: 1,
+    transition: indicatorStyle.value.opacity ? undefined : 'none'
   }
 }
 
-// 选择 Tab
-function selectTab(value) {
-  if (value === props.modelValue) return
-  const revision = ++selectionRevision
-  emit('update:modelValue', value)
-  nextTick(() => {
-    if (revision !== selectionRevision || props.modelValue !== value) return
-    const index = props.tabs.findIndex(tab => tab.value === value)
-    if (index >= 0 && tabRefs.value[index]) {
-      const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
-      tabRefs.value[index].scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'nearest', inline: 'center' })
-    }
+function revealTab(value) {
+  const container = tabsContainer.value
+  const tab = tabRefs.get(value)
+  if (!container || !tab || !container.clientWidth || !tab.offsetWidth) return
+  const margin = 5
+  const start = tab.offsetLeft - margin
+  const end = tab.offsetLeft + tab.offsetWidth + margin
+  let left = container.scrollLeft
+  if (start < left) left = start
+  else if (end > left + container.clientWidth) left = end - container.clientWidth
+  left = Math.max(0, Math.min(left, container.scrollWidth - container.clientWidth))
+  if (Math.abs(left - container.scrollLeft) < 1) return
+  const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+  // Never use scrollIntoView: it can scroll the page and enclosing drawers too.
+  container.scrollTo({ left, behavior: reduceMotion ? 'auto' : 'smooth' })
+}
+
+function scheduleMeasure(reveal = false) {
+  if (!observing) return
+  revealPending ||= reveal
+  if (frameId !== null) return
+  frameId = window.requestAnimationFrame(() => {
+    frameId = null
+    updateIndicator()
+    if (revealPending) revealTab(focusedValue.value ?? props.modelValue)
+    revealPending = false
   })
 }
 
-// 监听值变化
-watch(() => props.modelValue, () => {
-  nextTick(updateIndicator)
-})
+function activateTab(tab) {
+  if (isDisabled(tab)) return
+  // The parent owns selection. Repeated activation is separate so adapters can
+  // preserve refresh behavior without duplicating model updates.
+  if (tab.value !== props.modelValue) emit('update:modelValue', tab.value)
+  emit('activate', tab.value)
+}
 
-// 监听 tabs 变化
-watch(() => props.tabs, () => {
-  nextTick(updateIndicator)
-}, { deep: true })
+function handleFocus(tab) {
+  focusedValue.value = tab.value
+  scheduleMeasure(true)
+}
 
-// ResizeObserver 用于响应容器大小变化
-let resizeObserver = null
+function handleFocusOut(event) {
+  if (!tabsContainer.value?.contains(event.relatedTarget)) focusedValue.value = undefined
+}
 
-// 初始化
-onMounted(() => {
-  nextTick(updateIndicator)
-  
-  // 监听容器大小变化
-  if (tabsContainer.value && window.ResizeObserver) {
-    resizeObserver = new ResizeObserver(() => {
-      updateIndicator()
-    })
-    resizeObserver.observe(tabsContainer.value)
+function handleKeydown(event, tab) {
+  if (props.mode !== 'tabs' || isDisabled(tab) || event.altKey || event.ctrlKey || event.metaKey) return
+  if (event.key === 'Enter' || event.key === ' ') {
+    // Own tab activation explicitly; prevent the native follow-up click so
+    // keyboard activation and the repeat-click event are each emitted once.
+    event.preventDefault()
+    if (!event.repeat) activateTab(tab)
+    return
   }
-})
+  if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return
+  event.preventDefault()
+  const enabled = enabledTabs.value
+  const index = enabled.findIndex(item => item.value === tab.value)
+  const step = event.key === 'ArrowLeft' ? -1 : 1
+  const targetIndex = event.key === 'Home' ? 0 : event.key === 'End' ? enabled.length - 1 : (index + step + enabled.length) % enabled.length
+  const target = enabled[targetIndex]
+  if (!target) return
+  tabRefs.get(target.value)?.focus({ preventScroll: true })
+  if (props.activation === 'automatic') activateTab(target)
+}
 
-// 清理
-onUnmounted(() => {
+function handleResize() {
+  scheduleMeasure(true)
+}
+
+function startObserving() {
+  if (observing) return
+  observing = true
+  if (window.ResizeObserver) {
+    resizeObserver = new window.ResizeObserver(handleResize)
+    if (tabsContainer.value) resizeObserver.observe(tabsContainer.value)
+    tabRefs.forEach(element => resizeObserver.observe(element))
+  }
+  window.addEventListener('resize', handleResize)
+  document.fonts?.addEventListener('loadingdone', handleResize)
+  document.fonts?.ready.then(() => { if (observing) scheduleMeasure(true) })
+  scheduleMeasure(true)
+}
+
+function stopObserving() {
+  observing = false
   resizeObserver?.disconnect()
-})
+  resizeObserver = null
+  if (frameId !== null) window.cancelAnimationFrame(frameId)
+  frameId = null
+  revealPending = false
+  focusedValue.value = undefined
+  indicatorStyle.value = { ...indicatorStyle.value, opacity: 0 }
+  window.removeEventListener('resize', handleResize)
+  document.fonts?.removeEventListener('loadingdone', handleResize)
+}
+
+watch(() => [props.modelValue, props.tabs, props.disabled, props.layout, props.size], () => {
+  if (!enabledTabs.value.some(tab => tab.value === focusedValue.value)) focusedValue.value = undefined
+  scheduleMeasure(true)
+}, { deep: true, flush: 'post' })
+
+onMounted(startObserving)
+onActivated(startObserving)
+onDeactivated(stopObserving)
+onUnmounted(stopObserving)
 </script>
 
 <style scoped>
 .liquid-tabs {
   position: relative;
   display: inline-flex;
+  align-items: stretch;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
   gap: 2px;
   padding: 5px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
   background: var(--liquid-tabs-shell-bg, var(--glass-bg-heavy));
-  border-radius: 16px;
-  box-shadow: var(
-    --liquid-tabs-shell-shadow,
-    0 4px 20px var(--glass-shadow),
-    0 1px 3px var(--glass-shadow-light),
-    inset 0 1px 0 var(--glass-shine-strong)
-  );
   border: 1px solid var(--liquid-tabs-shell-border, var(--glass-border));
+  border-radius: var(--liquid-tabs-radius, 16px);
+  box-shadow: var(--liquid-tabs-shell-shadow, 0 4px 20px var(--glass-shadow), 0 1px 3px var(--glass-shadow-light), inset 0 1px 0 var(--glass-shine-strong));
 }
+.liquid-tabs::-webkit-scrollbar { display: none; }
+.liquid-tabs--equal { display: flex; width: 100%; }
+.liquid-tabs--equal .liquid-tab { flex: 1 0 0; min-width: max-content; }
 
-/* 液态指示器 */
 .liquid-indicator {
   position: absolute;
-  top: 5px;
+  top: 0;
   left: 0;
-  height: calc(100% - 10px);
-  border-radius: 12px;
+  border-radius: var(--liquid-tab-radius, 12px);
   pointer-events: none;
   z-index: 0;
-  /* 流畅的弹性过渡 */
-  transition: 
-    transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-    width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-    opacity 0.25s ease;
+  transition: transform 220ms cubic-bezier(.4, 0, .2, 1), width 180ms cubic-bezier(.4, 0, .2, 1), opacity 120ms ease;
 }
-
-/* 玻璃材质层 */
 .liquid-glass {
   position: absolute;
   inset: 0;
   background: var(--liquid-indicator-bg, var(--glass-bg-heavy));
   border-radius: inherit;
-  box-shadow: var(
-    --liquid-indicator-shadow,
-    0 4px 16px var(--glass-shadow),
-    0 2px 8px var(--glass-shadow-light),
-    inset 0 1px 2px var(--glass-shine-strong)
-  );
   border: 1px solid var(--liquid-indicator-border, var(--glass-border-light));
+  box-shadow: var(--liquid-indicator-shadow, 0 4px 16px var(--glass-shadow), 0 2px 8px var(--glass-shadow-light), inset 0 1px 2px var(--glass-shine-strong));
 }
-
-/* 高光层 - 模拟玻璃反光 */
 .liquid-shine {
   position: absolute;
   top: 1px;
   left: 10%;
   right: 10%;
   height: 45%;
-  background: var(
-    --liquid-shine-bg,
-    linear-gradient(
-      180deg,
-      var(--glass-shine) 0%,
-      rgba(255, 255, 255, 0.12) 50%,
-      transparent 100%
-    )
-  );
   border-radius: 10px 10px 50% 50%;
-  pointer-events: none;
+  background: var(--liquid-shine-bg, linear-gradient(180deg, var(--glass-shine) 0%, rgba(255, 255, 255, .12) 50%, transparent 100%));
 }
 
-/* Tab 按钮 */
 .liquid-tab {
   position: relative;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 10px 20px;
-  background: transparent;
-  border: none;
-  border-radius: 12px;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: 
-    color 0.25s ease,
-    transform 0.15s ease;
   z-index: 1;
-  white-space: nowrap;
-  -webkit-tap-highlight-color: transparent;
-  user-select: none;
-}
-
-.liquid-tab:hover:not(.active) {
-  color: var(--text-primary);
-}
-
-.liquid-tab:active {
-  transform: scale(0.97);
-}
-
-.liquid-tab.active {
-  color: var(--text-primary);
-  font-weight: 600;
-}
-
-/* 图标 */
-.tab-icon {
-  display: inline-flex;
+  display: flex;
+  flex: 0 0 auto;
   align-items: center;
   justify-content: center;
-  flex: 0 0 auto;
-  font-size: 16px;
-  line-height: 1;
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  gap: 6px;
+  min-height: 44px;
+  padding: 10px 20px;
+  border: none;
+  border-radius: var(--liquid-tab-radius, 12px);
+  background: transparent;
+  color: var(--liquid-tab-text, var(--text-secondary));
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+  white-space: nowrap;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  transition: color 160ms ease;
 }
+.liquid-tab:hover:not(:disabled), .liquid-tab.active { color: var(--liquid-tab-active-text, var(--text-primary)); }
+.liquid-tab.active { font-weight: 600; }
+.liquid-tab:disabled { opacity: .5; cursor: not-allowed; }
+/* Inset focus stays visible at the edges of the scroll strip, including inside
+   the seller shell's global button focus treatment. */
+.liquid-tabs .liquid-tab:focus-visible { outline: 2px solid var(--liquid-tab-focus, var(--text-primary)); outline-offset: -2px; }
+.tab-icon { display: inline-flex; flex: 0 0 auto; align-items: center; justify-content: center; font-size: 16px; line-height: 1; }
+.tab-copy { display: grid; gap: 3px; min-width: 0; }
+.tab-text { letter-spacing: .3px; }
+.tab-description { color: var(--liquid-tab-text, var(--text-secondary)); font-size: 12px; font-weight: 400; white-space: normal; }
+.has-description { text-align: left; gap: 10px; }
+.tab-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; min-height: 22px; padding: 0 6px; border-radius: 7px; background: var(--liquid-badge-bg, var(--bg-secondary)); color: var(--liquid-tab-text, var(--text-secondary)); font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.active .tab-badge { background: var(--liquid-badge-active-bg, var(--bg-tertiary)); color: var(--liquid-tab-active-text, var(--text-primary)); }
+.liquid-tabs--sm .liquid-tab { min-height: 40px; padding: 8px 13px; font-size: 13px; }
 
-.liquid-tab.active .tab-icon {
-  transform: scale(1.1);
+@media (max-width: 767px) {
+  .liquid-tabs { border-radius: var(--liquid-tabs-radius, 14px); }
+  .liquid-tabs .liquid-tab { min-height: 44px; padding: 10px 14px; font-size: 13px; }
+  .liquid-tabs--equal .has-description { flex-direction: column; gap: 4px; text-align: center; }
+  /* Description remains associated through aria-describedby on compact screens. */
+  .liquid-tabs--equal .tab-description { display: none; }
 }
-
-/* 文字 */
-.tab-text {
-  letter-spacing: 0.3px;
-}
-
-/* 悬停时的微光效果 */
-.liquid-tab::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: var(
-    --liquid-tab-hover-overlay,
-    linear-gradient(
-      135deg,
-      rgba(255, 255, 255, 0.08) 0%,
-      transparent 50%
-    )
-  );
-  opacity: 0;
-  transition: opacity 0.2s ease;
-}
-
-.liquid-tab:hover:not(.active)::after {
-  opacity: 1;
-}
-/* 移动端适配 */
-@media (max-width: 640px) {
-  .liquid-tabs {
-    width: auto;
-    max-width: 100%;
-    padding: 4px;
-    border-radius: 14px;
-    overflow-x: auto;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-  }
-
-  .liquid-tabs::-webkit-scrollbar {
-    display: none;
-  }
-
-  .liquid-tab {
-    flex-shrink: 0;
-    justify-content: center;
-    padding: 10px 14px;
-    font-size: 13px;
-  }
-  
-  .tab-icon {
-    font-size: 15px;
-  }
-
-  .liquid-indicator {
-    top: 4px;
-    height: calc(100% - 8px);
-    border-radius: 10px;
-  }
-
-  .liquid-shine {
-    border-radius: 8px 8px 50% 50%;
-  }
-}
-
-/* 减少动画（辅助功能） */
 @media (prefers-reduced-motion: reduce) {
-  .liquid-indicator,
-  .liquid-tab,
-  .tab-icon {
-    transition-duration: 0.01ms !important;
-  }
+  .liquid-indicator, .liquid-tab { transition: none !important; }
 }
 </style>

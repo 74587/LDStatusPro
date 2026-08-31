@@ -69,12 +69,9 @@
         <small>填写新的发行总量；暂停领取期间也可以先补充数量。</small>
       </form>
 
-      <nav class="detail-tabs" role="tablist" aria-label="优惠券详情内容" @keydown="handleDetailTabKeydown">
-        <button id="coupon-claims-tab" type="button" role="tab" aria-controls="coupon-claims-panel" :tabindex="activeTab === 'claims' ? 0 : -1" :aria-selected="activeTab === 'claims'" :class="{ active: activeTab === 'claims' }" @click="activeTab = 'claims'">领取明细</button>
-        <button id="coupon-events-tab" type="button" role="tab" aria-controls="coupon-events-panel" :tabindex="activeTab === 'events' ? 0 : -1" :aria-selected="activeTab === 'events'" :class="{ active: activeTab === 'events' }" @click="activeTab = 'events'">活动记录</button>
-      </nav>
+      <LiquidTabs v-model="activeTab" class="detail-tabs" :tabs="detailTabs" mode="tabs" activation="automatic" size="sm" aria-label="优惠券详情内容" />
 
-      <section v-if="activeTab === 'claims'" id="coupon-claims-panel" class="claim-ledger" role="tabpanel" aria-labelledby="coupon-claims-tab">
+      <section v-show="activeTab === 'claims'" id="coupon-claims-panel" class="claim-ledger" role="tabpanel" aria-labelledby="coupon-claims-tab" tabindex="0">
         <h3 id="claim-ledger-title" class="seller-sr-only">领取明细</h3>
         <form class="claim-filter" role="search" @submit.prevent="applyClaimFilters">
           <label>
@@ -130,7 +127,7 @@
         <SellerPagination :page="claimPagination.page" :total-pages="claimPagination.totalPages" :total="claimPagination.total" @change="changeClaimPage" />
       </section>
 
-      <section v-else id="coupon-events-panel" class="event-ledger" role="tabpanel" aria-labelledby="coupon-events-tab">
+      <section v-show="activeTab === 'events'" id="coupon-events-panel" class="event-ledger" role="tabpanel" aria-labelledby="coupon-events-tab" tabindex="0">
         <ol v-if="displayCampaign.events?.length">
           <li v-for="event in displayCampaign.events" :key="event.id">
             <span class="event-marker" aria-hidden="true"></span>
@@ -165,6 +162,7 @@ import {
   getCouponEventLabel
 } from '@/utils/sellerCoupons'
 import SellerDrawer from './SellerDrawer.vue'
+import LiquidTabs from '@/components/common/LiquidTabs.vue'
 import SellerPagination from './SellerPagination.vue'
 import SellerStatusBadge from './SellerStatusBadge.vue'
 
@@ -182,6 +180,10 @@ const claims = ref([])
 const claimsLoading = ref(false)
 const claimsError = ref('')
 const activeTab = ref('claims')
+const detailTabs = [
+  { value: 'claims', label: '领取明细', id: 'coupon-claims-tab', panelId: 'coupon-claims-panel' },
+  { value: 'events', label: '活动记录', id: 'coupon-events-tab', panelId: 'coupon-events-panel' }
+]
 const actionLoading = ref(false)
 const quotaDraft = ref('')
 const claimFilter = reactive({ search: '', status: 'all' })
@@ -256,13 +258,6 @@ function applyClaimFilters() {
 function changeClaimPage(page) {
   claimPagination.page = page
   void loadClaims(page)
-}
-
-function handleDetailTabKeydown(event) {
-  if (!['ArrowLeft', 'ArrowRight'].includes(event.key)) return
-  event.preventDefault()
-  activeTab.value = activeTab.value === 'claims' ? 'events' : 'claims'
-  requestAnimationFrame(() => document.getElementById(`coupon-${activeTab.value}-tab`)?.focus())
 }
 
 async function copyClaimUrl() {
@@ -358,8 +353,7 @@ watch(() => [props.open, props.campaign?.id], async ([open, id], previous = []) 
 .discount-summary span { color: var(--seller-muted); font-size: 13px; }.discount-summary strong { color: var(--seller-jade-strong); font-size: 16px; font-variant-numeric: tabular-nums; }
 .quota-editor { display: grid; gap: 7px; margin-top: 16px; padding: 15px; border: 1px solid var(--seller-border); border-radius: 12px; }
 .quota-editor label { color: var(--seller-ink); font-size: 13px; font-weight: 750; }.quota-editor > div { display: flex; gap: 8px; }.quota-editor input { min-width: 0; min-height: 44px; flex: 1; padding: 0 12px; border: 1px solid var(--seller-border); border-radius: 9px; color: var(--seller-ink); background: var(--seller-surface-strong); }.quota-editor button { min-height: 44px; padding: 0 14px; border-radius: 9px; color: #fff; background: var(--seller-navy); font-weight: 700; }.quota-editor small { color: var(--seller-muted); font-size: 11px; }
-.detail-tabs { display: flex; gap: 20px; margin-top: 24px; border-bottom: 1px solid var(--seller-border); }
-.detail-tabs button { position: relative; min-height: 46px; padding: 0 2px; color: var(--seller-muted); font-weight: 700; }.detail-tabs button.active { color: var(--seller-ink); }.detail-tabs button.active::after { content: ''; position: absolute; right: 0; bottom: -1px; left: 0; height: 2px; background: var(--seller-jade-strong); }
+.detail-tabs { margin-top: 24px; }
 .claim-filter { display: grid; grid-template-columns: minmax(0, 1fr) 130px auto; gap: 8px; margin: 16px 0 12px; }
 .claim-filter label { min-width: 0; display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 11px; border: 1px solid var(--seller-border); border-radius: 9px; color: var(--seller-muted); background: var(--seller-surface-strong); }
 .claim-filter input { min-width: 0; width: 100%; border: 0; outline: 0; color: var(--seller-ink); background: transparent; }

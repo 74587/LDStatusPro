@@ -7,17 +7,7 @@
         </button>
       </template>
       <form class="refund-filter-form" role="search" @submit.prevent="applySearch">
-        <div class="refund-tabs" role="tablist" aria-label="退款状态筛选">
-          <button
-            v-for="tab in statusTabs"
-            :key="tab.value"
-            type="button"
-            role="tab"
-            :aria-selected="status === tab.value"
-            :class="{ active: status === tab.value }"
-            @click="selectStatus(tab.value)"
-          >{{ tab.label }}<span v-if="tab.countKey">{{ summary[tab.countKey] || 0 }}</span></button>
-        </div>
+        <LiquidTabs class="refund-tabs" :model-value="status" :tabs="refundTabs" size="sm" aria-label="退款状态筛选" @update:model-value="selectStatus" />
         <label class="refund-search">
           <Search :size="16" aria-hidden="true" />
           <span class="seller-sr-only">搜索退款申请</span>
@@ -80,10 +70,11 @@
 </template>
 
 <script setup>
-import { onMounted, reactive, ref, watch } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ArrowUpRight, BadgeCheck, CircleAlert, RefreshCw, Search } from '@lucide/vue'
 import SellerDataTable from '@/components/seller/SellerDataTable.vue'
+import LiquidTabs from '@/components/common/LiquidTabs.vue'
 import SellerPageToolbar from '@/components/seller/SellerPageToolbar.vue'
 import SellerPagination from '@/components/seller/SellerPagination.vue'
 import SellerStatusBadge from '@/components/seller/SellerStatusBadge.vue'
@@ -118,6 +109,8 @@ const statusTabs = [
   { value: 'closed', label: '已结束', countKey: 'closed' },
   { value: 'all', label: '全部', countKey: 'total' }
 ]
+
+const refundTabs = computed(() => statusTabs.map(tab => ({ ...tab, badge: summary[tab.countKey] || 0 })))
 
 function detailTarget(row) {
   return { path: `/seller/orders/${encodeURIComponent(row.orderNo)}`, query: { source: 'product', from: 'refunds' } }
@@ -189,63 +182,7 @@ onMounted(loadRefunds)
   gap: 12px;
 }
 
-/* 状态标签页 - 清晰视觉层次 */
-.refund-tabs {
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-.refund-tabs::-webkit-scrollbar { display: none; }
-
-.refund-tabs button {
-  min-height: 44px;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 0 18px;
-  border-radius: 10px;
-  color: var(--text-secondary);
-  background: white;
-  border: 2px solid var(--border-medium);
-  font-size: 14px;
-  font-weight: 700;
-  white-space: nowrap;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.refund-tabs button:hover {
-  background: var(--bg-secondary);
-  border-color: var(--color-primary);
-  color: var(--text-primary);
-}
-
-.refund-tabs button span {
-  min-width: 22px;
-  height: 22px;
-  display: grid;
-  place-items: center;
-  padding: 0 6px;
-  border-radius: 6px;
-  color: var(--text-secondary);
-  background: var(--bg-secondary);
-  font: 700 12px/1 ui-monospace, monospace;
-}
-
-.refund-tabs button.active {
-  color: white;
-  background: var(--color-primary);
-  border-color: var(--color-primary);
-  box-shadow: 0 2px 8px rgba(181, 168, 152, 0.25);
-}
-
-.refund-tabs button.active span {
-  color: var(--color-primary);
-  background: white;
-}
+.refund-tabs { flex: 1 1 auto; }
 
 /* 搜索框 - 清晰聚焦效果 */
 .refund-search {
@@ -591,7 +528,6 @@ onMounted(loadRefunds)
 
 @media (prefers-reduced-motion: reduce) {
   .spinning { animation: none; }
-  .refund-tabs button,
   .refund-search,
   .refund-search-submit,
   .refund-refresh,

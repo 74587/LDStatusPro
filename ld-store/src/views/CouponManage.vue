@@ -7,10 +7,7 @@
       <template #actions>
         <router-link to="/user/coupons" class="wallet-link"><WalletCards :size="16" aria-hidden="true" />我的优惠券</router-link>
       </template>
-      <div class="coupon-view-tabs" role="tablist" aria-label="优惠券管理功能" @keydown="handleViewTabKeydown">
-        <button id="coupon-list-tab" type="button" role="tab" aria-controls="coupon-list-panel" :tabindex="viewMode === 'list' ? 0 : -1" :aria-selected="viewMode === 'list'" :class="{ active: viewMode === 'list' }" @click="viewMode = 'list'">活动管理</button>
-        <button id="coupon-create-tab" type="button" role="tab" aria-controls="coupon-create-panel" :tabindex="viewMode === 'create' ? 0 : -1" :aria-selected="viewMode === 'create'" :class="{ active: viewMode === 'create' }" @click="viewMode = 'create'">创建优惠券</button>
-      </div>
+      <LiquidTabs v-model="viewMode" class="coupon-view-tabs" :tabs="viewTabs" mode="tabs" activation="automatic" size="sm" layout="equal" aria-label="优惠券管理功能" />
       <form v-if="viewMode === 'list'" class="coupon-filter-form" role="search" @submit.prevent="applyFilters">
         <label class="coupon-search"><Search :size="16" aria-hidden="true" /><span class="seller-sr-only">搜索优惠券活动</span><input v-model.trim="filter.search" type="search" placeholder="搜索优惠券或适用商品" /></label>
         <select v-model="filter.state" aria-label="活动状态" @change="applyFilters"><option v-for="option in COUPON_CAMPAIGN_STATES" :key="option.value" :value="option.value">{{ option.label }}</option></select>
@@ -19,7 +16,7 @@
       </form>
     </SellerPageToolbar>
 
-    <section v-if="viewMode === 'create'" id="coupon-create-panel" class="create-layout" role="tabpanel" aria-labelledby="coupon-create-tab">
+    <section v-show="viewMode === 'create'" id="coupon-create-panel" class="create-layout" role="tabpanel" aria-labelledby="coupon-create-tab" tabindex="0">
       <form ref="formElement" class="coupon-form-card" novalidate @submit.prevent="submitCampaign">
         <section class="form-section" aria-labelledby="coupon-basic-title">
           <div class="section-heading"><span>1</span><div><h2 id="coupon-basic-title">基本信息</h2><p>名称和说明会出现在领取页与买家券包。</p></div></div>
@@ -72,7 +69,7 @@
       </aside>
     </section>
 
-    <section v-else id="coupon-list-panel" class="campaign-section" role="tabpanel" aria-labelledby="coupon-list-tab">
+    <section v-show="viewMode === 'list'" id="coupon-list-panel" class="campaign-section" role="tabpanel" aria-labelledby="coupon-list-tab" tabindex="0">
       <div v-if="createdCampaign" class="created-banner" role="status"><CircleCheck :size="22" aria-hidden="true" /><div><strong>“{{ createdCampaign.name }}”发布成功</strong><p>领取链接已生成，可以复制后分享给买家。</p></div><button type="button" @click="copyClaimUrl(createdCampaign)"><Link2 :size="16" aria-hidden="true" />复制领取链接</button></div>
       <div v-if="loadError" class="campaign-error" role="alert"><CircleAlert :size="20" aria-hidden="true" /><div><strong>优惠券活动加载失败</strong><p>{{ loadError }}</p></div><button type="button" @click="loadCampaigns">重试</button></div>
       <SellerDataTable v-else caption="优惠券活动台账" :columns="columns" :rows="campaigns" :loading="loading" row-key="id">
@@ -97,6 +94,7 @@ import { ArrowUpRight, CircleAlert, CircleCheck, Link2, LockKeyhole, Search, Tic
 import { useShopStore } from '@/stores/shop'
 import { useToast } from '@/composables/useToast'
 import SellerCouponDetailDrawer from '@/components/seller/SellerCouponDetailDrawer.vue'
+import LiquidTabs from '@/components/common/LiquidTabs.vue'
 import SellerDataTable from '@/components/seller/SellerDataTable.vue'
 import SellerPageToolbar from '@/components/seller/SellerPageToolbar.vue'
 import SellerPagination from '@/components/seller/SellerPagination.vue'
@@ -107,6 +105,10 @@ import { buildSellerCouponQuery, COUPON_CAMPAIGN_STATES, getCouponCampaignStateM
 const shopStore = useShopStore()
 const toast = useToast()
 const viewMode = ref('list')
+const viewTabs = [
+  { value: 'list', label: '活动管理', id: 'coupon-list-tab', panelId: 'coupon-list-panel' },
+  { value: 'create', label: '创建优惠券', id: 'coupon-create-tab', panelId: 'coupon-create-panel' }
+]
 const loading = ref(true)
 const loadError = ref('')
 const submitting = ref(false)
@@ -183,7 +185,6 @@ async function loadCampaigns(page = pagination.page || 1) {
   loading.value = false
 }
 function applyFilters() { Object.assign(appliedFilter, { search: filter.search, state: filter.state }); pagination.page = 1; void loadCampaigns(1) }
-function handleViewTabKeydown(event) { if (!['ArrowLeft', 'ArrowRight'].includes(event.key)) return; event.preventDefault(); viewMode.value = viewMode.value === 'list' ? 'create' : 'list'; void nextTick(() => document.getElementById(`coupon-${viewMode.value}-tab`)?.focus()) }
 function resetFilters() { Object.assign(filter, { search: '', state: '' }); Object.assign(appliedFilter, { search: '', state: '' }); pagination.page = 1; void loadCampaigns(1) }
 function goCampaignPage(page) { pagination.page = page; void loadCampaigns(page) }
 function openDetails(campaign) { selectedCampaign.value = campaign; drawerOpen.value = true }
@@ -196,7 +197,7 @@ onMounted(async () => { productsLoading.value = true; products.value = await sho
 <style scoped>
 .coupon-manage-page { min-width: 0; }
 .wallet-link { min-height: 44px; display: inline-flex; align-items: center; gap: 7px; padding: 0 13px; border: 1px solid var(--seller-border); border-radius: 10px; color: var(--seller-ink); background: var(--seller-surface); font-size: 13px; font-weight: 700; }
-.coupon-view-tabs { display: flex; gap: 3px; padding: 3px; border: 1px solid var(--seller-border); border-radius: 10px; background: var(--seller-surface-soft); }.coupon-view-tabs button { min-height: 38px; padding: 0 14px; border-radius: 7px; color: var(--seller-muted); font-size: 13px; font-weight: 700; }.coupon-view-tabs button.active { color: var(--seller-ink); background: var(--seller-surface-strong); box-shadow: var(--seller-shadow-sm); }
+.coupon-view-tabs { width: auto; }
 .coupon-filter-form { min-width: min(100%, 520px); display: flex; align-items: center; gap: 8px; flex: 1; }.coupon-search { min-width: 200px; min-height: 44px; display: flex; align-items: center; gap: 8px; flex: 1; padding: 0 11px; border: 1px solid var(--seller-border); border-radius: 9px; color: var(--seller-muted); background: var(--seller-surface-strong); }.coupon-search input { min-width: 0; width: 100%; border: 0; outline: 0; color: var(--seller-ink); background: transparent; }.coupon-filter-form select { min-height: 44px; padding: 0 10px; border: 1px solid var(--seller-border); border-radius: 9px; color: var(--seller-ink); background: var(--seller-surface-strong); }.coupon-filter-form > button { min-height: 44px; padding: 0 14px; border-radius: 9px; color: #fff; background: var(--seller-navy); font-weight: 700; }.coupon-filter-form .filter-reset { color: var(--seller-muted); border: 1px solid var(--seller-border); background: transparent; }
 .create-layout { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 18px; align-items: start; }.coupon-form-card, .coupon-preview { border: 1px solid var(--seller-border); border-radius: 14px; background: var(--seller-surface); box-shadow: var(--seller-shadow-sm); }.coupon-form-card { min-width: 0; padding: clamp(20px, 2.6vw, 30px); }.coupon-preview { position: sticky; top: 86px; padding: 20px; }.form-section + .form-section { margin-top: 30px; padding-top: 28px; border-top: 1px solid var(--seller-border); }
 .section-heading { display: flex; gap: 11px; margin-bottom: 18px; }.section-heading > span { width: 29px; height: 29px; display: grid; place-items: center; flex: 0 0 auto; border-radius: 8px; color: var(--seller-jade-strong); background: var(--seller-jade-soft); font-weight: 800; }.section-heading h2 { margin: 1px 0 0; color: var(--seller-ink); font-family: "Noto Serif SC", "Source Han Serif SC", "Songti SC", STSong, serif; font-size: 18px; }.section-heading p { margin: 4px 0 0; color: var(--seller-muted); font-size: 12px; }
@@ -210,6 +211,6 @@ onMounted(async () => { productsLoading.value = true; products.value = await sho
 .campaign-mobile-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: start; }.campaign-mobile-scope { overflow: hidden; margin: 13px 0 0; color: var(--seller-muted); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }.campaign-mobile-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }.campaign-mobile-stats span { padding: 10px; border-radius: 9px; color: var(--seller-muted); background: var(--seller-surface-muted); font-size: 11px; }.campaign-mobile-stats strong { display: block; margin-top: 4px; color: var(--seller-ink); font-size: 15px; }.campaign-mobile-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 13px; padding-top: 12px; border-top: 1px solid var(--seller-border); color: var(--seller-muted); font-size: 11px; }.campaign-mobile-foot button { min-height: 40px; display: inline-flex; align-items: center; gap: 4px; color: var(--seller-jade-strong); font-weight: 750; }.campaign-empty { min-height: 260px; display: grid; place-items: center; align-content: center; gap: 9px; color: var(--seller-muted); }.campaign-empty strong { color: var(--seller-ink); font-size: 15px; }.campaign-empty p { max-width: 420px; margin: 0; font-size: 12px; line-height: 1.55; }.campaign-empty button { min-height: 42px; padding: 0 14px; border-radius: 9px; color: #fff; background: var(--seller-navy); font-weight: 750; }
 .seller-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 @media (max-width: 1040px) { .create-layout { grid-template-columns: 1fr; }.coupon-preview { position: static; }.supply-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 767px) { .coupon-filter-form { min-width: 0; width: 100%; flex-direction: column; align-items: stretch; }.coupon-search { min-width: 0; }.coupon-search input, .coupon-filter-form select, .field input, .field textarea, .field select { font-size: 16px; }.coupon-view-tabs { width: 100%; }.coupon-view-tabs button { min-height: 44px; flex: 1; }.created-banner { grid-template-columns: auto minmax(0, 1fr); }.created-banner button { grid-column: 1 / -1; justify-content: center; }.campaign-identity, .campaign-mobile-foot button { min-height: 44px; }.field-grid, .choice-grid, .supply-grid { grid-template-columns: 1fr; }.field-wide { grid-column: auto; } }
+@media (max-width: 767px) { .coupon-filter-form { min-width: 0; width: 100%; flex-direction: column; align-items: stretch; }.coupon-search { min-width: 0; }.coupon-search input, .coupon-filter-form select, .field input, .field textarea, .field select { font-size: 16px; }.coupon-view-tabs { width: 100%; }.created-banner { grid-template-columns: auto minmax(0, 1fr); }.created-banner button { grid-column: 1 / -1; justify-content: center; }.campaign-identity, .campaign-mobile-foot button { min-height: 44px; }.field-grid, .choice-grid, .supply-grid { grid-template-columns: 1fr; }.field-wide { grid-column: auto; } }
 @media (prefers-reduced-motion: reduce) { .distribution-track i { transition: none; } }
 </style>

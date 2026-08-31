@@ -56,12 +56,14 @@
         <LiquidTabs
           v-model="activeSection"
           :tabs="sectionTabs"
+          mode="tabs"
+          aria-label="首页板块"
           @update:model-value="switchSection"
         />
       </div>
       
       <!-- 物品广场 -->
-      <div v-show="activeSection === 'products'" class="section-content">
+      <div v-show="activeSection === 'products'" id="home-panel-products" class="section-content" role="tabpanel" aria-labelledby="home-tab-products" tabindex="0">
         <!-- 分类筛选（排除小店） -->
         <div class="filter-section">
           <CategoryFilter
@@ -177,7 +179,7 @@
       </div>
       
       <!-- 小店集市 -->
-      <div v-show="activeSection === 'stores'" class="section-content">
+      <div v-show="activeSection === 'stores'" id="home-panel-stores" class="section-content" role="tabpanel" aria-labelledby="home-tab-stores" tabindex="0">
         <div class="stores-header">
           <p class="stores-desc">🏪 汇集各路大佬的自建小店，欢迎入驻🎉</p>
         </div>
@@ -262,7 +264,7 @@
         </EmptyState>
       </div>
 
-      <div v-show="activeSection === 'buy'" class="section-content">
+      <div v-show="activeSection === 'buy'" id="home-panel-buy" class="section-content" role="tabpanel" aria-labelledby="home-tab-buy" tabindex="0">
         <div class="buy-header">
           <p class="buy-desc">🚨 为了保证双方的权益，请勿在私信中直接联系方式。沟通好积分后支付LDC后会开放双方L站联系方式！🪧<a href="/docs/buy-request" style="color: green;">查看求购操作指南👈</a></p>
           
@@ -363,7 +365,7 @@
       </div>
 
       <!-- 士多热榜 -->
-      <div v-show="activeSection === 'hotboard'" class="section-content hotboard-section-wrapper">
+      <div v-show="activeSection === 'hotboard'" id="home-panel-hotboard" class="section-content hotboard-section-wrapper" role="tabpanel" aria-labelledby="home-tab-hotboard" tabindex="0">
         <div v-if="hotboardLoading && !hotboardData" class="products-loading">
           <Skeleton type="card" :count="4" :columns="2" />
         </div>
@@ -695,7 +697,7 @@ const sectionTabs = computed(() => {
   if (userStore.isLoggedIn && (userStore.trustLevel || 0) >= 1) {
     tabs.push({ value: 'hotboard', label: '士多热榜', iconComponent: ChartNoAxesColumnIncreasing })
   }
-  return tabs
+  return tabs.map(tab => ({ ...tab, id: `home-tab-${tab.value}`, panelId: `home-panel-${tab.value}` }))
 })
 const normalizeSection = (value) => (
   sectionTabs.value.some(tab => tab.value === value) ? value : 'products'

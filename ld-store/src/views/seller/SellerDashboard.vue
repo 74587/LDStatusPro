@@ -68,17 +68,7 @@
           <p>经营数据</p>
           <span>{{ periodLabel }}，与紧邻的等长上期对比</span>
         </div>
-        <div class="range-switch" role="group" aria-label="选择统计范围">
-          <button
-            v-for="item in rangeOptions"
-            :key="item.value"
-            type="button"
-            :class="{ active: selectedRange === item.value }"
-            :aria-pressed="selectedRange === item.value"
-            :disabled="rangeLoading"
-            @click="changeRange(item.value)"
-          >{{ item.label }}</button>
-        </div>
+        <LiquidTabs class="range-switch" :model-value="selectedRange" :tabs="rangeOptions" :disabled="rangeLoading" size="sm" layout="equal" aria-label="选择统计范围" @update:model-value="changeRange" />
       </div>
 
       <section class="kpi-grid" aria-label="经营核心指标" :aria-busy="rangeLoading">
@@ -107,16 +97,7 @@
               <p>变化</p>
               <h2 id="trend-title">经营趋势</h2>
             </div>
-            <div class="chart-view-switch" role="group" aria-label="趋势图指标">
-              <button
-                v-for="item in chartViews"
-                :key="item.value"
-                type="button"
-                :class="{ active: chartView === item.value }"
-                :aria-pressed="chartView === item.value"
-                @click="chartView = item.value"
-              >{{ item.label }}</button>
-            </div>
+            <LiquidTabs v-model="chartView" class="chart-view-switch" :tabs="chartViews" size="sm" aria-label="趋势图指标" />
           </div>
           <Suspense>
             <SellerTrendChart :trend="dashboard.trend" :view="chartView" />
@@ -284,6 +265,7 @@ import {
   Sparkles, Store, TicketPercent, TrendingDown, TrendingUp, UsersRound, WalletCards
 } from '@lucide/vue'
 import { fetchMerchantDashboard } from '@/services/merchantDashboard'
+import LiquidTabs from '@/components/common/LiquidTabs.vue'
 import {
   buildMerchantBrief,
   formatChangeRate,
@@ -467,10 +449,7 @@ html.dark .primary-action { color: #0d151d; background: var(--seller-jade); }
 .dashboard-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 20px; }
 .dashboard-toolbar p { margin: 0; font: 600 18px/1.4 "Noto Serif SC", "Source Han Serif SC", "Songti SC", STSong, serif; }
 .dashboard-toolbar span { display: block; margin-top: 3px; color: var(--seller-muted); font-size: 12px; }
-.range-switch, .chart-view-switch { display: inline-flex; padding: 3px; border: 1px solid var(--seller-border); border-radius: 10px; background: var(--seller-surface); }
-.range-switch button, .chart-view-switch button { min-height: 44px; padding: 0 13px; border-radius: 7px; color: var(--seller-muted); font-size: 12px; transition: color 160ms ease, background 160ms ease; }
-.range-switch button.active, .chart-view-switch button.active { color: #fff; background: var(--seller-navy); }
-html.dark .range-switch button.active, html.dark .chart-view-switch button.active { color: #0d151d; background: var(--seller-jade); }
+.range-switch { width: auto; flex-shrink: 0; }
 
 .kpi-grid { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 14px; transition: opacity 160ms ease; }
 .kpi-grid[aria-busy="true"] { opacity: .55; }
@@ -609,10 +588,8 @@ html.dark .range-switch button.active, html.dark .chart-view-switch button.activ
   .opening-checklist li { min-height: 86px; }
   .dashboard-toolbar { align-items: flex-start; flex-direction: column; }
   .range-switch { width: 100%; }
-  .range-switch button { flex: 1; }
   .card-heading { padding: 18px 17px 10px; }
   .section-heading h2 { font-size: 19px; }
-  .chart-view-switch button { padding: 0 9px; }
   .source-summary, .chart-data-details { margin-left: 17px; margin-right: 17px; }
   .performance-row { grid-template-columns: 28px minmax(0,1fr) auto 16px; }
   .performance-metric { display: none; }
@@ -623,6 +600,6 @@ html.dark .range-switch button.active, html.dark .chart-view-switch button.activ
 }
 @media (prefers-reduced-motion: reduce) {
   .skeleton { animation: none; }
-  .kpi-grid, .range-switch button, .chart-view-switch button, .chart-data-details summary > svg { transition: none; }
+  .kpi-grid, .chart-data-details summary > svg { transition: none; }
 }
 </style>

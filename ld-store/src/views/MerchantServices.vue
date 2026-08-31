@@ -21,29 +21,11 @@
       </section>
 
       <section class="content-card">
-        <nav class="service-tabs" role="tablist" aria-label="商家服务功能">
-          <button
-            v-for="tab in tabs"
-            :id="`merchant-tab-${tab.value}`"
-            :key="tab.value"
-            type="button"
-            role="tab"
-            :aria-selected="activeTab === tab.value"
-            :aria-controls="`merchant-panel-${tab.value}`"
-            :class="{ active: activeTab === tab.value }"
-            @click="activeTab = tab.value"
-          >
-            <span class="service-tab-icon"><component :is="tab.icon" :size="18" :stroke-width="1.8" aria-hidden="true" /></span>
-            <span class="service-tab-copy">
-              <strong>{{ tab.label }}</strong>
-              <small>{{ tab.description }}</small>
-            </span>
-          </button>
-        </nav>
+        <LiquidTabs v-model="activeTab" :tabs="serviceTabs" mode="tabs" layout="equal" aria-label="商家服务功能" />
         <p class="active-tab-note">{{ activeTabMeta.note }}</p>
 
         <div
-          v-if="activeTab === 'service'"
+          v-show="activeTab === 'service'"
           id="merchant-panel-service"
           class="panel-body"
           role="tabpanel"
@@ -239,7 +221,7 @@
         </div>
 
         <div
-          v-else-if="activeTab === 'board'"
+          v-show="activeTab === 'board'"
           id="merchant-panel-board"
           class="panel-body"
           role="tabpanel"
@@ -493,7 +475,7 @@
         </div>
 
         <div
-          v-else-if="activeTab === 'orders'"
+          v-show="activeTab === 'orders'"
           id="merchant-panel-orders"
           class="panel-body"
           role="tabpanel"
@@ -601,6 +583,7 @@
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppSelect from '@/components/common/AppSelect.vue'
+import LiquidTabs from '@/components/common/LiquidTabs.vue'
 import SellerStatusBadge from '@/components/seller/SellerStatusBadge.vue'
 import { ArrowRight, CircleHelp, LayoutGrid, Megaphone, ReceiptText, RefreshCw } from '@lucide/vue'
 import { api } from '@/utils/api'
@@ -630,6 +613,7 @@ function normalizeMerchantTab(value = '') {
 }
 
 const activeTab = ref(normalizeMerchantTab(route.query.tab))
+const serviceTabs = tabs.map(({ icon, ...tab }) => ({ ...tab, iconComponent: icon, id: `merchant-tab-${tab.value}`, panelId: `merchant-panel-${tab.value}` }))
 const activeTabMeta = computed(() => tabs.find((tab) => tab.value === activeTab.value) || tabs[0])
 const optionsLoading = ref(false)
 const submitting = ref(false)
@@ -1343,18 +1327,6 @@ onUnmounted(() => {
   --app-select-panel-shadow: 0 20px 40px rgba(145, 105, 24, 0.12);
   --app-select-option-divider: rgba(191, 139, 31, 0.12);
   --app-select-option-hover-bg: var(--services-accent-soft);
-  --liquid-tabs-shell-bg: rgba(255, 251, 244, 0.92);
-  --liquid-tabs-shell-border: var(--services-card-border);
-  --liquid-tabs-shell-shadow:
-    0 14px 30px rgba(145, 105, 24, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 0.62);
-  --liquid-indicator-bg: rgba(255, 255, 255, 0.96);
-  --liquid-indicator-border: rgba(191, 139, 31, 0.16);
-  --liquid-indicator-shadow:
-    0 10px 20px rgba(145, 105, 24, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 0.8);
-  --liquid-shine-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.64) 0%, rgba(255, 255, 255, 0.18) 50%, transparent 100%);
-  --liquid-tab-hover-overlay: linear-gradient(135deg, rgba(244, 201, 109, 0.16) 0%, transparent 58%);
 }
 
 :global(html.dark .merchant-services-page) {
@@ -1415,18 +1387,6 @@ onUnmounted(() => {
   --app-select-panel-shadow: 0 24px 44px rgba(0, 0, 0, 0.32);
   --app-select-option-divider: rgba(244, 201, 109, 0.08);
   --app-select-option-hover-bg: rgba(244, 201, 109, 0.16);
-  --liquid-tabs-shell-bg: rgba(44, 36, 29, 0.92);
-  --liquid-tabs-shell-border: var(--services-card-border);
-  --liquid-tabs-shell-shadow:
-    0 16px 34px rgba(0, 0, 0, 0.22),
-    inset 0 1px 0 rgba(255, 240, 214, 0.05);
-  --liquid-indicator-bg: rgba(55, 45, 36, 0.96);
-  --liquid-indicator-border: rgba(244, 201, 109, 0.12);
-  --liquid-indicator-shadow:
-    0 12px 24px rgba(0, 0, 0, 0.24),
-    inset 0 1px 0 rgba(255, 240, 214, 0.08);
-  --liquid-shine-bg: linear-gradient(180deg, rgba(255, 240, 214, 0.16) 0%, rgba(255, 255, 255, 0.04) 50%, transparent 100%);
-  --liquid-tab-hover-overlay: linear-gradient(135deg, rgba(244, 201, 109, 0.1) 0%, transparent 60%);
 }
 
 .page-shell {
@@ -3134,79 +3094,13 @@ onUnmounted(() => {
 
 .content-card {
   padding: 0;
+  min-width: 0;
   border: 0;
   border-radius: 0;
   background: transparent;
   box-shadow: none;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
-}
-
-.service-tabs {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-  padding: 7px;
-  border: 1px solid var(--seller-border);
-  border-radius: 14px;
-  background: var(--seller-surface-soft);
-}
-
-.service-tabs > button {
-  min-width: 0;
-  min-height: 64px;
-  display: flex;
-  align-items: center;
-  gap: 11px;
-  padding: 10px 13px;
-  border: 1px solid transparent;
-  border-radius: 10px;
-  color: var(--seller-muted);
-  text-align: left;
-  transition: color 180ms ease, border-color 180ms ease, background 180ms ease, box-shadow 180ms ease;
-}
-
-.service-tabs > button:hover {
-  color: var(--seller-ink);
-  background: color-mix(in srgb, var(--seller-surface) 70%, transparent);
-}
-
-.service-tabs > button.active {
-  color: var(--seller-ink);
-  border-color: var(--seller-border);
-  background: var(--seller-surface);
-  box-shadow: var(--seller-shadow-sm), inset 3px 0 0 var(--seller-jade);
-}
-
-.service-tab-icon {
-  width: 36px;
-  height: 36px;
-  flex: 0 0 36px;
-  display: grid;
-  place-items: center;
-  border-radius: 10px;
-  color: var(--seller-jade-strong);
-  background: var(--seller-jade-soft);
-}
-
-.service-tab-copy {
-  min-width: 0;
-  display: grid;
-  gap: 3px;
-}
-
-.service-tab-copy strong {
-  color: inherit;
-  font-size: 14px;
-  font-weight: 700;
-}
-
-.service-tab-copy small {
-  overflow: hidden;
-  color: var(--seller-muted);
-  font-size: 11px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .active-tab-note {
@@ -3609,7 +3503,6 @@ onUnmounted(() => {
 .empty-state span { color: var(--seller-muted); font-size: 12px; }
 .orders-loading-state svg { animation: merchant-services-spin 900ms linear infinite; }
 
-.service-tabs > button:focus-visible,
 .overview-link:focus-visible,
 .ghost-btn:focus-visible,
 .submit-btn:focus-visible,
@@ -3635,8 +3528,6 @@ onUnmounted(() => {
   .service-metrics { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .service-grid { grid-template-columns: 1fr; }
   .summary-panel { position: static; }
-  .service-tab-copy small { display: none; }
-  .service-tabs > button { min-height: 54px; }
   .active-tab-note { margin-top: 8px; }
   .category-quota-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
@@ -3664,23 +3555,6 @@ onUnmounted(() => {
   .service-metric dd { margin-top: 5px; font-size: 21px; }
   .service-metric small { font-size: 10px; }
 
-  .service-tabs {
-    gap: 4px;
-    padding: 4px;
-    border-radius: 12px;
-  }
-
-  .service-tabs > button {
-    min-height: 52px;
-    justify-content: center;
-    gap: 6px;
-    padding: 7px 5px;
-    text-align: center;
-  }
-
-  .service-tabs > button.active { box-shadow: inset 0 -3px 0 var(--seller-jade); }
-  .service-tab-icon { width: 28px; height: 28px; flex-basis: 28px; border-radius: 8px; }
-  .service-tab-copy strong { font-size: 12px; white-space: nowrap; }
   .active-tab-note { padding: 0 2px; font-size: 11px; }
 
   .panel-body { margin-top: 13px; }
@@ -3767,8 +3641,6 @@ onUnmounted(() => {
 }
 
 @media (max-width: 420px) {
-  .service-tabs > button { flex-direction: column; gap: 4px; min-height: 66px; }
-  .service-tab-icon { width: 26px; height: 26px; flex-basis: 26px; }
   .service-metric { padding: 11px; }
   .package-head { grid-template-columns: 1fr; }
   .quota-pill { width: fit-content; }
@@ -3780,7 +3652,6 @@ onUnmounted(() => {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .service-tabs > button,
   .duration-btn,
   .category-quota-card { transition: none; }
   .orders-loading-state svg { animation: none; }

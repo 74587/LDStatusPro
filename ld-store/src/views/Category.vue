@@ -20,6 +20,7 @@
         <LiquidTabs
           v-model="currentSort"
           :tabs="sortTabs"
+          aria-label="物品排序"
           @update:model-value="changeSort"
         />
 

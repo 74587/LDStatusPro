@@ -29,6 +29,9 @@
         :modelValue="statusFilter"
         :tabs="filterTabs"
         class="filter-tabs"
+        layout="equal"
+        size="sm"
+        aria-label="举报状态"
         @update:modelValue="applyFilter"
       />
 
@@ -284,17 +287,6 @@ onMounted(() => {
 .filter-tabs {
   width: 100%;
   margin-bottom: 16px;
-}
-
-.filter-tabs :deep(.liquid-tab) {
-  flex: 1;
-  justify-content: center;
-  padding: 8px 12px;
-  font-size: 13px;
-}
-
-.filter-tabs :deep(.tab-icon) {
-  font-size: 14px;
 }
 
 /* Report list */
@@ -576,15 +568,6 @@ onMounted(() => {
 
   .filter-tabs {
     margin-bottom: 12px;
-  }
-
-  .filter-tabs :deep(.liquid-tab) {
-    padding: 7px 6px;
-    font-size: 12px;
-  }
-
-  .filter-tabs :deep(.tab-icon) {
-    font-size: 13px;
   }
 
   .reports-list {
