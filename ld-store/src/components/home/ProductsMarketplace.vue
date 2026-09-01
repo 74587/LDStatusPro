@@ -488,5 +488,5 @@ watch(hasMore, (value) => {
 }
 @keyframes fade-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 @keyframes spin { to { transform: rotate(360deg); } }
-@media (prefers-reduced-motion: reduce) { .section-content, .spinner { animation-duration: .01ms; animation-iteration-count: 1; } }
+@media (prefers-reduced-motion: reduce) { .section-content, .spinner { animation: none; } }
 </style>

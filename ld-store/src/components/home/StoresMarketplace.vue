@@ -231,5 +231,5 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--color-prima
 @media (max-width: 640px) { .stores-filter { flex-direction: column; align-items: stretch; gap: 8px; }.stores-search-input, .stores-tag-btn, .stores-reset-btn { min-height: 44px; }.stores-search-input { font-size: 16px; }.stores-search-btn { width: 40px; height: 40px; } }
 @keyframes fade-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 @keyframes spin { to { transform: rotate(360deg); } }
-@media (prefers-reduced-motion: reduce) { .section-content, .spinner { animation-duration: .01ms; animation-iteration-count: 1; } }
+@media (prefers-reduced-motion: reduce) { .section-content, .spinner { animation: none; } }
 </style>

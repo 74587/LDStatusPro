@@ -205,7 +205,7 @@ onUnmounted(() => {
 .buy-toolbar-btn.secondary { background: var(--bg-tertiary); color: var(--text-secondary); }.buy-toolbar-btn-search { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); display: grid; place-items: center; width: 32px; height: 32px; padding: 0; background: var(--glass-bg-heavy); color: var(--text-secondary); }
 .products-header { justify-content: space-between; gap: 12px; margin-bottom: 16px; }.products-count { font-size: 13px; color: var(--text-tertiary); }.products-count strong { color: var(--text-primary); }
 .buy-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-.buy-card { height: 100%; background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 14px; isolation: isolate; transition: transform .2s ease, box-shadow .2s ease; }.buy-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-sm); }
+.buy-card { height: 100%; background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 14px; isolation: isolate; transition: transform .2s ease; }.buy-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-sm); }
 .buy-card-link { display: flex; flex-direction: column; height: 100%; padding: 14px; border-radius: inherit; color: inherit; text-decoration: none; }.buy-card-link:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 3px; }
 .buy-card-head { align-items: flex-start; justify-content: space-between; gap: 8px; }.buy-card-title { margin: 0; color: var(--text-primary); font-size: 15px; line-height: 1.4; }
 .buy-status-pill { border-radius: 999px; font-size: 11px; padding: 3px 8px; color: var(--text-secondary); background: var(--bg-secondary); white-space: nowrap; border: 1px solid var(--border-light); }
@@ -220,5 +220,5 @@ onUnmounted(() => {
 @media (max-width: 640px) { .buy-header { flex-direction: column; align-items: flex-start; }.buy-toolbar { gap: 6px; }.buy-toolbar-input, .buy-toolbar-btn, .buy-publish-btn, .buy-page-btn { min-height: 44px; }.buy-toolbar-input { font-size: 16px; }.buy-toolbar-btn-search { width: 40px; height: 40px; } }
 :global(html.dark) .buy-header { background: #1e2a20; border-color: #2a3f2e; }
 @keyframes fade-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
-@media (prefers-reduced-motion: reduce) { .section-content { animation: none; } .buy-card { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .section-content { animation: none; } .buy-card { transition: none; } .buy-card:hover { transform: none; } }
 </style>

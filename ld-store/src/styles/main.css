@@ -20,8 +20,7 @@ html.theme-transition *::after {
               border-color 0.3s ease,
               color 0.3s ease,
               fill 0.3s ease,
-              stroke 0.3s ease,
-              box-shadow 0.3s ease !important;
+              stroke 0.3s ease !important;
 }
 
 /* CSS 变量 - 浅色模式 */
@@ -600,20 +599,4 @@ html.dark {
 /* 深色模式下的图片处理 - 可选降低亮度 */
 html.dark img:not([data-no-dark-filter]) {
   /* 不对图片做过多处理，保持原有效果 */
-}
-
-/* 平滑主题切换过渡 */
-html.dark *,
-html:not(.dark) * {
-  transition-property: background-color, border-color, color, fill, stroke, box-shadow;
-  transition-duration: 0.15s;
-  transition-timing-function: ease-out;
-}
-
-/* 禁用动画时不使用过渡 */
-@media (prefers-reduced-motion: reduce) {
-  html.dark *,
-  html:not(.dark) * {
-    transition-duration: 0.01ms !important;
-  }
 }

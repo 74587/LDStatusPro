@@ -191,7 +191,7 @@ let currentY = 0
 let targetX = 0
 let targetY = 0
 let currentScale = 1
-let currentShadow = 0 // 阴影强度 0-1
+let currentGlareOpacity = 0
 let animationFrame = null
 let resetTimer = null
 let impressionTimer = null
@@ -245,25 +245,13 @@ function updateTilt() {
   currentX = lerp(currentX, targetX, 0.08)
   currentY = lerp(currentY, targetY, 0.08)
   currentScale = lerp(currentScale, scale, 0.06)
-  currentShadow = lerp(currentShadow, 1, 0.05) // 阴影缓慢增强
+  currentGlareOpacity = lerp(currentGlareOpacity, 1, 0.05)
   
   const rotateX = currentY * maxTilt
   const rotateY = -currentX * maxTilt
   
-  // 计算阴影偏移（基于倾斜方向）
-  const shadowX = -currentX * 8
-  const shadowY = currentY * 8 + 15
-  const shadowBlur = 20 + currentShadow * 25
-  const shadowConfig = getCardShadowConfig()
-  const shadowAlpha = shadowConfig.primaryBase + currentShadow * shadowConfig.primaryBoost
-  const liftY = shadowConfig.secondaryBaseY + currentShadow * shadowConfig.secondaryBoostY
-  const liftBlur = shadowConfig.secondaryBaseBlur + currentShadow * shadowConfig.secondaryBoostBlur
-  const liftAlpha = shadowConfig.secondaryBaseAlpha + currentShadow * shadowConfig.secondaryBoostAlpha
-  const accentShadow = shadowConfig.accentShadow ? `, ${shadowConfig.accentShadow}` : ''
-  
   tiltStyle.value = {
     transform: `perspective(${perspective}px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(${currentScale}, ${currentScale}, ${currentScale})`,
-    boxShadow: `${shadowX}px ${shadowY}px ${shadowBlur}px rgba(${shadowConfig.primaryRgb}, ${shadowAlpha.toFixed(3)}), 0 ${liftY}px ${liftBlur}px rgba(${shadowConfig.secondaryRgb}, ${liftAlpha.toFixed(3)})${accentShadow}`,
     willChange: 'transform'
   }
   
@@ -272,7 +260,7 @@ function updateTilt() {
   const glareY = (currentY + 1) * 50
   glareStyle.value = {
     background: `radial-gradient(circle at ${glareX}% ${glareY}%, rgba(255,255,255,0.25) 0%, transparent 60%)`,
-    opacity: currentShadow
+    opacity: currentGlareOpacity
   }
   
   animationFrame = requestAnimationFrame(updateTilt)
@@ -306,12 +294,11 @@ function handleMouseLeave() {
   targetX = 0
   targetY = 0
   currentScale = 1
-  currentShadow = 0
+  currentGlareOpacity = 0
   
   tiltStyle.value = {
     transform: `perspective(${perspective}px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)`,
-    boxShadow: getCardShadowConfig().restingShadow,
-    transition: `transform ${speed}ms cubic-bezier(0.23, 1, 0.32, 1), box-shadow ${speed}ms cubic-bezier(0.23, 1, 0.32, 1)`
+    transition: `transform ${speed}ms cubic-bezier(0.23, 1, 0.32, 1)`
   }
   glareStyle.value = { opacity: 0 }
 
@@ -380,80 +367,6 @@ function getAnimationSeed(value) {
   }
 
   return Math.abs(hash >>> 0) || 1
-}
-
-function isDarkThemeActive() {
-  return typeof document !== 'undefined' && document.documentElement.classList.contains('dark')
-}
-
-function getCardShadowConfig() {
-  const isDark = isDarkThemeActive()
-
-  if (showFeaturedBadge.value) {
-    if (isDark) {
-      return {
-        primaryRgb: '216, 163, 60',
-        secondaryRgb: '67, 49, 18',
-        primaryBase: 0.18,
-        primaryBoost: 0.14,
-        secondaryBaseY: 8,
-        secondaryBoostY: 8,
-        secondaryBaseBlur: 14,
-        secondaryBoostBlur: 18,
-        secondaryBaseAlpha: 0.14,
-        secondaryBoostAlpha: 0.1,
-        accentShadow: '0 0 0 1px rgba(244, 201, 109, 0.18) inset',
-        restingShadow: 'var(--product-featured-shadow)'
-      }
-    }
-
-    return {
-      primaryRgb: '168, 126, 35',
-      secondaryRgb: '107, 77, 20',
-      primaryBase: 0.14,
-      primaryBoost: 0.12,
-      secondaryBaseY: 6,
-      secondaryBoostY: 8,
-      secondaryBaseBlur: 12,
-      secondaryBoostBlur: 16,
-      secondaryBaseAlpha: 0.08,
-      secondaryBoostAlpha: 0.08,
-      accentShadow: '0 0 0 1px rgba(255, 241, 205, 0.52) inset',
-      restingShadow: 'var(--product-featured-shadow)'
-    }
-  }
-
-  if (isDark) {
-    return {
-      primaryRgb: '0, 0, 0',
-      secondaryRgb: '255, 255, 255',
-      primaryBase: 0.24,
-      primaryBoost: 0.12,
-      secondaryBaseY: 4,
-      secondaryBoostY: 5,
-      secondaryBaseBlur: 10,
-      secondaryBoostBlur: 10,
-      secondaryBaseAlpha: 0.04,
-      secondaryBoostAlpha: 0.02,
-      accentShadow: '',
-      restingShadow: 'var(--product-card-shadow, var(--shadow-sm))'
-    }
-  }
-
-  return {
-    primaryRgb: '0, 0, 0',
-    secondaryRgb: '0, 0, 0',
-    primaryBase: 0.06,
-    primaryBoost: 0.1,
-    secondaryBaseY: 4,
-    secondaryBoostY: 6,
-    secondaryBaseBlur: 8,
-    secondaryBoostBlur: 12,
-    secondaryBaseAlpha: 0.05,
-    secondaryBoostAlpha: 0.05,
-    accentShadow: '',
-    restingShadow: 'var(--product-card-shadow, var(--shadow-sm))'
-  }
 }
 
 // 库存
@@ -567,7 +480,7 @@ function handleImageError(e) {
   flex-direction: column;
   height: 100%;
   container-type: inline-size;
-  background: var(--product-card-bg, var(--bg-card));
+  background-color: var(--product-card-bg, var(--bg-card));
   border-radius: 16px;
   overflow: hidden;
   text-decoration: none;
@@ -575,7 +488,7 @@ function handleImageError(e) {
   border: 1px solid var(--product-card-border, var(--border-light));
   position: relative;
   isolation: isolate;
-  transition: background 0.28s ease, border-color 0.28s ease;
+  transition: background-color 0.28s ease, border-color 0.28s ease;
 }
 
 :global(html.dark .product-card) {
@@ -604,7 +517,7 @@ function handleImageError(e) {
 }
 
 .product-card--featured {
-  background: var(--product-card-bg, var(--bg-card));
+  background-color: var(--product-card-bg, var(--bg-card));
   border-color: var(--product-featured-border);
   box-shadow: var(--product-featured-shadow);
 }
@@ -1128,7 +1041,8 @@ function handleImageError(e) {
   }
 
   .tilt-glare,
-  .cover-image {
+  .cover-image,
+  .product-card {
     transition: none;
   }
 }
