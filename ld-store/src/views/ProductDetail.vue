@@ -29,67 +29,31 @@
                 <span>友情小店</span>
               </span>
             </div>
-            <button
-              class="nav-favorite-btn"
-              :class="{ active: isFavorited }"
-              :disabled="favoriteSubmitting"
-              @click="toggleFavorite"
-            >
-              <Heart :size="16" :fill="isFavorited ? 'currentColor' : 'none'" aria-hidden="true" />
-              <span>{{ isFavorited ? '已收藏' : '收藏' }}</span>
-            </button>
-            <button
-              class="nav-block-btn"
-              :disabled="favoriteSubmitting"
-              title="以后不再向我展示这件商品"
-              aria-label="将这件商品标记为不感兴趣"
-              @click="markNotInterested"
-            >
-              <EyeOff :size="16" aria-hidden="true" />
-              <span>不感兴趣</span>
-            </button>
-            <button
-              class="nav-report-btn"
-              :disabled="reportSubmitting"
-              @click="openReportModal"
-            >
-              <Flag :size="16" aria-hidden="true" />
-              <span>举报</span>
-            </button>
+            <ProductInteractionPanel
+              :favorited="isFavorited"
+              :busy="favoriteSubmitting"
+              :reporting="reportSubmitting"
+              @favorite="toggleFavorite"
+              @block="markNotInterested"
+              @report="openReportModal"
+            />
           </div>
         </div>
         
         <!-- 主内容区 -->
         <div :class="['detail-main', { 'detail-main--landscape': isLandscapeDetailLayout }]">
           <!-- 左侧：图片 -->
-          <div class="detail-media">
-            <div class="media-wrapper" :style="coverStyle" @click="openImagePreview">
-              <img
-                v-if="product.imageUrl"
-                :src="product.imageUrl"
-                :alt="product.name"
-                class="media-image"
-                @load="handleCoverImageLoad"
-                @error="handleImageError"
-              />
-              <component
-                :is="categoryIconComponent"
-                v-else
-                class="media-placeholder"
-                :size="80"
-                :stroke-width="1.5"
-                aria-hidden="true"
-              />
-              <!-- 折扣标签 -->
-              <span v-if="hasDiscount" class="discount-tag">
-                -{{ discountPercent }}%
-              </span>
-              <span v-if="product.imageUrl" class="media-zoom-hint" aria-hidden="true">
-                <Search :size="14" />
-                点击查看大图
-              </span>
-            </div>
-          </div>
+          <ProductMedia
+            :product="product"
+            :category-icon="categoryIconComponent"
+            :cover-style="coverStyle"
+            :has-discount="hasDiscount"
+            :discount-percent="discountPercent"
+            :landscape="isLandscapeDetailLayout"
+            @open="openImagePreview"
+            @load="handleCoverImageLoad"
+            @error="handleImageError"
+          />
           
           <!-- 右侧：信息 -->
           <div class="detail-info-panel">
@@ -227,109 +191,7 @@
             
             
             <div class="action-section desktop-only">
-              <template v-if="isStore">
-                                            <button
-                                              type="button"
-                                              class="buy-btn store"
-                                              @click="handleOpenStore"
-                                            >
-                                              <Store :size="18" aria-hidden="true" />
-                                              <span>立即前往</span>
-                                            </button>
-                                          </template>
-                  <template v-else-if="isPlatformOrder">
-                    <div v-if="isOutOfStock" class="buy-action-row">
-                      <button
-                                                class="buy-btn disabled"
-                                                disabled
-                                              >
-                                                <PackageX :size="18" aria-hidden="true" />
-                                                <span>已售罄</span>
-                                              </button>
-                                              <button
-                                                v-if="isCdk"
-                                                class="buy-btn restock"
-                                                :class="{ subscribed: restockSubscribed }"
-                                                :disabled="restockStatusLoading || restockSubscribeLoading || restockSubscribed"
-                                                @click="handleSubscribeRestock"
-                                              >
-                                                <component :is="restockButtonIcon" :size="18" aria-hidden="true" />
-                                                <span>{{ restockButtonText }}</span>
-                                              </button>
-                                            </div>
-                      <button
-                        v-else-if="isCdk && isTestMode && !isSeller"
-                        class="buy-btn disabled test-only"
-                        disabled
-                      >
-                                              <FlaskConical :size="18" aria-hidden="true" />
-                                              <span>测试物品</span>
-                                            </button>
-                                            <button
-                                              v-else-if="isOrderCreationMaintenanceBlocked"
-                                              class="buy-btn disabled"
-                                              disabled
-                                            >
-                                              维护中暂不可下单
-                                            </button>
-                                            <button
-                                              v-else-if="isOwnProductPurchaseBlocked"
-                                              class="buy-btn disabled"
-                                              disabled
-                                            >
-                                              不能兑换自己的物品
-                                            </button>
-                                            <button
-                                              v-else-if="purchaseLimitReached"
-                                              class="buy-btn disabled"
-                                              disabled
-                                            >
-                                              <CircleOff :size="18" aria-hidden="true" />
-                                              <span>已达限购</span>
-                                            </button>
-                                            <button
-                                              v-else-if="!canPurchase"
-                                              class="buy-btn disabled"
-                                              disabled
-                                            >
-                                              <CircleOff :size="18" aria-hidden="true" />
-                                              <span>暂停销售</span>
-                                            </button>
-                                            <button
-                                              v-else-if="userStore.isLoggedIn && !canPurchaseByTrustLevel"
-                                              class="buy-btn disabled"
-                                              disabled
-                                            >
-                                              需达到 TL{{ purchaseTrustLevel }}
-                                            </button>
-                                            <button
-                                              v-else
-                        class="buy-btn"
-                        :class="{ test: isTestMode && isSeller }"
-                        :disabled="purchasing"
-                        @click="handleBuyProduct"
-                      >
-                        {{ purchasing ? '正在进入确认页…' : '立即兑换' }}
-                      </button>
-                      <p v-if="canEnterCheckout" class="purchase-next-step-hint">数量与优惠券将在下一步确认</p>
-                    </template>
-                  <template v-else-if="isLegacyLink">
-                    <button
-                      class="buy-btn disabled"
-                      disabled
-                    >
-                      外链已停用
-                    </button>
-                  </template>
-                  <template v-else>
-                    <button
-                      class="buy-btn"
-                      @click="handleOpenStore"
-                    >
-                      <Store :size="18" aria-hidden="true" />
-                      <span>立即前往</span>
-                    </button>
-                  </template>
+              <ProductPurchasePanel v-bind="purchasePanelProps" @buy="handleBuyProduct" @open-store="handleOpenStore" @subscribe-restock="handleSubscribeRestock" />
             </div>
           </div>
         </div>
@@ -345,8 +207,8 @@
           <div class="description-content markdown-content" v-html="renderedDescription || '暂无描述'"></div>
         </div>
 
+        <ProductComments v-if="supportsComments" :active="detailInteractionsActive" :loading="commentLoading">
         <div
-          v-if="supportsComments"
           class="detail-comment-summary"
         >
           <div class="comment-summary-main">
@@ -669,112 +531,11 @@
             </div>
           </template>
         </div>
+        </ProductComments>
         
         <!-- 底部购买按钮（移动端固定底部） -->
-                <div class="action-bottom mobile-only">
-          <template v-if="isStore">
-                                <button
-                                  type="button"
-                                  class="buy-btn store"
-                                  @click="handleOpenStore"
-                                >
-                                  <Store :size="18" aria-hidden="true" />
-                                  <span>立即前往</span>
-                                </button>
-                              </template>
-                              <template v-else-if="isPlatformOrder">
-                                <div v-if="isOutOfStock" class="buy-action-row">
-                                  <button
-                                    class="buy-btn disabled"
-                                    disabled
-                                  >
-                                    <PackageX :size="18" aria-hidden="true" />
-                                    <span>已售罄</span>
-                                  </button>
-                                  <button
-                                    v-if="isCdk"
-                                    class="buy-btn restock"
-                                    :class="{ subscribed: restockSubscribed }"
-                                    :disabled="restockStatusLoading || restockSubscribeLoading || restockSubscribed"
-                                    @click="handleSubscribeRestock"
-                                  >
-                                    <component :is="restockButtonIcon" :size="18" aria-hidden="true" />
-                                    <span>{{ restockButtonText }}</span>
-                                  </button>
-                                </div>
-                                <button
-                                  v-else-if="isCdk && isTestMode && !isSeller"
-                                  class="buy-btn disabled test-only"
-                                  disabled
-                                >
-                                  <FlaskConical :size="18" aria-hidden="true" />
-                                  <span>测试物品</span>
-                                </button>
-                                <button
-                                  v-else-if="isOrderCreationMaintenanceBlocked"
-                                  class="buy-btn disabled"
-                                  disabled
-                                >
-                                  维护中暂不可下单
-                                </button>
-                                <button
-                                  v-else-if="isOwnProductPurchaseBlocked"
-                                  class="buy-btn disabled"
-                                  disabled
-                                >
-                                  不能兑换自己的物品
-                                </button>
-                                <button
-                                  v-else-if="purchaseLimitReached"
-                                  class="buy-btn disabled"
-                                  disabled
-                                >
-                                  <CircleOff :size="18" aria-hidden="true" />
-                                  <span>已达限购</span>
-                                </button>
-                                <button
-                                  v-else-if="!canPurchase"
-                                  class="buy-btn disabled"
-                                  disabled
-                                >
-                                  <CircleOff :size="18" aria-hidden="true" />
-                                  <span>暂停销售</span>
-                                </button>
-                                <button
-                                  v-else-if="userStore.isLoggedIn && !canPurchaseByTrustLevel"
-                                  class="buy-btn disabled"
-                                  disabled
-                                >
-                                  需达到 TL{{ purchaseTrustLevel }}
-                                </button>
-                                <button
-                                  v-else
-                                  class="buy-btn"
-                                  :class="{ test: isTestMode && isSeller }"
-                                  :disabled="purchasing"
-                                  @click="handleBuyProduct"
-                                >
-                                  {{ purchasing ? '正在进入确认页…' : '立即兑换' }}
-                                </button>
-                                <p v-if="canEnterCheckout" class="purchase-next-step-hint">数量与优惠券将在下一步确认</p>
-                              </template>
-                              <template v-else-if="isLegacyLink">
-                                <button
-                                  class="buy-btn disabled"
-                                  disabled
-                                >
-                                  外链已停用
-                                </button>
-                              </template>
-                              <template v-else>
-                                <button
-                                  class="buy-btn"
-                                  @click="handleOpenStore"
-                                >
-                                  <Store :size="18" aria-hidden="true" />
-                                  <span>立即前往</span>
-                                </button>
-                              </template>
+        <div class="action-bottom mobile-only">
+          <ProductPurchasePanel v-bind="purchasePanelProps" @buy="handleBuyProduct" @open-store="handleOpenStore" @subscribe-restock="handleSubscribeRestock" />
         </div>
       </template>
       
@@ -948,20 +709,14 @@ import { ref, computed, watch, onActivated, onDeactivated, onMounted, onUnmounte
 import { useRoute, useRouter } from 'vue-router'
 import {
   ArrowLeft,
-  Bell,
-  BellCheck,
   Bot,
   CalendarClock,
-  CircleOff,
   Eye,
-  EyeOff,
   FileText,
-  Flag,
   Flame,
   FlaskConical,
   Gamepad2,
   HardDrive,
-  Heart,
   Laptop,
   LockKeyhole,
   MessageCircle,
@@ -969,7 +724,6 @@ import {
   MoreHorizontal,
   Package,
   PackageX,
-  Search,
   Server,
   ShieldAlert,
   ShieldCheck,
@@ -983,33 +737,29 @@ import {
 import { useProductStore } from '@/stores/product'
 import { useUserStore } from '@/stores/user'
 import { useCheckoutStore } from '@/stores/checkout'
-import { isMaintenanceFeatureEnabled, isRestrictedMaintenanceMode } from '@/config/maintenance'
 import { useToast } from '@/composables/useToast'
 import { useDialog } from '@/composables/useDialog'
-import { formatRelativeTime, formatPrice } from '@/utils/format'
+import { formatRelativeTime } from '@/utils/format'
 import { renderProductDescription } from '@/utils/renderProductDescription'
 import { prepareNewTab, openInNewTab, cleanupPreparedTab } from '@/utils/newTab'
 import AvatarImage from '@/components/common/AvatarImage.vue'
 import StarRatingDisplay from '@/components/common/StarRatingDisplay.vue'
 import StarRatingInput from '@/components/common/StarRatingInput.vue'
 import ProductStockIndicator from '@/components/product/ProductStockIndicator.vue'
+import ProductMedia from '@/components/product-detail/ProductMedia.vue'
+import ProductInteractionPanel from '@/components/product-detail/ProductInteractionPanel.vue'
+import ProductPurchasePanel from '@/components/product-detail/ProductPurchasePanel.vue'
+import ProductComments from '@/components/product-detail/ProductComments.vue'
+import { useProductDetail } from '@/composables/product-detail/useProductDetail'
+import { useProductComments } from '@/composables/product-detail/useProductComments'
+import { useProductInteractions } from '@/composables/product-detail/useProductInteractions'
 import { buildAvatarCandidates } from '@/utils/avatar'
 import { fetchExternalProductLinkRequest } from '@/services/shop/catalogService'
 import {
-  isCdkProduct,
-  isLegacyLinkProduct,
-  isOutOfStock as isProductOutOfStock,
-  isPlatformOrderProduct,
-  isStoreProduct
+  isPlatformOrderProduct
 } from '@/utils/shopProduct'
 import Skeleton from '@/components/common/Skeleton.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
-import {
-  formatPurchaseLimitLabel,
-  formatPurchaseLimitReleaseTime,
-  getPurchaseLimit,
-  isPurchaseLimitReached
-} from '@/utils/purchaseLimit'
 
 const route = useRoute()
 const router = useRouter()
@@ -1036,44 +786,45 @@ const favoriteSubmitting = ref(false)
 const restockSubscribed = ref(false)
 const restockStatusLoading = ref(false)
 const restockSubscribeLoading = ref(false)
-const coverAspectRatio = ref(null)
-const commentLoading = ref(false)
-const commentList = ref([])
-const commentEnabled = ref(false)
-const commentDisabledReason = ref('该物品暂未开启评论')
-const commentPagination = ref({
-  total: 0,
-  page: 1,
-  pageSize: 10,
-  totalPages: 0
+const commentController = useProductComments()
+const {
+  loading: commentLoading,
+  commentList,
+  commentEnabled,
+  commentDisabledReason,
+  commentPagination,
+  commentSummary,
+  viewerHasPurchased,
+  viewerHasRated,
+  viewerRatingValue,
+  commentDraft,
+  commentRatingDraft,
+  commentSubmitting,
+  commentActionMenuId,
+  commentDeletingId,
+  commentReportingId,
+  showCommentReportModal,
+  commentReportReason,
+  commentReportSubmitting,
+  commentReportTarget,
+  commentVotingMap,
+  commentReplyComposerIdSet,
+  commentReplyMap,
+  commentReplyPaginationMap,
+  commentReplyLoadingMap,
+  commentReplySubmittingMap,
+  commentReplyDraftMap
+} = commentController
+const {
+  active: detailInteractionsActive,
+  activate: activateInteractionListeners,
+  deactivate: deactivateInteractionListeners,
+  syncModalState: syncInteractionModalState
+} = useProductInteractions({
+  hasOpenModal: () => showImagePreview.value || showReportModal.value || showCommentReportModal.value,
+  onEscape: event => handleEscKey(event),
+  onDocumentClick: event => handleDocumentClick(event)
 })
-const commentSummary = ref({
-  averageRating: 0,
-  ratedCount: 0,
-  favoriteCount: 0,
-  visibleCommentCount: 0,
-  visibleReplyCount: 0
-})
-const viewerHasPurchased = ref(false)
-const viewerHasRated = ref(false)
-const viewerRatingValue = ref(null)
-const commentDraft = ref('')
-const commentRatingDraft = ref(null)
-const commentSubmitting = ref(false)
-const commentActionMenuId = ref(null)
-const commentDeletingId = ref(null)
-const commentReportingId = ref(null)
-const showCommentReportModal = ref(false)
-const commentReportReason = ref('')
-const commentReportSubmitting = ref(false)
-const commentReportTarget = ref(null)
-const commentVotingMap = ref({})
-const commentReplyComposerIdSet = ref(new Set())
-const commentReplyMap = ref({})
-const commentReplyPaginationMap = ref({})
-const commentReplyLoadingMap = ref({})
-const commentReplySubmittingMap = ref({})
-const commentReplyDraftMap = ref({})
 
 const COMMENT_VOTE_UP = 'up'
 const COMMENT_VOTE_DOWN = 'down'
@@ -1098,32 +849,53 @@ const reportCategoryOptions = [
   { value: 'other', label: '其他' }
 ]
 
-// 物品类型
-const renderedDescription = computed(() => renderProductDescription(product.value?.description))
-const isCdk = computed(() => isCdkProduct(product.value))
-const isStore = computed(() => isStoreProduct(product.value))
-const isLegacyLink = computed(() => isLegacyLinkProduct(product.value))
-const isPlatformOrder = computed(() => isPlatformOrderProduct(product.value))
-const supportsComments = computed(() => isPlatformOrder.value)
-const isLandscapeDetailLayout = computed(() => {
-  const ratio = Number(coverAspectRatio.value)
-  return Number.isFinite(ratio) && ratio > 1
+const {
+  coverAspectRatio,
+  isCdk,
+  isStore,
+  isLegacyLink,
+  isPlatformOrder,
+  supportsComments,
+  isLandscapeDetailLayout,
+  isTestMode,
+  isSeller,
+  hasDiscount,
+  discountPercent,
+  finalPrice,
+  originalPrice,
+  isOutOfStock,
+  canPurchase,
+  soldCount,
+  purchaseLimitReached,
+  purchaseLimitReservedQuantity,
+  purchaseLimitReleaseText,
+  purchaseTrustLevel,
+  canPurchaseByTrustLevel,
+  purchaseTrustBlockMessage,
+  exchangeQuantityText,
+  purchaseAccountText,
+  purchaseAccountTone,
+  deliveryConditionText,
+  isOwnProductPurchaseBlocked,
+  isOrderCreationMaintenanceBlocked,
+  canEnterCheckout,
+  maintenancePurchaseHint,
+  coverStyle,
+  setCoverAspectRatio,
+  syncCoverAspectRatio,
+  stop: stopProductDetail
+} = useProductDetail({
+  product,
+  isLoggedIn: computed(() => userStore.isLoggedIn),
+  userId: computed(() => userStore.user?.id),
+  trustLevel: computed(() => userStore.trustLevel)
 })
 
-// 测试模式相关
-const isTestMode = computed(() => !!product.value?.isTestMode)
-const isSeller = computed(() => {
-  if (!product.value || !userStore.user) return false
-  return String(userStore.user.id) === String(product.value.sellerUserId)
-})
+// 物品类型
+const renderedDescription = computed(() => renderProductDescription(product.value?.description))
 const isFavorited = computed(() =>
   !!product.value?.isFavorited
 )
-const viewerTrustLevel = computed(() => {
-  const raw = userStore.trustLevel
-  const parsed = Number.parseInt(raw, 10)
-  return Number.isInteger(parsed) ? parsed : 0
-})
 const sellerUsernameLabel = computed(() => {
   const username = String(product.value?.sellerUsername || '').trim()
   return username || '未知'
@@ -1145,102 +917,34 @@ const sellerTrustBadgeClass = computed(() => {
   return `seller-trust-badge--${sellerTrustLevelValue.value}`
 })
 
-
-// 价格计算
-const price = computed(() => parseFloat(product.value?.price) || 0)
-const discount = computed(() => parseFloat(product.value?.discount) || 1)
-const hasDiscount = computed(() => discount.value < 1)
-const discountPercent = computed(() => Math.round((1 - discount.value) * 100))
-const finalPrice = computed(() => formatPrice(price.value * discount.value))
-const originalPrice = computed(() => formatPrice(price.value))
-
-// 库存
-const isOutOfStock = computed(() => isProductOutOfStock(product.value))
 const restockButtonText = computed(() => {
   if (restockStatusLoading.value) return '加载中...'
   if (restockSubscribeLoading.value) return '订阅中...'
   if (restockSubscribed.value) return '已订阅'
   return '订阅补货通知'
 })
-const restockButtonIcon = computed(() => restockSubscribed.value ? BellCheck : Bell)
-// canPurchase 逻辑：后端返回明确的 false 时才禁用，未返回或为 undefined/null 时默认可购买
-const canPurchase = computed(() => {
-  // 如果后端没有返回这个字段（undefined），默认允许购买
-  if (product.value?.canPurchase === undefined) return true
-  return product.value.canPurchase !== false
-})
-const soldCount = computed(() => parseInt(product.value?.soldCount) || 0)
-const purchaseLimit = computed(() => getPurchaseLimit(product.value))
-const purchaseLimitReached = computed(() => isPurchaseLimitReached(purchaseLimit.value))
-const purchaseLimitReservedQuantity = computed(() => Number(purchaseLimit.value.reservedQuantity || 0))
-const purchaseLimitReleaseText = computed(() => (
-  purchaseLimit.value.periodDays > 0
-    ? formatPurchaseLimitReleaseTime(purchaseLimit.value.nextAvailableAt)
-    : ''
-))
-const purchaseTrustLevel = computed(() => {
-  const raw = Number(product.value?.purchaseTrustLevel ?? 0)
-  if (!Number.isInteger(raw) || raw < 0) return 0
-  return Math.min(raw, 4)
-})
-const canPurchaseByTrustLevel = computed(() => viewerTrustLevel.value >= purchaseTrustLevel.value)
-const purchaseTrustBlockMessage = computed(() => {
-  if (purchaseTrustLevel.value <= 0 || canPurchaseByTrustLevel.value) return ''
-  if (!userStore.isLoggedIn) {
-    return `该商品需登录且信任等级达到 TL${purchaseTrustLevel.value} 才可兑换`
-  }
-  return `当前账号信任等级为 TL${viewerTrustLevel.value}，需达到 TL${purchaseTrustLevel.value} 才可兑换`
-})
-
-const exchangeQuantityText = computed(() => {
-  if (isOutOfStock.value) return '当前无货'
-  return formatPurchaseLimitLabel(purchaseLimit.value, { loggedIn: userStore.isLoggedIn })
-})
-
-const purchaseAccountText = computed(() => {
-  if (purchaseTrustLevel.value <= 0) {
-    return userStore.isLoggedIn ? '无等级限制' : '登录后即可兑换'
-  }
-  if (!userStore.isLoggedIn) return `需 TL${purchaseTrustLevel.value} · 登录后核验`
-  return canPurchaseByTrustLevel.value
-    ? `需 TL${purchaseTrustLevel.value} · 当前 TL${viewerTrustLevel.value}，已满足`
-    : `需 TL${purchaseTrustLevel.value} · 当前 TL${viewerTrustLevel.value}，差 ${purchaseTrustLevel.value - viewerTrustLevel.value} 级`
-})
-
-const purchaseAccountTone = computed(() => {
-  if (!userStore.isLoggedIn) return ''
-  if (purchaseTrustLevel.value <= 0 || canPurchaseByTrustLevel.value) return 'is-satisfied'
-  return 'is-blocked'
-})
-
-const deliveryConditionText = computed(() => (
-  isCdk.value ? '支付成功后自动发放' : '支付后联系卖家履约'
-))
+const purchasePanelProps = computed(() => ({
+  isStore: isStore.value,
+  isPlatformOrder: isPlatformOrder.value,
+  isLegacyLink: isLegacyLink.value,
+  isCdk: isCdk.value,
+  isOutOfStock: isOutOfStock.value,
+  isTestMode: isTestMode.value,
+  isSeller: isSeller.value,
+  maintenanceBlocked: isOrderCreationMaintenanceBlocked.value,
+  ownProductBlocked: isOwnProductPurchaseBlocked.value,
+  purchaseLimitReached: purchaseLimitReached.value,
+  canPurchase: canPurchase.value,
+  isLoggedIn: userStore.isLoggedIn,
+  trustAllowed: canPurchaseByTrustLevel.value,
+  purchaseTrustLevel: purchaseTrustLevel.value,
+  purchasing: purchasing.value,
+  canEnterCheckout: canEnterCheckout.value,
+  restockSubscribed: restockSubscribed.value,
+  restockBusy: restockStatusLoading.value || restockSubscribeLoading.value,
+  restockButtonText: restockButtonText.value
+}))
 const deliveryConditionIcon = computed(() => (isCdk.value ? Ticket : MessagesSquare))
-const isOwnProductPurchaseBlocked = computed(() => (
-  isPlatformOrder.value && isSeller.value && !isTestMode.value
-))
-
-const isOrderCreationMaintenanceBlocked = computed(() =>
-  isRestrictedMaintenanceMode() && !isMaintenanceFeatureEnabled('orderCreate')
-)
-
-const canEnterCheckout = computed(() => (
-  isPlatformOrder.value
-  && !isOutOfStock.value
-  && !purchaseLimitReached.value
-  && !isOrderCreationMaintenanceBlocked.value
-  && canPurchase.value
-  && !isOwnProductPurchaseBlocked.value
-  && !(isCdk.value && isTestMode.value && !isSeller.value)
-  && (!userStore.isLoggedIn || canPurchaseByTrustLevel.value)
-))
-
-const maintenancePurchaseHint = computed(() =>
-  isOrderCreationMaintenanceBlocked.value
-    ? '因 LinuxDo Credit 积分服务维护中，当前暂不支持创建新订单。'
-    : ''
-)
 
 const detailErrorContent = computed(() => {
   if (detailErrorType.value === 'login_required') {
@@ -1338,71 +1042,7 @@ const updateTime = computed(() =>
   formatRelativeTime(product.value?.updatedAt || product.value?.createdAt)
 )
 
-// 封面样式
-const colors = [
-  'linear-gradient(135deg, #e0f2fe, #bae6fd)',
-  'linear-gradient(135deg, #fce7f3, #fbcfe8)',
-  'linear-gradient(135deg, #d1fae5, #a7f3d0)',
-  'linear-gradient(135deg, #fef3c7, #fde68a)',
-  'linear-gradient(135deg, #ede9fe, #ddd6fe)',
-  'linear-gradient(135deg, #ffedd5, #fed7aa)'
-]
-const coverStyle = computed(() => {
-  if (product.value?.imageUrl) return {}
-  const id = product.value?.id || 0
-  return { background: colors[id % colors.length] }
-})
-
 let latestRestockStatusRequestId = 0
-let latestCoverProbeRequestId = 0
-
-function setCoverAspectRatio(width, height) {
-  const naturalWidth = Number(width)
-  const naturalHeight = Number(height)
-
-  if (!Number.isFinite(naturalWidth) || !Number.isFinite(naturalHeight) || naturalWidth <= 0 || naturalHeight <= 0) {
-    coverAspectRatio.value = null
-    return
-  }
-
-  coverAspectRatio.value = naturalWidth / naturalHeight
-}
-
-async function syncCoverAspectRatio(imageUrl) {
-  const requestId = ++latestCoverProbeRequestId
-  coverAspectRatio.value = null
-
-  if (!imageUrl || typeof window === 'undefined') {
-    return
-  }
-
-  const image = new window.Image()
-  image.decoding = 'async'
-  image.src = imageUrl
-
-  if (image.complete && image.naturalWidth > 0 && image.naturalHeight > 0) {
-    if (requestId === latestCoverProbeRequestId) {
-      setCoverAspectRatio(image.naturalWidth, image.naturalHeight)
-    }
-    return
-  }
-
-  await new Promise((resolve) => {
-    image.onload = () => {
-      if (requestId === latestCoverProbeRequestId) {
-        setCoverAspectRatio(image.naturalWidth, image.naturalHeight)
-      }
-      resolve()
-    }
-
-    image.onerror = () => {
-      if (requestId === latestCoverProbeRequestId) {
-        coverAspectRatio.value = null
-      }
-      resolve()
-    }
-  })
-}
 
 async function refreshRestockSubscriptionStatus() {
   const requestId = ++latestRestockStatusRequestId
@@ -1496,14 +1136,15 @@ onDeactivated(() => {
 })
 
 function activateDetailInteractions() {
-  document.addEventListener('click', handleDocumentClick)
+  commentController.activate()
+  activateInteractionListeners()
   syncModalState()
 }
 
 function deactivateDetailInteractions() {
-  document.body.style.overflow = ''
-  document.removeEventListener('keydown', handleEscKey)
-  document.removeEventListener('click', handleDocumentClick)
+  commentController.deactivate()
+  deactivateInteractionListeners()
+  stopProductDetail()
 }
 
 async function restoreCheckoutReturnState() {
@@ -1703,10 +1344,15 @@ function handleDocumentClick(event) {
 async function loadComments(page = 1) {
   if (!product.value?.id) return
   const targetPage = Math.max(Number.parseInt(page, 10) || 1, 1)
+  const request = commentController.beginRequest('comments')
 
-  commentLoading.value = true
   try {
-    const result = await productStore.fetchProductComments(product.value.id, { page: targetPage, pageSize: 10 })
+    const result = await productStore.fetchProductComments(product.value.id, {
+      page: targetPage,
+      pageSize: 10,
+      signal: request.signal
+    })
+    if (!commentController.isCurrent('comments', request)) return
     if (!result?.success) {
       const message = typeof result?.error === 'object'
         ? (result.error?.message || result.error?.code || '加载评论失败')
@@ -1776,9 +1422,9 @@ async function loadComments(page = 1) {
     commentActionMenuId.value = null
     void preloadCommentRepliesForVisibleComments()
   } catch (error) {
-    toast.error(`加载评论失败：${error.message}`)
+    if (!request.signal.aborted) toast.error(`加载评论失败：${error.message}`)
   } finally {
-    commentLoading.value = false
+    commentController.finishRequest('comments', request)
   }
 }
 
@@ -1859,15 +1505,19 @@ async function loadCommentReplies(commentId, page = 1, options = {}) {
   const silent = !!options?.silent
   const force = !!options?.force
   const loadedOnce = !!commentReplyPaginationMap.value[safeCommentId]
+  const requestScope = `replies:${safeCommentId}`
 
   if (!append && loadedOnce && !force) return
 
   commentReplyLoadingMap.value[safeCommentId] = true
+  const request = commentController.beginRequest(requestScope)
   try {
     const result = await productStore.fetchProductCommentReplies(safeCommentId, {
       page: targetPage,
-      pageSize: 10
+      pageSize: 10,
+      signal: request.signal
     })
+    if (!commentController.isCurrent(requestScope, request)) return
     if (!result?.success) {
       const message = typeof result?.error === 'object'
         ? (result.error?.message || result.error?.code || '加载回复失败')
@@ -1902,9 +1552,10 @@ async function loadCommentReplies(commentId, page = 1, options = {}) {
       replyCount: Number(pagination.total || current.replyCount || merged.length || 0)
     }))
   } catch (error) {
-    if (!silent) toast.error(`加载回复失败：${error.message}`)
+    if (!silent && !request.signal.aborted) toast.error(`加载回复失败：${error.message}`)
   } finally {
-    commentReplyLoadingMap.value[safeCommentId] = false
+    if (commentController.ownsRequest(requestScope, request)) commentReplyLoadingMap.value[safeCommentId] = false
+    commentController.finishRequest(requestScope, request)
   }
 }
 
@@ -2266,12 +1917,7 @@ function handleEscKey(e) {
 }
 
 function syncModalState() {
-  const opened = showImagePreview.value || showReportModal.value || showCommentReportModal.value
-  document.body.style.overflow = opened ? 'hidden' : ''
-  document.removeEventListener('keydown', handleEscKey)
-  if (opened) {
-    document.addEventListener('keydown', handleEscKey)
-  }
+  syncInteractionModalState()
 }
 
 async function openReportModal() {

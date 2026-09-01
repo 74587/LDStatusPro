@@ -53,6 +53,7 @@ interface PagedRequestOptions {
   page?: number
   pageSize?: number
   status?: string
+  signal?: AbortSignal
 }
 
 interface ProductReportPayload {
@@ -272,7 +273,7 @@ export async function fetchProductCommentsRequest(productId: string | number, op
 
   try {
     return validateApiResult(
-      await api.get(`/api/shop/products/${productId}/comments?page=${page}&pageSize=${pageSize}`),
+      await api.get(`/api/shop/products/${productId}/comments?page=${page}&pageSize=${pageSize}`, { signal: options.signal }),
       ProductCommentsResponseSchema,
       { endpoint: '/api/shop/products/:id/comments', schemaName: 'ProductCommentsResponse' }
     )
@@ -343,7 +344,7 @@ export async function fetchProductCommentRepliesRequest(commentId: string | numb
 
   try {
     return validateApiResult(
-      await api.get(`/api/shop/comments/${commentId}/replies?page=${page}&pageSize=${pageSize}`),
+      await api.get(`/api/shop/comments/${commentId}/replies?page=${page}&pageSize=${pageSize}`, { signal: options.signal }),
       CommentRepliesResponseSchema,
       { endpoint: '/api/shop/comments/:id/replies', schemaName: 'CommentRepliesResponse' }
     )
