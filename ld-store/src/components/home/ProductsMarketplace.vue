@@ -481,7 +481,7 @@ watch(hasMore, (value) => {
   .sort-section { flex-direction: column; align-items: stretch; gap: 8px; }
   .sort-options { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
   .sort-btn, .price-filter-input, .price-filter-btn, .stock-filter { min-height: 44px; }
-  .catalog-filters { width: 100%; justify-content: flex-start; gap: 8px; }
+  .catalog-filters { width: 100%; justify-content: flex-start; gap: 8px; flex: none; }
   .price-filter { width: 100%; gap: 4px; }
   .price-filter-input { flex: 1 1 0; width: auto; min-width: 0; }
 }

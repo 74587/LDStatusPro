@@ -43,4 +43,9 @@ describe('home marketplace accessibility', () => {
     expect(buySource).toContain('.buy-card-link:focus-visible')
     expect(productsSource).toContain('.stock-filter-input:focus-visible + .checkbox')
   })
+
+  it('does not reuse the desktop filter flex basis as mobile block height', () => {
+    const mobileStyles = productsSource.slice(productsSource.indexOf('@media (max-width: 768px)'))
+    expect(mobileStyles).toContain('.catalog-filters { width: 100%; justify-content: flex-start; gap: 8px; flex: none; }')
+  })
 })
