@@ -5,7 +5,8 @@ import worker, {
   handleOembed,
   injectMetadataIntoHtml,
   parseOgImagePath,
-  resolvePageMetadata
+  resolvePageMetadata,
+  STOREFRONT_CSP
 } from '../public/_worker.js'
 
 const env = {
@@ -208,7 +209,8 @@ describe('Worker responses and oEmbed', () => {
     expect(response.status).toBe(200)
     expect(response.headers.get('cache-control')).toBe('no-store, no-cache, must-revalidate')
     expect(response.headers.get('x-robots-tag')).toBe('noindex, nofollow, noarchive')
-    expect(response.headers.get('content-security-policy')).toContain("script-src 'self'")
+    expect(response.headers.get('content-security-policy')).toBe(STOREFRONT_CSP)
+    expect(response.headers.get('content-security-policy')).toContain("style-src-attr 'none'")
     expect(response.headers.get('content-length')).toBeNull()
     expect(await response.text()).toContain('property="og:title"')
 

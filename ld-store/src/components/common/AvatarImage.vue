@@ -3,7 +3,7 @@
     ref="rootRef"
     v-bind="forwardedAttrs"
     :class="['avatar-image', attrs.class, { 'avatar-image--loading': isLoading }]"
-    :style="attrs.style"
+    :style="forwardedStyle"
     :data-avatar-state="loadState"
     :aria-busy="String(isLoading)"
   >
@@ -100,6 +100,11 @@ const forwardedAttrs = computed(() => {
     ...rest
   } = attrs
   return rest
+})
+
+const forwardedStyle = computed(() => {
+  const style = attrs.style
+  return style && typeof style === 'object' && !Array.isArray(style) ? style : undefined
 })
 
 const avatarSources = computed(() => {

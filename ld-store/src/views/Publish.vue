@@ -295,14 +295,14 @@
               <div class="notice-item highlight">
                 <span class="item-num">2</span>
                 <div class="item-text">
-                  <strong>在<a href="https://credit.linux.do/merchant" target="_blank" style="color: var(--palette-hex-007bff);"> LDC集市 </a>配置通知地址（最重要）</strong>：这是支付成功后自动发货的关键！
+                  <strong>在<a href="https://credit.linux.do/merchant" target="_blank" class="merchant-config-link"> LDC集市 </a>配置通知地址（最重要）</strong>：这是支付成功后自动发货的关键！
                   <code class="notice-url">https://api.ldspro.qzz.io/api/shop/ldc/notify</code>
                 </div>
               </div>
               <div class="notice-item">
                 <span class="item-num">3</span>
                 <div class="item-text">
-                  <strong>在<a href="https://credit.linux.do/merchant" target="_blank" style="color: var(--palette-hex-007bff);"> LDC集市 </a>配置回调地址</strong>：支付完成后浏览器跳转地址
+                  <strong>在<a href="https://credit.linux.do/merchant" target="_blank" class="merchant-config-link"> LDC集市 </a>配置回调地址</strong>：支付完成后浏览器跳转地址
                   <code class="notice-url">https://api.ldspro.qzz.io/api/shop/ldc/return</code>
                 </div>
               </div>
@@ -1729,6 +1729,10 @@ onBeforeUnmount(() => {
 
 .cdk-config-notice .item-text strong {
   color: var(--text-primary);
+}
+
+.merchant-config-link {
+  color: var(--palette-hex-007bff);
 }
 
 .cdk-config-notice .notice-url {

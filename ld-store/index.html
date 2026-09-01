@@ -9,31 +9,10 @@
 
   <!--
     在首个样式与 Vue 入口加载前恢复主题，避免深色模式刷新时先绘制浅色背景。
-    这里只保留首屏必需的背景色，完整主题仍由 main.css 管理。
+    这里只加载首屏必需的同源样式，完整主题仍由 main.css 管理。
   -->
   <script src="/theme-bootstrap.js"></script>
-  <style>
-    html {
-      min-height: 100%;
-      background-color: #faf9f7;
-      color-scheme: light;
-    }
-
-    html.dark {
-      background-color: #121212;
-      color-scheme: dark;
-    }
-
-    body,
-    #app {
-      min-height: 100%;
-    }
-
-    body {
-      margin: 0;
-      background-color: inherit;
-    }
-  </style>
+  <link rel="stylesheet" href="/theme-bootstrap.css">
   
   <!-- 允许抓取但禁止收录，便于统计与预览 -->
   <meta name="robots" content="noindex, nofollow, noarchive">

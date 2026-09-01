@@ -6,6 +6,7 @@ const DEFAULT_TITLE = 'LD士多 - Linux DO 社区积分兑换中心'
 const DEFAULT_DESCRIPTION = '在 LD士多 使用 Linux.do 社区积分兑换精选虚拟物品与服务。'
 const HTML_CACHE_CONTROL = 'no-store, no-cache, must-revalidate'
 const OEMBED_CACHE_CONTROL = 'public, max-age=300, stale-while-revalidate=3600'
+export const STOREFRONT_CSP = "default-src 'self'; script-src 'self' https://mxana.tacool.com https://static.cloudflareinsights.com; style-src 'self'; style-src-elem 'self'; style-src-attr 'none'; img-src 'self' https: data: blob:; font-src 'self' https: data:; connect-src 'self' https://api2.ldspro.qzz.io https://api1.ldspro.qzz.io https://api.ldspro.qzz.io https://credit.linux.do https://linux.do https://*.linux.do https://*.workers.dev; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
 
 const DYNAMIC_ROUTES = [
   { pattern: /^\/product\/\d+\/?$/, label: '商品', fallbackTitle: '商品详情 - LD士多', fallbackDescription: '在 LD士多 查看商品详情、价格与兑换方式。' },
@@ -572,6 +573,7 @@ async function handleHtmlRequest(request, env) {
   const headers = new Headers(assetResponse.headers)
   headers.set('content-type', 'text/html; charset=utf-8')
   headers.set('cache-control', HTML_CACHE_CONTROL)
+  headers.set('content-security-policy', STOREFRONT_CSP)
   headers.set('x-robots-tag', 'noindex, nofollow, noarchive')
   headers.delete('content-length')
   const status = metadata.notFound ? 404 : 200

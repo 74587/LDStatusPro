@@ -16,7 +16,7 @@ const toolFiles = [
 
 export default [
   {
-    ignores: ['dist/**', 'node_modules/**', '.wrangler/**']
+    ignores: ['dist/**', '.csp-smoke-dist/**', 'node_modules/**', '.wrangler/**']
   },
   {
     ...js.configs.recommended,
@@ -57,7 +57,7 @@ export default [
     }
   },
   {
-    files: ['src/**/*.vue'],
+    files: ['src/**/*.vue', 'tests/**/*.vue'],
     languageOptions: {
       parserOptions: {
         parser: tseslint.parser
