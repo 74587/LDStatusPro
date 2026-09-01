@@ -43,7 +43,7 @@ describe('API request lifecycle', () => {
 
     for (const [, options] of fetchMock.mock.calls) {
       expect(options.body).toBeUndefined()
-      expect(Object.keys(options.headers).map((key) => key.toLowerCase())).not.toContain('content-type')
+      expect(options.headers.has('content-type')).toBe(false)
     }
   })
 
@@ -55,7 +55,7 @@ describe('API request lifecycle', () => {
 
     const [, options] = fetchMock.mock.calls[0]
     expect(options.body).toBe('{"productId":7}')
-    expect(options.headers['Content-Type']).toBe('application/json')
+    expect(options.headers.get('Content-Type')).toBe('application/json')
   })
 
   it('passes FormData through without setting a multipart content type', async () => {
@@ -68,7 +68,7 @@ describe('API request lifecycle', () => {
 
     const [, options] = fetchMock.mock.calls[0]
     expect(options.body).toBe(formData)
-    expect(Object.keys(options.headers).map((key) => key.toLowerCase())).not.toContain('content-type')
+    expect(options.headers.has('content-type')).toBe(false)
   })
 
   it('distinguishes caller cancellation from request timeout', async () => {
@@ -82,7 +82,8 @@ describe('API request lifecycle', () => {
       status: 0,
       error: '',
       aborted: true,
-      abortReason: 'caller'
+      abortReason: 'caller',
+      kind: 'abort'
     })
 
     vi.useFakeTimers()
@@ -94,7 +95,8 @@ describe('API request lifecycle', () => {
       status: 0,
       error: '',
       aborted: true,
-      abortReason: 'timeout'
+      abortReason: 'timeout',
+      kind: 'abort'
     })
   })
 
@@ -107,13 +109,41 @@ describe('API request lifecycle', () => {
     vi.stubGlobal('fetch', fetchMock)
 
     await expect(api.get('/api/shop/orders')).resolves.toMatchObject({ success: false, status: 401, error: '请重新登录' })
-    await expect(api.get('/api/status')).resolves.toBe('plain response')
-    await expect(api.get('/api/shop/products/9')).resolves.toEqual({ success: true, data: { id: 9 } })
-    await expect(api.get('/api/status')).resolves.toEqual({ success: false, status: 0, error: '网络连接异常，请检查网络后重试' })
+    await expect(api.get('/api/status')).resolves.toEqual({ success: true, status: 200, data: 'plain response' })
+    await expect(api.get('/api/shop/products/9')).resolves.toEqual({ success: true, status: 200, data: { id: 9 } })
+    await expect(api.get('/api/status')).resolves.toEqual({
+      success: false,
+      status: 0,
+      error: '网络连接异常，请检查网络后重试',
+      aborted: false,
+      kind: 'network'
+    })
   })
 
   it('keeps falsy legacy payload data during response normalization', () => {
-    expect(normalizeResponsePayload({ success: true, data: { success: true, data: 0 } })).toEqual({ success: true, data: 0 })
-    expect(normalizeResponsePayload({ success: true, data: { success: true, data: null } })).toEqual({ success: true, data: null })
+    expect(normalizeResponsePayload({ success: true, data: { success: true, data: 0 } })).toEqual({ success: true, status: 200, data: 0 })
+    expect(normalizeResponsePayload({ success: true, data: { success: true, data: null } })).toEqual({ success: true, status: 200, data: null })
+  })
+
+  it('normalizes successful and failed payload envelopes without losing metadata', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(mockResponse({ success: true, auth_url: 'https://example.test/login' }))
+      .mockResolvedValueOnce(mockResponse({ success: false, status: 409, error: { code: 'STALE', message: '状态已更新' } }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(api.get('/api/auth/init')).resolves.toEqual({
+      success: true,
+      status: 200,
+      data: null,
+      auth_url: 'https://example.test/login'
+    })
+    await expect(api.get('/api/shop/products')).resolves.toEqual({
+      success: false,
+      status: 409,
+      error: '状态已更新',
+      errorCode: 'STALE',
+      aborted: false,
+      kind: 'http'
+    })
   })
 })
