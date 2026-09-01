@@ -60,9 +60,8 @@ function normalizeServerErrorMessage(status, data) {
   return fallback
 }
 
-function normalizeNetworkErrorMessage(error, timeoutMessage) {
+function normalizeNetworkErrorMessage(error) {
   if (!error) return NETWORK_ERROR_MESSAGE
-  if (error.name === 'AbortError') return timeoutMessage
   const text = normalizeMessage(error.message).toLowerCase()
   if (!text) return NETWORK_ERROR_MESSAGE
   if (
@@ -83,6 +82,88 @@ async function parseResponseBody(response) {
     return response.json().catch(() => null)
   }
   return response.text().catch(() => '')
+}
+
+export function normalizeResponsePayload(data) {
+  if (
+    data?.success === true
+    && data.data?.success === true
+    && Object.prototype.hasOwnProperty.call(data.data, 'data')
+  ) {
+    return { success: true, data: data.data.data }
+  }
+  return data
+}
+
+function isBodyInstance(body, typeName) {
+  const BodyType = globalThis[typeName]
+  return typeof BodyType === 'function' && body instanceof BodyType
+}
+
+function isJsonBody(body) {
+  if (body === undefined || body === null) return false
+  if (typeof body === 'string') return false
+  if (
+    isBodyInstance(body, 'FormData')
+    || isBodyInstance(body, 'URLSearchParams')
+    || isBodyInstance(body, 'Blob')
+    || isBodyInstance(body, 'ArrayBuffer')
+  ) {
+    return false
+  }
+  return typeof body === 'object' || typeof body === 'boolean' || typeof body === 'number'
+}
+
+function hasHeader(headers, name) {
+  const normalizedName = name.toLowerCase()
+  return Object.keys(headers).some((key) => key.toLowerCase() === normalizedName)
+}
+
+function prepareRequestBody(body) {
+  if (body === undefined || body === null) return undefined
+  return isJsonBody(body) ? JSON.stringify(body) : body
+}
+
+function createAbortContext(callerSignal, timeout) {
+  const controller = new AbortController()
+  let abortReason = ''
+
+  const abortFromCaller = () => {
+    if (controller.signal.aborted) return
+    abortReason = 'caller'
+    controller.abort(callerSignal?.reason)
+  }
+
+  if (callerSignal?.aborted) {
+    abortFromCaller()
+  } else {
+    callerSignal?.addEventListener('abort', abortFromCaller, { once: true })
+  }
+
+  const timeoutId = setTimeout(() => {
+    if (controller.signal.aborted) return
+    abortReason = 'timeout'
+    controller.abort()
+  }, timeout)
+
+  return {
+    signal: controller.signal,
+    getAbortReason: () => abortReason,
+    cleanup() {
+      clearTimeout(timeoutId)
+      callerSignal?.removeEventListener('abort', abortFromCaller)
+    }
+  }
+}
+
+function abortedResponse(abortReason) {
+  return {
+    success: false,
+    status: 0,
+    error: '',
+    aborted: true,
+    abortReason
+  }
 }
 
 function maintenanceBlockedResponse(message = '站点维护中，当前操作暂不可用') {
@@ -124,12 +205,14 @@ async function request(url, options = {}) {
     }
   }
   
-  // 默认请求头
+  const jsonBody = isJsonBody(options.body)
   const headers = {
-    'Content-Type': 'application/json',
     'Accept': 'application/json',
     ...getDiscoveryRequestHeaders(url),
     ...options.headers
+  }
+  if (jsonBody && !hasHeader(headers, 'content-type')) {
+    headers['Content-Type'] = 'application/json'
   }
   
   // 添加认证头
@@ -137,20 +220,20 @@ async function request(url, options = {}) {
     headers['Authorization'] = `Bearer ${token}`
   }
   
-  // 创建 AbortController 用于超时控制
-  const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort(), options.timeout || TIMEOUT)
+  const timeout = options.timeout ?? TIMEOUT
+  const abortContext = createAbortContext(options.signal, timeout)
   
   try {
+    if (abortContext.signal.aborted) {
+      return abortedResponse(abortContext.getAbortReason() || 'caller')
+    }
     const response = await fetch(fullUrl, {
       method,
       headers,
-      body: options.body ? JSON.stringify(options.body) : undefined,
-      signal: controller.signal,
+      body: prepareRequestBody(options.body),
+      signal: abortContext.signal,
       credentials: 'include'
     })
-    
-    clearTimeout(timeoutId)
     
     // 解析响应
     const data = await parseResponseBody(response)
@@ -179,19 +262,18 @@ async function request(url, options = {}) {
       }
     }
     
-    // 处理嵌套的响应格式
-    if (data?.success && data.data?.success && data.data?.data) {
-      return { success: true, data: data.data.data }
-    }
-    
-    return data
+    return normalizeResponsePayload(data)
   } catch (error) {
-    clearTimeout(timeoutId)
+    if (abortContext.signal.aborted) {
+      return abortedResponse(abortContext.getAbortReason() || 'caller')
+    }
     return {
       success: false,
-      error: normalizeNetworkErrorMessage(error, '请求超时，请检查网络连接'),
+      error: normalizeNetworkErrorMessage(error),
       status: 0
     }
+  } finally {
+    abortContext.cleanup()
   }
 }
 
@@ -278,86 +360,12 @@ function del(url, options = {}) {
  * 上传文件（FormData 请求）
  */
 async function upload(url, formData, options = {}) {
-  const maintenanceBlock = getMaintenanceRequestBlock('POST', url)
-  if (maintenanceBlock) {
-    return maintenanceBlockedResponse(maintenanceBlock.message)
-  }
-
-  const base = url.startsWith('/api/image') ? IMAGE_API_BASE : API_BASE
-  const fullUrl = url.startsWith('http') ? url : `${base}${url}`
-  
-  // 获取 token
-  const token = storage.get('token')
-
-  if (token && isTokenExpired(token)) {
-    emitAuthExpired({ source: 'upload', url, method: 'POST', reason: 'local_token_expired' })
-    return {
-      success: false,
-      error: AUTH_EXPIRED_MESSAGE,
-      status: 401
-    }
-  }
-  
-  // 不要设置 Content-Type，让浏览器自动添加 multipart/form-data 及 boundary
-  const headers = {
-    'Accept': 'application/json',
-    ...options.headers
-  }
-  
-  // 添加认证头
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`
-  }
-  
-  // 创建 AbortController 用于超时控制（上传可能需要更长时间）
-  const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort(), options.timeout || 60000)
-  
-  try {
-    const response = await fetch(fullUrl, {
-      method: 'POST',
-      headers,
-      body: formData, // 直接传 FormData，不要 JSON.stringify
-      signal: controller.signal,
-      credentials: 'include'
-    })
-    
-    clearTimeout(timeoutId)
-    
-    // 解析响应
-    const data = await parseResponseBody(response)
-    
-    // 检查响应状态
-    if (!response.ok) {
-      if (token && hasAuthFailure(response.status, data)) {
-        emitAuthExpired({ source: 'upload', url, method: 'POST', reason: 'server_unauthorized', status: response.status })
-      }
-      const errorMessage = normalizeServerErrorMessage(response.status, data)
-      return {
-        success: false,
-        error: errorMessage,
-        status: response.status
-      }
-    }
-
-    if (token && data?.success === false && hasAuthFailure(data?.status || response.status, data)) {
-      emitAuthExpired({ source: 'upload', url, method: 'POST', reason: 'payload_auth_error', status: data?.status || response.status })
-      return {
-        success: false,
-        error: normalizeServerErrorMessage(401, data),
-        status: 401
-      }
-    }
-    
-    return data
-  } catch (error) {
-    clearTimeout(timeoutId)
-    return {
-      success: false,
-      error: normalizeNetworkErrorMessage(error, '上传超时，请检查网络连接'),
-      status: 0
-    }
-  }
+  return request(url, {
+    ...options,
+    method: 'POST',
+    body: formData,
+    timeout: options.timeout ?? 60000
+  })
 }
 
 /**

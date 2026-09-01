@@ -1021,11 +1021,11 @@ export const useShopStore = defineStore('shop', () => {
         setLastError('')
         return result.data
       }
-      setLastError(result.error || '鍔犺浇涓汉缁熻澶辫触锛岃绋嶅悗閲嶈瘯')
+      setLastError(result.error || '加载个人统计失败，请稍后重试')
       return null
     } catch (error) {
       console.error('Fetch user dashboard failed:', error)
-      setLastError(error.message || '鍔犺浇涓汉缁熻澶辫触锛岃绋嶅悗閲嶈瘯')
+      setLastError(error.message || '加载个人统计失败，请稍后重试')
       return null
     }
   }
