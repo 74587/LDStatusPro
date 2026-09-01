@@ -411,6 +411,7 @@ export interface ProductCreatePayload {
 export type ProductUpdatePayload = Partial<Omit<ProductCreatePayload, 'submissionToken'>>
 
 export type Order = InferOutput<typeof OrderSchema>
+export type BuyOrder = InferOutput<typeof BuyOrderSchema>
 export type Refund = InferOutput<typeof RefundSchema>
 export type CouponCampaign = InferOutput<typeof CouponCampaignSchema>
 export type MerchantConfig = InferOutput<typeof MerchantConfigSchema>

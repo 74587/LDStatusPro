@@ -1,6 +1,8 @@
 import { safeParse, type BaseIssue, type BaseSchema, type InferOutput } from 'valibot'
 import type { ApiFailure, ApiResult } from '@/utils/api'
 
+export type { ApiResult } from '@/utils/api'
+
 type ContractSchema = BaseSchema<unknown, unknown, BaseIssue<unknown>>
 
 export interface ContractContext {
