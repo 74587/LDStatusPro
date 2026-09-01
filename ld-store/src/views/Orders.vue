@@ -22,7 +22,7 @@
         </template>
       </SellerPageToolbar>
 
-      <SellerDataTable class="seller-order-ledger" :class="{ 'is-filter-pending': sellerTabPending }" :aria-busy="sellerTabPending || loading" :inert="sellerTabPending ? '' : null" caption="卖家订单管理列表" :columns="sellerOrderColumns" :rows="orders" :loading="loading" :row-key="getOrderKey" :expanded-row-key="deliverFormOrderId || ''">
+      <SellerOrderTable class="seller-order-ledger" :class="{ 'is-filter-pending': sellerTabPending }" :aria-busy="sellerTabPending || loading" :inert="sellerTabPending ? '' : null" caption="卖家订单管理列表" :columns="sellerOrderColumns" :rows="orders" :loading="loading" :row-key="getOrderKey" :expanded-row-key="deliverFormOrderId || ''">
         <template #cell-order="{ row: order }">
           <router-link :to="getOrderDetailTarget(order)" class="seller-order-id" @click="handleOrderCardClick"><strong>{{ getOrderKey(order) }}</strong><small>{{ formatDate(order.createdAt) }}</small></router-link>
         </template>
@@ -77,11 +77,11 @@
           <div class="seller-order-mobile-actions"><button v-if="showManualDeliver(order)" type="button" class="seller-row-primary" :aria-expanded="isDeliverFormVisible(order)" @click="openDeliverForm(order)"><PackageCheck :size="15" aria-hidden="true" />立即发货</button><button v-if="isBuyRequestOrder(order) && (order.status === 'pending' || order.status === 'paid') && !isPaymentMaintenanceBlocked" type="button" class="seller-row-secondary" :disabled="refreshingBuyOrderId === getOrderKey(order)" @click="handleRefreshBuyOrder(order)"><RefreshCw :size="15" aria-hidden="true" />刷新</button><button v-if="currentRole === 'seller' && order.status === 'pending'" type="button" class="seller-row-danger" :disabled="cancellingOrderId === getOrderKey(order)" @click="handleCancelOrder(order)">取消订单</button><router-link :to="getOrderDetailTarget(order)" class="seller-row-detail" @click="handleOrderCardClick">订单详情<ArrowUpRight :size="14" aria-hidden="true" /></router-link></div>
         </template>
         <template #expanded="{ row: order }">
-          <form class="seller-delivery-form" @submit.prevent="submitManualDeliver(order)"><div><label :for="`delivery-${getOrderKey(order)}`">填写发货内容</label><p>{{ getDeliverHint(order) }}</p></div><textarea :id="`delivery-${getOrderKey(order)}`" v-model="deliverContent" rows="3" :placeholder="getDeliverPlaceholder(order)"></textarea><div><button type="button" class="seller-row-secondary" @click="closeDeliverForm">取消</button><button type="submit" class="seller-row-primary" :disabled="!deliverContent.trim() || deliveringOrderId === getOrderKey(order)">{{ deliveringOrderId === getOrderKey(order) ? '发货中...' : '确认发货' }}</button></div></form>
+          <ManualDeliveryEditor v-model="deliverContent" variant="seller" :input-id="`delivery-${getOrderKey(order)}`" :placeholder="getDeliverPlaceholder(order)" :hint="getDeliverHint(order)" :submitting="deliveringOrderId === getOrderKey(order)" @cancel="closeDeliverForm" @submit="submitManualDeliver(order)" />
         </template>
         <template #empty><div class="seller-orders-empty"><ShoppingBag :size="32" aria-hidden="true" /><strong>{{ currentRole === 'buy' ? '还没有求购服务订单' : '还没有商品订单' }}</strong><p>新订单出现后会在这里进入经营台账。</p></div></template>
         <template #footer><SellerPagination :page="orderPagination.page" :total-pages="orderPagination.totalPages" :total="orderPagination.total" @change="changeSellerOrderPage" /></template>
-      </SellerDataTable>
+      </SellerOrderTable>
     </template>
 
     <div v-else class="page-container">
@@ -111,7 +111,7 @@
         @update:modelValue="selectStatus"
       />
 
-      <div class="orders-filters">
+      <OrderFilterBar>
         <AppSelect
           v-model="timeRange"
           class="filter-select-wrap"
@@ -132,7 +132,7 @@
           </button>
           <button v-if="orderSearch" class="filter-search-clear" :disabled="loading || loadingMore" @click="clearSearch">×</button>
         </div>
-      </div>
+      </OrderFilterBar>
       
       <!-- 加载中 -->
       <div v-if="hasDirectFilters" class="direct-filter-bar">
@@ -170,10 +170,8 @@
       </EmptyState>
       
       <!-- 订单列表 -->
-      <div class="orders-list" v-else>
+      <BuyerOrderList v-else :orders="orders" :busy="loadingMore" v-slot="{ order }">
         <div
-          v-for="order in orders"
-          :key="order.id"
           class="order-card"
         >
           <router-link :to="getOrderDetailTarget(order)" class="order-header" @click="handleOrderCardClick">
@@ -298,29 +296,9 @@
             </div>
           </div>
           
-          <div v-if="isDeliverFormVisible(order)" class="deliver-form" @click.stop>
-            <textarea
-              v-model="deliverContent"
-              class="deliver-input"
-              rows="3"
-              :placeholder="getDeliverPlaceholder(order)"
-            ></textarea>
-            <div class="deliver-actions">
-              <button class="action-btn cancel-btn" @click="closeDeliverForm" :disabled="deliveringOrderId === getOrderKey(order)">
-                取消
-              </button>
-              <button
-                class="action-btn pay-btn"
-                @click="submitManualDeliver(order)"
-                :disabled="!deliverContent.trim() || deliveringOrderId === getOrderKey(order)"
-              >
-                确认发货
-              </button>
-            </div>
-            <div class="deliver-hint">{{ getDeliverHint(order) }}</div>
-          </div>
+          <ManualDeliveryEditor v-if="isDeliverFormVisible(order)" v-model="deliverContent" :input-id="`delivery-${getOrderKey(order)}`" :placeholder="getDeliverPlaceholder(order)" :hint="getDeliverHint(order)" :submitting="deliveringOrderId === getOrderKey(order)" @cancel="closeDeliverForm" @submit="submitManualDeliver(order)" />
         </div>
-      </div>
+      </BuyerOrderList>
       
       <!-- 加载更多 -->
       <div v-if="hasMore && !loading" class="load-more">
@@ -353,14 +331,19 @@ import { useOrderStore } from '@/stores/order'
 import { isMaintenanceFeatureEnabled, isRestrictedMaintenanceMode } from '@/config/maintenance'
 import { useToast } from '@/composables/useToast'
 import { useDialog } from '@/composables/useDialog'
+import { useOrderActions } from '@/composables/orders/useOrderActions'
+import { useOrderListController } from '@/composables/orders/useOrderListController'
 import AppSelect from '@/components/common/AppSelect.vue'
 import LiquidTabs from '@/components/common/LiquidTabs.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
-import SellerDataTable from '@/components/seller/SellerDataTable.vue'
 import SellerOrderPartyIdentity from '@/components/seller/SellerOrderPartyIdentity.vue'
 import SellerPageToolbar from '@/components/seller/SellerPageToolbar.vue'
 import SellerPagination from '@/components/seller/SellerPagination.vue'
 import SellerStatusBadge from '@/components/seller/SellerStatusBadge.vue'
+import BuyerOrderList from '@/components/orders/BuyerOrderList.vue'
+import ManualDeliveryEditor from '@/components/orders/ManualDeliveryEditor.vue'
+import OrderFilterBar from '@/components/orders/OrderFilterBar.vue'
+import SellerOrderTable from '@/components/orders/SellerOrderTable.vue'
 import { isValidLdcPaymentUrl } from '@/utils/security'
 import { preparePaymentPopup, openPaymentPopup, watchPaymentPopup, cleanupPreparedTab } from '@/utils/newTab'
 import {
@@ -381,7 +364,6 @@ import { resolveOrderSubjectTarget } from '@/utils/orderNavigation'
 import {
   buildSellerOrderQuery,
   buildSellerOrderTabQuery,
-  createLatestRequestGuard,
   isSellerOrderTabQueryMatch,
   normalizeSellerPage,
   resolveSellerStatusTone
@@ -401,12 +383,6 @@ const props = defineProps({
 })
 const sellerMode = computed(() => props.sellerMode)
 
-const loading = ref(true)
-const loadingMore = ref(false)
-const orders = ref([])
-const page = ref(1)
-const hasMore = ref(false)
-const orderPagination = ref({ page: 1, pageSize: 20, total: 0, totalPages: 1 })
 const pageSize = 20
 const currentRole = ref(props.sellerMode ? 'seller' : 'buyer')
 const sellerOrderColumns = computed(() => [
@@ -445,13 +421,8 @@ const statusTabs = computed(() => [
   { value: 'cancelled', label: '已取消', iconComponent: props.sellerMode ? null : CircleX },
   { value: 'other', label: '其他', iconComponent: props.sellerMode ? null : MoreHorizontal }
 ])
-const cancellingOrderId = ref(null)
 const deliverFormOrderId = ref(null)
 const deliverContent = ref('')
-const deliveringOrderId = ref(null)
-const payingOrderId = ref(null)
-const refreshingOrderId = ref(null)
-const refreshingBuyOrderId = ref(null)
 const nowTs = ref(Date.now())
 let countdownTimer = null
 let restoredScrollKey = ''
@@ -459,10 +430,40 @@ let sellerTabDebounceTimer = null
 let sellerTabIntentId = 0
 let pendingSellerTabIntent = null
 const SELLER_TAB_DEBOUNCE_MS = 140
-const orderRequestGuard = createLatestRequestGuard()
 const isPaymentMaintenanceBlocked = computed(() =>
   isRestrictedMaintenanceMode() && !isMaintenanceFeatureEnabled('orderPayment')
 )
+const orderActions = useOrderActions()
+const {
+  cancellingOrderId,
+  deliveringOrderId,
+  payingOrderId,
+  refreshingOrderId,
+  refreshingBuyOrderId
+} = orderActions
+const orderListController = useOrderListController({
+  pageSize,
+  buildQuery: (currentPage, signal) => ({
+    ...buildOrderQueryOptions(),
+    page: currentPage,
+    pageSize,
+    signal
+  }),
+  fetchPage: (queryOptions) => {
+    if (currentRole.value === 'buy') return orderStore.fetchBuyRequestOrders(queryOptions)
+    if (currentRole.value === 'buyer') return orderStore.fetchBuyerOrders(queryOptions)
+    return orderStore.fetchSellerOrders(queryOptions)
+  },
+  onError: () => toast.error('加载订单失败')
+})
+const {
+  loading,
+  loadingMore,
+  orders,
+  page,
+  hasMore,
+  pagination: orderPagination
+} = orderListController
 
 const hasDirectFilters = computed(() =>
   currentRole.value !== 'buy' && (activeCategoryId.value > 0 || onlyDealOrders.value)
@@ -715,59 +716,12 @@ function buildOrderQueryOptions() {
 
 // 加载订单
 async function loadOrders(append = false) {
-  const requestToken = orderRequestGuard.begin()
-  try {
-    if (!append) {
-      loading.value = true
-    } else {
-      loadingMore.value = true
-    }
-    
-    const queryOptions = buildOrderQueryOptions()
-    const requestRole = currentRole.value
-    let result
-    if (requestRole === 'buy') {
-      result = await orderStore.fetchBuyRequestOrders(queryOptions)
-    } else if (requestRole === 'buyer') {
-      result = await orderStore.fetchBuyerOrders(queryOptions)
-    } else {
-      result = await orderStore.fetchSellerOrders(queryOptions)
-    }
-
-    if (!orderRequestGuard.isLatest(requestToken)) return
-
-    if (!result.success) throw new Error(result.error || '加载订单失败')
-    const payload = result.data
-    const ordersList = Array.isArray(payload.orders) ? payload.orders : []
-    const totalPages = Number(payload.pagination?.totalPages || 0)
-    orderPagination.value = {
-      page: Number(payload.pagination?.page || page.value || 1),
-      pageSize: Number(payload.pagination?.pageSize || pageSize),
-      total: Number(payload.pagination?.total || ordersList.length),
-      totalPages: Math.max(1, totalPages || 1)
-    }
-    hasMore.value = page.value < totalPages
-    
-    if (append) {
-      orders.value.push(...ordersList)
-    } else {
-      orders.value = ordersList
-    }
-  } catch (error) {
-    if (orderRequestGuard.isLatest(requestToken)) toast.error('加载订单失败')
-  } finally {
-    if (orderRequestGuard.isLatest(requestToken)) {
-      loading.value = false
-      loadingMore.value = false
-    }
-  }
+  return orderListController.load(append)
 }
 
 // 加载更多
 function loadMore() {
-  if (loading.value || loadingMore.value || !hasMore.value) return
-  page.value++
-  loadOrders(true)
+  void orderListController.loadMore()
 }
 
 function sameQuery(a, b) {
@@ -1162,16 +1116,19 @@ async function handleRepay(order) {
   }
 
   const orderNo = getOrderKey(order)
-  if (!orderNo || payingOrderId.value === orderNo) return
+  if (!orderNo || orderActions.isBusy('payment', orderNo)) return
 
   const loadingId = toast.loading('正在获取支付链接...')
   const preparedWindow = preparePaymentPopup()
-  payingOrderId.value = orderNo
 
   try {
-    const result = isBuyRequestOrder(order)
-      ? await orderStore.getBuyOrderPaymentUrl(orderNo)
-      : await orderStore.getPaymentUrl(orderNo)
+    const result = await orderActions.run('payment', orderNo, () => isBuyRequestOrder(order)
+      ? orderStore.getBuyOrderPaymentUrl(orderNo)
+      : orderStore.getPaymentUrl(orderNo))
+    if (!result) {
+      cleanupPreparedTab(preparedWindow)
+      return
+    }
     const paymentUrl = result?.data?.paymentUrl
 
     if (!result?.success || !paymentUrl) {
@@ -1206,8 +1163,6 @@ async function handleRepay(order) {
   } catch (error) {
     cleanupPreparedTab(preparedWindow)
     toast.update(loadingId, { type: 'error', message: error?.message || '获取支付链接失败' })
-  } finally {
-    payingOrderId.value = null
   }
 }
 
@@ -1218,11 +1173,11 @@ async function handleRefreshOrder(order) {
   }
 
   const orderNo = getOrderKey(order)
-  if (!orderNo || refreshingOrderId.value === orderNo) return
+  if (!orderNo || orderActions.isBusy('refresh', orderNo)) return
 
-  refreshingOrderId.value = orderNo
   try {
-    const result = await orderStore.refreshOrderStatus(orderNo)
+    const result = await orderActions.run('refresh', orderNo, () => orderStore.refreshOrderStatus(orderNo))
+    if (!result) return
     if (!result?.success) {
       toast.error(extractErrorMessage(result, '检查支付状态失败'))
       return
@@ -1242,8 +1197,6 @@ async function handleRefreshOrder(order) {
     await loadOrders()
   } catch (error) {
     toast.error(error?.message || '检查支付状态失败')
-  } finally {
-    refreshingOrderId.value = null
   }
 }
 
@@ -1254,11 +1207,11 @@ async function handleRefreshBuyOrder(order) {
   }
 
   const orderNo = getOrderKey(order)
-  if (!orderNo || refreshingBuyOrderId.value === orderNo) return
+  if (!orderNo || orderActions.isBusy('buyRefresh', orderNo)) return
 
-  refreshingBuyOrderId.value = orderNo
   try {
-    const result = await orderStore.refreshBuyOrderStatus(orderNo)
+    const result = await orderActions.run('buyRefresh', orderNo, () => orderStore.refreshBuyOrderStatus(orderNo))
+    if (!result) return
     if (!result?.success) {
       toast.error(extractErrorMessage(result, '刷新状态失败'))
       return
@@ -1276,8 +1229,6 @@ async function handleRefreshBuyOrder(order) {
     await loadOrders()
   } catch (error) {
     toast.error(error?.message || '刷新状态失败')
-  } finally {
-    refreshingBuyOrderId.value = null
   }
 }
 
@@ -1294,28 +1245,26 @@ async function handleCancelOrder(order) {
   if (!confirmed) return
 
   const orderNo = getOrderKey(order)
-  if (!orderNo || cancellingOrderId.value === orderNo) return
+  if (!orderNo || orderActions.isBusy('cancel', orderNo)) return
 
   const loadingId = toast.loading('正在取消订单...')
-  cancellingOrderId.value = orderNo
 
   try {
-    const result = await orderStore.cancelOrder(orderNo)
+    const result = await orderActions.run('cancel', orderNo, () => orderStore.cancelOrder(orderNo))
+    if (!result) return
     if (!result.success) throw new Error(result.error || '取消失败')
     toast.update(loadingId, { type: 'success', message: '订单已取消' })
     // 刷新订单列表
     await loadOrders()
   } catch (error) {
     toast.update(loadingId, { type: 'error', message: error.message || '取消失败' })
-  } finally {
-    cancellingOrderId.value = null
   }
 }
 
 // 手动发货
 async function submitManualDeliver(order) {
   const orderNo = getOrderKey(order)
-  if (!orderNo || deliveringOrderId.value === orderNo) return
+  if (!orderNo || orderActions.isBusy('deliver', orderNo)) return
   const content = deliverContent.value.trim()
   if (!content) {
     toast.warning('请输入发货内容')
@@ -1323,10 +1272,10 @@ async function submitManualDeliver(order) {
   }
   
   const loadingId = toast.loading('正在发货...')
-  deliveringOrderId.value = orderNo
   
   try {
-    const result = await orderStore.deliverOrder(orderNo, content)
+    const result = await orderActions.run('deliver', orderNo, () => orderStore.deliverOrder(orderNo, content))
+    if (!result) return
     if (result?.success === false) {
       toast.update(loadingId, {
         type: 'error',
@@ -1342,8 +1291,6 @@ async function submitManualDeliver(order) {
       type: 'error',
       message: '发货失败: ' + (error.message || '未知错误')
     })
-  } finally {
-    deliveringOrderId.value = null
   }
 }
 
@@ -1386,7 +1333,8 @@ onUnmounted(() => {
     sellerTabDebounceTimer = null
   }
   pendingSellerTabIntent = null
-  orderRequestGuard.invalidate()
+  orderListController.stop()
+  orderActions.clear()
   if (countdownTimer) {
     clearInterval(countdownTimer)
     countdownTimer = null
@@ -2048,46 +1996,6 @@ onUnmounted(() => {
   filter: brightness(0.97);
 }
 
-/* 手动发货 */
-.deliver-form {
-  margin-top: 12px;
-  padding: 12px;
-  background: var(--bg-secondary);
-  border-radius: 12px;
-  border: 1px solid var(--border-light);
-}
-
-.deliver-input {
-  width: 100%;
-  min-height: 72px;
-  padding: 10px 12px;
-  border-radius: 10px;
-  border: 1px solid var(--border-color);
-  background: var(--bg-card);
-  color: var(--text-primary);
-  font-size: 13px;
-  resize: vertical;
-  box-sizing: border-box;
-}
-
-.deliver-input:focus {
-  outline: none;
-  border-color: var(--color-primary);
-}
-
-.deliver-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  margin-top: 10px;
-}
-
-.deliver-hint {
-  margin-top: 8px;
-  font-size: 12px;
-  color: var(--text-tertiary);
-}
-
 /* 加载更多 */
 .load-more {
   padding: 20px;
@@ -2373,11 +2281,6 @@ onUnmounted(() => {
 .seller-row-primary { color: #fff; border-color: var(--seller-navy); background: var(--seller-navy); }
 .seller-row-danger { color: var(--seller-danger); border-color: color-mix(in srgb, var(--seller-danger) 22%, var(--seller-border)); }
 .seller-row-detail { border-color: transparent; color: var(--seller-jade); }
-.seller-delivery-form { display: grid; grid-template-columns: minmax(150px, .7fr) minmax(260px, 1.5fr) auto; align-items: end; gap: 14px; padding: 16px; border: 1px solid color-mix(in srgb, var(--seller-jade) 28%, var(--seller-border)); border-radius: 12px; background: var(--seller-surface-soft); }
-.seller-delivery-form label { color: var(--seller-ink); font-size: 13px; font-weight: 700; }
-.seller-delivery-form p { margin: 4px 0 0; color: var(--seller-muted); font-size: 11px; line-height: 1.45; }
-.seller-delivery-form textarea { width: 100%; min-height: 78px; padding: 10px 12px; border: 1px solid var(--seller-border); border-radius: 10px; color: var(--seller-ink); background: var(--seller-surface); resize: vertical; }
-.seller-delivery-form > div:last-child { display: flex; align-items: center; gap: 7px; }
 .seller-order-mobile-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
 .seller-order-mobile-head > div { min-width: 0; }
 .seller-order-mobile-head strong, .seller-order-mobile-head small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -2396,8 +2299,6 @@ onUnmounted(() => {
 .seller-orders-empty p { margin: 0; font-size: 13px; }
 
 @media (max-width: 900px) {
-  .seller-delivery-form { grid-template-columns: 1fr; align-items: stretch; }
-  .seller-delivery-form > div:last-child { justify-content: flex-end; }
 }
 @media (max-width: 767px) {
   .seller-status-tabs {
@@ -2408,8 +2309,6 @@ onUnmounted(() => {
   }
   .seller-order-search, .seller-order-select { width: 100%; }
   .seller-order-total { margin-left: 0; }
-  .seller-delivery-form { margin-top: 15px; padding: 14px; }
-  .seller-delivery-form > div:last-child > * { min-height: 44px; flex: 1; }
 }
 @media (prefers-reduced-motion: reduce) {
   .seller-order-ledger { transition: none; }

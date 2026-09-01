@@ -75,9 +75,9 @@ export async function fetchOrdersByRoleRequest(role: string, options: OrderListI
   )
 }
 
-export async function fetchOrderDetailRequest(orderNo: string, role = 'buyer') {
+export async function fetchOrderDetailRequest(orderNo: string, role = 'buyer', options: { signal?: AbortSignal } = {}) {
   return validateServiceResult(
-    await api.get(`/api/shop/orders/${encodeURIComponent(orderNo)}?role=${encodeURIComponent(role)}`),
+    await api.get(`/api/shop/orders/${encodeURIComponent(orderNo)}?role=${encodeURIComponent(role)}`, { signal: options.signal }),
     OrderDetailResponseSchema,
     '/api/shop/orders/:orderNo',
     'OrderDetailResponse'

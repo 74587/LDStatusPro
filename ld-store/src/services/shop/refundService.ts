@@ -24,9 +24,9 @@ function validatedRefundRequest(result: Awaited<ReturnType<typeof api.get>>, end
   return validateServiceResult(result, OrderRefundResponseSchema, endpoint, 'OrderRefundResponse')
 }
 
-export async function fetchOrderRefundRequest(orderNo: string) {
+export async function fetchOrderRefundRequest(orderNo: string, options: { signal?: AbortSignal } = {}) {
   return withServiceFailure(async () => validatedRefundRequest(
-    await api.get(orderPath(orderNo)),
+    await api.get(orderPath(orderNo), { signal: options.signal }),
     '/api/shop/orders/:orderNo/refund'
   ), '加载退款状态失败，请稍后重试')
 }

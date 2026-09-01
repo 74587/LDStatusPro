@@ -21,6 +21,7 @@
 
     <template v-else-if="!refund">
       <div v-if="isBuyer" class="refund-preflight">
+        <RefundRequestForm :available="canApplyRefund" :open="formOpen" :submitting="submitting">
         <div class="refund-preflight__intro">
           <ShieldQuestion :size="22" aria-hidden="true" />
           <div>
@@ -144,6 +145,7 @@
             </button>
           </div>
         </form>
+        </RefundRequestForm>
       </div>
 
       <div v-else class="refund-empty-state">
@@ -232,6 +234,7 @@
           </section>
 
           <section v-if="!isBuyer && showSellerActions" class="refund-actions-area" aria-labelledby="refund-actions-title">
+          <RefundNegotiationActions :status="String(refund.status || '')" :submitting="sellerSubmitting">
           <header>
             <p>下一步</p>
             <h4 id="refund-actions-title">处理退款申请</h4>
@@ -285,6 +288,7 @@
               </button>
             </div>
           </form>
+          </RefundNegotiationActions>
           </section>
 
           <section v-else-if="isBuyer && counterpartyMessageUrl && !['refunded', 'rejected', 'external_dispute'].includes(refund.status)" class="refund-actions-area refund-buyer-contact" aria-labelledby="refund-contact-title">
@@ -300,8 +304,8 @@
   </section>
 </template>
 
-<script setup>
-import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
+<script setup lang="ts">
+import { computed, toRef } from 'vue'
 import {
   BadgeCheck,
   CircleAlert,
@@ -317,229 +321,67 @@ import {
   TriangleAlert
 } from '@lucide/vue'
 import RefundEventTimeline from '@/components/order/RefundEventTimeline.vue'
+import RefundNegotiationActions from '@/components/order/RefundNegotiationActions.vue'
+import RefundRequestForm from '@/components/order/RefundRequestForm.vue'
 import RefundStageTracker from '@/components/order/RefundStageTracker.vue'
-import { useDialog } from '@/composables/useDialog'
-import { useToast } from '@/composables/useToast'
-import { useNotificationSummaryStore } from '@/stores/notificationSummary'
-import {
-  approveRefundRequest,
-  contactRefundBuyerRequest,
-  createRefundRequest,
-  fetchOrderRefundRequest,
-  rejectRefundRequest
-} from '@/services/shop/refundService'
-import {
+import { useOrderRefund } from '@/composables/orders/useOrderRefund'
+
+const props = withDefaults(defineProps<{
+  order: Record<string, unknown>
+  role?: string
+}>(), { role: 'buyer' })
+const emit = defineEmits<{ updated: [] }>()
+const {
+  loading,
+  loadError,
+  refund,
+  formOpen,
+  submitting,
+  errors,
+  errorSummary,
+  sellerActionMode,
+  sellerMessage,
+  sellerActionError,
+  sellerSubmitting,
+  form,
+  isBuyer,
+  canApplyRefund,
+  refundAvailabilityMessage,
+  disputeGuideUrl,
+  statusMeta,
+  stages,
+  refundAmount,
+  counterpartyMessageUrl,
+  canSellerDecide,
+  canSellerContact,
+  showSellerActions,
+  contactActionLabel,
+  buyerGuidance,
+  loadRefund,
+  toggleForm,
+  closeForm,
+  validateField,
+  submitRefund,
+  openSellerAction,
+  closeSellerAction,
+  submitSellerAction,
+  approveRefund,
   REFUND_REASON_OPTIONS,
-  buildLinuxDoMessageUrl,
-  buildRefundStages,
   formatRefundDate,
-  getRefundErrorMessage,
-  getRefundReasonLabel,
-  getRefundStatusMeta,
-  validateRefundForm
-} from '@/utils/refund'
-
-const props = defineProps({
-  order: { type: Object, required: true },
-  role: { type: String, default: 'buyer' }
+  getRefundReasonLabel
+} = useOrderRefund({
+  order: toRef(props, 'order'),
+  role: toRef(props, 'role'),
+  onUpdated: () => emit('updated')
 })
-const emit = defineEmits(['updated'])
-const dialog = useDialog()
-const toast = useToast()
-const notificationSummaryStore = useNotificationSummaryStore()
-const loading = ref(true)
-const loadError = ref('')
-const refundState = ref(null)
-const formOpen = ref(false)
-const submitting = ref(false)
-const errors = ref({})
-const errorSummary = ref(null)
-const sellerActionMode = ref('')
-const sellerMessage = ref('')
-const sellerActionError = ref('')
-const sellerSubmitting = ref(false)
-const form = reactive({ reasonCode: '', reasonDetail: '', buyerContactedSeller: false })
-
-const orderNo = computed(() => props.order?.orderNo || '')
-const isBuyer = computed(() => props.role === 'buyer')
-const refund = computed(() => refundState.value?.refund || null)
-const eligibility = computed(() => refundState.value?.eligibility || null)
-const canApplyRefund = computed(() => eligibility.value?.canApply === true)
-const refundAvailabilityMessage = computed(() => canApplyRefund.value
-  ? '当前可直接申请全额退款；联系卖家是可选的协商方式，不影响申请资格。'
-  : `暂不可提交：${eligibility.value?.message || '未能确认退款申请资格，请刷新后重试。'}`)
-const disputeGuideUrl = computed(() => refundState.value?.disputeGuideUrl || 'https://credit.linux.do/docs/how-to-use#争议处理')
-const statusMeta = computed(() => getRefundStatusMeta(refund.value?.status))
-const stages = computed(() => buildRefundStages(refund.value?.status, Boolean(refund.value)))
-const refundAmount = computed(() => Number(props.order?.paidAmount ?? props.order?.amount ?? 0))
-const counterpartyUsername = computed(() => isBuyer.value
-  ? (props.order?.sellerUsername || props.order?.seller?.username)
-  : (props.order?.buyerUsername || props.order?.buyer?.username))
-const counterpartyMessageUrl = computed(() => buildLinuxDoMessageUrl(
-  counterpartyUsername.value,
-  orderNo.value,
-  isBuyer.value ? 'buyer' : 'seller'
-))
 const statusIcon = computed(() => {
   if (refund.value?.status === 'refunded') return CircleCheckBig
   if (refund.value?.status === 'external_dispute') return ShieldAlert
-  if (['failed', 'unknown', 'rejected'].includes(refund.value?.status)) return TriangleAlert
+  if (['failed', 'unknown', 'rejected'].includes(String(refund.value?.status || ''))) return TriangleAlert
   if (refund.value?.status === 'processing') return LoaderCircle
   return Clock3
 })
-const canSellerDecide = computed(() => !isBuyer.value && ['requested', 'negotiating', 'failed'].includes(refund.value?.status))
-const canSellerContact = computed(() => !isBuyer.value && ['requested', 'negotiating', 'failed', 'unknown'].includes(refund.value?.status))
-const showSellerActions = computed(() => canSellerDecide.value || canSellerContact.value)
-const contactActionLabel = computed(() => refund.value?.status === 'requested' ? '标记为协商中' : '补充协商记录')
-const buyerGuidance = computed(() => {
-  const guidance = {
-    requested: { title: '申请已送达卖家', description: '请留意订单状态和 LINUX DO 私信，避免重复提交售后。', tone: 'warning' },
-    negotiating: { title: '卖家正在与你协商', description: '及时补充问题细节和双方约定，并保留沟通记录。', tone: 'info' },
-    processing: { title: '系统正在执行退款', description: '请等待 Credit 返回结果，期间无需重复操作。', tone: 'info' },
-    refunded: { title: '退款已经完成', description: 'LDC 已按原订单退回，可在 Credit 中核对余额与记录。', tone: 'success' },
-    failed: { title: '本次退款执行失败', description: '卖家可查看失败原因并重试；你可以私信卖家确认下一步。', tone: 'danger' },
-    unknown: { title: '退款结果正在人工核对', description: '为避免重复退款，系统已停止自动重试，请等待卖家或平台确认。', tone: 'warning' },
-    external_dispute: { title: '本站退款流程已结束', description: '请前往 Credit 核对争议状态、交易记录与积分余额；本站状态不代表积分已经退回。', tone: 'warning' }
-  }
-  return guidance[refund.value?.status] || null
-})
 
-async function loadRefund() {
-  if (!orderNo.value) return
-  loading.value = true
-  loadError.value = ''
-  const result = await fetchOrderRefundRequest(orderNo.value)
-  if (result?.success) refundState.value = result.data || result
-  else loadError.value = getRefundErrorMessage(result, '加载退款状态失败，请稍后重试')
-  loading.value = false
-}
-
-function toggleForm() {
-  if (!canApplyRefund.value) return
-  formOpen.value = !formOpen.value
-  errors.value = {}
-}
-
-function closeForm() {
-  formOpen.value = false
-  errors.value = {}
-}
-
-function validateField(field) {
-  const nextErrors = validateRefundForm(form)
-  errors.value = { ...errors.value, [field]: nextErrors[field] }
-  if (!nextErrors[field]) delete errors.value[field]
-}
-
-async function submitRefund() {
-  errors.value = validateRefundForm(form)
-  if (Object.keys(errors.value).length) {
-    await nextTick()
-    errorSummary.value?.focus()
-    return
-  }
-  const confirmed = await dialog.confirm(
-    `将为订单 ${orderNo.value} 申请全额退回 ${refundAmount.value.toFixed(2)} LDC。提交后请等待卖家处理。`,
-    { title: '确认提交退款申请', confirmText: '提交退款申请', cancelText: '返回检查' }
-  )
-  if (!confirmed) return
-
-  submitting.value = true
-  const result = await createRefundRequest(orderNo.value, {
-    reasonCode: form.reasonCode,
-    reasonDetail: form.reasonDetail,
-    buyerContactedSeller: form.buyerContactedSeller
-  })
-  submitting.value = false
-  if (!result?.success) {
-    toast.error(getRefundErrorMessage(result, '提交退款申请失败，请稍后重试'))
-    return
-  }
-  refundState.value = result.data || result
-  formOpen.value = false
-  if (refundState.value?.refund?.status === 'external_dispute') {
-    toast.warning('检测到订单已转 Credit 处理，请前往 Credit 核对实际结果')
-  } else {
-    toast.success('退款申请已提交')
-  }
-  emit('updated')
-}
-
-function openSellerAction(mode) {
-  sellerActionMode.value = sellerActionMode.value === mode ? '' : mode
-  sellerMessage.value = mode === 'contact' ? (refund.value?.sellerResponse || '') : ''
-  sellerActionError.value = ''
-}
-
-function closeSellerAction() {
-  sellerActionMode.value = ''
-  sellerMessage.value = ''
-  sellerActionError.value = ''
-}
-
-async function applySellerResult(result, successMessage) {
-  if (!result?.success) {
-    const message = getRefundErrorMessage(result, '处理退款申请失败，请稍后重试')
-    sellerActionError.value = message
-    toast.error(message)
-    await loadRefund()
-    return false
-  }
-  refundState.value = result.data || result
-  closeSellerAction()
-  if (refundState.value?.refund?.status === 'external_dispute') {
-    toast.warning('检测到订单已转 Credit 处理，LD 士多未继续同意或拒绝退款')
-  } else {
-    toast.success(successMessage)
-  }
-  emit('updated')
-  if (!isBuyer.value) notificationSummaryStore.refresh({ force: true })
-  return true
-}
-
-async function submitSellerAction() {
-  if (!sellerActionMode.value || sellerSubmitting.value) return
-  if (sellerActionMode.value === 'reject' && sellerMessage.value.trim().length < 5) {
-    sellerActionError.value = '请至少填写 5 个字，向买家说明拒绝原因'
-    return
-  }
-  if (sellerActionMode.value === 'reject') {
-    const confirmed = await dialog.confirm(
-      '拒绝后，买家将在订单页看到你的说明，并可前往 LINUX DO Credit 发起争议。',
-      { title: '确认拒绝退款申请', confirmText: '确认拒绝', cancelText: '继续协商' }
-    )
-    if (!confirmed) return
-  }
-
-  const actionMode = sellerActionMode.value
-  sellerSubmitting.value = true
-  const result = actionMode === 'reject'
-    ? await rejectRefundRequest(orderNo.value, sellerMessage.value)
-    : await contactRefundBuyerRequest(orderNo.value, sellerMessage.value)
-  sellerSubmitting.value = false
-  await applySellerResult(result, actionMode === 'reject' ? '已拒绝退款申请' : '协商记录已更新')
-}
-
-async function approveRefund() {
-  if (!canSellerDecide.value || sellerSubmitting.value) return
-  const amount = Number(refund.value?.refundAmount || 0).toFixed(2)
-  const retrying = refund.value?.status === 'failed'
-  const confirmed = await dialog.confirm(
-    `将通过 LINUX DO Credit 为订单 ${orderNo.value} 全额退回 ${amount} LDC。该操作成功后不可撤销，卡密、库存、优惠券和限购额度不会恢复。`,
-    { title: retrying ? '确认重试退款' : '确认同意并退款', confirmText: retrying ? '确认重试' : '同意并退款', cancelText: '返回检查' }
-  )
-  if (!confirmed) return
-
-  sellerSubmitting.value = true
-  const result = await approveRefundRequest(orderNo.value)
-  sellerSubmitting.value = false
-  await applySellerResult(result, '退款已完成')
-}
-
-watch(orderNo, (next, previous) => {
-  if (next && next !== previous) loadRefund()
-})
-onMounted(loadRefund)
 </script>
 
 <style scoped>

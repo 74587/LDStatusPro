@@ -376,6 +376,8 @@ import { useCatalogStore } from '@/stores/catalog'
 import { useOrderStore } from '@/stores/order'
 import { useToast } from '@/composables/useToast'
 import { useDialog } from '@/composables/useDialog'
+import { useOrderActions } from '@/composables/orders/useOrderActions'
+import { useOrderDetail } from '@/composables/orders/useOrderDetail'
 import { isMaintenanceFeatureEnabled, isRestrictedMaintenanceMode } from '@/config/maintenance'
 import EmptyState from '@/components/common/EmptyState.vue'
 import OrderRefundPanel from '@/components/order/OrderRefundPanel.vue'
@@ -398,14 +400,7 @@ const orderStore = useOrderStore()
 const toast = useToast()
 const dialog = useDialog()
 
-const loading = ref(true)
-const order = ref(null)
-const orderLogs = ref([])
 const showCdk = ref(false)
-const cancelling = ref(false)
-const paying = ref(false)
-const checkingPayment = ref(false)
-let pendingOrderAutoRefreshTimer = null
 const isPaymentMaintenanceBlocked = computed(() =>
   isRestrictedMaintenanceMode() && !isMaintenanceFeatureEnabled('orderPayment')
 )
@@ -446,6 +441,25 @@ const buyerIdentity = computed(() => resolveOrderPartyIdentity(order.value, 'buy
 
 // 当前用户角色（买家/卖家）
 const currentRole = computed(() => route.meta.orderRole || route.query.role || 'buyer')
+const detailActions = useOrderActions()
+const orderDetailController = useOrderDetail({
+  orderId: computed(() => String(route.params.id || '')),
+  role: computed(() => String(currentRole.value)),
+  fetchDetail: (orderId, role, signal) => orderStore.fetchOrderDetail(orderId, role, { signal }),
+  onError: () => toast.error('加载订单详情失败')
+})
+const {
+  loading,
+  order,
+  logs: orderLogs,
+  load: loadOrder,
+  startAutoRefresh: startOrderAutoRefresh,
+  stopAutoRefresh: stopPendingOrderAutoRefresh,
+  stop: stopOrderDetail
+} = orderDetailController
+const cancelling = computed(() => detailActions.cancellingOrderId.value !== null)
+const paying = computed(() => detailActions.payingOrderId.value !== null)
+const checkingPayment = computed(() => detailActions.refreshingOrderId.value !== null)
 const backTarget = computed(() => {
   if (currentRole.value !== 'seller') return '/user/orders?tab=buyer'
   return route.query.from === 'refunds' ? '/seller/refunds?status=action_required' : '/seller/orders?source=product'
@@ -578,48 +592,12 @@ function getProductDescription(orderData) {
          ''
 }
 
-// 加载订单详情
-async function loadOrder(options = {}) {
-  const silent = options?.silent === true
-  try {
-    if (!silent) {
-      loading.value = true
-    }
-    const orderId = route.params.id
-    const role = currentRole.value
-    const result = await orderStore.fetchOrderDetail(orderId, role)
-    if (!result.success) throw new Error(result.error || '加载订单详情失败')
-    order.value = result.data.order
-    orderLogs.value = result.data.logs || []
-  } catch (error) {
-    if (!silent) {
-      toast.error('加载订单详情失败')
-    }
-  } finally {
-    if (!silent) {
-      loading.value = false
-    }
-  }
-}
-
 function handleRefundUpdated() {
   loadOrder({ silent: true }).catch(() => {})
 }
 
-function stopPendingOrderAutoRefresh() {
-  if (pendingOrderAutoRefreshTimer) {
-    clearInterval(pendingOrderAutoRefreshTimer)
-    pendingOrderAutoRefreshTimer = null
-  }
-}
-
 function startPendingOrderAutoRefresh() {
-  stopPendingOrderAutoRefresh()
-  if (!canRefreshPaymentStatus.value) return
-
-  pendingOrderAutoRefreshTimer = setInterval(() => {
-    loadOrder({ silent: true }).catch(() => {})
-  }, 30000)
+  startOrderAutoRefresh(() => canRefreshPaymentStatus.value)
 }
 
 // 订单动态图标
@@ -829,9 +807,9 @@ async function handleRefreshPaymentStatus() {
   const orderNo = order.value?.orderNo
   if (!orderNo) return
 
-  checkingPayment.value = true
   try {
-    const result = await orderStore.refreshOrderStatus(orderNo)
+    const result = await detailActions.run('refresh', orderNo, () => orderStore.refreshOrderStatus(orderNo))
+    if (!result) return
     if (!result?.success) {
       toast.error(extractErrorMessage(result, '检查支付状态失败'))
       return
@@ -851,8 +829,6 @@ async function handleRefreshPaymentStatus() {
     await loadOrder({ silent: true })
   } catch (error) {
     toast.error(error?.message || '检查支付状态失败')
-  } finally {
-    checkingPayment.value = false
   }
 }
 
@@ -864,10 +840,13 @@ async function handleRepay() {
 
   const loadingId = toast.loading('正在获取支付链接...')
   const preparedWindow = preparePaymentPopup()
-  paying.value = true
 
   try {
-    const result = await orderStore.getPaymentUrl(orderNo)
+    const result = await detailActions.run('payment', orderNo, () => orderStore.getPaymentUrl(orderNo))
+    if (!result) {
+      cleanupPreparedTab(preparedWindow)
+      return
+    }
     const paymentUrl = result?.data?.paymentUrl
 
     if (!result?.success || !paymentUrl) {
@@ -896,8 +875,6 @@ async function handleRepay() {
   } catch (error) {
     cleanupPreparedTab(preparedWindow)
     toast.update(loadingId, { type: 'error', message: error?.message || '获取支付链接失败' })
-  } finally {
-    paying.value = false
   }
 }
 
@@ -913,16 +890,15 @@ async function handleCancelOrder() {
   if (!confirmed) return
   
   try {
-    cancelling.value = true
     const orderNo = order.value?.orderNo
-    const result = await orderStore.cancelOrder(orderNo)
+    if (!orderNo) return
+    const result = await detailActions.run('cancel', orderNo, () => orderStore.cancelOrder(orderNo))
+    if (!result) return
     if (!result.success) throw new Error(result.error || '取消失败')
     toast.success('订单已取消')
     goBack()
   } catch (error) {
     toast.error(error.message || '取消失败')
-  } finally {
-    cancelling.value = false
   }
 }
 
@@ -942,8 +918,18 @@ watch(canRefreshPaymentStatus, (enabled) => {
   }
 })
 
+watch(
+  () => `${String(route.params.id || '')}|${String(currentRole.value)}`,
+  async (next, previous) => {
+    if (!previous || next === previous) return
+    await loadOrder()
+    startPendingOrderAutoRefresh()
+  }
+)
+
 onUnmounted(() => {
-  stopPendingOrderAutoRefresh()
+  stopOrderDetail()
+  detailActions.clear()
 })
 </script>
 

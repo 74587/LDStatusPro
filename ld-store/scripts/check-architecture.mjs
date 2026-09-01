@@ -46,6 +46,21 @@ for (const file of sourceFiles(sourceRoot)) {
       failures.push(`${path}: 页面、组件和 store 不能直接发起 fetch`)
     }
   }
+
+  if (path === 'src/views/Orders.vue') {
+    for (const boundary of ['useOrderListController', 'useOrderActions', 'BuyerOrderList', 'SellerOrderTable', 'ManualDeliveryEditor']) {
+      if (!source.includes(boundary)) failures.push(`${path}: 订单 Shell 必须通过 ${boundary} 边界组织`)
+    }
+  }
+
+  if (path === 'src/views/OrderDetail.vue' && !source.includes('useOrderDetail')) {
+    failures.push(`${path}: 订单详情加载与刷新必须由 useOrderDetail 管理`)
+  }
+
+  if (path === 'src/components/order/OrderRefundPanel.vue') {
+    if (!source.includes('useOrderRefund')) failures.push(`${path}: 退款状态机必须由 useOrderRefund 管理`)
+    if (/from\s+['"][^'"]*services\//.test(source)) failures.push(`${path}: 退款视图不能直接依赖 service`)
+  }
 }
 
 if (failures.length) {
