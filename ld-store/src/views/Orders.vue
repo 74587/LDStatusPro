@@ -24,7 +24,7 @@
 
       <SellerDataTable class="seller-order-ledger" :class="{ 'is-filter-pending': sellerTabPending }" :aria-busy="sellerTabPending || loading" :inert="sellerTabPending ? '' : null" caption="卖家订单管理列表" :columns="sellerOrderColumns" :rows="orders" :loading="loading" :row-key="getOrderKey" :expanded-row-key="deliverFormOrderId || ''">
         <template #cell-order="{ row: order }">
-          <router-link :to="getOrderDetailTarget(order)" class="seller-order-id" @click="handleOrderCardClick"><strong>{{ getOrderKey(order) }}</strong><small>{{ formatDate(order.created_at || order.createdAt) }}</small></router-link>
+          <router-link :to="getOrderDetailTarget(order)" class="seller-order-id" @click="handleOrderCardClick"><strong>{{ getOrderKey(order) }}</strong><small>{{ formatDate(order.createdAt) }}</small></router-link>
         </template>
         <template #cell-subject="{ row: order }">
           <div class="seller-order-subject">
@@ -40,13 +40,13 @@
               <strong>{{ getOrderDisplayName(order) }}</strong><ArrowUpRight :size="13" aria-hidden="true" />
             </router-link>
             <strong v-else :title="getOrderDisplayName(order)">{{ getOrderDisplayName(order) }}</strong>
-            <small>{{ currentRole === 'buy' ? '求购服务' : `${getSellerOrderTypeText(order.product_type || order.product?.product_type)}${isPlatformOrder(order) ? ` · ×${getOrderQuantity(order)}` : ''}` }}</small>
+            <small>{{ currentRole === 'buy' ? '求购服务' : `${getSellerOrderTypeText(order.productType || order.product?.productType)}${isPlatformOrder(order) ? ` · ×${getOrderQuantity(order)}` : ''}` }}</small>
           </div>
         </template>
         <template #cell-buyer="{ row: order }">
           <SellerOrderPartyIdentity :order="order" :role="isBuyRequestOrder(order) ? 'counterparty' : 'buyer'" />
         </template>
-        <template #cell-amount="{ row: order }"><strong class="seller-order-amount">{{ order.total_price || order.amount || 0 }}</strong><small class="seller-order-unit">LDC</small></template>
+        <template #cell-amount="{ row: order }"><strong class="seller-order-amount">{{ order.totalPrice || order.amount || 0 }}</strong><small class="seller-order-unit">LDC</small></template>
         <template #cell-status="{ row: order }"><SellerStatusBadge :tone="resolveSellerStatusTone(order.status)" :label="getStatusText(order.status, order)" /><small v-if="order.status === 'pending'" class="seller-order-expiry">{{ getExpireCountdownText(order) }}</small></template>
         <template #cell-actions="{ row: order }">
           <div class="seller-order-actions">
@@ -72,7 +72,7 @@
             </div>
             <SellerStatusBadge :tone="resolveSellerStatusTone(order.status)" :label="getStatusText(order.status, order)" />
           </div>
-          <dl class="seller-order-mobile-grid"><div><dt>{{ isBuyRequestOrder(order) ? '求购方' : '买家' }}</dt><dd class="seller-order-mobile-party"><SellerOrderPartyIdentity :order="order" :role="isBuyRequestOrder(order) ? 'counterparty' : 'buyer'" /></dd></div><div><dt>金额</dt><dd>{{ order.total_price || order.amount || 0 }} LDC</dd></div><div><dt>时间</dt><dd>{{ formatDate(order.created_at || order.createdAt) }}</dd></div><div><dt>来源</dt><dd>{{ currentRole === 'buy' ? '求购服务' : '商品订单' }}</dd></div></dl>
+          <dl class="seller-order-mobile-grid"><div><dt>{{ isBuyRequestOrder(order) ? '求购方' : '买家' }}</dt><dd class="seller-order-mobile-party"><SellerOrderPartyIdentity :order="order" :role="isBuyRequestOrder(order) ? 'counterparty' : 'buyer'" /></dd></div><div><dt>金额</dt><dd>{{ order.totalPrice || order.amount || 0 }} LDC</dd></div><div><dt>时间</dt><dd>{{ formatDate(order.createdAt) }}</dd></div><div><dt>来源</dt><dd>{{ currentRole === 'buy' ? '求购服务' : '商品订单' }}</dd></div></dl>
           <p v-if="order.status === 'pending'" class="seller-order-mobile-expiry">{{ getExpireCountdownText(order) }}</p>
           <div class="seller-order-mobile-actions"><button v-if="showManualDeliver(order)" type="button" class="seller-row-primary" :aria-expanded="isDeliverFormVisible(order)" @click="openDeliverForm(order)"><PackageCheck :size="15" aria-hidden="true" />立即发货</button><button v-if="isBuyRequestOrder(order) && (order.status === 'pending' || order.status === 'paid') && !isPaymentMaintenanceBlocked" type="button" class="seller-row-secondary" :disabled="refreshingBuyOrderId === getOrderKey(order)" @click="handleRefreshBuyOrder(order)"><RefreshCw :size="15" aria-hidden="true" />刷新</button><button v-if="currentRole === 'seller' && order.status === 'pending'" type="button" class="seller-row-danger" :disabled="cancellingOrderId === getOrderKey(order)" @click="handleCancelOrder(order)">取消订单</button><router-link :to="getOrderDetailTarget(order)" class="seller-row-detail" @click="handleOrderCardClick">订单详情<ArrowUpRight :size="14" aria-hidden="true" /></router-link></div>
         </template>
@@ -178,7 +178,7 @@
         >
           <router-link :to="getOrderDetailTarget(order)" class="order-header" @click="handleOrderCardClick">
             <div class="order-header-main">
-              <span class="order-date">{{ formatDate(order.created_at || order.createdAt) }}</span>
+              <span class="order-date">{{ formatDate(order.createdAt) }}</span>
               <span v-if="order.status === 'pending' && (isPlatformOrder(order) || isBuyRequestOrder(order))" class="order-expire-chip">
                 {{ getExpireCountdownText(order) }}
               </span>
@@ -194,15 +194,15 @@
               <span v-if="isPlatformOrder(order)" class="order-quantity-badge">x{{ getOrderQuantity(order) }}</span>
             </div>
             <div class="order-info">
-              <!-- <span class="order-type">{{ getOrderTypeText(order.product_type || order.product?.product_type) }}</span> -->
+              <!-- <span class="order-type">{{ getOrderTypeText(order.productType || order.product?.productType) }}</span> -->
               <span class="order-seller" v-if="isBuyRequestOrder(order)">
                 {{ order.myRole === 'requester' ? '服务方' : '求购方' }}: {{ order.counterpartyUsername || '未知' }}
               </span>
               <span class="order-seller" v-else-if="currentRole === 'buyer'">
-                卖家: {{ order.seller_username || order.seller?.username || '未知' }}
+                卖家: {{ order.sellerUsername || order.seller?.username || '未知' }}
               </span>
               <span class="order-seller" v-else>
-                买家: {{ order.buyer_username || order.buyer?.username || '未知' }}
+                买家: {{ order.buyerUsername || order.buyer?.username || '未知' }}
               </span>
             </div>
             <div v-if="requiresBuyerContactOrder(order)" class="order-manual-hint">
@@ -218,12 +218,12 @@
           
           <div class="order-footer">
             <div class="order-amount-wrap compact">
-              <span class="order-amount">{{ order.total_price || order.amount }} LDC</span>
+              <span class="order-amount">{{ order.totalPrice || order.amount }} LDC</span>
               <span v-if="isPlatformOrder(order)" class="order-count">· 共 {{ getOrderQuantity(order) }} 个</span>
             </div>
             <div class="order-actions">
               <!-- 图床订单 -->
-              <template v-if="order.order_type === 'image'">
+              <template v-if="order.orderType === 'image'">
                 <span class="order-action" @click="viewOrderDetail(order)">查看图床 →</span>
               </template>
               <template v-else-if="isBuyRequestOrder(order)">
@@ -833,22 +833,22 @@ async function changeSellerOrderPage(nextPage) {
 }
 
 function getOrderKey(order) {
-  return order.order_no || order.orderNo || order.id
+  return order.orderNo || order.id
 }
 
 function getOrderCouponSnapshot(order) {
-  const value = order?.coupon_snapshot ?? order?.couponSnapshot
+  const value = order?.couponSnapshot
   if (!value) return {}
   if (typeof value === 'object') return value
   try { return JSON.parse(value) } catch { return {} }
 }
 
 function hasOrderCoupon(order) {
-  return !!(order?.coupon_claim_id ?? order?.couponClaimId ?? getOrderCouponSnapshot(order).campaignId)
+  return !!(order?.couponClaimId ?? getOrderCouponSnapshot(order).campaignId)
 }
 
 function getOrderCouponDiscount(order) {
-  return Number(order?.coupon_discount_amount ?? order?.couponDiscountAmount ?? getOrderCouponSnapshot(order).couponDiscountAmount ?? 0)
+  return Number(order?.couponDiscountAmount ?? getOrderCouponSnapshot(order).couponDiscountAmount ?? 0)
 }
 
 function getOrderCouponRule(order) {
@@ -887,11 +887,11 @@ function parseDateTimeToTimestamp(value) {
 }
 
 function getOrderExpireTimestamp(order) {
-  const directExpire = order.pay_expired_at || order.payExpiredAt || order.expire_at || order.expireAt
+  const directExpire = order.payExpiredAt || order.expireAt
   const directTs = parseDateTimeToTimestamp(directExpire)
   if (!Number.isNaN(directTs) && directTs > 0) return directTs
 
-  const createdTs = parseDateTimeToTimestamp(order.created_at || order.createdAt)
+  const createdTs = parseDateTimeToTimestamp(order.createdAt)
   if (!Number.isNaN(createdTs) && createdTs > 0) {
     // Fallback: pending orders are valid for 5 minutes.
     return createdTs + 5 * 60 * 1000
@@ -924,7 +924,7 @@ function getExpireCountdownText(order) {
 }
 
 function getOrderPaidAt(order) {
-  return order.paid_at || order.paidAt || order.pay_time || order.paidTime
+  return order.paidAt || order.paidTime
 }
 
 function isPaidOvertime(order) {
@@ -973,7 +973,7 @@ function extractErrorMessage(result, fallback) {
 // 订单卡片路由目标（供 <router-link> 使用：Ctrl/⌘/中键点击时浏览器原生新标签页打开）
 function getOrderDetailTarget(order) {
   // 图床订单跳转到图床页面
-  if (order.order_type === 'image') {
+  if (order.orderType === 'image') {
     return '/ld-image'
   }
 
@@ -1000,7 +1000,7 @@ function viewOrderDetail(order) {
   saveScrollState(ORDER_LIST_SCROLL_SOURCE)
 
   // 图床订单跳转到图床页面
-  if (order.order_type === 'image') {
+  if (order.orderType === 'image') {
     router.push('/ld-image')
     return
   }
@@ -1070,9 +1070,9 @@ function getStatusClass(status) {
 // 订单类型
 function getOrderDisplayName(order) {
   if (isBuyRequestOrder(order)) {
-    return order.requestTitle || order.request_title || order.product?.name || '求购订单'
+    return order.requestTitle || order.product?.name || '求购订单'
   }
-  return order.product?.name || order.product_name
+  return order.product?.name || order.productName
 }
 
 // 格式化日期
@@ -1104,17 +1104,17 @@ function requiresBuyerContactOrder(order) {
 }
 
 function isBuyRequestOrder(order) {
-  const type = order.order_type || order.orderType
+  const type = order.orderType
   return type === 'buy_request'
 }
 
 function getOrderQuantity(order) {
-  const quantity = Number(order?.quantity ?? order?.product_quantity ?? 1)
+  const quantity = Number(order?.quantity ?? order?.productQuantity ?? 1)
   return Number.isInteger(quantity) && quantity > 0 ? quantity : 1
 }
 
 function getOrderProductId(order) {
-  const value = Number(order?.product_id ?? order?.product?.id ?? 0)
+  const value = Number(order?.productId ?? order?.product?.id ?? 0)
   return Number.isInteger(value) && value > 0 ? value : 0
 }
 
@@ -1126,7 +1126,7 @@ function canReviewOrder(order) {
   if (currentRole.value !== 'buyer') return false
   if (!isCdkOrder(order)) return false
   if (order?.status !== 'delivered') return false
-  if (order?.comment_enabled === false) return false
+  if (order?.commentEnabled === false) return false
   return getOrderProductId(order) > 0
 }
 
@@ -1282,7 +1282,7 @@ async function handleRefreshBuyOrder(order) {
 // 取消订单
 
 async function handleCancelOrder(order) {
-  const productName = order.product?.name || order.product_name || '该物品'
+  const productName = order.product?.name || order.productName || '该物品'
   const confirmed = await dialog.confirm(`确定要取消订单「${productName}」吗？`, {
     title: '取消订单',
     confirmText: '确定取消',

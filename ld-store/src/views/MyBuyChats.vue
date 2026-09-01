@@ -236,11 +236,15 @@
 import { onMounted, onUnmounted, reactive, ref, computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
-import { api } from '@/utils/api'
+import {
+  fetchSystemMessagesRequest,
+  markAllSystemMessagesReadRequest,
+  markSystemMessageReadRequest
+} from '@/services/shop/messageService'
 import { useNotificationSummaryStore } from '@/stores/notificationSummary'
 import { useToast } from '@/composables/useToast'
 import { formatMessageTime, formatPrice, formatRelativeTime, formatStandardDateTime } from '@/utils/format'
-import { fetchMyConversations, resolveConversationPath } from '@/utils/conversation'
+import { fetchMyConversations, resolveConversationPath } from '@/services/shop/conversationService'
 import AppSelect from '@/components/common/AppSelect.vue'
 import LiquidTabs from '@/components/common/LiquidTabs.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
@@ -381,14 +385,12 @@ async function loadSystemMessages(reset = false) {
 
   systemLoading.value = true
   try {
-    const params = new URLSearchParams({
-      page: String(systemPagination.page),
-      pageSize: String(systemPagination.pageSize)
+    const result = await fetchSystemMessagesRequest({
+      page: systemPagination.page,
+      pageSize: systemPagination.pageSize,
+      readStatus: systemFilter.readStatus,
+      search: systemFilter.search
     })
-    if (systemFilter.readStatus) params.set('readStatus', systemFilter.readStatus)
-    if (systemFilter.search.trim()) params.set('search', systemFilter.search.trim())
-
-    const result = await api.get(`/api/shop/messages/system?${params.toString()}`)
     if (!result.success) {
       toast.error(result.error || '加载系统消息失败')
       return
@@ -427,7 +429,7 @@ async function markSystemMessageRead(item) {
 
   markingSystemId.value = messageId
   try {
-    const result = await api.post(`/api/shop/messages/system/${messageId}/read`)
+    const result = await markSystemMessageReadRequest(messageId)
     if (!result.success) {
       toast.error(result.error || '标记已读失败')
       return
@@ -449,7 +451,7 @@ async function markAllSystemRead() {
 
   markAllSystemLoading.value = true
   try {
-    const result = await api.post('/api/shop/messages/system/read-all')
+    const result = await markAllSystemMessagesReadRequest()
     if (!result.success) {
       toast.error(result.error || '全部标记已读失败')
       return

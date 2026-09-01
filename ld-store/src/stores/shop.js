@@ -851,12 +851,16 @@ export const useShopStore = defineStore('shop', () => {
     ordersLoading.value = true
 
     try {
-      const { result, emptyState } = await fetchOrdersByRoleRequest('buyer', options)
+      const result = await fetchOrdersByRoleRequest('buyer', options)
       if (result.success && result.data?.orders) {
         myOrders.value = result.data.orders
         return result.data
       }
-      return emptyState
+      const normalized = normalizeOrderListOptions(options)
+      return createEmptyListState(
+        getPositiveInt(normalized.page, 1),
+        getPositiveInt(normalized.pageSize, 20, 1, 50)
+      )
     } catch (error) {
       console.error('Fetch my orders failed:', error)
       const normalized = normalizeOrderListOptions(options)
@@ -881,12 +885,16 @@ export const useShopStore = defineStore('shop', () => {
     ordersLoading.value = true
 
     try {
-      const { result, emptyState } = await fetchOrdersByRoleRequest('seller', options)
+      const result = await fetchOrdersByRoleRequest('seller', options)
       if (result.success && result.data?.orders) {
         sellerOrders.value = result.data.orders
         return result.data
       }
-      return emptyState
+      const normalized = normalizeOrderListOptions(options)
+      return createEmptyListState(
+        getPositiveInt(normalized.page, 1),
+        getPositiveInt(normalized.pageSize, 20, 1, 50)
+      )
     } catch (error) {
       console.error('Fetch seller orders failed:', error)
       const normalized = normalizeOrderListOptions(options)
@@ -949,12 +957,13 @@ export const useShopStore = defineStore('shop', () => {
     ordersLoading.value = true
 
     try {
-      const { result, emptyState } = await fetchMyBuyOrdersRequest(options)
+      const result = await fetchMyBuyOrdersRequest(options)
       if (result.success && result.data) {
         myBuyOrders.value = result.data.orders || []
         return result.data
       }
-      return emptyState
+      const normalized = normalizeBuyOrderListOptions(options)
+      return createEmptyListState(normalized.page, normalized.pageSize)
     } catch (error) {
       console.error('Fetch buy orders failed:', error)
       const normalized = normalizeBuyOrderListOptions(options)

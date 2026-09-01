@@ -994,8 +994,7 @@ import StarRatingDisplay from '@/components/common/StarRatingDisplay.vue'
 import StarRatingInput from '@/components/common/StarRatingInput.vue'
 import ProductStockIndicator from '@/components/product/ProductStockIndicator.vue'
 import { buildAvatarCandidates } from '@/utils/avatar'
-import { api } from '@/utils/api'
-import { fetchProductRequest } from '@/services/shop/catalogService'
+import { fetchExternalProductLinkRequest, fetchProductRequest } from '@/services/shop/catalogService'
 import {
   isCdkProduct,
   isLegacyLinkProduct,
@@ -2441,7 +2440,7 @@ async function openExternalProductLink() {
   const preparedWindow = prepareNewTab()
 
   try {
-    const result = await api.get(`/api/shop/products/${encodeURIComponent(product.value?.id)}/external-link`)
+    const result = await fetchExternalProductLinkRequest(product.value?.id)
     if (result?.success && result.data?.paymentLink) {
       const opened = openInNewTab(result.data.paymentLink, preparedWindow)
       if (!opened) {

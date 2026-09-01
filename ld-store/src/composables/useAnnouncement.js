@@ -1,5 +1,5 @@
 import { ref } from 'vue'
-import { api } from '@/utils/api'
+import { fetchAnnouncementsRequest } from '@/services/announcementService'
 
 const ANNOUNCEMENT_CACHE_MS = 60_000
 
@@ -13,17 +13,17 @@ let lastFetchedAt = 0
 
 function normalizeItem(item = {}) {
   const now = Date.now()
-  const startsAt = Number(item.startsAt || item.starts_at || 0) || null
-  const expiresAt = Number(item.expiresAt || item.expires_at || 0) || null
+  const startsAt = Number(item.startsAt || 0) || null
+  const expiresAt = Number(item.expiresAt || 0) || null
   const enabled = item.enabled !== false
   const mode = ['banner', 'popup'].includes(item.mode) ? item.mode : 'banner'
-  const contentType = ['text', 'markdown', 'html'].includes(item.contentType || item.content_type)
-    ? (item.contentType || item.content_type)
+  const contentType = ['text', 'markdown', 'html'].includes(item.contentType)
+    ? item.contentType
     : 'text'
   const maxLength = mode === 'popup' ? 5000 : 200
   const content = String(item.content || '').trim().slice(0, maxLength)
   const type = ['info', 'warning', 'success'].includes(item.type) ? item.type : 'info'
-  const popupDismissKey = String(item.popupDismissKey || item.popup_dismiss_key || '').trim() || `popup-${Number(item.id || 0)}`
+  const popupDismissKey = String(item.popupDismissKey || '').trim() || `popup-${Number(item.id || 0)}`
   const title = String(item.title || '').trim().slice(0, 120)
 
   return {
@@ -60,11 +60,11 @@ async function fetchAnnouncements(force = false) {
   loading.value = true
   error.value = ''
   fetchPromise = (async () => {
-    const response = await api.get('/api/shop/announcements')
+    const response = await fetchAnnouncementsRequest()
     if (!response?.success) {
       throw new Error(response?.error || '加载公告失败')
     }
-    const nextItems = normalizeItems(response?.data?.items || response?.items || [])
+    const nextItems = normalizeItems(response?.data?.items || [])
     items.value = nextItems
     loaded.value = true
     lastFetchedAt = Date.now()

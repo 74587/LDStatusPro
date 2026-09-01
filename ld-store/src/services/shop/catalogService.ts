@@ -22,6 +22,7 @@ import {
   type ProductListResponse
 } from '@/contracts/catalog'
 import { beginCatalogRotation, rememberCatalogSlate } from '@/utils/catalogRotation'
+import { ExternalProductLinkResponseSchema } from '@/contracts/commerce'
 
 export const productSortMapping: Record<string, { sortBy: string; sortOrder: 'ASC' | 'DESC' }> = {
   default: { sortBy: 'updated_at', sortOrder: 'DESC' },
@@ -189,6 +190,14 @@ export async function fetchProductRequest(id: string | number) {
     await api.get(`/api/shop/products/${id}`),
     ProductDetailResponseSchema,
     { endpoint: '/api/shop/products/:id', schemaName: 'ProductDetailResponse' }
+  )
+}
+
+export async function fetchExternalProductLinkRequest(id: string | number) {
+  return validateApiResult(
+    await api.get(`/api/shop/products/${encodeURIComponent(String(id))}/external-link`),
+    ExternalProductLinkResponseSchema,
+    { endpoint: '/api/shop/products/:id/external-link', schemaName: 'ExternalProductLinkResponse' }
   )
 }
 

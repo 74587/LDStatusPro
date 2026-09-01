@@ -475,7 +475,7 @@ const viewerTrustLevel = computed(() => {
   return Number.isInteger(parsed) ? parsed : 0
 })
 const purchaseTrustLevel = computed(() => {
-  const parsed = Number(product.value?.purchase_trust_level ?? product.value?.purchaseTrustLevel ?? 0)
+  const parsed = Number(product.value?.purchaseTrustLevel ?? 0)
   return Number.isInteger(parsed) && parsed > 0 ? Math.min(parsed, 4) : 0
 })
 const isSeller = computed(() => (

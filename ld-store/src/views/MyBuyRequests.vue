@@ -94,7 +94,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { api } from '@/utils/api'
+import { fetchMyBuyRequestsRequest, updateBuyRequestStatusRequest } from '@/services/shop/buyRequestService'
 import { useToast } from '@/composables/useToast'
 import { useDialog } from '@/composables/useDialog'
 import { formatPrice, formatRelativeTime } from '@/utils/format'
@@ -133,14 +133,12 @@ function statusText(status) {
 async function loadRequests() {
   loading.value = true
   try {
-    const params = new URLSearchParams({
-      page: '1',
-      pageSize: '100'
+    const result = await fetchMyBuyRequestsRequest({
+      page: 1,
+      pageSize: 100,
+      status: statusFilter.value,
+      search: searchKeyword.value
     })
-    if (statusFilter.value) params.set('status', statusFilter.value)
-    if (searchKeyword.value.trim()) params.set('search', searchKeyword.value.trim())
-
-    const result = await api.get(`/api/shop/buy-requests/my?${params.toString()}`)
     if (result.success) {
       requests.value = result.data?.requests || []
     } else {
@@ -165,7 +163,7 @@ async function updateStatus(item, status) {
   if (!confirmed) return
 
   try {
-    const result = await api.post(`/api/shop/buy-requests/${item.id}/status`, { status })
+    const result = await updateBuyRequestStatusRequest(item.id, status)
     if (!result.success) {
       toast.error(result.error || '状态更新失败')
       return

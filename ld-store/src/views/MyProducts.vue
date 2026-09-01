@@ -33,7 +33,7 @@
       <template #cell-product="{ row: product }">
         <div class="product-ledger-main">
           <button type="button" class="product-ledger-image" :style="getImageStyle(product)" :aria-label="`查看物品 ${product.name}`" @click="viewProduct(product)">
-            <img v-if="hasProductImage(product)" :src="product.image_url" alt="" loading="lazy" @error="handleImageError($event, product)" />
+            <img v-if="hasProductImage(product)" :src="product.imageUrl" alt="" loading="lazy" @error="handleImageError($event, product)" />
             <Package v-else :size="20" aria-hidden="true" />
           </button>
           <div class="product-ledger-copy">
@@ -47,9 +47,9 @@
                 <Check v-if="isProductIdCopied(product)" :size="12" aria-hidden="true" />
                 <Copy v-else :size="12" aria-hidden="true" />
               </button>
-              <span class="product-archive-badge category" :title="product.category_name || '其他'">
+              <span class="product-archive-badge category" :title="product.categoryName || '其他'">
                 <Tag :size="12" aria-hidden="true" />
-                <span>{{ product.category_name || '其他' }}</span>
+                <span>{{ product.categoryName || '其他' }}</span>
               </span>
               <span :class="['product-archive-badge', 'type', `type-${getProductType(product)}`]">
                 <component :is="getTypeIcon(getProductType(product))" :size="12" aria-hidden="true" />
@@ -77,14 +77,14 @@
           </div>
         </div>
       </template>
-      <template #cell-stock="{ row: product }"><template v-if="isPlatformOrderProductItem(product)"><strong :class="['ledger-number', { 'is-warning': isLowStock(product) }]">{{ getStockDisplay(product) }}</strong><small class="ledger-unit">库存 · 售出 {{ product.sold_count || 0 }}</small></template><span v-else class="ledger-muted">不适用</span></template>
-      <template #cell-views="{ row: product }"><strong class="ledger-number">{{ product.view_count || 0 }}</strong><small class="ledger-unit">次浏览</small></template>
+      <template #cell-stock="{ row: product }"><template v-if="isPlatformOrderProductItem(product)"><strong :class="['ledger-number', { 'is-warning': isLowStock(product) }]">{{ getStockDisplay(product) }}</strong><small class="ledger-unit">库存 · 售出 {{ product.soldCount || 0 }}</small></template><span v-else class="ledger-muted">不适用</span></template>
+      <template #cell-views="{ row: product }"><strong class="ledger-number">{{ product.viewCount || 0 }}</strong><small class="ledger-unit">次浏览</small></template>
       <template #cell-actions="{ row: product }"><ProductRowActions :product="product" :can-manage-cdk="isCdkItem(product)" :can-toggle="canToggleStatus(product)" :busy="isProductBusy(product)" :restricted="isRestrictedProductManagement" :toggle-label="getToggleLabel(product)" :delete-label="getDeleteLabel(product)" @edit="editProduct" @cdk="manageCdk" @toggle="toggleStatus" @delete="deleteProduct" /></template>
       <template #mobile-row="{ row: product }">
         <div class="product-mobile-head">
           <div class="product-ledger-main">
             <button type="button" class="product-ledger-image" :style="getImageStyle(product)" :aria-label="`查看物品 ${product.name}`" @click="viewProduct(product)">
-              <img v-if="hasProductImage(product)" :src="product.image_url" alt="" loading="lazy" @error="handleImageError($event, product)" />
+              <img v-if="hasProductImage(product)" :src="product.imageUrl" alt="" loading="lazy" @error="handleImageError($event, product)" />
               <Package v-else :size="20" aria-hidden="true" />
             </button>
             <div class="product-ledger-copy">
@@ -96,7 +96,7 @@
                   <Check v-if="isProductIdCopied(product)" :size="12" aria-hidden="true" />
                   <Copy v-else :size="12" aria-hidden="true" />
                 </button>
-                <span class="product-archive-badge category"><Tag :size="12" aria-hidden="true" /><span>{{ product.category_name || '其他' }}</span></span>
+                <span class="product-archive-badge category"><Tag :size="12" aria-hidden="true" /><span>{{ product.categoryName || '其他' }}</span></span>
                 <span :class="['product-archive-badge', 'type', `type-${getProductType(product)}`]">
                   <component :is="getTypeIcon(getProductType(product))" :size="12" aria-hidden="true" />
                   <span>{{ getTypeText(getProductType(product)) }}</span>
@@ -119,8 +119,8 @@
               <span v-else class="mobile-price-compare">无折扣</span>
             </dd>
           </div>
-          <div><dt>库存 / 售出</dt><dd>{{ isPlatformOrderProductItem(product) ? `${getStockDisplay(product)} / ${product.sold_count || 0}` : '不适用' }}</dd></div>
-          <div><dt>浏览</dt><dd>{{ product.view_count || 0 }}</dd></div>
+          <div><dt>库存 / 售出</dt><dd>{{ isPlatformOrderProductItem(product) ? `${getStockDisplay(product)} / ${product.soldCount || 0}` : '不适用' }}</dd></div>
+          <div><dt>浏览</dt><dd>{{ product.viewCount || 0 }}</dd></div>
         </dl>
         <ProductRowActions :product="product" mobile :can-manage-cdk="isCdkItem(product)" :can-toggle="canToggleStatus(product)" :busy="isProductBusy(product)" :restricted="isRestrictedProductManagement" :toggle-label="getToggleLabel(product)" :delete-label="getDeleteLabel(product)" @edit="editProduct" @cdk="manageCdk" @toggle="toggleStatus" @delete="deleteProduct" />
       </template>
@@ -138,7 +138,7 @@
         </div>
         
         <div class="modal-body">
-          <div v-if="currentProduct?.sharedCdkEnabled || Number(currentProduct?.shared_cdk_enabled || 0) === 1">
+          <div v-if="currentProduct?.sharedCdkEnabled">
             <div class="cdk-stats shared-mode">
               <div class="stat-item">
                 <span class="stat-value">∞</span>
@@ -284,8 +284,7 @@ import SellerPageToolbar from '@/components/seller/SellerPageToolbar.vue'
 import SellerPagination from '@/components/seller/SellerPagination.vue'
 import SellerReasonDisclosure from '@/components/seller/SellerReasonDisclosure.vue'
 import SellerStatusBadge from '@/components/seller/SellerStatusBadge.vue'
-import { api } from '@/utils/api'
-import { storage } from '@/utils/storage'
+import { exportCdkRequest } from '@/services/shop/inventoryService'
 import { CDK_UPLOAD_LIMITS } from '@/config/cdkQuota'
 import { buildSellerProductPrice, filterAndSortSellerProducts, paginateSellerRows, resolveSellerStatusTone } from '@/utils/sellerTables'
 import {
@@ -528,29 +527,22 @@ async function toggleStatus(product) {
       // 重新上架操作（重新提交审核）
       const result = await shopStore.updateProduct(product.id, {
         name: product.name,
-        categoryId: product.category_id,
+        categoryId: product.categoryId,
         description: product.description,
         price: product.price,
         discount: product.discount,
-        imageUrl: product.image_url || '',
+        imageUrl: product.imageUrl || '',
         stock: getProductType(product) === 'normal' ? Number(product.stock || 0) : undefined,
-        purchaseLimitType: product.purchase_limit_config?.mode
-          || product.purchaseLimitConfig?.mode
-          || product.purchase_limit_type
+        purchaseLimitType: product.purchaseLimitConfig?.mode
           || product.purchaseLimitType
           || 'none',
         maxPurchaseQuantity: Number(
-          product.purchase_limit_config?.quantity
-            ?? product.purchaseLimitConfig?.quantity
-            ?? product.max_purchase_quantity
+          product.purchaseLimitConfig?.quantity
             ?? product.maxPurchaseQuantity
             ?? 0
         ),
         purchaseLimitPeriodDays: Number(
-          product.purchase_limit_config?.periodDays
-            ?? product.purchase_limit_config?.period_days
-            ?? product.purchaseLimitConfig?.periodDays
-            ?? product.purchase_limit_period_days
+          product.purchaseLimitConfig?.periodDays
             ?? product.purchaseLimitPeriodDays
             ?? 0
         )
@@ -698,35 +690,12 @@ async function exportCdks() {
   const loadingId = toast.loading('正在导出 CDK...')
 
   try {
-    const status = cdkStatusFilter.value || 'all'
-    const token = storage.get('token') || ''
-    const apiBase = api.BASE_URL || ''
-    const response = await fetch(`${apiBase}/api/shop/products/${currentProduct.value.id}/cdk/export?status=${encodeURIComponent(status)}&format=txt`, {
-      method: 'GET',
-      credentials: 'include',
-      headers: token ? { Authorization: `Bearer ${token}` } : {}
-    })
-
-    if (!response.ok) {
-      let message = '导出 CDK 失败'
-      const contentType = response.headers.get('content-type') || ''
-      if (contentType.includes('application/json')) {
-        const data = await response.json().catch(() => null)
-        message = data?.error?.message || data?.error || data?.message || message
-      } else {
-        const text = await response.text().catch(() => '')
-        if (text) message = text
-      }
-      throw new Error(message)
-    }
-
-    const blob = await response.blob()
-    const url = URL.createObjectURL(blob)
+    const result = await exportCdkRequest(currentProduct.value.id, cdkStatusFilter.value || 'all')
+    if (!result.success) throw new Error(result.error || '导出 CDK 失败')
+    const url = URL.createObjectURL(result.data.blob)
     const link = document.createElement('a')
-    const disposition = response.headers.get('content-disposition') || ''
-    const match = disposition.match(/filename="([^"]+)"/)
     link.href = url
-    link.download = match?.[1] || `${currentProduct.value.id}-cdk.txt`
+    link.download = result.data.filename
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
@@ -757,7 +726,7 @@ function normalizeProductStatus(status) {
 }
 
 function getProductStatus(product) {
-  const rawStatus = product?.status || product?.product_status || product?.productStatus || 'pending_ai'
+  const rawStatus = product?.status || product?.productStatus || 'pending_ai'
   return normalizeProductStatus(rawStatus)
 }
 
@@ -775,7 +744,7 @@ function isCdkItem(product) {
 }
 
 function isSharedCdkProduct(product) {
-  return isCdkProduct(product) && !!(product?.sharedCdkEnabled || Number(product?.shared_cdk_enabled || 0) === 1)
+  return isCdkProduct(product) && !!product?.sharedCdkEnabled
 }
 
 // 状态文本
@@ -829,11 +798,11 @@ function isLowStock(product) {
 }
 
 function getProductImageKey(product) {
-  return `${product?.id ?? 'unknown'}:${product?.image_url || ''}`
+  return `${product?.id ?? 'unknown'}:${product?.imageUrl || ''}`
 }
 
 function hasProductImage(product) {
-  return Boolean(product?.image_url) && !failedProductImages.value.has(getProductImageKey(product))
+  return Boolean(product?.imageUrl) && !failedProductImages.value.has(getProductImageKey(product))
 }
 
 // 获取图片样式
@@ -847,7 +816,7 @@ function getImageStyle(product) {
     '点数': 'linear-gradient(135deg, #778d9c 0%, #6a8090 100%)',
     'default': 'linear-gradient(135deg, #d5d0c9 0%, #c5c0b9 100%)'
   }
-  const category = product.category_name || ''
+  const category = product.categoryName || ''
   for (const [key, gradient] of Object.entries(colors)) {
     if (category.includes(key)) {
       return { background: gradient }
@@ -913,11 +882,8 @@ function getRejectReason(product) {
   if (!shouldShowReason) return null
 
   const reason =
-    product.status_reason
-    || product.statusReason
-    || product.reject_reason
+    product.statusReason
     || product.rejectReason
-    || product.offline_reason
     || product.offlineReason
     || ''
 
@@ -972,8 +938,8 @@ function sortCdkListByStatus(list) {
     const priorityB = CDK_STATUS_PRIORITY[statusB] ?? 999
     if (priorityA !== priorityB) return priorityA - priorityB
 
-    const timeA = new Date(a?.created_at || 0).getTime()
-    const timeB = new Date(b?.created_at || 0).getTime()
+    const timeA = new Date(a?.createdAt || 0).getTime()
+    const timeB = new Date(b?.createdAt || 0).getTime()
     if (!Number.isNaN(timeA) && !Number.isNaN(timeB) && timeA !== timeB) {
       return timeB - timeA
     }

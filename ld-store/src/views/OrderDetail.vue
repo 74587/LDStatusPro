@@ -48,13 +48,13 @@
             </div>
             <div>
               <div class="status-text">{{ getStatusText(order.status) }}</div>
-              <div class="status-time" v-if="order.created_at || order.createdAt">
-                {{ formatDateTime(order.created_at || order.createdAt) }}
+              <div class="status-time" v-if="order.createdAt">
+                {{ formatDateTime(order.createdAt) }}
               </div>
             </div>
           </div>
           <div class="status-card__meta">
-            <span class="status-chip">订单号 {{ order.order_no || order.orderNo || order.id }}</span>
+            <span class="status-chip">订单号 {{ order.orderNo || order.id }}</span>
             <span class="status-chip">
               {{ currentStatusTimeLabel }} {{ currentStatusTimeText }}
             </span>
@@ -79,9 +79,9 @@
               class="info-value info-link"
               @click="goToProductDetail"
             >
-              {{ order.product?.name || order.product_name || order.productName }}
+              {{ order.product?.name || order.productName }}
             </button>
-            <span v-else class="info-value">{{ order.product?.name || order.product_name || order.productName }}</span>
+            <span v-else class="info-value">{{ order.product?.name || order.productName }}</span>
           </div>
 
           <div class="info-row">
@@ -98,9 +98,9 @@
             <span class="info-value">x{{ getOrderQuantity(order) }}</span>
           </div>
           
-          <div class="info-row" v-if="order.original_price || order.originalPrice">
+          <div class="info-row" v-if="order.originalPrice">
             <span class="info-label">商品标价小计</span>
-            <span class="info-value" :class="{ 'original-price': Number(order.original_price || order.originalPrice) !== productSubtotal }">{{ Number(order.original_price || order.originalPrice).toFixed(2) }} LDC</span>
+            <span class="info-value" :class="{ 'original-price': Number(order.originalPrice) !== productSubtotal }">{{ Number(order.originalPrice).toFixed(2) }} LDC</span>
           </div>
 
           <div class="info-row" v-if="productSubtotal > 0">
@@ -125,7 +125,7 @@
           
           <div class="info-row amount">
             <span class="info-label">实付积分</span>
-            <span class="info-value price">{{ order.amount || order.total_price }} LDC</span>
+            <span class="info-value price">{{ order.amount || order.totalPrice }} LDC</span>
           </div>
         </div>
         
@@ -172,12 +172,12 @@
             </span>
           </div>
           
-          <div class="info-row" v-if="order.delivery_type">
+          <div class="info-row" v-if="order.deliveryType">
             <span class="info-label">发货方式</span>
             <span class="info-value delivery-value">
-              <PackageCheck v-if="order.delivery_type === 'auto'" :size="16" aria-hidden="true" />
+              <PackageCheck v-if="order.deliveryType === 'auto'" :size="16" aria-hidden="true" />
               <UserRound v-else :size="16" aria-hidden="true" />
-              {{ order.delivery_type === 'auto' ? '自动发货' : '手动发货' }}
+              {{ order.deliveryType === 'auto' ? '自动发货' : '手动发货' }}
             </span>
           </div>
         </div>
@@ -270,11 +270,11 @@
           <div class="order-summary-grid">
             <div class="summary-item">
               <span class="summary-label">业务单号</span>
-              <span class="summary-value mono">{{ order.order_no || order.orderNo || order.id }}</span>
+              <span class="summary-value mono">{{ order.orderNo || order.id }}</span>
             </div>
-            <div v-if="order.ldc_trade_no" class="summary-item">
+            <div v-if="order.ldcTradeNo" class="summary-item">
               <span class="summary-label">编号</span>
-              <span class="summary-value mono">{{ order.ldc_trade_no }}</span>
+              <span class="summary-value mono">{{ order.ldcTradeNo }}</span>
             </div>
           </div>
         </div>
@@ -293,7 +293,7 @@
               </div>
               <div class="log-content">
                 <div class="log-action">{{ getLogText(log) }}</div>
-                <div class="log-time">{{ formatDateTime(log.created_at || log.createdAt || log.time) }}</div>
+                <div class="log-time">{{ formatDateTime(log.createdAt || log.time) }}</div>
               </div>
             </div>
           </div>
@@ -409,26 +409,23 @@ const isPaymentMaintenanceBlocked = computed(() =>
 )
 
 const couponSnapshot = computed(() => {
-  const value = order.value?.coupon_snapshot ?? order.value?.couponSnapshot
+  const value = order.value?.couponSnapshot
   if (!value) return {}
   if (typeof value === 'object') return value
   try { return JSON.parse(value) } catch { return {} }
 })
 const productSubtotal = computed(() => Number(
-  order.value?.product_subtotal
-  ?? order.value?.productSubtotal
+  order.value?.productSubtotal
   ?? order.value?.amount
   ?? 0
 ))
 const couponDiscountAmount = computed(() => Number(
-  order.value?.coupon_discount_amount
-  ?? order.value?.couponDiscountAmount
+  order.value?.couponDiscountAmount
   ?? couponSnapshot.value?.couponDiscountAmount
   ?? 0
 ))
 const hasCoupon = computed(() => !!(
-  order.value?.coupon_claim_id
-  ?? order.value?.couponClaimId
+  order.value?.couponClaimId
   ?? couponSnapshot.value?.campaignId
 ))
 const couponRuleText = computed(() => {
@@ -484,7 +481,6 @@ const categoryNameMap = computed(() => {
 const productDetailPath = computed(() => {
   const productId =
     order.value?.product?.id ??
-    order.value?.product_id ??
     order.value?.productId
 
   if (productId == null || productId === '') return ''
@@ -534,18 +530,14 @@ function requiresBuyerContactOrder(orderData) {
 
 function getProductCategoryText(orderData) {
   const directName =
-    orderData?.category_name ||
     orderData?.categoryName ||
-    orderData?.product?.category_name ||
     orderData?.product?.categoryName ||
     orderData?.product?.category?.name
 
   if (directName) return directName
 
   const categoryId =
-    orderData?.category_id ??
     orderData?.categoryId ??
-    orderData?.product?.category_id ??
     orderData?.product?.categoryId ??
     orderData?.product?.category?.id
 
@@ -560,7 +552,7 @@ function getProductCategoryText(orderData) {
 
 // 获取发货内容（处理多种可能的字段名）
 function getDeliveryContent(orderData) {
-  return orderData?.cdk || orderData?.delivery_content || orderData?.deliveryContent || ''
+  return orderData?.cdk || orderData?.deliveryContent || ''
 }
 
 function getDeliveryList(orderData) {
@@ -572,7 +564,7 @@ function getDeliveryList(orderData) {
 }
 
 function getOrderQuantity(orderData) {
-  const quantity = Number(orderData?.quantity ?? orderData?.product_quantity ?? 1)
+  const quantity = Number(orderData?.quantity ?? orderData?.productQuantity ?? 1)
   return Number.isInteger(quantity) && quantity > 0 ? quantity : 1
 }
 
@@ -581,7 +573,6 @@ function getProductDescription(orderData) {
   // 从物品快照或直接字段获取描述
   return orderData?.product?.description || 
          orderData?.productDescription || 
-         orderData?.product_description || 
          ''
 }
 
@@ -666,7 +657,7 @@ function getLogText(log) {
     unlock_cdk: '释放CDK'
   }
   const actionText = actionMap[log.action] || log.action
-  const operator = log.operator_name || log.operator_type || ''
+  const operator = log.operatorName || log.operatorType || ''
   return operator ? `${actionText} (${operator})` : actionText
 }
 
@@ -678,7 +669,7 @@ function toTimestamp(value) {
 }
 
 function getLogTimestamp(log) {
-  return toTimestamp(log?.created_at || log?.createdAt || log?.time)
+  return toTimestamp(log?.createdAt || log?.time)
 }
 
 function isLogActionMatch(log, actions = []) {
@@ -705,17 +696,17 @@ function getStatusTimestamp(orderData, logs = []) {
     expired: getTimelineTimestampFromLogs(logs, ['expire'])
   }
   const fieldMap = {
-    delivered: orderData.delivered_at || orderData.deliveredAt,
-    completed: orderData.completed_at || orderData.completedAt || orderData.delivered_at || orderData.deliveredAt,
-    paid: orderData.paid_at || orderData.paidAt,
-    refunded: orderData.refunded_at || orderData.refundedAt,
-    external_dispute: orderData.updated_at || orderData.updatedAt,
-    cancelled: orderData.cancelled_at || orderData.cancelledAt,
-    expired: orderData.expired_at || orderData.expiredAt || orderData.pay_expired_at || orderData.payExpiredAt || orderData.expire_at || orderData.expireAt,
-    pending: orderData.created_at || orderData.createdAt,
-    paying: orderData.paid_at || orderData.paidAt || orderData.created_at || orderData.createdAt
+    delivered: orderData.deliveredAt,
+    completed: orderData.completedAt || orderData.deliveredAt,
+    paid: orderData.paidAt,
+    refunded: orderData.refundedAt,
+    external_dispute: orderData.updatedAt,
+    cancelled: orderData.cancelledAt,
+    expired: orderData.expiredAt || orderData.payExpiredAt || orderData.expireAt,
+    pending: orderData.createdAt,
+    paying: orderData.paidAt || orderData.createdAt
   }
-  return logTimestampMap[status] || toTimestamp(fieldMap[status]) || toTimestamp(orderData.updated_at || orderData.updatedAt || orderData.created_at || orderData.createdAt)
+  return logTimestampMap[status] || toTimestamp(fieldMap[status]) || toTimestamp(orderData.updatedAt || orderData.createdAt)
 }
 
 function getStatusTimeLabel(orderData) {
@@ -811,7 +802,7 @@ function downloadCdk() {
     return
   }
 
-  const orderNo = String(order.value?.order_no || order.value?.orderNo || order.value?.id || 'order').trim()
+  const orderNo = String(order.value?.orderNo || order.value?.id || 'order').trim()
   const blob = new Blob([`${lines.join('\n')}\n`], { type: 'text/plain;charset=utf-8' })
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
@@ -834,7 +825,7 @@ function extractErrorMessage(result, fallback) {
 async function handleRefreshPaymentStatus() {
   if (!canRefreshPaymentStatus.value || !order.value || checkingPayment.value) return
 
-  const orderNo = order.value?.order_no || order.value?.orderNo
+  const orderNo = order.value?.orderNo
   if (!orderNo) return
 
   checkingPayment.value = true
@@ -867,7 +858,7 @@ async function handleRefreshPaymentStatus() {
 async function handleRepay() {
   if (!canRepay.value || !order.value) return
 
-  const orderNo = order.value?.order_no || order.value?.orderNo
+  const orderNo = order.value?.orderNo
   if (!orderNo || paying.value) return
 
   const loadingId = toast.loading('正在获取支付链接...')
@@ -911,7 +902,7 @@ async function handleRepay() {
 
 // 取消订单
 async function handleCancelOrder() {
-  const productName = order.value?.product?.name || order.value?.product_name || '该物品'
+  const productName = order.value?.product?.name || order.value?.productName || '该物品'
   const confirmed = await dialog.confirm(`确定要取消订单「${productName}」吗？`, {
     title: '取消订单',
     confirmText: '确定取消',
@@ -922,7 +913,7 @@ async function handleCancelOrder() {
   
   try {
     cancelling.value = true
-    const orderNo = order.value?.order_no || order.value?.orderNo
+    const orderNo = order.value?.orderNo
     await shopStore.cancelOrder(orderNo)
     toast.success('订单已取消')
     goBack()

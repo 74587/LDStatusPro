@@ -609,7 +609,7 @@ import { useToast } from '@/composables/useToast'
 import { useDialog } from '@/composables/useDialog'
 import { validateProductName, validateProductDescription, validatePrice } from '@/utils/security'
 import { renderProductDescription } from '@/utils/renderProductDescription'
-import { api } from '@/utils/api'
+import { createBuyRequestRequest } from '@/services/shop/buyRequestService'
 import { CDK_UPLOAD_LIMITS } from '@/config/cdkQuota'
 import SellerStickySummary from '@/components/seller/SellerStickySummary.vue'
 import PurchaseLimitSelector from '@/components/product/PurchaseLimitSelector.vue'
@@ -1670,7 +1670,7 @@ async function submitBuyRequest() {
 
   buySubmitting.value = true
   try {
-    const result = await api.post('/api/shop/buy-requests', {
+    const result = await createBuyRequestRequest({
       title: buyForm.value.title.trim(),
       details: buyForm.value.details.trim(),
       price: parseFloat(buyForm.value.price)

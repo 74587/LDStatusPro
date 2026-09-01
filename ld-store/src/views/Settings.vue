@@ -226,7 +226,11 @@ import { useRoute, useRouter } from 'vue-router'
 import { useShopStore } from '@/stores/shop'
 import { useToast } from '@/composables/useToast'
 import { useDialog } from '@/composables/useDialog'
-import { api } from '@/utils/api'
+import {
+  createMerchantConfigRequest,
+  deleteMerchantConfigRequest,
+  testMerchantCallbackRequest
+} from '@/services/shop/merchantService'
 import { PRODUCT_PUBLISH_PAYMENT_SOURCE } from '@/utils/productPublishDraft'
 import { fetchDiscoveryPreferenceRequest, updateDiscoveryPreferenceRequest } from '@/services/shop/discoveryService'
 import SellerStatusBadge from '@/components/seller/SellerStatusBadge.vue'
@@ -344,7 +348,7 @@ async function saveSettings() {
   try {
     // Base64 编码 Key 避免 WAF 拦截
     const encodedKey = btoa(ldcKey.value)
-    const result = await api.post('/api/shop/merchant/config', {
+    const result = await createMerchantConfigRequest({
       ldcPid: ldcPid.value.trim(),
       ldcKeyEncoded: encodedKey
     })
@@ -375,9 +379,9 @@ async function testCallback() {
   testing.value = true
   testResult.value = null
   try {
-    const result = await api.post('/api/shop/merchant/test-callback')
+    const result = await testMerchantCallbackRequest()
     if (result.success) {
-      const data = result.data?.data || result.data || {}
+      const data = result.data || {}
       if (data.status === 'ok') {
         testResult.value = { tone: 'success', message: '测试成功，通知地址可以正常接收请求。' }
         toast.success('通知测试成功！您的通知地址配置正确')
@@ -408,7 +412,7 @@ async function deleteConfig() {
   if (!confirmed) return
   
   try {
-    const result = await api.delete('/api/shop/merchant/config')
+    const result = await deleteMerchantConfigRequest()
     if (result.success) {
       toast.success('配置已删除')
       await loadSettings()

@@ -360,7 +360,7 @@ const sellerActionError = ref('')
 const sellerSubmitting = ref(false)
 const form = reactive({ reasonCode: '', reasonDetail: '', buyerContactedSeller: false })
 
-const orderNo = computed(() => props.order?.order_no || props.order?.orderNo || '')
+const orderNo = computed(() => props.order?.orderNo || '')
 const isBuyer = computed(() => props.role === 'buyer')
 const refund = computed(() => refundState.value?.refund || null)
 const eligibility = computed(() => refundState.value?.eligibility || null)
@@ -371,10 +371,10 @@ const refundAvailabilityMessage = computed(() => canApplyRefund.value
 const disputeGuideUrl = computed(() => refundState.value?.disputeGuideUrl || 'https://credit.linux.do/docs/how-to-use#争议处理')
 const statusMeta = computed(() => getRefundStatusMeta(refund.value?.status))
 const stages = computed(() => buildRefundStages(refund.value?.status, Boolean(refund.value)))
-const refundAmount = computed(() => Number(props.order?.paid_amount ?? props.order?.paidAmount ?? props.order?.amount ?? 0))
+const refundAmount = computed(() => Number(props.order?.paidAmount ?? props.order?.amount ?? 0))
 const counterpartyUsername = computed(() => isBuyer.value
-  ? (props.order?.seller_username || props.order?.sellerUsername || props.order?.seller?.username)
-  : (props.order?.buyer_username || props.order?.buyerUsername || props.order?.buyer?.username))
+  ? (props.order?.sellerUsername || props.order?.seller?.username)
+  : (props.order?.buyerUsername || props.order?.buyer?.username))
 const counterpartyMessageUrl = computed(() => buildLinuxDoMessageUrl(
   counterpartyUsername.value,
   orderNo.value,

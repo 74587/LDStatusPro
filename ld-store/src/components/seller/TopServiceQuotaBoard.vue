@@ -241,7 +241,7 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { ArrowRight, RefreshCw } from '@lucide/vue'
-import { api } from '@/utils/api'
+import { fetchTopServiceBoardRequest } from '@/services/shop/topServiceService'
 const quotaBoardLoading = ref(false)
 defineEmits(['purchase'])
 const quotaBoardLoaded = ref(false)
@@ -350,7 +350,7 @@ async function loadQuotaBoard() {
   if (quotaBoardLoading.value) return
   quotaBoardLoading.value = true
   try {
-    const response = await api.get('/api/shop/top-service/board')
+    const response = await fetchTopServiceBoardRequest()
     if (!response?.success) throw new Error('名额看板未能更新，请重试。')
     const result = response.data
     boardError.value = ''
