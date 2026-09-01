@@ -47,22 +47,22 @@ const visibleItems = computed(() => announcementItems.value.filter((item) => ite
   padding: 12px 14px;
   border-radius: 16px;
   border: 1px solid var(--border-color);
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+  box-shadow: 0 8px 24px var(--palette-rgba-15-23-42-0p06);
 }
 
 .announcement-bar__item--info {
-  background: rgba(59, 130, 246, 0.08);
-  border-color: rgba(59, 130, 246, 0.18);
+  background: var(--palette-rgba-59-130-246-0p08);
+  border-color: var(--palette-rgba-59-130-246-0p18);
 }
 
 .announcement-bar__item--warning {
-  background: rgba(245, 158, 11, 0.12);
-  border-color: rgba(245, 158, 11, 0.25);
+  background: var(--palette-rgba-245-158-11-0p12);
+  border-color: var(--palette-rgba-245-158-11-0p25);
 }
 
 .announcement-bar__item--success {
-  background: rgba(16, 185, 129, 0.1);
-  border-color: rgba(16, 185, 129, 0.22);
+  background: var(--palette-rgba-16-185-129-0p1);
+  border-color: var(--palette-rgba-16-185-129-0p22);
 }
 
 .announcement-bar__icon {

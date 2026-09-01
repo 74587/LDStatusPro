@@ -36,16 +36,16 @@ const emit = defineEmits<{ buy: []; openStore: []; subscribeRestock: [] }>()
 .buy-action-row { display: flex; align-items: stretch; gap: 10px; }
 .buy-action-row .buy-btn { flex: 1; width: auto; min-width: 0; }
 .purchase-next-step-hint { margin: 9px 0 0; color: var(--text-tertiary); font-size: 12px; line-height: 1.45; text-align: center; }
-.buy-btn { display: flex; width: 100%; align-items: center; justify-content: center; gap: 8px; padding: 16px 24px; color: white; background: linear-gradient(135deg, #cfa76f, #bd8d57); border: 0; border-radius: 14px; cursor: pointer; text-decoration: none; font-size: 16px; font-weight: 600; transition: opacity 0.2s, transform 0.2s, box-shadow 0.2s; }
-.buy-btn:hover { opacity: 0.92; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(207, 167, 111, 0.3); }
-.buy-btn.store, .buy-btn.test, .buy-btn.disabled.test-only { background: linear-gradient(135deg, #06b6d4, #0891b2); }
-.buy-btn.store:hover, .buy-btn.test:hover { box-shadow: 0 4px 12px rgba(6, 182, 212, 0.3); }
+.buy-btn { display: flex; width: 100%; align-items: center; justify-content: center; gap: 8px; padding: 16px 24px; color: var(--palette-hex-ffffff); background: linear-gradient(135deg, var(--palette-hex-cfa76f), var(--palette-hex-bd8d57)); border: 0; border-radius: 14px; cursor: pointer; text-decoration: none; font-size: 16px; font-weight: 600; transition: opacity 0.2s, transform 0.2s, box-shadow 0.2s; }
+.buy-btn:hover { opacity: 0.92; transform: translateY(-1px); box-shadow: 0 4px 12px var(--palette-rgba-207-167-111-0p3); }
+.buy-btn.store, .buy-btn.test, .buy-btn.disabled.test-only { background: linear-gradient(135deg, var(--palette-hex-06b6d4), var(--palette-hex-0891b2)); }
+.buy-btn.store:hover, .buy-btn.test:hover { box-shadow: 0 4px 12px var(--palette-rgba-6-182-212-0p3); }
 .buy-btn.restock { color: var(--publish-btn-color); background: var(--publish-btn-bg); border: 1px solid transparent; box-shadow: var(--publish-btn-shadow); }
 .buy-btn.restock:hover { opacity: 1; background: var(--publish-btn-hover-bg); box-shadow: var(--publish-btn-hover-shadow); }
 .buy-btn.restock.subscribed { color: var(--text-secondary); background: var(--bg-secondary); border-color: var(--border-medium); box-shadow: none; }
 .buy-btn.restock:disabled { transform: none; }
 .buy-btn.restock.subscribed:disabled { cursor: default; opacity: 1; }
-.buy-btn.disabled { cursor: not-allowed; background: #999; box-shadow: none; opacity: 0.5; transform: none; }
+.buy-btn.disabled { cursor: not-allowed; background: var(--palette-hex-999999); box-shadow: none; opacity: 0.5; transform: none; }
 .buy-btn.disabled.test-only { opacity: 0.6; }
 :global(.action-bottom) .purchase-next-step-hint { margin-top: 8px; }
 </style>

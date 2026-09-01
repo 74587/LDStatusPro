@@ -23,12 +23,12 @@ const emit = defineEmits<{ open: []; load: [event: Event]; error: [event: Event]
 .detail-media--landscape { align-self: start; justify-content: flex-start; align-items: flex-start; }
 .media-wrapper { position: relative; display: flex; width: 100%; max-width: 400px; min-height: 200px; max-height: 500px; align-items: center; justify-content: center; padding: 0; overflow: hidden; background: var(--bg-secondary); border: 0; border-radius: 16px; cursor: pointer; transition: transform 0.3s, box-shadow 0.3s; }
 .detail-media--landscape .media-wrapper { max-width: 100%; }
-.media-wrapper:hover { transform: scale(1.02); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1); }
+.media-wrapper:hover { transform: scale(1.02); box-shadow: 0 8px 24px var(--palette-rgba-0-0-0-0p1); }
 .media-wrapper:has(.media-placeholder) { aspect-ratio: 1 / 1; }
 .media-image { width: 100%; height: auto; max-height: 500px; object-fit: contain; background: var(--bg-secondary); }
 .media-placeholder { color: var(--text-tertiary); opacity: 0.6; }
-.discount-tag { position: absolute; top: 12px; right: 12px; padding: 8px 12px; color: white; background: linear-gradient(135deg, #ad9090, #937474); border-radius: 10px; font-size: 13px; font-weight: 700; }
-.media-zoom-hint { position: absolute; right: 0; bottom: 0; left: 0; display: flex; align-items: center; justify-content: center; gap: 5px; padding: 10px; color: white; background: linear-gradient(transparent, rgba(0, 0, 0, 0.5)); opacity: 0; font-size: 12px; transition: opacity 0.3s; }
+.discount-tag { position: absolute; top: 12px; right: 12px; padding: 8px 12px; color: var(--palette-hex-ffffff); background: linear-gradient(135deg, var(--palette-hex-ad9090), var(--palette-hex-937474)); border-radius: 10px; font-size: 13px; font-weight: 700; }
+.media-zoom-hint { position: absolute; right: 0; bottom: 0; left: 0; display: flex; align-items: center; justify-content: center; gap: 5px; padding: 10px; color: var(--palette-hex-ffffff); background: linear-gradient(transparent, var(--palette-rgba-0-0-0-0p5)); opacity: 0; font-size: 12px; transition: opacity 0.3s; }
 .media-wrapper:hover .media-zoom-hint, .media-wrapper:focus-visible .media-zoom-hint { opacity: 1; }
 @media (max-width: 640px) {
   .media-wrapper { max-width: 100%; max-height: 350px; }

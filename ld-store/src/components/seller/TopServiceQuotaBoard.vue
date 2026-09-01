@@ -440,8 +440,8 @@ defineExpose({ refresh: loadQuotaBoard })
 }
 
 .board-summary-card--special {
-  background: linear-gradient(180deg, rgba(249, 237, 214, 0.72) 0%, var(--services-card-bg) 100%);
-  border-color: rgba(198, 146, 68, 0.22);
+  background: linear-gradient(180deg, var(--palette-rgba-249-237-214-0p72) 0%, var(--services-card-bg) 100%);
+  border-color: var(--palette-rgba-198-146-68-0p22);
 }
 
 .board-summary-card--focus {

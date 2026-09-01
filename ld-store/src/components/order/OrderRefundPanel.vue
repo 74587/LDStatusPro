@@ -387,10 +387,10 @@ const statusIcon = computed(() => {
 <style scoped>
 .refund-card {
   --refund-radius: 14px;
-  --refund-success: var(--color-success, #3f7a52);
-  --refund-info: var(--color-info, #277da1);
-  --refund-warning: var(--color-warning, #a66b24);
-  --refund-danger: var(--color-danger, #b54a4a);
+  --refund-success: var(--status-success);
+  --refund-info: var(--status-info);
+  --refund-warning: var(--status-warning);
+  --refund-danger: var(--status-danger);
   width: 100%;
   min-width: 0;
   box-sizing: border-box;
@@ -400,7 +400,7 @@ const statusIcon = computed(() => {
   border: 1px solid var(--border-medium);
   border-radius: var(--refund-radius);
   background: var(--bg-card);
-  box-shadow: var(--shadow-sm, 0 3px 14px rgba(31, 42, 52, .06));
+  box-shadow: var(--shadow-sm, 0 3px 14px var(--palette-rgba-31-42-52-p06));
 }
 
 .refund-card__header {
@@ -739,11 +739,11 @@ const statusIcon = computed(() => {
 }
 
 .refund-btn--block { width: 100%; }
-.refund-btn--primary { color: #fff; border-color: var(--color-primary-hover); background: var(--color-primary-hover); }
+.refund-btn--primary { color: var(--palette-hex-ffffff); border-color: var(--color-primary-hover); background: var(--color-primary-hover); }
 .refund-btn--primary:hover:not(:disabled) { background: var(--color-primary); transform: translateY(-1px); }
 .refund-btn--secondary { border-color: var(--border-medium); background: var(--bg-card); }
 .refund-btn--secondary:hover:not(:disabled) { border-color: var(--color-primary); background: var(--color-primary-light); }
-.refund-btn--danger { color: #fff; border-color: var(--refund-danger); background: var(--refund-danger); }
+.refund-btn--danger { color: var(--palette-hex-ffffff); border-color: var(--refund-danger); background: var(--refund-danger); }
 .refund-btn--outline-danger { color: var(--refund-danger); border-color: color-mix(in srgb, var(--refund-danger) 65%, var(--border-medium)); background: var(--bg-card); }
 .refund-btn--outline-danger:hover:not(:disabled) { background: var(--color-danger-bg); }
 .refund-btn:disabled { cursor: not-allowed; opacity: .52; transform: none; }

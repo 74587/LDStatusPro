@@ -1612,7 +1612,7 @@ button.order-option-row:disabled {
     padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px));
     border-top: 1px solid var(--border-light);
     background: var(--glass-bg-heavy);
-    box-shadow: 0 -10px 30px rgba(0, 0, 0, .08);
+    box-shadow: 0 -10px 30px var(--palette-rgba-0-0-0-p08);
     backdrop-filter: blur(18px);
     -webkit-backdrop-filter: blur(18px);
   }

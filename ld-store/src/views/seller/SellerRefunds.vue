@@ -195,8 +195,8 @@ onMounted(loadRefunds)
   border: 2px solid var(--border-medium);
   border-radius: 10px;
   color: var(--text-secondary);
-  background: white;
-  transition: all 0.2s;
+  background: var(--palette-hex-ffffff);
+  transition: color var(--motion-duration-fast) var(--motion-ease-standard), background-color var(--motion-duration-fast) var(--motion-ease-standard), border-color var(--motion-duration-fast) var(--motion-ease-standard), box-shadow var(--motion-duration-fast) var(--motion-ease-standard), opacity var(--motion-duration-fast) var(--motion-ease-standard), transform var(--motion-duration-fast) var(--motion-ease-standard);
 }
 
 .refund-search:hover {
@@ -220,8 +220,8 @@ onMounted(loadRefunds)
 
 .refund-search:focus-within {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(181, 168, 152, 0.15);
-  background: white;
+  box-shadow: 0 0 0 3px var(--palette-rgba-181-168-152-0p15);
+  background: var(--palette-hex-ffffff);
 }
 
 .refund-search-submit,
@@ -235,19 +235,19 @@ onMounted(loadRefunds)
   border: 2px solid var(--border-medium);
   border-radius: 10px;
   color: var(--text-primary);
-  background: white;
+  background: var(--palette-hex-ffffff);
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: color var(--motion-duration-fast) var(--motion-ease-standard), background-color var(--motion-duration-fast) var(--motion-ease-standard), border-color var(--motion-duration-fast) var(--motion-ease-standard), box-shadow var(--motion-duration-fast) var(--motion-ease-standard), opacity var(--motion-duration-fast) var(--motion-ease-standard), transform var(--motion-duration-fast) var(--motion-ease-standard);
 }
 
 .refund-search-submit:hover,
 .refund-refresh:hover {
   background: var(--color-primary);
   border-color: var(--color-primary);
-  color: #FFFFFF;
-  box-shadow: 0 2px 8px rgba(181, 168, 152, 0.25);
+  color: var(--palette-hex-ffffff);
+  box-shadow: 0 2px 8px var(--palette-rgba-181-168-152-0p25);
 }
 
 .refund-refresh:disabled {
@@ -320,12 +320,12 @@ onMounted(loadRefunds)
   font-weight: 700;
   white-space: nowrap;
   text-decoration: none;
-  transition: all 0.2s;
+  transition: color var(--motion-duration-fast) var(--motion-ease-standard), background-color var(--motion-duration-fast) var(--motion-ease-standard), border-color var(--motion-duration-fast) var(--motion-ease-standard), box-shadow var(--motion-duration-fast) var(--motion-ease-standard), opacity var(--motion-duration-fast) var(--motion-ease-standard), transform var(--motion-duration-fast) var(--motion-ease-standard);
 }
 
 .refund-detail-link:hover {
   background: var(--color-primary-light);
-  box-shadow: 0 2px 8px rgba(181, 168, 152, 0.15);
+  box-shadow: 0 2px 8px var(--palette-rgba-181-168-152-0p15);
 }
 
 /* 错误状态 - 简洁错误提示 */
@@ -338,7 +338,7 @@ onMounted(loadRefunds)
   padding: 16px;
   border: 2px solid var(--color-danger-light);
   border-radius: 12px;
-  color: #991b1b;
+  color: var(--palette-hex-991b1b);
   background: var(--color-danger-bg);
 }
 
@@ -355,13 +355,13 @@ onMounted(loadRefunds)
   border: 2px solid currentColor;
   border-radius: 10px;
   font-weight: 700;
-  transition: all 0.2s;
+  transition: color var(--motion-duration-fast) var(--motion-ease-standard), background-color var(--motion-duration-fast) var(--motion-ease-standard), border-color var(--motion-duration-fast) var(--motion-ease-standard), box-shadow var(--motion-duration-fast) var(--motion-ease-standard), opacity var(--motion-duration-fast) var(--motion-ease-standard), transform var(--motion-duration-fast) var(--motion-ease-standard);
   cursor: pointer;
 }
 
 .refund-page-error button:hover {
-  background: rgba(153, 27, 27, 0.1);
-  box-shadow: 0 2px 8px rgba(153, 27, 27, 0.15);
+  background: var(--palette-rgba-153-27-27-0p1);
+  box-shadow: 0 2px 8px var(--palette-rgba-153-27-27-0p15);
 }
 
 /* 空状态 - 友好空状态 */
@@ -401,14 +401,14 @@ onMounted(loadRefunds)
   color: var(--text-primary);
   font-weight: 700;
   text-decoration: none;
-  transition: all 0.2s;
+  transition: color var(--motion-duration-fast) var(--motion-ease-standard), background-color var(--motion-duration-fast) var(--motion-ease-standard), border-color var(--motion-duration-fast) var(--motion-ease-standard), box-shadow var(--motion-duration-fast) var(--motion-ease-standard), opacity var(--motion-duration-fast) var(--motion-ease-standard), transform var(--motion-duration-fast) var(--motion-ease-standard);
 }
 
 .refund-empty a:hover {
   background: var(--color-primary);
   border-color: var(--color-primary);
-  color: #FFFFFF;
-  box-shadow: 0 2px 8px rgba(181, 168, 152, 0.25);
+  color: var(--palette-hex-ffffff);
+  box-shadow: 0 2px 8px var(--palette-rgba-181-168-152-0p25);
 }
 
 /* 移动端卡片布局 - 改进层次 */
@@ -470,12 +470,12 @@ onMounted(loadRefunds)
   font-size: 13px;
   font-weight: 700;
   text-decoration: none;
-  transition: all 0.2s;
+  transition: color var(--motion-duration-fast) var(--motion-ease-standard), background-color var(--motion-duration-fast) var(--motion-ease-standard), border-color var(--motion-duration-fast) var(--motion-ease-standard), box-shadow var(--motion-duration-fast) var(--motion-ease-standard), opacity var(--motion-duration-fast) var(--motion-ease-standard), transform var(--motion-duration-fast) var(--motion-ease-standard);
 }
 
 .refund-mobile-foot a:hover {
   background: var(--color-primary-light);
-  box-shadow: 0 2px 8px rgba(181, 168, 152, 0.15);
+  box-shadow: 0 2px 8px var(--palette-rgba-181-168-152-0p15);
 }
 
 .seller-sr-only {

@@ -252,13 +252,13 @@ async function handleLogin() {
   width: 100%;
   padding: 16px 24px;
   background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
-  color: white;
+  color: var(--palette-hex-ffffff);
   font-size: 15px;
   font-weight: 600;
   border: none;
   border-radius: 14px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: color var(--motion-duration-fast) var(--motion-ease-standard), background-color var(--motion-duration-fast) var(--motion-ease-standard), border-color var(--motion-duration-fast) var(--motion-ease-standard), box-shadow var(--motion-duration-fast) var(--motion-ease-standard), opacity var(--motion-duration-fast) var(--motion-ease-standard), transform var(--motion-duration-fast) var(--motion-ease-standard);
   margin-bottom: 16px;
 }
 
@@ -315,7 +315,7 @@ async function handleLogin() {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s;
+  transition: color var(--motion-duration-fast) var(--motion-ease-standard), background-color var(--motion-duration-fast) var(--motion-ease-standard), border-color var(--motion-duration-fast) var(--motion-ease-standard), box-shadow var(--motion-duration-fast) var(--motion-ease-standard), opacity var(--motion-duration-fast) var(--motion-ease-standard), transform var(--motion-duration-fast) var(--motion-ease-standard);
   flex-shrink: 0;
 }
 
@@ -326,7 +326,7 @@ async function handleLogin() {
 
 .checkbox-input:checked + .checkbox-custom::after {
   content: '✓';
-  color: white;
+  color: var(--palette-hex-ffffff);
   font-size: 12px;
   font-weight: bold;
 }

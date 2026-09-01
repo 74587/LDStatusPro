@@ -714,7 +714,7 @@ onBeforeUnmount(() => {
   font-size: 12px;
   color: var(--text-tertiary);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: color var(--motion-duration-fast) var(--motion-ease-standard), background-color var(--motion-duration-fast) var(--motion-ease-standard), border-color var(--motion-duration-fast) var(--motion-ease-standard), box-shadow var(--motion-duration-fast) var(--motion-ease-standard), opacity var(--motion-duration-fast) var(--motion-ease-standard), transform var(--motion-duration-fast) var(--motion-ease-standard);
 }
 
 .clear-btn:focus-visible,
@@ -820,7 +820,7 @@ onBeforeUnmount(() => {
   font-size: 14px;
   color: var(--text-secondary);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: color var(--motion-duration-fast) var(--motion-ease-standard), background-color var(--motion-duration-fast) var(--motion-ease-standard), border-color var(--motion-duration-fast) var(--motion-ease-standard), box-shadow var(--motion-duration-fast) var(--motion-ease-standard), opacity var(--motion-duration-fast) var(--motion-ease-standard), transform var(--motion-duration-fast) var(--motion-ease-standard);
 }
 
 .history-item:hover {
@@ -855,7 +855,7 @@ onBeforeUnmount(() => {
   border-radius: 10px;
   text-align: left;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: color var(--motion-duration-fast) var(--motion-ease-standard), background-color var(--motion-duration-fast) var(--motion-ease-standard), border-color var(--motion-duration-fast) var(--motion-ease-standard), box-shadow var(--motion-duration-fast) var(--motion-ease-standard), opacity var(--motion-duration-fast) var(--motion-ease-standard), transform var(--motion-duration-fast) var(--motion-ease-standard);
 }
 
 .hot-item:hover {
@@ -876,8 +876,8 @@ onBeforeUnmount(() => {
 }
 
 .hot-item.top .hot-rank {
-  background: #cfa76f;
-  color: white;
+  background: var(--palette-hex-cfa76f);
+  color: var(--palette-hex-ffffff);
 }
 
 .hot-text {
@@ -908,8 +908,8 @@ onBeforeUnmount(() => {
 }
 
 .error-card {
-  border-color: rgba(239, 68, 68, 0.2);
-  background: rgba(239, 68, 68, 0.06);
+  border-color: var(--palette-rgba-239-68-68-0p2);
+  background: var(--palette-rgba-239-68-68-0p06);
 }
 
 .feedback-btn {
@@ -917,7 +917,7 @@ onBeforeUnmount(() => {
   border: none;
   border-radius: 10px;
   background: var(--color-primary);
-  color: #fff;
+  color: var(--palette-hex-ffffff);
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
@@ -965,7 +965,7 @@ onBeforeUnmount(() => {
   border: none;
   border-radius: 12px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: color var(--motion-duration-fast) var(--motion-ease-standard), background-color var(--motion-duration-fast) var(--motion-ease-standard), border-color var(--motion-duration-fast) var(--motion-ease-standard), box-shadow var(--motion-duration-fast) var(--motion-ease-standard), opacity var(--motion-duration-fast) var(--motion-ease-standard), transform var(--motion-duration-fast) var(--motion-ease-standard);
   white-space: nowrap;
 }
 
@@ -998,7 +998,7 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: center;
   background: var(--bg-primary);
-  transition: all 0.2s ease;
+  transition: color var(--motion-duration-fast) var(--motion-ease-standard), background-color var(--motion-duration-fast) var(--motion-ease-standard), border-color var(--motion-duration-fast) var(--motion-ease-standard), box-shadow var(--motion-duration-fast) var(--motion-ease-standard), opacity var(--motion-duration-fast) var(--motion-ease-standard), transform var(--motion-duration-fast) var(--motion-ease-standard);
 }
 
 .stock-filter .checkbox.checked {
@@ -1007,7 +1007,7 @@ onBeforeUnmount(() => {
 }
 
 .stock-filter .checkmark {
-  color: white;
+  color: var(--palette-hex-ffffff);
   font-size: 10px;
   font-weight: bold;
 }
@@ -1047,7 +1047,7 @@ onBeforeUnmount(() => {
 .price-filter-input:focus {
   outline: none;
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.12);
+  box-shadow: 0 0 0 3px var(--palette-rgba-34-197-94-0p12);
 }
 
 .price-filter-separator {
@@ -1060,7 +1060,7 @@ onBeforeUnmount(() => {
   border: none;
   border-radius: 10px;
   background: var(--color-primary);
-  color: #fff;
+  color: var(--palette-hex-ffffff);
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
@@ -1131,7 +1131,7 @@ onBeforeUnmount(() => {
   font-size: 14px;
   color: var(--text-secondary);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: color var(--motion-duration-fast) var(--motion-ease-standard), background-color var(--motion-duration-fast) var(--motion-ease-standard), border-color var(--motion-duration-fast) var(--motion-ease-standard), box-shadow var(--motion-duration-fast) var(--motion-ease-standard), opacity var(--motion-duration-fast) var(--motion-ease-standard), transform var(--motion-duration-fast) var(--motion-ease-standard);
 }
 
 .load-more-btn:hover:not(:disabled) {

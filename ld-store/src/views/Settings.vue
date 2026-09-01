@@ -468,30 +468,30 @@ onMounted(() => {
 
 <style scoped>
 .settings-page {
-  --settings-tone-sage-bg: #edf2ec;
-  --settings-tone-sage-text: #647c6a;
-  --settings-tone-sage-border: #d8e2d7;
-  --settings-tone-amber-bg: #f5efe6;
-  --settings-tone-amber-text: #8d7456;
-  --settings-tone-amber-border: #e7d8c4;
-  --settings-tone-rose-bg: #f4eae7;
-  --settings-tone-rose-text: #91645f;
-  --settings-tone-rose-border: #e6d3cf;
+  --settings-tone-sage-bg: var(--palette-hex-edf2ec);
+  --settings-tone-sage-text: var(--palette-hex-647c6a);
+  --settings-tone-sage-border: var(--palette-hex-d8e2d7);
+  --settings-tone-amber-bg: var(--palette-hex-f5efe6);
+  --settings-tone-amber-text: var(--palette-hex-8d7456);
+  --settings-tone-amber-border: var(--palette-hex-e7d8c4);
+  --settings-tone-rose-bg: var(--palette-hex-f4eae7);
+  --settings-tone-rose-text: var(--palette-hex-91645f);
+  --settings-tone-rose-border: var(--palette-hex-e6d3cf);
 
   min-height: 100vh;
   padding-bottom: 80px;
 }
 
 html.dark .settings-page {
-  --settings-tone-sage-bg: rgba(111, 136, 116, 0.18);
-  --settings-tone-sage-text: #9ab49f;
-  --settings-tone-sage-border: rgba(111, 136, 116, 0.3);
-  --settings-tone-amber-bg: rgba(143, 121, 92, 0.2);
-  --settings-tone-amber-text: #c9ae8d;
-  --settings-tone-amber-border: rgba(143, 121, 92, 0.32);
-  --settings-tone-rose-bg: rgba(145, 100, 95, 0.2);
-  --settings-tone-rose-text: #c7a09a;
-  --settings-tone-rose-border: rgba(145, 100, 95, 0.34);
+  --settings-tone-sage-bg: var(--palette-rgba-111-136-116-0p18);
+  --settings-tone-sage-text: var(--palette-hex-9ab49f);
+  --settings-tone-sage-border: var(--palette-rgba-111-136-116-0p3);
+  --settings-tone-amber-bg: var(--palette-rgba-143-121-92-0p2);
+  --settings-tone-amber-text: var(--palette-hex-c9ae8d);
+  --settings-tone-amber-border: var(--palette-rgba-143-121-92-0p32);
+  --settings-tone-rose-bg: var(--palette-rgba-145-100-95-0p2);
+  --settings-tone-rose-text: var(--palette-hex-c7a09a);
+  --settings-tone-rose-border: var(--palette-rgba-145-100-95-0p34);
 }
 
 .page-container {
@@ -651,7 +651,7 @@ html.dark .settings-page {
   gap: 6px;
   flex: 0 0 auto;
   padding: 10px 13px;
-  color: white;
+  color: var(--palette-hex-ffffff);
   background: var(--color-primary);
   border: 1px solid var(--color-primary);
   border-radius: 11px;
@@ -912,9 +912,9 @@ html.dark .settings-page {
   border-radius: 12px;
   font-size: 15px;
   font-weight: 600;
-  color: white;
+  color: var(--palette-hex-ffffff);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: color var(--motion-duration-fast) var(--motion-ease-standard), background-color var(--motion-duration-fast) var(--motion-ease-standard), border-color var(--motion-duration-fast) var(--motion-ease-standard), box-shadow var(--motion-duration-fast) var(--motion-ease-standard), opacity var(--motion-duration-fast) var(--motion-ease-standard), transform var(--motion-duration-fast) var(--motion-ease-standard);
 }
 
 .save-btn:hover:not(:disabled) {
@@ -940,7 +940,7 @@ html.dark .settings-page {
   font-weight: 500;
   color: var(--text-secondary);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: color var(--motion-duration-fast) var(--motion-ease-standard), background-color var(--motion-duration-fast) var(--motion-ease-standard), border-color var(--motion-duration-fast) var(--motion-ease-standard), box-shadow var(--motion-duration-fast) var(--motion-ease-standard), opacity var(--motion-duration-fast) var(--motion-ease-standard), transform var(--motion-duration-fast) var(--motion-ease-standard);
 }
 
 .edit-btn:hover,
@@ -965,7 +965,7 @@ html.dark .settings-page {
   font-weight: 500;
   color: var(--settings-tone-rose-text);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: color var(--motion-duration-fast) var(--motion-ease-standard), background-color var(--motion-duration-fast) var(--motion-ease-standard), border-color var(--motion-duration-fast) var(--motion-ease-standard), box-shadow var(--motion-duration-fast) var(--motion-ease-standard), opacity var(--motion-duration-fast) var(--motion-ease-standard), transform var(--motion-duration-fast) var(--motion-ease-standard);
 }
 
 .delete-btn:hover {
@@ -993,7 +993,7 @@ html.dark .settings-page {
   align-items: center;
   justify-content: center;
   background: var(--color-primary);
-  color: white;
+  color: var(--palette-hex-ffffff);
   font-size: 14px;
   font-weight: 600;
   border-radius: 50%;

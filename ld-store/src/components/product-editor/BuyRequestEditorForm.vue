@@ -167,7 +167,7 @@ async function submit() {
 .form-hint { margin: 8px 0 0; color: var(--text-tertiary); font-size: 13px; line-height: 1.5; }
 .buy-safe-card .form-hint { margin-top: 6px; }
 .form-actions { display: flex; justify-content: flex-end; margin-top: 8px; }
-.submit-btn { min-height: 48px; padding: 14px 32px; border: none; border-radius: 12px; color: white; background: var(--color-success); cursor: pointer; font-size: 15px; font-weight: 600; }
+.submit-btn { min-height: 48px; padding: 14px 32px; border: none; border-radius: 12px; color: var(--palette-hex-ffffff); background: var(--color-success); cursor: pointer; font-size: 15px; font-weight: 600; }
 .submit-btn:disabled { cursor: not-allowed; opacity: 0.55; }
 @media (max-width: 480px) { .submit-btn { width: 100%; } }
 </style>

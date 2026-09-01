@@ -924,7 +924,7 @@ watch(
   font-weight: 500;
   color: var(--text-primary);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: color var(--motion-duration-fast) var(--motion-ease-standard), background-color var(--motion-duration-fast) var(--motion-ease-standard), border-color var(--motion-duration-fast) var(--motion-ease-standard), box-shadow var(--motion-duration-fast) var(--motion-ease-standard), opacity var(--motion-duration-fast) var(--motion-ease-standard), transform var(--motion-duration-fast) var(--motion-ease-standard);
 }
 
 .back-btn:hover {
@@ -1039,13 +1039,13 @@ watch(
 .small-btn.primary {
   background: var(--color-success);
   border-color: var(--color-success);
-  color: #fff;
+  color: var(--palette-hex-ffffff);
 }
 
 .small-btn.danger {
-  background: #fee2e2;
-  border-color: #f5c6d0;
-  color: #dc2626;
+  background: var(--palette-hex-fee2e2);
+  border-color: var(--palette-hex-f5c6d0);
+  color: var(--palette-hex-dc2626);
 }
 
 .section-title {
@@ -1079,8 +1079,8 @@ watch(
 }
 
 .session-item.has-unread {
-  border-color: #f5c6d0;
-  background: #fef2f2;
+  border-color: var(--palette-hex-f5c6d0);
+  background: var(--palette-hex-fef2f2);
 }
 
 .session-main {
@@ -1112,8 +1112,8 @@ watch(
   align-items: center;
   border-radius: 999px;
   padding: 2px 8px;
-  background: #fee2e2;
-  color: #dc2626;
+  background: var(--palette-hex-fee2e2);
+  color: var(--palette-hex-dc2626);
   font-size: 11px;
   font-weight: 700;
 }
@@ -1191,7 +1191,7 @@ watch(
 .chat-message.self {
   margin-left: auto;
   background: var(--color-success-bg);
-  border-color: #bde8cc;
+  border-color: var(--palette-hex-bde8cc);
 }
 
 .chat-message.other {
@@ -1261,7 +1261,7 @@ watch(
   border: none;
   border-radius: 10px;
   background: var(--color-success);
-  color: #fff;
+  color: var(--palette-hex-ffffff);
   font-size: 13px;
   padding: 8px 14px;
 }
@@ -1284,20 +1284,20 @@ watch(
 
 /* Dark mode overrides */
 :global(html.dark) .small-btn.danger {
-  background: #3a2225;
-  border-color: #4a2c30;
+  background: var(--palette-hex-3a2225);
+  border-color: var(--palette-hex-4a2c30);
 }
 
 :global(html.dark) .session-item.has-unread {
-  border-color: #4a2c30;
-  background: #2c1f20;
+  border-color: var(--palette-hex-4a2c30);
+  background: var(--palette-hex-2c1f20);
 }
 
 :global(html.dark) .session-unread {
-  background: #3a2225;
+  background: var(--palette-hex-3a2225);
 }
 
 :global(html.dark) .chat-message.self {
-  border-color: #2a3f2e;
+  border-color: var(--palette-hex-2a3f2e);
 }
 </style>

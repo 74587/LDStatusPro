@@ -461,8 +461,8 @@ onUnmounted(() => chartObserver?.disconnect())
 .note-priority span, .note-priority strong { display: block; }
 .note-priority span { margin-bottom: 6px; color: var(--seller-muted); font-size: 11px; letter-spacing: .08em; }
 .note-priority strong { font-size: 14px; line-height: 1.55; }
-.primary-action { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 0 17px; border-radius: 10px; color: #fff; background: var(--seller-navy); font-size: 14px; font-weight: 650; box-shadow: 0 8px 20px color-mix(in srgb, var(--seller-navy) 18%, transparent); }
-html.dark .primary-action { color: #0d151d; background: var(--seller-jade); }
+.primary-action { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 0 17px; border-radius: 10px; color: var(--palette-hex-ffffff); background: var(--seller-navy); font-size: 14px; font-weight: 650; box-shadow: 0 8px 20px color-mix(in srgb, var(--seller-navy) 18%, transparent); }
+html.dark .primary-action { color: var(--palette-hex-0d151d); background: var(--seller-jade); }
 
 .opening-checklist { padding: 22px; }
 .opening-heading { align-items: center; margin-bottom: 16px; }
@@ -581,7 +581,7 @@ html.dark .primary-action { color: #0d151d; background: var(--seller-jade); }
 .dashboard-error svg { color: var(--seller-warning); }
 .dashboard-error h2 { margin: 0; color: var(--seller-ink); font: 600 23px/1.3 "Noto Serif SC", "Songti SC", serif; }
 .dashboard-error p { margin: 0; font-size: 13px; }
-.dashboard-error button { min-height: 44px; display: inline-flex; align-items: center; gap: 7px; margin-top: 6px; padding: 0 16px; border-radius: 10px; color: #fff; background: var(--seller-navy); }
+.dashboard-error button { min-height: 44px; display: inline-flex; align-items: center; gap: 7px; margin-top: 6px; padding: 0 16px; border-radius: 10px; color: var(--palette-hex-ffffff); background: var(--seller-navy); }
 .dashboard-loading { display: grid; gap: 16px; }
 .skeleton { border-radius: 14px; background: linear-gradient(90deg, var(--seller-surface-soft), var(--seller-surface), var(--seller-surface-soft)); background-size: 200% 100%; animation: skeleton-move 1.4s ease infinite; }
 .brief-skeleton { height: 172px; }.skeleton-row { display:grid;grid-template-columns:repeat(4,1fr);gap:14px}.kpi-skeleton{height:145px}.chart-skeleton{height:420px}

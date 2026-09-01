@@ -72,8 +72,8 @@
               >
                 <title>{{ trendChartAriaLabel }}</title>
                 <defs>
-                  <linearGradient id="hotboard-trend-stroke" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#6ca7a3"/><stop offset="48%" stop-color="#6f98bd"/><stop offset="100%" stop-color="#8f82c4"/></linearGradient>
-                  <linearGradient id="hotboard-trend-area" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#719cb9" stop-opacity=".2"/><stop offset="100%" stop-color="#719cb9" stop-opacity="0"/></linearGradient>
+                  <linearGradient id="hotboard-trend-stroke" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="var(--palette-hex-6ca7a3)"/><stop offset="48%" stop-color="var(--palette-hex-6f98bd)"/><stop offset="100%" stop-color="var(--palette-hex-8f82c4)"/></linearGradient>
+                  <linearGradient id="hotboard-trend-area" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--palette-hex-719cb9)" stop-opacity=".2"/><stop offset="100%" stop-color="var(--palette-hex-719cb9)" stop-opacity="0"/></linearGradient>
                 </defs>
                 <rect x="0" y="0" width="960" height="320" fill="transparent" class="hotboard-trend-hit-area" />
                 <rect :x="trendProgressX" y="0" :width="Math.max(0, TVB_W - trendProgressX)" height="320" class="hotboard-trend-future" />
@@ -107,7 +107,7 @@ import HotboardProductRow from './HotboardProductRow.vue'
 defineOptions({ name: 'HotboardMarketplace' })
 
 const CACHE_TTL = 2 * 60 * 1000
-const TREND_COLORS = ['#b5a898', '#7eb89a', '#e8a860', '#778d9c', '#c98b8b', '#8ba5c9', '#b8a0d0', '#6ca7a3']
+const TREND_COLORS = ['var(--palette-hex-b5a898)', 'var(--palette-hex-7eb89a)', 'var(--palette-hex-e8a860)', 'var(--palette-hex-778d9c)', 'var(--palette-hex-c98b8b)', 'var(--palette-hex-8ba5c9)', 'var(--palette-hex-b8a0d0)', 'var(--palette-hex-6ca7a3)']
 const data = ref(null)
 const loading = ref(false)
 const error = ref('')

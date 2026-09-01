@@ -967,7 +967,7 @@ onUnmounted(() => {
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: color var(--motion-duration-fast) var(--motion-ease-standard), background-color var(--motion-duration-fast) var(--motion-ease-standard), border-color var(--motion-duration-fast) var(--motion-ease-standard), box-shadow var(--motion-duration-fast) var(--motion-ease-standard), opacity var(--motion-duration-fast) var(--motion-ease-standard), transform var(--motion-duration-fast) var(--motion-ease-standard);
 }
 
 .top-back-btn:hover {
@@ -1049,7 +1049,7 @@ onUnmounted(() => {
   text-decoration: none;
   font-size: 14px;
   font-weight: 500;
-  transition: all 0.2s;
+  transition: color var(--motion-duration-fast) var(--motion-ease-standard), background-color var(--motion-duration-fast) var(--motion-ease-standard), border-color var(--motion-duration-fast) var(--motion-ease-standard), box-shadow var(--motion-duration-fast) var(--motion-ease-standard), opacity var(--motion-duration-fast) var(--motion-ease-standard), transform var(--motion-duration-fast) var(--motion-ease-standard);
 }
 
 .back-btn:hover {
@@ -1285,7 +1285,7 @@ onUnmounted(() => {
 }
 
 .info-link:focus-visible {
-  outline: 2px solid color-mix(in srgb, var(--color-primary) 40%, white);
+  outline: 2px solid color-mix(in srgb, var(--color-primary) 40%, var(--palette-hex-ffffff));
   outline-offset: 3px;
   border-radius: 8px;
 }
@@ -1298,7 +1298,7 @@ onUnmounted(() => {
 .info-value.price {
   font-size: 20px;
   font-weight: 700;
-  color: #cfa76f;
+  color: var(--palette-hex-cfa76f);
 }
 
 /* 订单类型标签（避免和全局 .type-badge 冲突） */
@@ -1324,13 +1324,13 @@ onUnmounted(() => {
 }
 
 .order-type-badge.cdk {
-  background: #e8f5e8;
-  color: #5a8c5a;
+  background: var(--palette-hex-e8f5e8);
+  color: var(--palette-hex-5a8c5a);
 }
 
 .order-type-badge.link {
-  background: #e8f0f5;
-  color: #778d9c;
+  background: var(--palette-hex-e8f0f5);
+  color: var(--palette-hex-778d9c);
 }
 
 .order-type-badge.store {
@@ -1339,8 +1339,8 @@ onUnmounted(() => {
 }
 
 .order-type-badge.service {
-  background: #ece7f8;
-  color: #6f5a96;
+  background: var(--palette-hex-ece7f8);
+  color: var(--palette-hex-6f5a96);
 }
 
 /* CDK 展示框 */
@@ -1399,7 +1399,7 @@ onUnmounted(() => {
   font-size: 16px;
   color: var(--text-secondary);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: color var(--motion-duration-fast) var(--motion-ease-standard), background-color var(--motion-duration-fast) var(--motion-ease-standard), border-color var(--motion-duration-fast) var(--motion-ease-standard), box-shadow var(--motion-duration-fast) var(--motion-ease-standard), opacity var(--motion-duration-fast) var(--motion-ease-standard), transform var(--motion-duration-fast) var(--motion-ease-standard);
 }
 
 .icon-btn:hover {
@@ -1510,14 +1510,14 @@ onUnmounted(() => {
   gap: 8px;
   padding: 0 16px;
   min-height: 40px;
-  background: linear-gradient(135deg, #a5b4a3 0%, #95a493 100%);
-  color: white;
+  background: linear-gradient(135deg, var(--palette-hex-a5b4a3) 0%, var(--palette-hex-95a493) 100%);
+  color: var(--palette-hex-ffffff);
   border-radius: 999px;
   text-decoration: none;
   font-size: 14px;
   font-weight: 600;
   text-align: center;
-  transition: all 0.2s;
+  transition: color var(--motion-duration-fast) var(--motion-ease-standard), background-color var(--motion-duration-fast) var(--motion-ease-standard), border-color var(--motion-duration-fast) var(--motion-ease-standard), box-shadow var(--motion-duration-fast) var(--motion-ease-standard), opacity var(--motion-duration-fast) var(--motion-ease-standard), transform var(--motion-duration-fast) var(--motion-ease-standard);
 }
 
 .top-support-btn {
@@ -1539,7 +1539,7 @@ onUnmounted(() => {
 .maintenance-action-hint {
   max-width: 568px;
   margin: 12px auto 0;
-  color: #b45309;
+  color: var(--palette-hex-b45309);
   font-size: 13px;
   line-height: 1.6;
 }
@@ -1548,13 +1548,13 @@ onUnmounted(() => {
   flex: 1;
   padding: 16px 32px;
   background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
-  color: white;
+  color: var(--palette-hex-ffffff);
   border: none;
   border-radius: 14px;
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: color var(--motion-duration-fast) var(--motion-ease-standard), background-color var(--motion-duration-fast) var(--motion-ease-standard), border-color var(--motion-duration-fast) var(--motion-ease-standard), box-shadow var(--motion-duration-fast) var(--motion-ease-standard), opacity var(--motion-duration-fast) var(--motion-ease-standard), transform var(--motion-duration-fast) var(--motion-ease-standard);
 }
 
 .pay-btn:hover:not(:disabled) {
@@ -1576,7 +1576,7 @@ onUnmounted(() => {
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: color var(--motion-duration-fast) var(--motion-ease-standard), background-color var(--motion-duration-fast) var(--motion-ease-standard), border-color var(--motion-duration-fast) var(--motion-ease-standard), box-shadow var(--motion-duration-fast) var(--motion-ease-standard), opacity var(--motion-duration-fast) var(--motion-ease-standard), transform var(--motion-duration-fast) var(--motion-ease-standard);
 }
 
 .refresh-btn:hover:not(:disabled) {
@@ -1598,7 +1598,7 @@ onUnmounted(() => {
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: color var(--motion-duration-fast) var(--motion-ease-standard), background-color var(--motion-duration-fast) var(--motion-ease-standard), border-color var(--motion-duration-fast) var(--motion-ease-standard), box-shadow var(--motion-duration-fast) var(--motion-ease-standard), opacity var(--motion-duration-fast) var(--motion-ease-standard), transform var(--motion-duration-fast) var(--motion-ease-standard);
 }
 
 .cancel-btn:hover:not(:disabled) {

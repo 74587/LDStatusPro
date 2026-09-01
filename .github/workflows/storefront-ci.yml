@@ -34,6 +34,8 @@ jobs:
       - run: npm audit --audit-level=low
       - run: npm run lint
       - run: npm run typecheck
+      - run: npm run check:architecture
+      - run: npm run check:styles
       - run: npm run test
       - run: npm run build
       - run: npm run validate:og

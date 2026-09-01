@@ -873,17 +873,17 @@ onBeforeUnmount(() => {
 .pay-return-banner {
   margin-bottom: 16px;
   padding: 14px 16px;
-  border: 2px solid rgba(245, 158, 11, 0.65);
+  border: 2px solid var(--palette-rgba-245-158-11-0p65);
   border-radius: 14px;
-  background: linear-gradient(135deg, rgba(245, 158, 11, 0.18), rgba(239, 68, 68, 0.12));
-  box-shadow: 0 8px 20px rgba(245, 158, 11, 0.2);
+  background: linear-gradient(135deg, var(--palette-rgba-245-158-11-0p18), var(--palette-rgba-239-68-68-0p12));
+  box-shadow: 0 8px 20px var(--palette-rgba-245-158-11-0p2);
   animation: pay-reminder-pulse 1.8s ease-in-out infinite;
 }
 
 .pay-return-title {
   font-size: 16px;
   font-weight: 700;
-  color: #b45309;
+  color: var(--palette-hex-b45309);
   margin-bottom: 6px;
 }
 
@@ -895,7 +895,7 @@ onBeforeUnmount(() => {
 }
 
 .pay-return-text strong {
-  color: #b45309;
+  color: var(--palette-hex-b45309);
 }
 
 .pay-return-meta {
@@ -918,34 +918,34 @@ onBeforeUnmount(() => {
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: color var(--motion-duration-fast) var(--motion-ease-standard), background-color var(--motion-duration-fast) var(--motion-ease-standard), border-color var(--motion-duration-fast) var(--motion-ease-standard), box-shadow var(--motion-duration-fast) var(--motion-ease-standard), opacity var(--motion-duration-fast) var(--motion-ease-standard), transform var(--motion-duration-fast) var(--motion-ease-standard);
 }
 
 .pay-return-btn.reopen {
-  background: rgba(59, 130, 246, 0.15);
-  color: #1d4ed8;
+  background: var(--palette-rgba-59-130-246-0p15);
+  color: var(--palette-hex-1d4ed8);
 }
 
 .pay-return-btn.reopen:hover {
-  background: rgba(59, 130, 246, 0.22);
+  background: var(--palette-rgba-59-130-246-0p22);
 }
 
 .pay-return-btn.confirm {
-  background: rgba(34, 197, 94, 0.18);
-  color: #166534;
+  background: var(--palette-rgba-34-197-94-0p18);
+  color: var(--palette-hex-166534);
 }
 
 .pay-return-btn.confirm:hover:not(:disabled) {
-  background: rgba(34, 197, 94, 0.28);
+  background: var(--palette-rgba-34-197-94-0p28);
 }
 
 .pay-return-btn.cancel {
-  background: rgba(107, 114, 128, 0.16);
-  color: #374151;
+  background: var(--palette-rgba-107-114-128-0p16);
+  color: var(--palette-hex-374151);
 }
 
 .pay-return-btn.cancel:hover:not(:disabled) {
-  background: rgba(107, 114, 128, 0.26);
+  background: var(--palette-rgba-107-114-128-0p26);
 }
 
 .pay-return-btn:disabled {
@@ -954,8 +954,8 @@ onBeforeUnmount(() => {
 }
 
 @keyframes pay-reminder-pulse {
-  0%, 100% { box-shadow: 0 8px 20px rgba(245, 158, 11, 0.2); }
-  50% { box-shadow: 0 10px 26px rgba(245, 158, 11, 0.32); }
+  0%, 100% { box-shadow: 0 8px 20px var(--palette-rgba-245-158-11-0p2); }
+  50% { box-shadow: 0 10px 26px var(--palette-rgba-245-158-11-0p32); }
 }
 
 .page-title {
@@ -1027,7 +1027,7 @@ onBeforeUnmount(() => {
 
 .slide-enter-active,
 .slide-leave-active {
-  transition: all 0.3s ease;
+  transition: color var(--motion-duration-standard) var(--motion-ease-standard), background-color var(--motion-duration-standard) var(--motion-ease-standard), border-color var(--motion-duration-standard) var(--motion-ease-standard), box-shadow var(--motion-duration-standard) var(--motion-ease-standard), opacity var(--motion-duration-standard) var(--motion-ease-standard), transform var(--motion-duration-standard) var(--motion-ease-standard);
   overflow: hidden;
 }
 
@@ -1053,12 +1053,12 @@ onBeforeUnmount(() => {
 
 /* 维护提示 */
 .maintenance-notice {
-  background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+  background: linear-gradient(135deg, var(--palette-hex-fff3e0) 0%, var(--palette-hex-ffe0b2) 100%);
   border-radius: 20px;
   padding: 48px 24px;
   text-align: center;
   box-shadow: var(--shadow-sm);
-  border: 1px solid #ffcc80;
+  border: 1px solid var(--palette-hex-ffcc80);
   margin-bottom: 24px;
 }
 
@@ -1070,39 +1070,39 @@ onBeforeUnmount(() => {
 .maintenance-notice h3 {
   font-size: 22px;
   font-weight: 600;
-  color: #e65100;
+  color: var(--palette-hex-e65100);
   margin: 0 0 12px;
 }
 
 .maintenance-notice p {
   font-size: 15px;
-  color: #bf360c;
+  color: var(--palette-hex-bf360c);
   margin: 0 0 8px;
   line-height: 1.6;
 }
 
 .maintenance-hint {
   font-size: 13px;
-  color: #8d6e63;
+  color: var(--palette-hex-8d6e63);
   margin-top: 16px !important;
 }
 
 /* 暗色模式维护提示 */
 :root.dark .maintenance-notice {
-  background: linear-gradient(135deg, #3e2723 0%, #4e342e 100%);
-  border-color: #6d4c41;
+  background: linear-gradient(135deg, var(--palette-hex-3e2723) 0%, var(--palette-hex-4e342e) 100%);
+  border-color: var(--palette-hex-6d4c41);
 }
 
 :root.dark .maintenance-notice h3 {
-  color: #ffab91;
+  color: var(--palette-hex-ffab91);
 }
 
 :root.dark .maintenance-notice p {
-  color: #ffccbc;
+  color: var(--palette-hex-ffccbc);
 }
 
 :root.dark .maintenance-hint {
-  color: #a1887f;
+  color: var(--palette-hex-a1887f);
 }
 
 /* 未登录提示 */
@@ -1136,17 +1136,17 @@ onBeforeUnmount(() => {
 .login-btn {
   display: inline-block;
   padding: 12px 32px;
-  background: linear-gradient(135deg, var(--color-success) 0%, #7a9a7a 100%);
-  color: white;
+  background: linear-gradient(135deg, var(--color-success) 0%, var(--palette-hex-7a9a7a) 100%);
+  color: var(--palette-hex-ffffff);
   text-decoration: none;
   border-radius: 12px;
   font-weight: 600;
-  transition: all 0.2s;
+  transition: color var(--motion-duration-fast) var(--motion-ease-standard), background-color var(--motion-duration-fast) var(--motion-ease-standard), border-color var(--motion-duration-fast) var(--motion-ease-standard), box-shadow var(--motion-duration-fast) var(--motion-ease-standard), opacity var(--motion-duration-fast) var(--motion-ease-standard), transform var(--motion-duration-fast) var(--motion-ease-standard);
 }
 
 .login-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(90, 140, 90, 0.4);
+  box-shadow: 0 4px 15px var(--palette-rgba-90-140-90-0p4);
 }
 
 /* 上传区域 */
@@ -1165,7 +1165,7 @@ onBeforeUnmount(() => {
   padding: 48px 24px;
   text-align: center;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: color var(--motion-duration-standard) var(--motion-ease-standard), background-color var(--motion-duration-standard) var(--motion-ease-standard), border-color var(--motion-duration-standard) var(--motion-ease-standard), box-shadow var(--motion-duration-standard) var(--motion-ease-standard), opacity var(--motion-duration-standard) var(--motion-ease-standard), transform var(--motion-duration-standard) var(--motion-ease-standard);
   background: var(--bg-secondary);
   position: relative;
 }
@@ -1225,7 +1225,7 @@ onBeforeUnmount(() => {
   height: 28px;
   border-radius: 50%;
   background: var(--color-danger);
-  color: white;
+  color: var(--palette-hex-ffffff);
   border: none;
   cursor: pointer;
   font-size: 14px;
@@ -1308,7 +1308,7 @@ onBeforeUnmount(() => {
   background: var(--bg-card);
   border-radius: 8px;
   border: 1px solid transparent;
-  transition: all 0.2s;
+  transition: color var(--motion-duration-fast) var(--motion-ease-standard), background-color var(--motion-duration-fast) var(--motion-ease-standard), border-color var(--motion-duration-fast) var(--motion-ease-standard), box-shadow var(--motion-duration-fast) var(--motion-ease-standard), opacity var(--motion-duration-fast) var(--motion-ease-standard), transform var(--motion-duration-fast) var(--motion-ease-standard);
 }
 
 .tier-item.active {
@@ -1347,19 +1347,19 @@ onBeforeUnmount(() => {
   display: block;
   width: 100%;
   padding: 16px;
-  background: linear-gradient(135deg, var(--color-success) 0%, #7a9a7a 100%);
-  color: white;
+  background: linear-gradient(135deg, var(--color-success) 0%, var(--palette-hex-7a9a7a) 100%);
+  color: var(--palette-hex-ffffff);
   border: none;
   border-radius: 14px;
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: color var(--motion-duration-fast) var(--motion-ease-standard), background-color var(--motion-duration-fast) var(--motion-ease-standard), border-color var(--motion-duration-fast) var(--motion-ease-standard), box-shadow var(--motion-duration-fast) var(--motion-ease-standard), opacity var(--motion-duration-fast) var(--motion-ease-standard), transform var(--motion-duration-fast) var(--motion-ease-standard);
 }
 
 .upload-btn:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(90, 140, 90, 0.4);
+  box-shadow: 0 4px 15px var(--palette-rgba-90-140-90-0p4);
 }
 
 .upload-btn:disabled {
@@ -1413,14 +1413,14 @@ onBeforeUnmount(() => {
 .copy-btn {
   padding: 12px 16px;
   background: var(--color-success);
-  color: white;
+  color: var(--palette-hex-ffffff);
   border: none;
   border-radius: 10px;
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   white-space: nowrap;
-  transition: all 0.2s;
+  transition: color var(--motion-duration-fast) var(--motion-ease-standard), background-color var(--motion-duration-fast) var(--motion-ease-standard), border-color var(--motion-duration-fast) var(--motion-ease-standard), box-shadow var(--motion-duration-fast) var(--motion-ease-standard), opacity var(--motion-duration-fast) var(--motion-ease-standard), transform var(--motion-duration-fast) var(--motion-ease-standard);
 }
 
 .copy-btn:hover {
@@ -1449,8 +1449,8 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  background: rgba(0, 0, 0, 0.28);
-  color: #fff;
+  background: var(--palette-rgba-0-0-0-0p28);
+  color: var(--palette-hex-ffffff);
   font-size: 14px;
   font-weight: 500;
   opacity: 0;
@@ -1492,7 +1492,7 @@ onBeforeUnmount(() => {
   font-size: 14px;
   color: var(--text-secondary);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: color var(--motion-duration-fast) var(--motion-ease-standard), background-color var(--motion-duration-fast) var(--motion-ease-standard), border-color var(--motion-duration-fast) var(--motion-ease-standard), box-shadow var(--motion-duration-fast) var(--motion-ease-standard), opacity var(--motion-duration-fast) var(--motion-ease-standard), transform var(--motion-duration-fast) var(--motion-ease-standard);
 }
 
 .refresh-btn:hover {
@@ -1568,7 +1568,7 @@ onBeforeUnmount(() => {
   border-radius: 12px;
   overflow: hidden;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: color var(--motion-duration-fast) var(--motion-ease-standard), background-color var(--motion-duration-fast) var(--motion-ease-standard), border-color var(--motion-duration-fast) var(--motion-ease-standard), box-shadow var(--motion-duration-fast) var(--motion-ease-standard), opacity var(--motion-duration-fast) var(--motion-ease-standard), transform var(--motion-duration-fast) var(--motion-ease-standard);
   position: relative;
 }
 
@@ -1592,7 +1592,7 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.25);
+  background: var(--palette-rgba-0-0-0-0p25);
   font-size: 22px;
   opacity: 0;
   transition: opacity 0.2s;
@@ -1646,7 +1646,7 @@ onBeforeUnmount(() => {
 .item-delete {
   width: 32px;
   height: 32px;
-  background: rgba(0, 0, 0, 0.6);
+  background: var(--palette-rgba-0-0-0-0p6);
   border: none;
   border-radius: 8px;
   cursor: pointer;
@@ -1655,11 +1655,11 @@ onBeforeUnmount(() => {
 }
 
 .item-copy:hover {
-  background: rgba(90, 140, 90, 0.8);
+  background: var(--palette-rgba-90-140-90-0p8);
 }
 
 .item-delete:hover {
-  background: rgba(239, 68, 68, 0.8);
+  background: var(--palette-rgba-239-68-68-0p8);
 }
 
 /* 删除弹窗 */
@@ -1705,7 +1705,7 @@ onBeforeUnmount(() => {
   border-radius: 10px;
   font-size: 15px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: color var(--motion-duration-fast) var(--motion-ease-standard), background-color var(--motion-duration-fast) var(--motion-ease-standard), border-color var(--motion-duration-fast) var(--motion-ease-standard), box-shadow var(--motion-duration-fast) var(--motion-ease-standard), opacity var(--motion-duration-fast) var(--motion-ease-standard), transform var(--motion-duration-fast) var(--motion-ease-standard);
 }
 
 .cancel-btn:hover {
@@ -1716,13 +1716,13 @@ onBeforeUnmount(() => {
   flex: 1;
   padding: 12px;
   background: var(--color-danger);
-  color: white;
+  color: var(--palette-hex-ffffff);
   border: none;
   border-radius: 10px;
   font-size: 15px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: color var(--motion-duration-fast) var(--motion-ease-standard), background-color var(--motion-duration-fast) var(--motion-ease-standard), border-color var(--motion-duration-fast) var(--motion-ease-standard), box-shadow var(--motion-duration-fast) var(--motion-ease-standard), opacity var(--motion-duration-fast) var(--motion-ease-standard), transform var(--motion-duration-fast) var(--motion-ease-standard);
 }
 
 .confirm-delete-btn:hover:not(:disabled) {
@@ -1779,7 +1779,7 @@ onBeforeUnmount(() => {
 .pay-error {
   margin-top: 16px;
   padding: 12px;
-  background: rgba(239, 68, 68, 0.1);
+  background: var(--palette-rgba-239-68-68-0p1);
   border-radius: 8px;
   font-size: 14px;
   color: var(--color-danger);
@@ -1816,7 +1816,7 @@ onBeforeUnmount(() => {
 .viewer-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(10, 10, 12, 0.82);
+  background: var(--palette-rgba-10-10-12-0p82);
   backdrop-filter: blur(6px);
   display: flex;
   flex-direction: column;
@@ -1829,7 +1829,7 @@ onBeforeUnmount(() => {
   justify-content: space-between;
   gap: 16px;
   padding: 14px 20px;
-  background: rgba(0, 0, 0, 0.35);
+  background: var(--palette-rgba-0-0-0-0p35);
   backdrop-filter: blur(8px);
 }
 
@@ -1843,7 +1843,7 @@ onBeforeUnmount(() => {
 .viewer-name {
   font-size: 15px;
   font-weight: 600;
-  color: #fff;
+  color: var(--palette-hex-ffffff);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1851,7 +1851,7 @@ onBeforeUnmount(() => {
 
 .viewer-date {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.65);
+  color: var(--palette-rgba-255-255-255-0p65);
   white-space: nowrap;
   flex-shrink: 0;
 }
@@ -1861,8 +1861,8 @@ onBeforeUnmount(() => {
   height: 36px;
   border-radius: 10px;
   border: none;
-  background: rgba(255, 255, 255, 0.12);
-  color: #fff;
+  background: var(--palette-rgba-255-255-255-0p12);
+  color: var(--palette-hex-ffffff);
   font-size: 16px;
   cursor: pointer;
   transition: background 0.2s, transform 0.2s;
@@ -1870,7 +1870,7 @@ onBeforeUnmount(() => {
 }
 
 .viewer-close:hover {
-  background: rgba(255, 255, 255, 0.25);
+  background: var(--palette-rgba-255-255-255-0p25);
   transform: rotate(90deg);
 }
 
@@ -1898,7 +1898,7 @@ onBeforeUnmount(() => {
   max-width: 100%;
   max-height: calc(100vh - 190px);
   border-radius: 10px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 20px 60px var(--palette-rgba-0-0-0-0p5);
   object-fit: contain;
 }
 
@@ -1907,8 +1907,8 @@ onBeforeUnmount(() => {
   height: 44px;
   border-radius: 50%;
   border: none;
-  background: rgba(255, 255, 255, 0.12);
-  color: #fff;
+  background: var(--palette-rgba-255-255-255-0p12);
+  color: var(--palette-hex-ffffff);
   font-size: 26px;
   line-height: 1;
   cursor: pointer;
@@ -1921,7 +1921,7 @@ onBeforeUnmount(() => {
 }
 
 .viewer-nav:hover {
-  background: rgba(255, 255, 255, 0.28);
+  background: var(--palette-rgba-255-255-255-0p28);
   transform: scale(1.08);
 }
 
@@ -1931,7 +1931,7 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 10px;
   padding: 14px 20px;
-  background: rgba(0, 0, 0, 0.35);
+  background: var(--palette-rgba-0-0-0-0p35);
   backdrop-filter: blur(8px);
 }
 
@@ -1943,13 +1943,13 @@ onBeforeUnmount(() => {
 
 .viewer-counter {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.65);
+  color: var(--palette-rgba-255-255-255-0p65);
   font-variant-numeric: tabular-nums;
 }
 
 .viewer-hint {
   font-size: 11px;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--palette-rgba-255-255-255-0p4);
 }
 
 .viewer-actions {
@@ -1963,12 +1963,12 @@ onBeforeUnmount(() => {
   padding: 9px 14px;
   border-radius: 10px;
   border: none;
-  background: rgba(255, 255, 255, 0.14);
-  color: #fff;
+  background: var(--palette-rgba-255-255-255-0p14);
+  color: var(--palette-hex-ffffff);
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: color var(--motion-duration-fast) var(--motion-ease-standard), background-color var(--motion-duration-fast) var(--motion-ease-standard), border-color var(--motion-duration-fast) var(--motion-ease-standard), box-shadow var(--motion-duration-fast) var(--motion-ease-standard), opacity var(--motion-duration-fast) var(--motion-ease-standard), transform var(--motion-duration-fast) var(--motion-ease-standard);
   text-decoration: none;
   white-space: nowrap;
   display: inline-flex;
@@ -1977,11 +1977,11 @@ onBeforeUnmount(() => {
 }
 
 .viewer-btn:hover {
-  background: rgba(255, 255, 255, 0.26);
+  background: var(--palette-rgba-255-255-255-0p26);
 }
 
 .viewer-btn.danger:hover {
-  background: rgba(220, 38, 38, 0.8);
+  background: var(--palette-rgba-220-38-38-0p8);
 }
 
 @keyframes viewer-pop {

@@ -455,15 +455,15 @@ watch(hasMore, (value) => {
 .sort-btn.active { color: var(--color-primary); background: var(--color-primary-bg); font-weight: 500; }
 .price-filter { gap: 8px; flex-wrap: wrap; }
 .price-filter-input { width: 112px; padding: 8px 10px; border: 1px solid var(--border-color); border-radius: 10px; background: var(--bg-card); color: var(--text-primary); font-size: 12px; }
-.price-filter-input:focus { outline: 0; border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(34, 197, 94, .12); }
+.price-filter-input:focus { outline: 0; border-color: var(--color-primary); box-shadow: 0 0 0 3px var(--palette-rgba-34-197-94-p12); }
 .price-filter-separator, .products-count { font-size: 13px; color: var(--text-tertiary); }
-.price-filter-btn { min-height: 34px; padding: 8px 12px; border: 0; border-radius: 10px; background: var(--color-primary); color: #fff; font-size: 12px; font-weight: 600; cursor: pointer; }
+.price-filter-btn { min-height: 34px; padding: 8px 12px; border: 0; border-radius: 10px; background: var(--color-primary); color: var(--palette-hex-ffffff); font-size: 12px; font-weight: 600; cursor: pointer; }
 .price-filter-btn.secondary { background: var(--bg-tertiary); color: var(--text-secondary); }
 .stock-filter { position: relative; gap: 6px; cursor: pointer; user-select: none; flex-shrink: 0; }
 .stock-filter-input { position: absolute; width: 1px; height: 1px; opacity: 0; }
 .checkbox { width: 16px; height: 16px; border: 1.5px solid var(--border-color); border-radius: 4px; display: grid; place-items: center; background: var(--bg-primary); }
 .checkbox.checked { background: var(--color-primary); border-color: var(--color-primary); }
-.checkmark { color: #fff; font-size: 10px; font-weight: 700; }
+.checkmark { color: var(--palette-hex-ffffff); font-size: 10px; font-weight: 700; }
 .filter-label { font-size: 12px; color: var(--text-secondary); white-space: nowrap; }
 .sort-btn:focus-visible, .price-filter-btn:focus-visible, .stock-filter-input:focus-visible + .checkbox { outline: 2px solid var(--color-primary); outline-offset: 3px; }
 .products-header { justify-content: space-between; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }

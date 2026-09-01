@@ -306,74 +306,74 @@ watch(
   --corner-backtop-bg: var(--glass-bg-light);
   --corner-backtop-border: var(--glass-border-light);
   --corner-backtop-shadow: 0 10px 22px var(--glass-shadow), inset 0 1px 0 var(--glass-shine);
-  --corner-backtop-hover-shadow: 0 14px 28px rgba(15, 23, 42, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  --corner-backtop-hover-shadow: 0 14px 28px var(--palette-rgba-15-23-42-0p16), inset 0 1px 0 var(--palette-rgba-255-255-255-0p35);
   --corner-fab-bg: linear-gradient(
     145deg,
-    color-mix(in srgb, var(--color-primary) 75%, #ffffff) 0%,
-    color-mix(in srgb, var(--color-primary) 85%, #7e6e5f) 100%
+    color-mix(in srgb, var(--color-primary) 75%, var(--palette-hex-ffffff)) 0%,
+    color-mix(in srgb, var(--color-primary) 85%, var(--palette-hex-7e6e5f)) 100%
   );
-  --corner-fab-shadow: var(--shadow-primary), 0 12px 26px rgba(159, 143, 125, 0.28);
-  --corner-fab-border: rgba(255, 255, 255, 0.55);
-  --corner-fab-hover-shadow: 0 10px 24px rgba(159, 143, 125, 0.35), 0 0 0 6px rgba(181, 168, 152, 0.08);
-  --corner-fab-open-shadow: 0 12px 26px rgba(159, 143, 125, 0.35), 0 0 0 8px rgba(181, 168, 152, 0.12);
+  --corner-fab-shadow: var(--shadow-primary), 0 12px 26px var(--palette-rgba-159-143-125-0p28);
+  --corner-fab-border: var(--palette-rgba-255-255-255-0p55);
+  --corner-fab-hover-shadow: 0 10px 24px var(--palette-rgba-159-143-125-0p35), 0 0 0 6px var(--palette-rgba-181-168-152-0p08);
+  --corner-fab-open-shadow: 0 12px 26px var(--palette-rgba-159-143-125-0p35), 0 0 0 8px var(--palette-rgba-181-168-152-0p12);
   --corner-fab-sparkle:
-    radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.45) 0 2px, transparent 3px),
-    radial-gradient(circle at 70% 40%, rgba(255, 255, 255, 0.35) 0 1.5px, transparent 3px),
-    radial-gradient(circle at 45% 70%, rgba(255, 255, 255, 0.3) 0 1.8px, transparent 3px);
-  --corner-fab-dash: rgba(255, 255, 255, 0.35);
-  --corner-fab-glow: radial-gradient(circle, rgba(255, 255, 255, 0.4), transparent 60%);
-  --corner-doodle-bg: linear-gradient(135deg, rgba(181, 168, 152, 0.2), rgba(255, 255, 255, 0.9));
+    radial-gradient(circle at 30% 30%, var(--palette-rgba-255-255-255-0p45) 0 2px, transparent 3px),
+    radial-gradient(circle at 70% 40%, var(--palette-rgba-255-255-255-0p35) 0 1.5px, transparent 3px),
+    radial-gradient(circle at 45% 70%, var(--palette-rgba-255-255-255-0p3) 0 1.8px, transparent 3px);
+  --corner-fab-dash: var(--palette-rgba-255-255-255-0p35);
+  --corner-fab-glow: radial-gradient(circle, var(--palette-rgba-255-255-255-0p4), transparent 60%);
+  --corner-doodle-bg: linear-gradient(135deg, var(--palette-rgba-181-168-152-0p2), var(--palette-rgba-255-255-255-0p9));
   --corner-doodle-active-bg: var(--color-primary-light);
-  --corner-support-color: #ef7a7a;
-  --corner-support-border: color-mix(in srgb, #ef7a7a 40%, transparent);
-  --corner-support-bg: linear-gradient(135deg, rgba(239, 122, 122, 0.2), rgba(255, 255, 255, 0.9));
-  --corner-support-hover-color: #e65a5a;
-  --corner-support-hover-shadow: 0 12px 24px rgba(239, 122, 122, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.4);
-  --corner-merchant-color: #9b6a11;
-  --corner-merchant-border: color-mix(in srgb, #c48a22 45%, transparent);
-  --corner-merchant-bg: linear-gradient(135deg, rgba(196, 138, 34, 0.22), rgba(255, 248, 230, 0.95));
-  --corner-merchant-hover-color: #7a4f08;
-  --corner-merchant-hover-shadow: 0 12px 24px rgba(196, 138, 34, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+  --corner-support-color: var(--palette-hex-ef7a7a);
+  --corner-support-border: color-mix(in srgb, var(--palette-hex-ef7a7a) 40%, transparent);
+  --corner-support-bg: linear-gradient(135deg, var(--palette-rgba-239-122-122-0p2), var(--palette-rgba-255-255-255-0p9));
+  --corner-support-hover-color: var(--palette-hex-e65a5a);
+  --corner-support-hover-shadow: 0 12px 24px var(--palette-rgba-239-122-122-0p25), inset 0 1px 0 var(--palette-rgba-255-255-255-0p4);
+  --corner-merchant-color: var(--palette-hex-9b6a11);
+  --corner-merchant-border: color-mix(in srgb, var(--palette-hex-c48a22) 45%, transparent);
+  --corner-merchant-bg: linear-gradient(135deg, var(--palette-rgba-196-138-34-0p22), var(--palette-rgba-255-248-230-0p95));
+  --corner-merchant-hover-color: var(--palette-hex-7a4f08);
+  --corner-merchant-hover-shadow: 0 12px 24px var(--palette-rgba-196-138-34-0p24), inset 0 1px 0 var(--palette-rgba-255-255-255-0p45);
   opacity: 0;
   transform: translateY(18px) scale(0.96);
   transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
 :global(html.dark .corner-menu) {
-  --corner-action-bg: rgba(40, 34, 29, 0.94);
-  --corner-action-border: rgba(255, 232, 205, 0.12);
-  --corner-action-shadow: 0 12px 22px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 240, 214, 0.06);
-  --corner-action-hover-shadow: 0 16px 28px rgba(0, 0, 0, 0.34), inset 0 1px 0 rgba(255, 240, 214, 0.1);
-  --corner-label-bg: rgba(36, 30, 26, 0.98);
-  --corner-label-border: rgba(255, 232, 205, 0.12);
-  --corner-label-shadow: 0 10px 24px rgba(0, 0, 0, 0.3);
-  --corner-backtop-bg: rgba(40, 34, 29, 0.96);
-  --corner-backtop-border: rgba(255, 232, 205, 0.12);
-  --corner-backtop-shadow: 0 12px 24px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 240, 214, 0.08);
-  --corner-backtop-hover-shadow: 0 16px 30px rgba(0, 0, 0, 0.34), inset 0 1px 0 rgba(255, 240, 214, 0.1);
-  --corner-fab-bg: linear-gradient(145deg, #e0b55f 0%, #8d641b 52%, #5c3c0f 100%);
-  --corner-fab-shadow: 0 14px 30px rgba(0, 0, 0, 0.34), 0 0 0 1px rgba(255, 240, 214, 0.1) inset;
-  --corner-fab-border: rgba(255, 240, 214, 0.18);
-  --corner-fab-hover-shadow: 0 16px 30px rgba(0, 0, 0, 0.38), 0 0 0 6px rgba(244, 201, 109, 0.12);
-  --corner-fab-open-shadow: 0 18px 34px rgba(0, 0, 0, 0.42), 0 0 0 8px rgba(244, 201, 109, 0.16);
+  --corner-action-bg: var(--palette-rgba-40-34-29-0p94);
+  --corner-action-border: var(--palette-rgba-255-232-205-0p12);
+  --corner-action-shadow: 0 12px 22px var(--palette-rgba-0-0-0-0p28), inset 0 1px 0 var(--palette-rgba-255-240-214-0p06);
+  --corner-action-hover-shadow: 0 16px 28px var(--palette-rgba-0-0-0-0p34), inset 0 1px 0 var(--palette-rgba-255-240-214-0p1);
+  --corner-label-bg: var(--palette-rgba-36-30-26-0p98);
+  --corner-label-border: var(--palette-rgba-255-232-205-0p12);
+  --corner-label-shadow: 0 10px 24px var(--palette-rgba-0-0-0-0p3);
+  --corner-backtop-bg: var(--palette-rgba-40-34-29-0p96);
+  --corner-backtop-border: var(--palette-rgba-255-232-205-0p12);
+  --corner-backtop-shadow: 0 12px 24px var(--palette-rgba-0-0-0-0p3), inset 0 1px 0 var(--palette-rgba-255-240-214-0p08);
+  --corner-backtop-hover-shadow: 0 16px 30px var(--palette-rgba-0-0-0-0p34), inset 0 1px 0 var(--palette-rgba-255-240-214-0p1);
+  --corner-fab-bg: linear-gradient(145deg, var(--palette-hex-e0b55f) 0%, var(--palette-hex-8d641b) 52%, var(--palette-hex-5c3c0f) 100%);
+  --corner-fab-shadow: 0 14px 30px var(--palette-rgba-0-0-0-0p34), 0 0 0 1px var(--palette-rgba-255-240-214-0p1) inset;
+  --corner-fab-border: var(--palette-rgba-255-240-214-0p18);
+  --corner-fab-hover-shadow: 0 16px 30px var(--palette-rgba-0-0-0-0p38), 0 0 0 6px var(--palette-rgba-244-201-109-0p12);
+  --corner-fab-open-shadow: 0 18px 34px var(--palette-rgba-0-0-0-0p42), 0 0 0 8px var(--palette-rgba-244-201-109-0p16);
   --corner-fab-sparkle:
-    radial-gradient(circle at 30% 30%, rgba(255, 244, 224, 0.4) 0 2px, transparent 3px),
-    radial-gradient(circle at 70% 40%, rgba(255, 232, 205, 0.28) 0 1.5px, transparent 3px),
-    radial-gradient(circle at 45% 70%, rgba(255, 216, 150, 0.26) 0 1.8px, transparent 3px);
-  --corner-fab-dash: rgba(255, 240, 214, 0.26);
-  --corner-fab-glow: radial-gradient(circle, rgba(255, 221, 145, 0.28), transparent 60%);
-  --corner-doodle-bg: linear-gradient(135deg, rgba(197, 184, 168, 0.22), rgba(58, 48, 40, 0.96));
-  --corner-doodle-active-bg: rgba(74, 64, 55, 0.96);
-  --corner-support-color: #ff9aa6;
-  --corner-support-border: rgba(248, 113, 113, 0.28);
-  --corner-support-bg: linear-gradient(135deg, rgba(248, 113, 113, 0.2), rgba(64, 35, 37, 0.96));
-  --corner-support-hover-color: #ffc2ca;
-  --corner-support-hover-shadow: 0 14px 26px rgba(127, 29, 29, 0.28), inset 0 1px 0 rgba(255, 226, 231, 0.08);
-  --corner-merchant-color: #f0c978;
-  --corner-merchant-border: rgba(244, 201, 109, 0.26);
-  --corner-merchant-bg: linear-gradient(135deg, rgba(216, 163, 60, 0.24), rgba(78, 56, 22, 0.96));
-  --corner-merchant-hover-color: #ffe7b6;
-  --corner-merchant-hover-shadow: 0 14px 26px rgba(104, 66, 10, 0.28), inset 0 1px 0 rgba(255, 240, 214, 0.1);
+    radial-gradient(circle at 30% 30%, var(--palette-rgba-255-244-224-0p4) 0 2px, transparent 3px),
+    radial-gradient(circle at 70% 40%, var(--palette-rgba-255-232-205-0p28) 0 1.5px, transparent 3px),
+    radial-gradient(circle at 45% 70%, var(--palette-rgba-255-216-150-0p26) 0 1.8px, transparent 3px);
+  --corner-fab-dash: var(--palette-rgba-255-240-214-0p26);
+  --corner-fab-glow: radial-gradient(circle, var(--palette-rgba-255-221-145-0p28), transparent 60%);
+  --corner-doodle-bg: linear-gradient(135deg, var(--palette-rgba-197-184-168-0p22), var(--palette-rgba-58-48-40-0p96));
+  --corner-doodle-active-bg: var(--palette-rgba-74-64-55-0p96);
+  --corner-support-color: var(--palette-hex-ff9aa6);
+  --corner-support-border: var(--palette-rgba-248-113-113-0p28);
+  --corner-support-bg: linear-gradient(135deg, var(--palette-rgba-248-113-113-0p2), var(--palette-rgba-64-35-37-0p96));
+  --corner-support-hover-color: var(--palette-hex-ffc2ca);
+  --corner-support-hover-shadow: 0 14px 26px var(--palette-rgba-127-29-29-0p28), inset 0 1px 0 var(--palette-rgba-255-226-231-0p08);
+  --corner-merchant-color: var(--palette-hex-f0c978);
+  --corner-merchant-border: var(--palette-rgba-244-201-109-0p26);
+  --corner-merchant-bg: linear-gradient(135deg, var(--palette-rgba-216-163-60-0p24), var(--palette-rgba-78-56-22-0p96));
+  --corner-merchant-hover-color: var(--palette-hex-ffe7b6);
+  --corner-merchant-hover-shadow: 0 14px 26px var(--palette-rgba-104-66-10-0p28), inset 0 1px 0 var(--palette-rgba-255-240-214-0p1);
 }
 
 .corner-menu.is-visible {
@@ -481,7 +481,7 @@ watch(
   height: 52px;
   border-radius: 50%;
   background: var(--corner-fab-bg);
-  color: #fff;
+  color: var(--palette-hex-ffffff);
   display: flex;
   align-items: center;
   justify-content: center;

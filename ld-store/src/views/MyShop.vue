@@ -352,7 +352,7 @@ onMounted(() => {
   font-size: 14px;
   padding: 8px 12px;
   border-radius: 10px;
-  transition: all 0.2s;
+  transition: color var(--motion-duration-fast) var(--motion-ease-standard), background-color var(--motion-duration-fast) var(--motion-ease-standard), border-color var(--motion-duration-fast) var(--motion-ease-standard), box-shadow var(--motion-duration-fast) var(--motion-ease-standard), opacity var(--motion-duration-fast) var(--motion-ease-standard), transform var(--motion-duration-fast) var(--motion-ease-standard);
 }
 
 .back-link:hover {
@@ -558,9 +558,9 @@ onMounted(() => {
 .shop-tag.tag-subscription { background: var(--color-success-light); color: var(--color-success); }
 .shop-tag.tag-service { background: var(--color-info-light); color: var(--color-info); }
 .shop-tag.tag-vps { background: var(--color-warning-light); color: var(--color-warning); }
-.shop-tag.tag-ai { background: #f3e8ff; color: #7c3aed; }
-.shop-tag.tag-entertainment { background: #ffe4e6; color: #be123c; }
-.shop-tag.tag-charity { background: #fce7f3; color: #be185d; }
+.shop-tag.tag-ai { background: var(--palette-hex-f3e8ff); color: var(--palette-hex-7c3aed); }
+.shop-tag.tag-entertainment { background: var(--palette-hex-ffe4e6); color: var(--palette-hex-be123c); }
+.shop-tag.tag-charity { background: var(--palette-hex-fce7f3); color: var(--palette-hex-be185d); }
 
 .shop-stats {
   font-size: 13px;
@@ -589,7 +589,7 @@ onMounted(() => {
   font-weight: 600;
   text-decoration: none;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: color var(--motion-duration-fast) var(--motion-ease-standard), background-color var(--motion-duration-fast) var(--motion-ease-standard), border-color var(--motion-duration-fast) var(--motion-ease-standard), box-shadow var(--motion-duration-fast) var(--motion-ease-standard), opacity var(--motion-duration-fast) var(--motion-ease-standard), transform var(--motion-duration-fast) var(--motion-ease-standard);
   border: none;
 }
 
@@ -600,7 +600,7 @@ onMounted(() => {
 
 .btn-primary {
   background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
-  color: white;
+  color: var(--palette-hex-ffffff);
 }
 
 .btn-primary:hover:not(:disabled) {

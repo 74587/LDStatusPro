@@ -311,7 +311,7 @@ onMounted(loadOrderDetail)
   font-weight: 500;
   color: var(--text-primary);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: color var(--motion-duration-fast) var(--motion-ease-standard), background-color var(--motion-duration-fast) var(--motion-ease-standard), border-color var(--motion-duration-fast) var(--motion-ease-standard), box-shadow var(--motion-duration-fast) var(--motion-ease-standard), opacity var(--motion-duration-fast) var(--motion-ease-standard), transform var(--motion-duration-fast) var(--motion-ease-standard);
 }
 
 .back-btn:hover {
@@ -362,13 +362,13 @@ onMounted(loadOrderDetail)
 }
 
 .status-pending {
-  background: rgba(245, 158, 11, 0.12);
-  color: #b45309;
+  background: var(--palette-rgba-245-158-11-0p12);
+  color: var(--palette-hex-b45309);
 }
 
 .status-paid {
-  background: rgba(59, 130, 246, 0.12);
-  color: #1d4ed8;
+  background: var(--palette-rgba-59-130-246-0p12);
+  color: var(--palette-hex-1d4ed8);
 }
 
 .status-completed {
@@ -433,7 +433,7 @@ onMounted(loadOrderDetail)
 .action-btn.primary {
   background: var(--color-success);
   border-color: var(--color-success);
-  color: #fff;
+  color: var(--palette-hex-ffffff);
 }
 
 .action-hint {

@@ -240,7 +240,7 @@ onMounted(() => {
   font-size: 14px;
   padding: 8px 12px;
   border-radius: 10px;
-  transition: all 0.2s;
+  transition: color var(--motion-duration-fast) var(--motion-ease-standard), background-color var(--motion-duration-fast) var(--motion-ease-standard), border-color var(--motion-duration-fast) var(--motion-ease-standard), box-shadow var(--motion-duration-fast) var(--motion-ease-standard), opacity var(--motion-duration-fast) var(--motion-ease-standard), transform var(--motion-duration-fast) var(--motion-ease-standard);
   background: transparent;
   border: none;
   cursor: pointer;
@@ -392,7 +392,7 @@ onMounted(() => {
   background: var(--bg-secondary);
   border-radius: 14px;
   text-decoration: none;
-  transition: all 0.2s;
+  transition: color var(--motion-duration-fast) var(--motion-ease-standard), background-color var(--motion-duration-fast) var(--motion-ease-standard), border-color var(--motion-duration-fast) var(--motion-ease-standard), box-shadow var(--motion-duration-fast) var(--motion-ease-standard), opacity var(--motion-duration-fast) var(--motion-ease-standard), transform var(--motion-duration-fast) var(--motion-ease-standard);
 }
 
 .owner-link:hover {
@@ -466,8 +466,8 @@ onMounted(() => {
 }
 
 .shop-tag.tag-ai {
-  background: rgba(147, 51, 234, 0.15);
-  color: #a855f7;
+  background: var(--palette-rgba-147-51-234-0p15);
+  color: var(--palette-hex-a855f7);
 }
 
 .shop-tag.tag-entertainment {
@@ -476,8 +476,8 @@ onMounted(() => {
 }
 
 .shop-tag.tag-charity {
-  background: rgba(219, 39, 119, 0.15);
-  color: #ec4899;
+  background: var(--palette-rgba-219-39-119-0p15);
+  color: var(--palette-hex-ec4899);
 }
 
 /* 统计信息 */
@@ -548,13 +548,13 @@ onMounted(() => {
   font-weight: 600;
   text-decoration: none;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: color var(--motion-duration-fast) var(--motion-ease-standard), background-color var(--motion-duration-fast) var(--motion-ease-standard), border-color var(--motion-duration-fast) var(--motion-ease-standard), box-shadow var(--motion-duration-fast) var(--motion-ease-standard), opacity var(--motion-duration-fast) var(--motion-ease-standard), transform var(--motion-duration-fast) var(--motion-ease-standard);
   border: none;
 }
 
 .btn-primary {
   background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
-  color: white;
+  color: var(--palette-hex-ffffff);
 }
 
 .btn-primary:hover {

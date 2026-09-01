@@ -421,7 +421,7 @@ onUnmounted(() => {
 .avatar-image__placeholder {
   background: var(
     --avatar-placeholder-bg,
-    linear-gradient(135deg, var(--glass-shine-strong), rgba(255, 255, 255, 0)),
+    linear-gradient(135deg, var(--glass-shine-strong), var(--palette-rgba-255-255-255-0)),
     color-mix(in srgb, var(--bg-tertiary) 72%, transparent)
   );
 }

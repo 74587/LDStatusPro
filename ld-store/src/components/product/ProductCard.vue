@@ -259,7 +259,7 @@ function updateTilt() {
   const glareX = (currentX + 1) * 50
   const glareY = (currentY + 1) * 50
   glareStyle.value = {
-    background: `radial-gradient(circle at ${glareX}% ${glareY}%, rgba(255,255,255,0.25) 0%, transparent 60%)`,
+    background: `radial-gradient(circle at ${glareX}% ${glareY}%, var(--palette-rgba-255-255-255-0p25) 0%, transparent 60%)`,
     opacity: currentGlareOpacity
   }
   
@@ -428,14 +428,14 @@ const updateTime = computed(() =>
 
 // 封面样式
 const colors = [
-  'linear-gradient(135deg, #e0f2fe, #bae6fd)',
-  'linear-gradient(135deg, #fce7f3, #fbcfe8)',
-  'linear-gradient(135deg, #d1fae5, #a7f3d0)',
-  'linear-gradient(135deg, #fef3c7, #fde68a)',
-  'linear-gradient(135deg, #ede9fe, #ddd6fe)',
-  'linear-gradient(135deg, #ffedd5, #fed7aa)',
-  'linear-gradient(135deg, #e0e7ff, #c7d2fe)',
-  'linear-gradient(135deg, #f5f5f4, #e7e5e4)'
+  'linear-gradient(135deg, var(--palette-hex-e0f2fe), var(--palette-hex-bae6fd))',
+  'linear-gradient(135deg, var(--palette-hex-fce7f3), var(--palette-hex-fbcfe8))',
+  'linear-gradient(135deg, var(--palette-hex-d1fae5), var(--palette-hex-a7f3d0))',
+  'linear-gradient(135deg, var(--palette-hex-fef3c7), var(--palette-hex-fde68a))',
+  'linear-gradient(135deg, var(--palette-hex-ede9fe), var(--palette-hex-ddd6fe))',
+  'linear-gradient(135deg, var(--palette-hex-ffedd5), var(--palette-hex-fed7aa))',
+  'linear-gradient(135deg, var(--palette-hex-e0e7ff), var(--palette-hex-c7d2fe))',
+  'linear-gradient(135deg, var(--palette-hex-f5f5f4), var(--palette-hex-e7e5e4))'
 ]
 const coverStyle = computed(() => {
   if (props.product.imageUrl) return {}
@@ -457,25 +457,25 @@ function handleImageError(e) {
 
 <style scoped>
 .product-card {
-  --product-featured-border: rgba(197, 151, 49, 0.24);
+  --product-featured-border: var(--palette-rgba-197-151-49-0p24);
   --product-featured-shadow:
-    0 10px 24px rgba(156, 117, 31, 0.14),
-    0 1px 0 rgba(255, 255, 255, 0.68) inset,
-    0 0 0 1px rgba(255, 241, 205, 0.52) inset;
-  --product-featured-cover-shadow: inset 0 -1px 0 rgba(190, 149, 55, 0.18);
-  --product-featured-title: #b88622;
-  --product-featured-meta: #8a6b37;
-  --product-featured-category-bg: #f3efe2;
-  --product-featured-category-text: #8b6520;
-  --product-featured-category-ring: #eae3d3;
-  --product-featured-avatar-ring: #c9b87a;
-  --product-selection-text: #fff9ef;
+    0 10px 24px var(--palette-rgba-156-117-31-0p14),
+    0 1px 0 var(--palette-rgba-255-255-255-0p68) inset,
+    0 0 0 1px var(--palette-rgba-255-241-205-0p52) inset;
+  --product-featured-cover-shadow: inset 0 -1px 0 var(--palette-rgba-190-149-55-0p18);
+  --product-featured-title: var(--palette-hex-b88622);
+  --product-featured-meta: var(--palette-hex-8a6b37);
+  --product-featured-category-bg: var(--palette-hex-f3efe2);
+  --product-featured-category-text: var(--palette-hex-8b6520);
+  --product-featured-category-ring: var(--palette-hex-eae3d3);
+  --product-featured-avatar-ring: var(--palette-hex-c9b87a);
+  --product-selection-text: var(--palette-hex-fff9ef);
   --product-selection-bg:
-    linear-gradient(135deg, #ffe49a 0%, #d69727 28%, #8f5d12 100%);
+    linear-gradient(135deg, var(--palette-hex-ffe49a) 0%, var(--palette-hex-d69727) 28%, var(--palette-hex-8f5d12) 100%);
   --product-selection-shadow:
-    0 0 0 1px rgba(255, 240, 199, 0.3),
-    0 0 14px rgba(255, 199, 73, 0.35),
-    0 6px 18px rgba(179, 119, 16, 0.28);
+    0 0 0 1px var(--palette-rgba-255-240-199-0p3),
+    0 0 14px var(--palette-rgba-255-199-73-0p35),
+    0 6px 18px var(--palette-rgba-179-119-16-0p28);
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -492,28 +492,28 @@ function handleImageError(e) {
 }
 
 :global(html.dark .product-card) {
-  --product-card-discount-bg: #3a2225;
-  --product-card-discount-text: #fecaca;
-  --product-card-discount-ring: #3f282c;
-  --product-card-price-discounted: #f87171;
-  --product-featured-border: #3d3526;
+  --product-card-discount-bg: var(--palette-hex-3a2225);
+  --product-card-discount-text: var(--palette-hex-fecaca);
+  --product-card-discount-ring: var(--palette-hex-3f282c);
+  --product-card-price-discounted: var(--palette-hex-f87171);
+  --product-featured-border: var(--palette-hex-3d3526);
   --product-featured-shadow:
-    0 12px 28px rgba(0, 0, 0, 0.24),
-    0 0 0 1px #3d3526 inset;
-  --product-featured-cover-shadow: inset 0 -1px 0 #3d3526;
-  --product-featured-title: #efc775;
-  --product-featured-meta: #d9c29a;
-  --product-featured-category-bg: #363024;
-  --product-featured-category-text: #f4d490;
-  --product-featured-category-ring: #3d3526;
-  --product-featured-avatar-ring: #4a3d28;
-  --product-selection-text: #fff6df;
+    0 12px 28px var(--palette-rgba-0-0-0-0p24),
+    0 0 0 1px var(--palette-hex-3d3526) inset;
+  --product-featured-cover-shadow: inset 0 -1px 0 var(--palette-hex-3d3526);
+  --product-featured-title: var(--palette-hex-efc775);
+  --product-featured-meta: var(--palette-hex-d9c29a);
+  --product-featured-category-bg: var(--palette-hex-363024);
+  --product-featured-category-text: var(--palette-hex-f4d490);
+  --product-featured-category-ring: var(--palette-hex-3d3526);
+  --product-featured-avatar-ring: var(--palette-hex-4a3d28);
+  --product-selection-text: var(--palette-hex-fff6df);
   --product-selection-bg:
-    linear-gradient(135deg, #c79224 0%, #8f661a 40%, #5b3d11 100%);
+    linear-gradient(135deg, var(--palette-hex-c79224) 0%, var(--palette-hex-8f661a) 40%, var(--palette-hex-5b3d11) 100%);
   --product-selection-shadow:
-    0 0 0 1px rgba(244, 201, 109, 0.18),
-    0 0 14px rgba(199, 146, 36, 0.24),
-    0 6px 18px rgba(0, 0, 0, 0.24);
+    0 0 0 1px var(--palette-rgba-244-201-109-0p18),
+    0 0 14px var(--palette-rgba-199-146-36-0p24),
+    0 6px 18px var(--palette-rgba-0-0-0-0p24);
 }
 
 .product-card--featured {
@@ -551,7 +551,7 @@ function handleImageError(e) {
   left: 50%;
   transform: translate(-50%, -50%) rotate(-15deg);
   background: var(--product-card-overlay, var(--overlay-bg));
-  color: white;
+  color: var(--palette-hex-ffffff);
   padding: 8px 16px;
   border-radius: 4px;
   font-size: 14px;
@@ -596,31 +596,31 @@ function handleImageError(e) {
 }
 
 .type-tag.cdk {
-  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
-  color: white;
-  box-shadow: 0 2px 6px rgba(139, 92, 246, 0.35);
+  background: linear-gradient(135deg, var(--palette-hex-8b5cf6) 0%, var(--palette-hex-7c3aed) 100%);
+  color: var(--palette-hex-ffffff);
+  box-shadow: 0 2px 6px var(--palette-rgba-139-92-246-0p35);
 }
 
 .type-tag.normal {
-  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-  color: white;
-  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.28);
+  background: linear-gradient(135deg, var(--palette-hex-2563eb) 0%, var(--palette-hex-1d4ed8) 100%);
+  color: var(--palette-hex-ffffff);
+  box-shadow: 0 2px 6px var(--palette-rgba-37-99-235-0p28);
 }
 
 .type-tag.test {
-  background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
-  color: white;
-  box-shadow: 0 2px 6px rgba(6, 182, 212, 0.35);
+  background: linear-gradient(135deg, var(--palette-hex-06b6d4) 0%, var(--palette-hex-0891b2) 100%);
+  color: var(--palette-hex-ffffff);
+  box-shadow: 0 2px 6px var(--palette-rgba-6-182-212-0p35);
 }
 
 .type-tag.store {
-  background: linear-gradient(135deg, #7d8d69 0%, #627151 100%);
-  color: white;
+  background: linear-gradient(135deg, var(--palette-hex-7d8d69) 0%, var(--palette-hex-627151) 100%);
+  color: var(--palette-hex-ffffff);
 }
 
 .type-tag.link {
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-  color: white;
+  background: linear-gradient(135deg, var(--palette-hex-f59e0b) 0%, var(--palette-hex-d97706) 100%);
+  color: var(--palette-hex-ffffff);
 }
 
 .selection-badge {
@@ -655,9 +655,9 @@ function handleImageError(e) {
   background: linear-gradient(
     112deg,
     transparent 18%,
-    rgba(255, 251, 236, 0.05) 32%,
-    rgba(255, 255, 255, 0.82) 50%,
-    rgba(255, 247, 204, 0.16) 68%,
+    var(--palette-rgba-255-251-236-0p05) 32%,
+    var(--palette-rgba-255-255-255-0p82) 50%,
+    var(--palette-rgba-255-247-204-0p16) 68%,
     transparent 82%
   );
   transform: translate3d(-118%, 0, 0) skewX(-16deg) scaleX(0.94);
@@ -669,9 +669,9 @@ function handleImageError(e) {
   inset: -46% -20%;
   background: radial-gradient(
     circle at calc(30% + var(--featured-wave-drift, 0%)) 50%,
-    rgba(255, 255, 255, 0.46) 0%,
-    rgba(255, 247, 212, 0.22) 18%,
-    rgba(255, 221, 128, 0.12) 36%,
+    var(--palette-rgba-255-255-255-0p46) 0%,
+    var(--palette-rgba-255-247-212-0p22) 18%,
+    var(--palette-rgba-255-221-128-0p12) 36%,
     transparent 72%
   );
   transform: translate3d(-10%, 0, 0) scale(0.96);
@@ -883,9 +883,9 @@ function handleImageError(e) {
 }
 
 .product-discount {
-  background: var(--product-card-discount-bg, #fce8ec);
-  color: var(--product-card-discount-text, #e11d48);
-  box-shadow: inset 0 0 0 1px var(--product-card-discount-ring, #f5c6d0);
+  background: var(--product-card-discount-bg, var(--palette-hex-fce8ec));
+  color: var(--product-card-discount-text, var(--palette-hex-e11d48));
+  box-shadow: inset 0 0 0 1px var(--product-card-discount-ring, var(--palette-hex-f5c6d0));
 }
 
 .product-time {
@@ -980,7 +980,7 @@ function handleImageError(e) {
 }
 
 .product-price.discounted {
-  color: var(--product-card-price-discounted, #ef4444);
+  color: var(--product-card-price-discounted, var(--palette-hex-ef4444));
 }
 
 .original-price {

@@ -59,12 +59,18 @@ const chartAriaLabel = computed(() => `${chartCopy.value.title}，共 ${props.tr
 function getPalette() {
   const shell = chartElement.value?.closest('.seller-shell')
   const styles = shell ? getComputedStyle(shell) : getComputedStyle(document.documentElement)
+  const fallbackText = styles.color || 'currentColor'
+  const readColor = (domainToken, semanticToken, fallback = fallbackText) => (
+    styles.getPropertyValue(domainToken).trim()
+    || styles.getPropertyValue(semanticToken).trim()
+    || fallback
+  )
   return {
-    text: styles.getPropertyValue('--seller-muted').trim() || '#68737c',
-    line: styles.getPropertyValue('--seller-jade').trim() || '#718d7a',
-    border: styles.getPropertyValue('--seller-border').trim() || '#d8d2c7',
-    surface: styles.getPropertyValue('--seller-surface').trim() || '#fcfbf7',
-    navy: styles.getPropertyValue('--seller-navy').trim() || '#10243e'
+    text: readColor('--seller-muted', '--text-paper-secondary'),
+    line: readColor('--seller-jade', '--action-paper-accent'),
+    border: readColor('--seller-border', '--border-paper-default'),
+    surface: readColor('--seller-surface', '--surface-paper-card', 'transparent'),
+    navy: readColor('--seller-navy', '--action-paper-primary')
   }
 }
 

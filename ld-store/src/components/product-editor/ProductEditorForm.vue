@@ -216,7 +216,7 @@ defineExpose({ focusField })
 .desc-mode-tabs { display: inline-flex; gap: 2px; padding: 3px; background: var(--bg-secondary); border-radius: 10px; }
 .desc-mode-tab { padding: 4px 12px; color: var(--text-secondary); background: none; border: 0; border-radius: 8px; cursor: pointer; font-size: 12px; line-height: 1.4; transition: background-color 0.2s, color 0.2s; }
 .desc-mode-tab:hover { color: var(--editor-accent, var(--color-success)); }
-.desc-mode-tab.active { color: white; background: var(--editor-accent, var(--color-success)); font-weight: 600; }
+.desc-mode-tab.active { color: var(--palette-hex-ffffff); background: var(--editor-accent, var(--color-success)); font-weight: 600; }
 .is-edit { --editor-accent: var(--color-primary); }
 .form-input, .form-textarea { width: 100%; box-sizing: border-box; padding: 14px 16px; color: var(--text-primary); background: var(--input-bg, var(--bg-secondary)); border: 1px solid var(--border-color, var(--border-light)); border-radius: 12px; outline: none; font-size: 14px; transition: border-color 0.2s, background-color 0.2s; }
 .form-textarea { min-height: 100px; resize: vertical; }
@@ -236,7 +236,7 @@ defineExpose({ focusField })
 .category-load-error { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 10px; }
 .category-load-error .form-error { margin: 0; }
 .category-retry-btn { min-height: 44px; padding: 7px 12px; color: var(--color-danger); background: transparent; border: 1px solid var(--color-danger); border-radius: 9px; cursor: pointer; }
-.category-price-notice { display: flex; align-items: flex-start; gap: 8px; margin-top: 12px; padding: 10px 14px; background: var(--color-warning-bg, rgba(245, 158, 11, 0.1)); border: 1px solid var(--color-warning, #f59e0b); border-radius: 10px; }
+.category-price-notice { display: flex; align-items: flex-start; gap: 8px; margin-top: 12px; padding: 10px 14px; background: var(--color-warning-bg, var(--palette-rgba-245-158-11-0p1)); border: 1px solid var(--color-warning, var(--palette-hex-f59e0b)); border-radius: 10px; }
 .category-price-notice .notice-text { color: var(--text-secondary); font-size: 13px; line-height: 1.5; }
 .category-price-notice strong { color: var(--color-warning); }
 .final-price-display { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin: 12px 0 16px; padding: 10px 14px; background: var(--bg-secondary); border-radius: 10px; }

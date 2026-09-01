@@ -295,14 +295,14 @@
               <div class="notice-item highlight">
                 <span class="item-num">2</span>
                 <div class="item-text">
-                  <strong>在<a href="https://credit.linux.do/merchant" target="_blank" style="color: #007bff;"> LDC集市 </a>配置通知地址（最重要）</strong>：这是支付成功后自动发货的关键！
+                  <strong>在<a href="https://credit.linux.do/merchant" target="_blank" style="color: var(--palette-hex-007bff);"> LDC集市 </a>配置通知地址（最重要）</strong>：这是支付成功后自动发货的关键！
                   <code class="notice-url">https://api.ldspro.qzz.io/api/shop/ldc/notify</code>
                 </div>
               </div>
               <div class="notice-item">
                 <span class="item-num">3</span>
                 <div class="item-text">
-                  <strong>在<a href="https://credit.linux.do/merchant" target="_blank" style="color: #007bff;"> LDC集市 </a>配置回调地址</strong>：支付完成后浏览器跳转地址
+                  <strong>在<a href="https://credit.linux.do/merchant" target="_blank" style="color: var(--palette-hex-007bff);"> LDC集市 </a>配置回调地址</strong>：支付完成后浏览器跳转地址
                   <code class="notice-url">https://api.ldspro.qzz.io/api/shop/ldc/return</code>
                 </div>
               </div>
@@ -1281,7 +1281,7 @@ onBeforeUnmount(() => {
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: color var(--motion-duration-fast) var(--motion-ease-standard), background-color var(--motion-duration-fast) var(--motion-ease-standard), border-color var(--motion-duration-fast) var(--motion-ease-standard), box-shadow var(--motion-duration-fast) var(--motion-ease-standard), opacity var(--motion-duration-fast) var(--motion-ease-standard), transform var(--motion-duration-fast) var(--motion-ease-standard);
 }
 
 .mode-btn.active {
@@ -1497,7 +1497,7 @@ onBeforeUnmount(() => {
 
 .desc-mode-tab.active {
   background: var(--color-success);
-  color: #fff;
+  color: var(--palette-hex-ffffff);
   font-weight: 600;
 }
 
@@ -1622,7 +1622,7 @@ onBeforeUnmount(() => {
 .image-bed-link {
   display: block;
   padding: 10px 12px;
-  background: linear-gradient(135deg, rgba(90, 140, 90, 0.08) 0%, rgba(122, 154, 122, 0.12) 100%);
+  background: linear-gradient(135deg, var(--palette-rgba-90-140-90-0p08) 0%, var(--palette-rgba-122-154-122-0p12) 100%);
   border: 1px dashed var(--color-success);
   border-radius: 10px;
   font-size: 13px;
@@ -1630,7 +1630,7 @@ onBeforeUnmount(() => {
   text-decoration: none;
   line-height: 1.5;
   word-break: break-word;
-  transition: all 0.2s;
+  transition: color var(--motion-duration-fast) var(--motion-ease-standard), background-color var(--motion-duration-fast) var(--motion-ease-standard), border-color var(--motion-duration-fast) var(--motion-ease-standard), box-shadow var(--motion-duration-fast) var(--motion-ease-standard), opacity var(--motion-duration-fast) var(--motion-ease-standard), transform var(--motion-duration-fast) var(--motion-ease-standard);
 }
 
 .image-bed-link:hover {
@@ -1663,8 +1663,8 @@ onBeforeUnmount(() => {
 .cdk-config-notice {
   margin-bottom: 20px;
   padding: 16px;
-  background: var(--color-warning-bg, rgba(245, 158, 11, 0.1));
-  border: 1px solid var(--color-warning, #f59e0b);
+  background: var(--color-warning-bg, var(--palette-rgba-245-158-11-0p1));
+  border: 1px solid var(--color-warning, var(--palette-hex-f59e0b));
   border-radius: 12px;
 }
 
@@ -1698,8 +1698,8 @@ onBeforeUnmount(() => {
 }
 
 .cdk-config-notice .notice-item.highlight {
-  background: var(--color-danger-bg, rgba(239, 68, 68, 0.1));
-  border: 1px solid var(--color-danger, #ef4444);
+  background: var(--color-danger-bg, var(--palette-rgba-239-68-68-0p1));
+  border: 1px solid var(--color-danger, var(--palette-hex-ef4444));
 }
 
 .cdk-config-notice .item-num {
@@ -1709,15 +1709,15 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--color-warning, #f59e0b);
-  color: white;
+  background: var(--color-warning, var(--palette-hex-f59e0b));
+  color: var(--palette-hex-ffffff);
   border-radius: 50%;
   font-size: 12px;
   font-weight: 600;
 }
 
 .cdk-config-notice .notice-item.highlight .item-num {
-  background: var(--color-danger, #ef4444);
+  background: var(--color-danger, var(--palette-hex-ef4444));
 }
 
 .cdk-config-notice .item-text {
@@ -1777,7 +1777,7 @@ onBeforeUnmount(() => {
 
 .input-error {
   border-color: var(--color-danger) !important;
-  background-color: var(--input-error-bg, rgba(220, 38, 38, 0.05));
+  background-color: var(--input-error-bg, var(--palette-rgba-220-38-38-0p05));
 }
 
 .form-error {
@@ -1802,7 +1802,7 @@ onBeforeUnmount(() => {
   font-size: 14px;
   color: var(--text-secondary);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: color var(--motion-duration-fast) var(--motion-ease-standard), background-color var(--motion-duration-fast) var(--motion-ease-standard), border-color var(--motion-duration-fast) var(--motion-ease-standard), box-shadow var(--motion-duration-fast) var(--motion-ease-standard), opacity var(--motion-duration-fast) var(--motion-ease-standard), transform var(--motion-duration-fast) var(--motion-ease-standard);
 }
 
 .category-btn:hover {
@@ -1840,7 +1840,7 @@ onBeforeUnmount(() => {
 }
 
 .category-retry-btn:hover {
-  background: var(--input-error-bg, rgba(220, 38, 38, 0.05));
+  background: var(--input-error-bg, var(--palette-rgba-220-38-38-0p05));
 }
 
 /* 入站分类价格提示 */
@@ -1850,8 +1850,8 @@ onBeforeUnmount(() => {
   gap: 8px;
   margin-top: 12px;
   padding: 10px 14px;
-  background: var(--color-warning-bg, rgba(245, 158, 11, 0.1));
-  border: 1px solid var(--color-warning, #f59e0b);
+  background: var(--color-warning-bg, var(--palette-rgba-245-158-11-0p1));
+  border: 1px solid var(--color-warning, var(--palette-hex-f59e0b));
   border-radius: 10px;
 }
 
@@ -1867,7 +1867,7 @@ onBeforeUnmount(() => {
 }
 
 .category-price-notice .notice-text strong {
-  color: var(--color-warning, #f59e0b);
+  color: var(--color-warning, var(--palette-hex-f59e0b));
   font-weight: 600;
 }
 
@@ -1919,7 +1919,7 @@ onBeforeUnmount(() => {
   border: 2px solid transparent;
   border-radius: 14px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: color var(--motion-duration-fast) var(--motion-ease-standard), background-color var(--motion-duration-fast) var(--motion-ease-standard), border-color var(--motion-duration-fast) var(--motion-ease-standard), box-shadow var(--motion-duration-fast) var(--motion-ease-standard), opacity var(--motion-duration-fast) var(--motion-ease-standard), transform var(--motion-duration-fast) var(--motion-ease-standard);
 }
 
 .type-card:hover {
@@ -1959,7 +1959,7 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: center;
   background: var(--color-success);
-  color: white;
+  color: var(--palette-hex-ffffff);
   border-radius: 50%;
   font-size: 14px;
   font-weight: 600;
@@ -1983,19 +1983,19 @@ onBeforeUnmount(() => {
   max-width: 568px;
   margin: 0 auto;
   padding: 16px 32px;
-  background: linear-gradient(135deg, var(--color-success) 0%, #7a9a7a 100%);
+  background: linear-gradient(135deg, var(--color-success) 0%, var(--palette-hex-7a9a7a) 100%);
   border: none;
   border-radius: 14px;
   font-size: 16px;
   font-weight: 600;
-  color: white;
+  color: var(--palette-hex-ffffff);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: color var(--motion-duration-fast) var(--motion-ease-standard), background-color var(--motion-duration-fast) var(--motion-ease-standard), border-color var(--motion-duration-fast) var(--motion-ease-standard), box-shadow var(--motion-duration-fast) var(--motion-ease-standard), opacity var(--motion-duration-fast) var(--motion-ease-standard), transform var(--motion-duration-fast) var(--motion-ease-standard);
 }
 
 .submit-btn:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(90, 140, 90, 0.4);
+  box-shadow: 0 4px 15px var(--palette-rgba-90-140-90-0p4);
 }
 
 .submit-btn:disabled {
@@ -2012,7 +2012,7 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: center;
   padding: 24px;
-  background: var(--overlay-bg, rgba(24, 28, 34, 0.45));
+  background: var(--overlay-bg, var(--palette-rgba-24-28-34-0p45));
   backdrop-filter: blur(2px);
 }
 
@@ -2032,7 +2032,7 @@ onBeforeUnmount(() => {
   height: 44px;
   margin: 0 auto 14px;
   border-radius: 50%;
-  border: 3px solid rgba(126, 179, 126, 0.25);
+  border: 3px solid var(--palette-rgba-126-179-126-0p25);
   border-top-color: var(--color-success);
   animation: submit-mask-spin 0.8s linear infinite;
 }
@@ -2149,7 +2149,7 @@ onBeforeUnmount(() => {
   color: var(--color-danger);
   margin: 12px 0 0;
   padding: 10px 12px;
-  background: rgba(220, 38, 38, 0.08);
+  background: var(--palette-rgba-220-38-38-0p08);
   border-radius: 8px;
   text-align: center;
 }
@@ -2178,18 +2178,18 @@ onBeforeUnmount(() => {
   text-align: center;
   text-decoration: none;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: color var(--motion-duration-fast) var(--motion-ease-standard), background-color var(--motion-duration-fast) var(--motion-ease-standard), border-color var(--motion-duration-fast) var(--motion-ease-standard), box-shadow var(--motion-duration-fast) var(--motion-ease-standard), opacity var(--motion-duration-fast) var(--motion-ease-standard), transform var(--motion-duration-fast) var(--motion-ease-standard);
   border: none;
 }
 
 .guide-btn-primary {
-  background: linear-gradient(135deg, var(--color-success) 0%, #7a9a7a 100%);
-  color: white;
+  background: linear-gradient(135deg, var(--color-success) 0%, var(--palette-hex-7a9a7a) 100%);
+  color: var(--palette-hex-ffffff);
 }
 
 .guide-btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(90, 140, 90, 0.4);
+  box-shadow: 0 4px 15px var(--palette-rgba-90-140-90-0p4);
 }
 
 .guide-btn-secondary {
@@ -2278,10 +2278,10 @@ onBeforeUnmount(() => {
   left: 2px;
   width: 20px;
   height: 20px;
-  background: white;
+  background: var(--palette-hex-ffffff);
   border-radius: 50%;
   transition: transform 0.2s;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 4px var(--palette-rgba-0-0-0-0p1);
 }
 
 .toggle-track.active .toggle-thumb {

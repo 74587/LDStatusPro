@@ -178,8 +178,8 @@ function dismissForever() {
   justify-content: center;
   padding: 24px;
   background:
-    radial-gradient(circle at top, rgba(181, 168, 152, 0.18), transparent 45%),
-    rgba(61, 61, 61, 0.16);
+    radial-gradient(circle at top, var(--palette-rgba-181-168-152-0p18), transparent 45%),
+    var(--palette-rgba-61-61-61-0p16);
   backdrop-filter: blur(10px);
 }
 
@@ -191,10 +191,10 @@ function dismissForever() {
   border-radius: 28px;
   border: 1px solid color-mix(in srgb, var(--color-primary) 24%, var(--border-light));
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(250, 249, 247, 0.96));
+    linear-gradient(180deg, var(--palette-rgba-255-255-255-0p98), var(--palette-rgba-250-249-247-0p96));
   box-shadow:
-    0 24px 80px rgba(61, 61, 61, 0.14),
-    0 8px 28px rgba(181, 168, 152, 0.12);
+    0 24px 80px var(--palette-rgba-61-61-61-0p14),
+    0 8px 28px var(--palette-rgba-181-168-152-0p12);
 }
 
 .announcement-popup__card::before {
@@ -203,7 +203,7 @@ function dismissForever() {
   top: 0;
   display: block;
   height: 5px;
-  background: linear-gradient(90deg, #d8cbbb, var(--color-primary), #c9b7a2);
+  background: linear-gradient(90deg, var(--palette-hex-d8cbbb), var(--color-primary), var(--palette-hex-c9b7a2));
 }
 
 .announcement-popup__header {
@@ -229,8 +229,8 @@ function dismissForever() {
   height: 52px;
   flex: 0 0 auto;
   border-radius: 16px;
-  background: linear-gradient(135deg, rgba(181, 168, 152, 0.18), rgba(216, 203, 187, 0.3));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75);
+  background: linear-gradient(135deg, var(--palette-rgba-181-168-152-0p18), var(--palette-rgba-216-203-187-0p3));
+  box-shadow: inset 0 1px 0 var(--palette-rgba-255-255-255-0p75);
   font-size: 24px;
 }
 
@@ -244,7 +244,7 @@ function dismissForever() {
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: color-mix(in srgb, var(--color-primary) 78%, #7d6c59);
+  color: color-mix(in srgb, var(--color-primary) 78%, var(--palette-hex-7d6c59));
 }
 
 .announcement-popup__title {
@@ -263,7 +263,7 @@ function dismissForever() {
   flex: 0 0 auto;
   border: 1px solid color-mix(in srgb, var(--color-primary) 18%, var(--border-light));
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.76);
+  background: var(--palette-rgba-255-255-255-0p76);
   color: var(--text-secondary);
   font-size: 24px;
   line-height: 1;
@@ -274,7 +274,7 @@ function dismissForever() {
 .announcement-popup__close:hover {
   transform: translateY(-1px);
   border-color: color-mix(in srgb, var(--color-primary) 36%, var(--border-light));
-  background: #ffffff;
+  background: var(--palette-hex-ffffff);
   color: var(--text-primary);
 }
 
@@ -308,7 +308,7 @@ function dismissForever() {
 }
 
 .announcement-popup__body :deep(a) {
-  color: color-mix(in srgb, var(--color-primary) 72%, #7c6041);
+  color: color-mix(in srgb, var(--color-primary) 72%, var(--palette-hex-7c6041));
   text-decoration: underline;
   text-underline-offset: 3px;
   word-break: break-word;
@@ -318,9 +318,9 @@ function dismissForever() {
   margin: 0 0 14px;
   padding: 14px 16px;
   border-radius: 16px;
-  border: 1px solid rgba(181, 168, 152, 0.18);
+  border: 1px solid var(--palette-rgba-181-168-152-0p18);
   border-left: 4px solid var(--color-primary);
-  background: rgba(181, 168, 152, 0.08);
+  background: var(--palette-rgba-181-168-152-0p08);
   color: var(--text-primary);
 }
 
@@ -332,7 +332,7 @@ function dismissForever() {
 .announcement-popup__body :deep(code) {
   padding: 2px 6px;
   border-radius: 6px;
-  background: rgba(181, 168, 152, 0.12);
+  background: var(--palette-rgba-181-168-152-0p12);
   color: var(--text-primary);
 }
 
@@ -341,8 +341,8 @@ function dismissForever() {
   padding: 14px 16px;
   overflow: auto;
   border-radius: 16px;
-  border: 1px solid rgba(181, 168, 152, 0.16);
-  background: rgba(250, 249, 247, 0.96);
+  border: 1px solid var(--palette-rgba-181-168-152-0p16);
+  background: var(--palette-rgba-250-249-247-0p96);
 }
 
 .announcement-popup__body :deep(table) {
@@ -352,18 +352,18 @@ function dismissForever() {
   overflow: hidden;
   border-radius: 14px;
   border-style: hidden;
-  box-shadow: 0 0 0 1px rgba(181, 168, 152, 0.18);
+  box-shadow: 0 0 0 1px var(--palette-rgba-181-168-152-0p18);
 }
 
 .announcement-popup__body :deep(th),
 .announcement-popup__body :deep(td) {
   padding: 10px 12px;
   text-align: left;
-  border: 1px solid rgba(181, 168, 152, 0.18);
+  border: 1px solid var(--palette-rgba-181-168-152-0p18);
 }
 
 .announcement-popup__body :deep(th) {
-  background: rgba(181, 168, 152, 0.1);
+  background: var(--palette-rgba-181-168-152-0p1);
   color: var(--text-primary);
 }
 
@@ -392,22 +392,22 @@ function dismissForever() {
   border: 1px solid transparent;
   border-radius: 14px;
   padding: 12px 18px;
-  background: linear-gradient(135deg, #c8b9a6, var(--color-primary));
-  color: #ffffff;
+  background: linear-gradient(135deg, var(--palette-hex-c8b9a6), var(--color-primary));
+  color: var(--palette-hex-ffffff);
   font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 10px 22px rgba(181, 168, 152, 0.18);
+  box-shadow: 0 10px 22px var(--palette-rgba-181-168-152-0p18);
   transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
 }
 
 .announcement-popup__button:hover {
   transform: translateY(-1px);
-  box-shadow: 0 14px 28px rgba(181, 168, 152, 0.24);
+  box-shadow: 0 14px 28px var(--palette-rgba-181-168-152-0p24);
 }
 
 .announcement-popup__button--ghost {
-  border-color: rgba(181, 168, 152, 0.26);
-  background: rgba(255, 255, 255, 0.78);
+  border-color: var(--palette-rgba-181-168-152-0p26);
+  background: var(--palette-rgba-255-255-255-0p78);
   color: var(--text-primary);
   box-shadow: none;
 }
