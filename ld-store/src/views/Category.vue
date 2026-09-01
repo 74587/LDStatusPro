@@ -58,7 +58,7 @@
       </div>
 
       <div v-if="loading" class="loading-state">
-        <Skeleton type="product" :count="4" />
+        <Skeleton type="card" :count="4" />
       </div>
 
       <EmptyState
