@@ -4,9 +4,9 @@ import path from 'node:path'
 
 const KiB = 1024
 const budgets = {
-  entryJs: 165 * KiB,
-  entryCss: 30 * KiB,
-  asyncJs: 200 * KiB
+  entryJs: 140 * KiB,
+  entryCss: 28 * KiB,
+  asyncJs: 190 * KiB
 }
 
 const distDir = path.resolve(process.cwd(), 'dist')

@@ -231,6 +231,7 @@ export const useShopStore = defineStore('shop', () => {
     let requestedPage = null
     let requestedPriceMin = currentPriceMin.value
     let requestedPriceMax = currentPriceMax.value
+    let requestSignal
 
     // 兼容旧调用风格：fetchProducts({ category, page, sort, priceMin, priceMax })
     if (categoryInput && typeof categoryInput === 'object' && !Array.isArray(categoryInput)) {
@@ -238,6 +239,7 @@ export const useShopStore = defineStore('shop', () => {
       requestedSort = categoryInput.sort || ''
       requestedPage = Number.parseInt(categoryInput.page, 10)
       forceRefresh = categoryInput.forceRefresh ?? forceRefresh
+      requestSignal = categoryInput.signal
 
       const hasExplicitPriceMin = Object.prototype.hasOwnProperty.call(categoryInput, 'priceMin')
       const hasExplicitPriceMax = Object.prototype.hasOwnProperty.call(categoryInput, 'priceMax')
@@ -308,11 +310,17 @@ export const useShopStore = defineStore('shop', () => {
         inStockOnly: requestInStockOnly,
         priceMin: requestPriceMin,
         priceMax: requestPriceMax,
-        cursor: requestPage > 1 ? catalogCursor.value : ''
+        cursor: requestPage > 1 ? catalogCursor.value : '',
+        signal: requestSignal
       })
 
       if (requestId !== latestProductsRequestId) {
         return { success: false, cancelled: true, error: '请求已过期' }
+      }
+
+      if (result.aborted) {
+        restorePrevious()
+        return { ...result, cancelled: true }
       }
 
       if (result.success && Array.isArray(result.data?.products)) {
@@ -395,13 +403,17 @@ export const useShopStore = defineStore('shop', () => {
   }
 
   // 加载更多商品
-  async function loadMore() {
+  async function loadMore(options = {}) {
     if (loading.value || !hasMore.value) {
       return { success: false, cancelled: true, error: '' }
     }
 
     page.value += 1
-    const result = await fetchProducts(currentCategory.value)
+    const result = await fetchProducts({
+      categoryId: currentCategory.value,
+      page: page.value,
+      signal: options.signal
+    })
     if (!result?.success) {
       page.value = Math.max(page.value - 1, 1)
     }

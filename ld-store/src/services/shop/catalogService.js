@@ -77,7 +77,7 @@ export async function fetchProductsRequest(options = {}) {
     params.set('priceMax', String(priceMax))
   }
 
-  const result = await api.get(`/api/shop/products?${params.toString()}`)
+  const result = await api.get(`/api/shop/products?${params.toString()}`, { signal: options.signal })
   if (rotating && result?.success) rememberCatalogSlate(options, result.data?.rankingContext?.slateId)
   if (cursor && cursorRetry && result?.status === 409 && result?.errorCode === 'RANKING_CURSOR_STALE') {
     const restarted = await fetchProductsRequest({ ...options, cursor: '', page: 1, cursorRetry: false })

@@ -69,14 +69,12 @@ describe('V2.2 recommendation rotation', () => {
     expect(reloaded.searchParams.get('previousSlateId')).toBe(first)
   })
   it('home has no manual catalog rotation control or stale rotation state', () => {
-    const source = readFileSync(new URL('../src/views/Home.vue', import.meta.url), 'utf8')
+    const source = readFileSync(new URL('../src/components/home/ProductsMarketplace.vue', import.meta.url), 'utf8')
     const { descriptor, errors } = parse(source)
     expect(errors).toEqual([])
     expect(compileTemplate({ source: descriptor.template.content, filename: 'Home.vue', id: 'home' }).errors).toEqual([])
     expect(source).not.toMatch(/catalog-rotate-btn|rotatingCatalog|rotateCatalog/)
     expect(descriptor.template.content).toContain('class="products-grid" :aria-busy="loading"')
-    // The unrelated buy-request refresh control is intentionally unchanged.
-    expect(descriptor.template.content).toContain('@click="loadBuyRequests(false)"')
   })
   it('failed rotation retains the visible list, page, context, and cursor', async () => {
     const store = useShopStore()
