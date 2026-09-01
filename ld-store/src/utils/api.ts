@@ -151,11 +151,16 @@ export function normalizeResponsePayload<T = unknown>(data: unknown, status = 20
   }
 
   if (isRecord(data) && data.success === true) {
+    const hasDataProperty = Object.prototype.hasOwnProperty.call(data, 'data')
+    const envelopeData = hasDataProperty
+      ? data.data
+      : Object.fromEntries(Object.entries(data).filter(([key]) => !['success', 'status'].includes(key)))
+    const hasEnvelopeFields = hasDataProperty || (isRecord(envelopeData) && Object.keys(envelopeData).length > 0)
     return {
       ...data,
       success: true,
       status,
-      data: (Object.prototype.hasOwnProperty.call(data, 'data') ? data.data : null) as T
+      data: (hasEnvelopeFields ? envelopeData : null) as T
     }
   }
 

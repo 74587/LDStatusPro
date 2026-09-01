@@ -458,7 +458,6 @@ export const useShopStore = defineStore('shop', () => {
     const cached = productCache.get(productId) || productCache.get(cacheKey)
     if (cached?.data) {
       cached.data.isFavorited = targetState
-      cached.data.is_favorited = targetState
       if (productCache.has(cacheKey)) {
         productCache.set(cacheKey, cached)
       } else {
@@ -580,13 +579,14 @@ export const useShopStore = defineStore('shop', () => {
     favoritesLoading.value = true
 
     try {
-      const { result, page: favoritePage, pageSize: favoritePageSize } = await fetchFavoritesRequest(options)
+      const normalized = normalizeFavoritesOptions(options)
+      const result = await fetchFavoritesRequest(normalized)
       if (result.success && result.data) {
         myFavorites.value = result.data.products || []
         return result.data
       }
 
-      return createEmptyListState(favoritePage, favoritePageSize)
+      return createEmptyListState(normalized.page, normalized.pageSize)
     } catch (error) {
       console.error('Fetch my favorites failed:', error)
       const normalized = normalizeFavoritesOptions(options)
@@ -600,7 +600,8 @@ export const useShopStore = defineStore('shop', () => {
     blocksLoading.value = true
 
     try {
-      const { result, page: blockedPage, pageSize: blockedPageSize } = await fetchBlockedProductsRequest(options)
+      const normalized = normalizeFavoritesOptions(options)
+      const result = await fetchBlockedProductsRequest(normalized)
       if (result.success && result.data) {
         const list = result.data.products || []
         blockedProducts.value = list
@@ -611,7 +612,7 @@ export const useShopStore = defineStore('shop', () => {
         return result.data
       }
 
-      return createEmptyListState(blockedPage, blockedPageSize)
+      return createEmptyListState(normalized.page, normalized.pageSize)
     } catch (error) {
       console.error('Fetch blocked products failed:', error)
       const normalized = normalizeFavoritesOptions(options)

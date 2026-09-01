@@ -146,10 +146,10 @@ const merchantAvatarSeed = computed(() =>
 )
 const merchantAvatarCandidates = computed(() =>
   buildAvatarCandidates([
-    merchant.value?.animated_avatar,
+    merchant.value?.animatedAvatar,
     merchant.value?.avatar,
-    merchant.value?.avatar_url,
-    merchant.value?.avatar_template
+    merchant.value?.avatarUrl,
+    merchant.value?.avatarTemplate
   ], 128)
 )
 const merchantDisplayName = computed(() => {

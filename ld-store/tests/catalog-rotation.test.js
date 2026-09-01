@@ -15,6 +15,24 @@ function memoryStorage() {
   const map = new Map()
   return { getItem: key => map.get(key) || null, setItem: (key, value) => map.set(key, value), removeItem: key => map.delete(key) }
 }
+function catalogResponse({ products = [], slateId = first } = {}) {
+  return {
+    success: true,
+    status: 200,
+    data: {
+      products: products.map(product => ({ name: `Product ${product.id}`, ...product })),
+      pagination: { total: products.length, page: 1, pageSize: 20, totalPages: products.length ? 1 : 0, hasMore: false },
+      rankingContext: {
+        slateId,
+        requestId: 'request-1',
+        surface: 'home',
+        version: 'catalog-v2',
+        releaseMode: 'active',
+        fallback: false
+      }
+    }
+  }
+}
 describe('V2.2 recommendation rotation', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -42,7 +60,7 @@ describe('V2.2 recommendation rotation', () => {
     expect(beginCatalogRotation().previousSlateId).toBe('')
   })
   it('only default recommendation first pages send rotation parameters', async () => {
-    api.get.mockResolvedValue({ success: true, data: { rankingContext: { slateId: first } } })
+    api.get.mockResolvedValue(catalogResponse())
     await fetchProductsRequest()
     expect(api.get.mock.lastCall[0]).toContain(`rotationId=${first}`)
     await fetchProductsRequest()
@@ -52,9 +70,20 @@ describe('V2.2 recommendation rotation', () => {
       expect(api.get.mock.lastCall[0]).not.toMatch(/rotationId|previousSlateId/)
     }
   })
+  it('keeps valid catalog data when optional ranking metadata is malformed', async () => {
+    const warning = vi.spyOn(globalThis.console, 'warn').mockImplementation(() => {})
+    const response = catalogResponse({ products: [{ id: 9 }] })
+    response.data.rankingContext = { slateId: 'malformed-ranking-context' }
+    api.get.mockResolvedValue(response)
+
+    const result = await fetchProductsRequest({ sort: 'newest' })
+    expect(result).toMatchObject({ success: true, data: { products: [{ id: 9, name: 'Product 9' }] } })
+    expect(result.data).not.toHaveProperty('rankingContext')
+    expect(warning).toHaveBeenCalledWith('[api-contract] Invalid response', expect.objectContaining({ schema: 'RankingContext' }))
+    warning.mockRestore()
+  })
   it('page reload rotates automatically while retaining the prior slate for overlap control', async () => {
-    const response = { success: true, data: { products: [{ id: 1 }], pagination: { total: 1, hasMore: false },
-      rankingContext: { slateId: first } } }
+    const response = catalogResponse({ products: [{ id: 1 }] })
     api.get.mockResolvedValue(response)
     await useShopStore().fetchProducts({ forceRefresh: true })
     const initial = new URL(api.get.mock.lastCall[0], 'http://localhost')
@@ -98,7 +127,7 @@ describe('V2.2 recommendation rotation', () => {
     let finish
     api.get.mockImplementationOnce(() => new Promise(resolve => { finish = resolve }))
     const old = store.fetchProducts({ forceRefresh: true, preserveProducts: true })
-    api.get.mockResolvedValueOnce({ success: true, data: { products: [{ id: 2 }] } })
+    api.get.mockResolvedValueOnce(catalogResponse({ products: [{ id: 2 }] }))
     await store.fetchProducts({ categoryId: 2 })
     finish({ success: false, error: 'late failure' })
     expect((await old).cancelled).toBe(true)

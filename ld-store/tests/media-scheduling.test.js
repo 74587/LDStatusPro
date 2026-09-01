@@ -17,7 +17,7 @@ describe('visible media and chart scheduling', () => {
   })
 
   it('prioritizes only the first four marketplace products that have images', () => {
-    expect(productsSource).toContain("filter((product) => !!product?.image_url).slice(0, 4)")
+    expect(productsSource).toContain("filter((product) => !!product?.imageUrl).slice(0, 4)")
     expect(productsSource).toContain("priorityImageIds.has(product.id) ? 'eager' : 'lazy'")
     expect(productsSource).toContain("priorityImageIds.has(product.id) ? 'high' : 'auto'")
   })

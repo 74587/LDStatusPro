@@ -78,25 +78,25 @@
                   :aria-label="`查看 ${item.name} 的详情`"
                 >
                   <img
-                    v-if="item.image_url"
-                    :src="item.image_url"
+                    v-if="item.imageUrl"
+                    :src="item.imageUrl"
                     :alt="item.name"
                     class="cover-image"
                     loading="lazy"
                     @error="handleImageError"
                   />
-                  <span v-else class="cover-placeholder">{{ item.category_icon || '□' }}</span>
+                  <span v-else class="cover-placeholder">{{ item.categoryIcon || '□' }}</span>
                 </router-link>
                 <div v-else class="card-cover" :style="getCoverStyle(item)" aria-hidden="true">
                   <img
-                    v-if="item.image_url"
-                    :src="item.image_url"
+                    v-if="item.imageUrl"
+                    :src="item.imageUrl"
                     alt=""
                     class="cover-image is-muted"
                     loading="lazy"
                     @error="handleImageError"
                   />
-                  <span v-else class="cover-placeholder">{{ item.category_icon || '□' }}</span>
+                  <span v-else class="cover-placeholder">{{ item.categoryIcon || '□' }}</span>
                 </div>
 
                 <div class="card-content">
@@ -106,7 +106,7 @@
                   <h2 v-else class="card-title">{{ item.name }}</h2>
                   <p class="card-desc">{{ stripMarkdown(item.description) || '暂无描述' }}</p>
                   <div class="card-meta">
-                    <span class="meta-tag">{{ item.category_icon || '□' }} {{ item.category_name || '其他' }}</span>
+                    <span class="meta-tag">{{ item.categoryIcon || '□' }} {{ item.categoryName || '其他' }}</span>
                     <span :class="['meta-status', `status-${normalizeProductStatus(item.status) || 'unknown'}`]">
                       {{ getStatusText(item.status) }}
                     </span>
@@ -231,7 +231,7 @@ const coverColors = [
 ]
 
 function getCoverStyle(item) {
-  if (item.image_url) return {}
+  if (item.imageUrl) return {}
   const index = Math.abs(Number(item.id) || 0) % coverColors.length
   return { background: coverColors[index] }
 }
@@ -273,17 +273,17 @@ function getStatusText(status) {
 }
 
 function getSellerText(item) {
-  const username = String(item?.seller_username || item?.sellerUsername || '').trim()
+  const username = String(item?.sellerUsername || '').trim()
   return username ? `@${username}` : '@未知'
 }
 
 function getStockText(item) {
   const stock = Number.parseInt(item?.stock, 10)
-  const available = Number.parseInt(item?.availableStock ?? item?.available_stock ?? item?.cdkStats?.available, 10)
-  if (stock === -1 || available === -1 || item?.sharedCdkEnabled || Number(item?.shared_cdk_enabled || 0) === 1) {
+  const available = Number.parseInt(item?.availableStock ?? item?.cdkStats?.available, 10)
+  if (stock === -1 || available === -1 || item?.sharedCdkEnabled) {
     return '不限量'
   }
-  if (String(item?.product_type || item?.productType || '').toLowerCase() === 'cdk' && Number.isFinite(available)) {
+  if (String(item?.productType || '').toLowerCase() === 'cdk' && Number.isFinite(available)) {
     return String(Math.max(available, 0))
   }
   return Number.isFinite(stock) ? String(Math.max(stock, 0)) : '0'
@@ -291,8 +291,8 @@ function getStockText(item) {
 
 function getPreferenceTime(item) {
   return activeTab.value === 'favorites'
-    ? (item.favorited_at || item.updated_at || item.created_at)
-    : (item.blocked_at || item.updated_at || item.created_at)
+    ? (item.favoritedAt || item.updatedAt || item.createdAt)
+    : (item.blockedAt || item.updatedAt || item.createdAt)
 }
 
 function isItemBusy(_itemId) {

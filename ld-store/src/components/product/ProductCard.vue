@@ -40,12 +40,12 @@
     <!-- 商品图片 -->
     <div class="product-cover" :style="coverStyle">
       <!-- 骨架屏占位 -->
-      <div v-if="product.image_url && !imageLoaded" class="cover-skeleton">
+      <div v-if="product.imageUrl && !imageLoaded" class="cover-skeleton">
         <div class="skeleton-shimmer"></div>
       </div>
       <img
-        v-if="product.image_url"
-        :src="product.image_url"
+        v-if="product.imageUrl"
+        :src="product.imageUrl"
         :alt="product.name"
         :class="['cover-image', { loaded: imageLoaded }]"
         :loading="imageLoading"
@@ -55,7 +55,7 @@
       />
       <component
         :is="categoryIconComponent"
-        v-if="!product.image_url"
+        v-if="!product.imageUrl"
         :size="52"
         :stroke-width="1.6"
         aria-hidden="true"
@@ -82,7 +82,7 @@
       <div class="product-seller">
         <template v-if="isStore">
           <span class="store-owner-label">店主：</span>
-          <span class="seller-name">{{ product.seller_username || '匿名' }}</span>
+          <span class="seller-name">{{ product.sellerUsername || '匿名' }}</span>
         </template>
         <template v-else>
           <AvatarImage
@@ -92,7 +92,7 @@
             alt=""
             class="seller-avatar"
           />
-          <span class="seller-name">{{ product.seller_username || '匿名' }}</span>
+          <span class="seller-name">{{ product.sellerUsername || '匿名' }}</span>
           <span v-if="isPlatformOrder && soldCount > 0" class="sold-count">已售{{ soldCount }}</span>
         </template>
       </div>
@@ -212,7 +212,7 @@ function setupImpressionObserver() {
   impressionTimer = null
   impressionRecorded = false
   const element = cardElement()
-  const token = props.product?.discovery_token || props.product?.discoveryToken
+  const token = props.product?.discoveryToken
   if (!element || !token || typeof IntersectionObserver === 'undefined') return
   impressionObserver = new IntersectionObserver((entries) => {
     const visible = entries.some((entry) => entry.isIntersecting && entry.intersectionRatio >= 0.5)
@@ -233,7 +233,7 @@ function setupImpressionObserver() {
   impressionObserver.observe(element)
 }
 onMounted(setupImpressionObserver)
-watch(() => props.product?.discovery_token || props.product?.discoveryToken, setupImpressionObserver, { flush: 'post' })
+watch(() => props.product?.discoveryToken, setupImpressionObserver, { flush: 'post' })
 
 function lerp(start, end, factor) {
   return start + (end - start) * factor
@@ -321,10 +321,10 @@ const isNormal = computed(() => isNormalProduct(props.product))
 const isStore = computed(() => isStoreProduct(props.product))
 const isLegacyLink = computed(() => isLegacyLinkProduct(props.product))
 const isPlatformOrder = computed(() => isPlatformOrderProduct(props.product))
-const isTestMode = computed(() => !!props.product.is_test_mode || !!props.product.isTestMode)
-const showFeaturedBadge = computed(() => !!props.product.is_pinned && !!props.product.pin_is_paid)
+const isTestMode = computed(() => !!props.product.isTestMode)
+const showFeaturedBadge = computed(() => !!props.product.isPinned && !!props.product.pinIsPaid)
 const featuredPinType = computed(() => {
-  const rawPinType = String(props.product.pin_type || props.product.pinType || '').trim().toLowerCase()
+  const rawPinType = String(props.product.pinType || '').trim().toLowerCase()
 
   if (rawPinType === 'category' || rawPinType === 'global') {
     return rawPinType
@@ -386,11 +386,11 @@ const stockClass = computed(() => {
 const stockDisplay = computed(() => getStockDisplay(props.product))
 
 // 销量
-const soldCount = computed(() => parseInt(props.product.sold_count) || 0)
+const soldCount = computed(() => parseInt(props.product.soldCount) || 0)
 
 // 浏览量：视觉上使用紧凑 k 单位，辅助技术与悬浮提示保留完整数字
 const viewCount = computed(() => {
-  const parsed = Number(props.product.view_count)
+  const parsed = Number(props.product.viewCount)
   return Number.isFinite(parsed) ? Math.max(0, Math.trunc(parsed)) : 0
 })
 const compactViewCount = computed(() => formatCompactCount(viewCount.value))
@@ -398,10 +398,10 @@ const viewCountLabel = computed(() => `${formatNumber(viewCount.value)} 次浏�
 
 // 分类
 const category = computed(() => 
-  props.categories.find(c => c.id === props.product.category_id)
+  props.categories.find(c => String(c.id) === String(props.product.categoryId))
 )
 const categoryName = computed(() => 
-  props.product.category_name || category.value?.name || '其他'
+  props.product.categoryName || category.value?.name || '其他'
 )
 const categoryIcons = {
   '公益站': Server,
@@ -414,16 +414,16 @@ const categoryIconComponent = computed(() => categoryIcons[categoryName.value] |
 
 // 卖家头像
 const sellerAvatarSeed = computed(() =>
-  props.product.seller_username || props.product.seller_user_id || 'seller'
+  props.product.sellerUsername || props.product.sellerUserId || 'seller'
 )
 
 const sellerAvatarCandidates = computed(() =>
-  buildAvatarCandidates(props.product.seller_avatar, 128)
+  buildAvatarCandidates(props.product.sellerAvatar, 128)
 )
 
 // 更新时间
 const updateTime = computed(() => 
-  formatRelativeTime(props.product.updated_at || props.product.created_at)
+  formatRelativeTime(props.product.updatedAt || props.product.createdAt)
 )
 
 // 封面样式
@@ -438,7 +438,7 @@ const colors = [
   'linear-gradient(135deg, #f5f5f4, #e7e5e4)'
 ]
 const coverStyle = computed(() => {
-  if (props.product.image_url) return {}
+  if (props.product.imageUrl) return {}
   const index = props.product.id ? Math.abs(props.product.id) % colors.length : 0
   return { background: colors[index] }
 })

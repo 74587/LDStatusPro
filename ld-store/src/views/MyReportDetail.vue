@@ -39,8 +39,8 @@
           <div class="hero-top">
             <div class="hero-main">
               <p class="eyebrow">Report Detail</p>
-              <h1 class="page-title">{{ report.current_product_name || report.product_name || '商品已删除' }}</h1>
-              <p class="page-subtitle">举报 #{{ report.id }} · {{ categoryText(report.report_category, report.report_category_label) }}</p>
+              <h1 class="page-title">{{ report.currentProductName || report.productName || '商品已删除' }}</h1>
+              <p class="page-subtitle">举报 #{{ report.id }} · {{ categoryText(report.reportCategory, report.reportCategoryLabel) }}</p>
             </div>
             <span :class="['status-badge', report.status]">{{ statusText(report.status) }}</span>
           </div>
@@ -53,17 +53,17 @@
             </article>
             <article class="summary-card">
               <span class="summary-label">提交时间</span>
-              <strong class="summary-value small">{{ formatDate(report.created_at) }}</strong>
+              <strong class="summary-value small">{{ formatDate(report.createdAt) }}</strong>
               <span class="summary-meta">首次提交举报的时间</span>
             </article>
             <article class="summary-card">
               <span class="summary-label">最近更新</span>
-              <strong class="summary-value small">{{ formatDate(report.updated_at) }}</strong>
+              <strong class="summary-value small">{{ formatDate(report.updatedAt) }}</strong>
               <span class="summary-meta">平台最近一次更新记录</span>
             </article>
             <article class="summary-card">
               <span class="summary-label">处理时间</span>
-              <strong class="summary-value small">{{ formatDate(report.handled_at) }}</strong>
+              <strong class="summary-value small">{{ formatDate(report.handledAt) }}</strong>
               <span class="summary-meta">若未处理则显示为 -</span>
             </article>
           </div>
@@ -76,7 +76,7 @@
               <p class="section-hint">这是你提交给平台的原始说明。</p>
             </div>
           </div>
-          <div class="content-block reason-block">{{ report.report_reason || '未填写举报原因' }}</div>
+          <div class="content-block reason-block">{{ report.reportReason || '未填写举报原因' }}</div>
         </section>
 
         <section :class="['content-card', 'note-card', noteToneClass]">
@@ -86,7 +86,7 @@
               <p class="section-hint">平台对该举报的处理结果或补充说明。</p>
             </div>
           </div>
-          <div v-if="report.admin_note" class="content-block">{{ report.admin_note }}</div>
+          <div v-if="report.adminNote" class="content-block">{{ report.adminNote }}</div>
           <div v-else class="soft-empty">暂未填写处理备注，处理进展会在这里更新。</div>
         </section>
 
@@ -101,11 +101,11 @@
           <div v-if="logs.length === 0" class="soft-empty">暂无处理历史，平台后续跟进会记录在这里。</div>
 
           <div v-else class="timeline">
-            <article v-for="(item, index) in logs" :key="`${item.created_at}-${index}`" class="timeline-item">
+            <article v-for="(item, index) in logs" :key="`${item.createdAt}-${index}`" class="timeline-item">
               <div class="timeline-dot" />
               <div class="timeline-body">
-                <div class="timeline-time">{{ formatDate(item.created_at) }}</div>
-                <div class="timeline-note">{{ item.note || `${statusText(item.from_status)} → ${statusText(item.to_status)}` }}</div>
+                <div class="timeline-time">{{ formatDate(item.createdAt) }}</div>
+                <div class="timeline-note">{{ item.note || `${statusText(item.fromStatus)} → ${statusText(item.toStatus)}` }}</div>
               </div>
             </article>
           </div>

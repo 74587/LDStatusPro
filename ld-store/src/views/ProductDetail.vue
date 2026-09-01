@@ -65,8 +65,8 @@
           <div class="detail-media">
             <div class="media-wrapper" :style="coverStyle" @click="openImagePreview">
               <img
-                v-if="product.image_url"
-                :src="product.image_url"
+                v-if="product.imageUrl"
+                :src="product.imageUrl"
                 :alt="product.name"
                 class="media-image"
                 @load="handleCoverImageLoad"
@@ -84,7 +84,7 @@
               <span v-if="hasDiscount" class="discount-tag">
                 -{{ discountPercent }}%
               </span>
-              <span v-if="product.image_url" class="media-zoom-hint" aria-hidden="true">
+              <span v-if="product.imageUrl" class="media-zoom-hint" aria-hidden="true">
                 <Search :size="14" />
                 点击查看大图
               </span>
@@ -122,7 +122,7 @@
               </div>
               <div class="status-item">
                 <Eye class="status-icon" :size="16" aria-hidden="true" />
-                <span class="status-text">{{ product.view_count || 0 }} 浏览</span>
+                <span class="status-text">{{ product.viewCount || 0 }} 浏览</span>
               </div>
               <div class="status-item">
                 <CalendarClock class="status-icon" :size="16" aria-hidden="true" />
@@ -140,7 +140,7 @@
               </div>
 
             <div
-              :class="['seller-card', { disabled: !product.seller_username }]"
+              :class="['seller-card', { disabled: !product.sellerUsername }]"
               @click="goToSeller"
             >
               <AvatarImage
@@ -413,14 +413,14 @@
                     />
                     <span class="comment-name">{{ item.user?.nickname || item.user?.username || '匿名用户' }}</span>
                     <span class="comment-username">@{{ item.user?.username || 'unknown' }}</span>
-                    <span v-if="item.is_seller" class="comment-seller-tag">卖家</span>
-                    <span v-if="item.is_purchased" class="comment-purchased-tag">已购</span>
+                    <span v-if="item.isSeller" class="comment-seller-tag">卖家</span>
+                    <span v-if="item.isPurchased" class="comment-purchased-tag">已购</span>
                     <span
-                      v-if="item.is_purchased && item.rating_value !== null"
+                      v-if="item.isPurchased && item.ratingValue !== null"
                       class="comment-rating-tag"
                     >
-                      <StarRatingDisplay :value="item.rating_value" size="xs" />
-                      <span>{{ formatRatingLabel(item.rating_value) }}</span>
+                      <StarRatingDisplay :value="item.ratingValue" size="xs" />
+                      <span>{{ formatRatingLabel(item.ratingValue) }}</span>
                     </span>
                   </div>
 
@@ -448,7 +448,7 @@
                           {{ commentReportingId === item.id ? '举报中...' : '举报' }}
                         </button>
                         <button
-                          v-if="item.can_delete"
+                          v-if="item.canDelete"
                           class="comment-action-item danger"
                           :disabled="commentDeletingId === item.id"
                           @click.stop="deleteComment(item)"
@@ -470,46 +470,46 @@
                   <span
                     v-else-if="isCommentRejectedStatus(item.status)"
                     class="comment-inline-status-tag comment-inline-status-tag--rejected"
-                    :title="item.review_reason || '该评论未通过审核'"
+                    :title="item.reviewReason || '该评论未通过审核'"
                   >
                     审核未通过，仅自己可见
                   </span>
                 </div>
                 <div class="comment-footer">
-                  <time class="comment-time">{{ formatCommentTime(item.created_at) }}</time>
+                  <time class="comment-time">{{ formatCommentTime(item.createdAt) }}</time>
                   <div v-if="isCommentPublicStatus(item.status)" class="comment-footer-actions">
                     <button
                       class="comment-footer-btn comment-reply-btn"
                       :class="{ active: isCommentReplyComposerOpen(item.id) }"
                       @click="toggleCommentReplyComposer(item.id)"
                     >
-                      {{ isCommentReplyComposerOpen(item.id) ? '收起输入' : '回复' }} {{ Number(item.reply_count || 0) }}
+                      {{ isCommentReplyComposerOpen(item.id) ? '收起输入' : '回复' }} {{ Number(item.replyCount || 0) }}
                     </button>
                     <button
                       class="comment-footer-btn comment-vote-btn"
-                      :class="{ active: normalizeCommentVoteType(item.viewer_vote) === COMMENT_VOTE_UP }"
+                      :class="{ active: normalizeCommentVoteType(item.viewerVote) === COMMENT_VOTE_UP }"
                       :disabled="isCommentVoting(item.id)"
-                      :aria-label="`赞同，当前 ${Number(item.upvote_count || 0)} 票`"
-                      :aria-pressed="normalizeCommentVoteType(item.viewer_vote) === COMMENT_VOTE_UP"
+                      :aria-label="`赞同，当前 ${Number(item.upvoteCount || 0)} 票`"
+                      :aria-pressed="normalizeCommentVoteType(item.viewerVote) === COMMENT_VOTE_UP"
                       @click="voteComment(item, COMMENT_VOTE_UP)"
                     >
                       <ThumbsUp class="comment-vote-icon" :size="14" aria-hidden="true" />
-                      <span>{{ Number(item.upvote_count || 0) }}</span>
+                      <span>{{ Number(item.upvoteCount || 0) }}</span>
                     </button>
                     <button
                       class="comment-footer-btn comment-vote-btn"
-                      :class="{ active: normalizeCommentVoteType(item.viewer_vote) === COMMENT_VOTE_DOWN }"
+                      :class="{ active: normalizeCommentVoteType(item.viewerVote) === COMMENT_VOTE_DOWN }"
                       :disabled="isCommentVoting(item.id)"
-                      :aria-label="`反对，当前 ${Number(item.downvote_count || 0)} 票`"
-                      :aria-pressed="normalizeCommentVoteType(item.viewer_vote) === COMMENT_VOTE_DOWN"
+                      :aria-label="`反对，当前 ${Number(item.downvoteCount || 0)} 票`"
+                      :aria-pressed="normalizeCommentVoteType(item.viewerVote) === COMMENT_VOTE_DOWN"
                       @click="voteComment(item, COMMENT_VOTE_DOWN)"
                     >
                       <ThumbsDown class="comment-vote-icon" :size="14" aria-hidden="true" />
-                      <span>{{ Number(item.downvote_count || 0) }}</span>
+                      <span>{{ Number(item.downvoteCount || 0) }}</span>
                     </button>
                   </div>
                 </div>
-                <div v-if="Number(item.reply_count || 0) > 0 || isCommentReplyComposerOpen(item.id) || isCommentReplyLoading(item.id)" class="comment-reply-panel">
+                <div v-if="Number(item.replyCount || 0) > 0 || isCommentReplyComposerOpen(item.id) || isCommentReplyLoading(item.id)" class="comment-reply-panel">
                   <div class="comment-reply-list">
                     <div v-if="isCommentReplyLoading(item.id)" class="comment-reply-empty">回复加载中...</div>
                     <template v-else>
@@ -530,8 +530,8 @@
                           <div class="comment-reply-meta">
                             <span class="comment-reply-name">{{ reply.user?.nickname || reply.user?.username || '匿名用户' }}</span>
                             <span class="comment-reply-username">@{{ reply.user?.username || 'unknown' }}</span>
-                            <span v-if="reply.is_seller" class="comment-seller-tag comment-seller-tag--reply">卖家</span>
-                            <time class="comment-reply-time">{{ formatCommentTime(reply.created_at) }}</time>
+                            <span v-if="reply.isSeller" class="comment-seller-tag comment-seller-tag--reply">卖家</span>
+                            <time class="comment-reply-time">{{ formatCommentTime(reply.createdAt) }}</time>
                           </div>
                           <div class="comment-reply-content">
                             <span>{{ reply.content }}</span>
@@ -544,7 +544,7 @@
                             <span
                               v-else-if="isCommentRejectedStatus(reply.status)"
                               class="comment-inline-status-tag comment-inline-status-tag--rejected"
-                              :title="reply.review_reason || '该回复未通过审核'"
+                              :title="reply.reviewReason || '该回复未通过审核'"
                             >
                               审核未通过，仅自己可见
                             </span>
@@ -803,7 +803,7 @@
     <!-- 图片预览弹窗 -->
     <Teleport to="body">
       <div 
-        v-if="showImagePreview && product?.image_url" 
+        v-if="showImagePreview && product?.imageUrl"
         class="image-preview-overlay"
         @click.self="closeImagePreview"
       >
@@ -811,7 +811,7 @@
           <X :size="24" aria-hidden="true" />
         </button>
         <img 
-          :src="product.image_url" 
+          :src="product.imageUrl"
           :alt="product.name" 
           class="preview-image"
         />
@@ -995,6 +995,7 @@ import StarRatingInput from '@/components/common/StarRatingInput.vue'
 import ProductStockIndicator from '@/components/product/ProductStockIndicator.vue'
 import { buildAvatarCandidates } from '@/utils/avatar'
 import { api } from '@/utils/api'
+import { fetchProductRequest } from '@/services/shop/catalogService'
 import {
   isCdkProduct,
   isLegacyLinkProduct,
@@ -1111,13 +1112,13 @@ const isLandscapeDetailLayout = computed(() => {
 })
 
 // 测试模式相关
-const isTestMode = computed(() => !!product.value?.is_test_mode || !!product.value?.isTestMode)
+const isTestMode = computed(() => !!product.value?.isTestMode)
 const isSeller = computed(() => {
   if (!product.value || !userStore.user) return false
-  return String(userStore.user.id) === String(product.value.seller_user_id)
+  return String(userStore.user.id) === String(product.value.sellerUserId)
 })
 const isFavorited = computed(() =>
-  !!(product.value?.isFavorited || product.value?.is_favorited)
+  !!product.value?.isFavorited
 )
 const viewerTrustLevel = computed(() => {
   const raw = userStore.trustLevel
@@ -1125,16 +1126,16 @@ const viewerTrustLevel = computed(() => {
   return Number.isInteger(parsed) ? parsed : 0
 })
 const sellerUsernameLabel = computed(() => {
-  const username = String(product.value?.seller_username || '').trim()
+  const username = String(product.value?.sellerUsername || '').trim()
   return username || '未知'
 })
 const sellerDisplayName = computed(() => {
-  const nickname = String(product.value?.seller_name || '').trim()
+  const nickname = String(product.value?.sellerName || '').trim()
   if (!nickname || nickname === sellerUsernameLabel.value) return ''
   return nickname
 })
 const sellerTrustLevelValue = computed(() => {
-  const parsed = Number.parseInt(product.value?.seller_trust_level ?? product.value?.sellerTrustLevel, 10)
+  const parsed = Number.parseInt(product.value?.sellerTrustLevel, 10)
   return Number.isInteger(parsed) && parsed >= 0 ? Math.min(parsed, 4) : null
 })
 const sellerTrustLevelLabel = computed(() => (
@@ -1169,7 +1170,7 @@ const canPurchase = computed(() => {
   if (product.value?.canPurchase === undefined) return true
   return product.value.canPurchase !== false
 })
-const soldCount = computed(() => parseInt(product.value?.sold_count) || 0)
+const soldCount = computed(() => parseInt(product.value?.soldCount) || 0)
 const purchaseLimit = computed(() => getPurchaseLimit(product.value))
 const purchaseLimitReached = computed(() => isPurchaseLimitReached(purchaseLimit.value))
 const purchaseLimitReservedQuantity = computed(() => Number(purchaseLimit.value.reservedQuantity || 0))
@@ -1179,7 +1180,7 @@ const purchaseLimitReleaseText = computed(() => (
     : ''
 ))
 const purchaseTrustLevel = computed(() => {
-  const raw = Number(product.value?.purchase_trust_level ?? product.value?.purchaseTrustLevel ?? 0)
+  const raw = Number(product.value?.purchaseTrustLevel ?? 0)
   if (!Number.isInteger(raw) || raw < 0) return 0
   return Math.min(raw, 4)
 })
@@ -1295,7 +1296,7 @@ const hasCommentSummary = computed(() =>
 )
 
 // 分类
-const categoryName = computed(() => product.value?.category_name || '其他')
+const categoryName = computed(() => product.value?.categoryName || '其他')
 const categoryIconComponent = computed(() => {
   const normalizedName = categoryName.value.trim().toLowerCase()
 
@@ -1313,11 +1314,11 @@ const categoryIconComponent = computed(() => {
 
 // 卖家
 const sellerAvatarSeed = computed(() =>
-  product.value?.seller_username || product.value?.seller_user_id || product.value?.id || 'seller'
+  product.value?.sellerUsername || product.value?.sellerUserId || product.value?.id || 'seller'
 )
 
 const sellerAvatarCandidates = computed(() =>
-  buildAvatarCandidates(product.value?.seller_avatar, 128)
+  buildAvatarCandidates(product.value?.sellerAvatar, 128)
 )
 
 function commentAvatarSeed(user) {
@@ -1326,16 +1327,16 @@ function commentAvatarSeed(user) {
 
 function resolveCommentAvatarCandidates(user) {
   return buildAvatarCandidates([
-    user?.animated_avatar,
+    user?.animatedAvatar,
     user?.avatar,
-    user?.avatar_url,
-    user?.avatar_template
+    user?.avatarUrl,
+    user?.avatarTemplate
   ], 96)
 }
 
 // 时间
 const updateTime = computed(() => 
-  formatRelativeTime(product.value?.updated_at || product.value?.created_at)
+  formatRelativeTime(product.value?.updatedAt || product.value?.createdAt)
 )
 
 // 封面样式
@@ -1348,7 +1349,7 @@ const colors = [
   'linear-gradient(135deg, #ffedd5, #fed7aa)'
 ]
 const coverStyle = computed(() => {
-  if (product.value?.image_url) return {}
+  if (product.value?.imageUrl) return {}
   const id = product.value?.id || 0
   return { background: colors[id % colors.length] }
 })
@@ -1462,7 +1463,7 @@ onMounted(async () => {
   await shopStore.fetchCategories()
   
   // 获取物品详情
-  const result = await api.get(`/api/shop/products/${encodeURIComponent(productId)}`)
+  const result = await fetchProductRequest(String(productId))
   if (result?.success && result?.data?.product) {
     product.value = result.data.product
     detailErrorMessage.value = ''
@@ -1543,7 +1544,7 @@ watch(
 
 // 方法
 watch(
-  () => product.value?.image_url || '',
+  () => product.value?.imageUrl || '',
   (imageUrl) => {
     void syncCoverAspectRatio(imageUrl)
   },
@@ -1635,7 +1636,7 @@ function isCommentRejectedStatus(status) {
 }
 
 function canOpenCommentActionMenu(item) {
-  return !!item?.can_delete || isCommentPublicStatus(item?.status)
+  return !!item?.canDelete || isCommentPublicStatus(item?.status)
 }
 
 function normalizeCommentVoteType(value) {
@@ -1734,22 +1735,22 @@ async function loadComments(page = 1) {
     }
     const summary = data.summary || {}
     commentSummary.value = {
-      averageRating: normalizeCommentRatingValue(summary.averageRating ?? summary.average_rating),
-      ratedCount: Number(summary.ratedCount ?? summary.rated_count ?? 0),
-      favoriteCount: Number(summary.favoriteCount ?? summary.favorite_count ?? 0),
-      visibleCommentCount: Number(summary.visibleCommentCount ?? summary.visible_comment_count ?? pagination.total ?? 0),
-      visibleReplyCount: Number(summary.visibleReplyCount ?? summary.visible_reply_count ?? 0)
+      averageRating: normalizeCommentRatingValue(summary.averageRating),
+      ratedCount: Number(summary.ratedCount ?? 0),
+      favoriteCount: Number(summary.favoriteCount ?? 0),
+      visibleCommentCount: Number(summary.visibleCommentCount ?? pagination.total ?? 0),
+      visibleReplyCount: Number(summary.visibleReplyCount ?? 0)
     }
     const list = Array.isArray(data.comments) ? data.comments : []
     commentList.value = list.map((item) => ({
       ...item,
       status: String(item?.status || '').trim(),
-      is_seller: !!(item?.is_seller ?? item?.isSeller),
-      rating_value: normalizeCommentRatingValue(item?.rating_value ?? item?.ratingValue, { allowNull: true }),
-      upvote_count: Number(item?.upvote_count || item?.upvoteCount || 0),
-      downvote_count: Number(item?.downvote_count || item?.downvoteCount || 0),
-      reply_count: Number(item?.reply_count || item?.replyCount || 0),
-      viewer_vote: normalizeCommentVoteType(item?.viewer_vote || item?.viewerVote)
+      isSeller: !!item?.isSeller,
+      ratingValue: normalizeCommentRatingValue(item?.ratingValue, { allowNull: true }),
+      upvoteCount: Number(item?.upvoteCount || 0),
+      downvoteCount: Number(item?.downvoteCount || 0),
+      replyCount: Number(item?.replyCount || 0),
+      viewerVote: normalizeCommentVoteType(item?.viewerVote)
     }))
     commentPagination.value = {
       total: Number(pagination.total || 0),
@@ -1815,7 +1816,7 @@ async function voteComment(comment, voteType) {
   commentVotingMap.value[safeCommentId] = true
 
   try {
-    const currentVote = normalizeCommentVoteType(comment.viewer_vote)
+    const currentVote = normalizeCommentVoteType(comment.viewerVote)
     const targetVote = currentVote === voteType ? '' : voteType
     const result = await shopStore.voteProductComment(safeCommentId, targetVote)
     if (!result?.success) {
@@ -1829,9 +1830,9 @@ async function voteComment(comment, voteType) {
     const data = result?.data || {}
     updateCommentListItem(safeCommentId, (current) => ({
       ...current,
-      viewer_vote: normalizeCommentVoteType(data.viewerVote),
-      upvote_count: Number(data.upvoteCount ?? current.upvote_count ?? 0),
-      downvote_count: Number(data.downvoteCount ?? current.downvote_count ?? 0)
+      viewerVote: normalizeCommentVoteType(data.viewerVote),
+      upvoteCount: Number(data.upvoteCount ?? current.upvoteCount ?? 0),
+      downvoteCount: Number(data.downvoteCount ?? current.downvoteCount ?? 0)
     }))
   } catch (error) {
     toast.error(`点赞操作失败：${error.message}`)
@@ -1844,7 +1845,7 @@ async function preloadCommentRepliesForVisibleComments() {
   const targets = commentList.value
     .map((item) => ({
       id: Number(item?.id || 0),
-      replyCount: Number(item?.reply_count || 0)
+      replyCount: Number(item?.replyCount || 0)
     }))
     .filter((item) => item.id > 0 && item.replyCount > 0)
 
@@ -1883,7 +1884,7 @@ async function loadCommentReplies(commentId, page = 1, options = {}) {
     const list = Array.isArray(data.replies) ? data.replies : []
     const normalizedList = list.map((item) => ({
       ...item,
-      is_seller: !!(item?.is_seller ?? item?.isSeller),
+      isSeller: !!item?.isSeller,
       status: String(item?.status || '').trim()
     }))
     const currentList = commentReplyMap.value[safeCommentId] || []
@@ -1902,7 +1903,7 @@ async function loadCommentReplies(commentId, page = 1, options = {}) {
 
     updateCommentListItem(safeCommentId, (current) => ({
       ...current,
-      reply_count: Number(pagination.total || current.reply_count || merged.length || 0)
+      replyCount: Number(pagination.total || current.replyCount || merged.length || 0)
     }))
   } catch (error) {
     if (!silent) toast.error(`加载回复失败：${error.message}`)
@@ -1972,7 +1973,7 @@ async function submitCommentReply(comment) {
     const data = result?.data || {}
     updateCommentListItem(safeCommentId, (current) => ({
       ...current,
-      reply_count: Number(data.replyCount ?? current.reply_count ?? 0)
+      replyCount: Number(data.replyCount ?? current.replyCount ?? 0)
     }))
     await loadCommentReplies(safeCommentId, 1, { force: true })
     toast.success(data.message || '回复已发布')
@@ -2128,7 +2129,7 @@ function goBack() {
 }
 
 function goToSeller() {
-  const username = String(product.value?.seller_username || '').trim()
+  const username = String(product.value?.sellerUsername || '').trim()
   if (!username) {
     toast.warning('商家主页暂不可用')
     return
@@ -2172,8 +2173,7 @@ async function toggleFavorite() {
     const nextState = !isFavorited.value
     product.value = {
       ...product.value,
-      isFavorited: nextState,
-      is_favorited: nextState
+      isFavorited: nextState
     }
     commentSummary.value = {
       ...commentSummary.value,
@@ -2242,7 +2242,7 @@ function handleImageError(e) {
 // 图片预览
 // 图片预览
 function openImagePreview() {
-  if (product.value?.image_url) {
+  if (product.value?.imageUrl) {
     showImagePreview.value = true
     syncModalState()
   }

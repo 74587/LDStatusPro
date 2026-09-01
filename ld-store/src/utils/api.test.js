@@ -123,6 +123,8 @@ describe('API request lifecycle', () => {
   it('keeps falsy legacy payload data during response normalization', () => {
     expect(normalizeResponsePayload({ success: true, data: { success: true, data: 0 } })).toEqual({ success: true, status: 200, data: 0 })
     expect(normalizeResponsePayload({ success: true, data: { success: true, data: null } })).toEqual({ success: true, status: 200, data: null })
+    expect(normalizeResponsePayload({ success: true, data: 0 })).toEqual({ success: true, status: 200, data: 0 })
+    expect(normalizeResponsePayload({ success: true, reportId: 7 })).toEqual({ success: true, status: 200, data: { reportId: 7 }, reportId: 7 })
   })
 
   it('normalizes successful and failed payload envelopes without losing metadata', async () => {
@@ -134,7 +136,7 @@ describe('API request lifecycle', () => {
     await expect(api.get('/api/auth/init')).resolves.toEqual({
       success: true,
       status: 200,
-      data: null,
+      data: { auth_url: 'https://example.test/login' },
       auth_url: 'https://example.test/login'
     })
     await expect(api.get('/api/shop/products')).resolves.toEqual({

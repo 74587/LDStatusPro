@@ -254,9 +254,9 @@ const marketCategories = computed(() => categories.value.filter((category) => {
   const name = String(category?.name || '')
   return name && name !== '小店' && name !== '友情小店'
 }))
-const marketProducts = computed(() => toSafeArray(shopStore.products).filter((product) => product?.product_type !== 'store'))
+const marketProducts = computed(() => toSafeArray(shopStore.products).filter((product) => product?.productType !== 'store'))
 const priorityImageIds = computed(() => new Set(
-  marketProducts.value.filter((product) => !!product?.image_url).slice(0, 4).map((product) => product.id)
+  marketProducts.value.filter((product) => !!product?.imageUrl).slice(0, 4).map((product) => product.id)
 ))
 const currentCategory = computed(() => shopStore.currentCategory)
 const currentCategoryName = computed(() => shopStore.currentCategoryName)

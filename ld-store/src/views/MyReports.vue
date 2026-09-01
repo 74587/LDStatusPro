@@ -72,23 +72,23 @@
         >
           <div class="report-card-top">
             <div class="report-main">
-              <h2 class="report-product">{{ item.current_product_name || item.product_name || '商品已删除' }}</h2>
+              <h2 class="report-product">{{ item.currentProductName || item.productName || '商品已删除' }}</h2>
               <div class="report-meta-line">
-                <span class="report-chip category">{{ categoryText(item.report_category, item.report_category_label) }}</span>
-                <span class="report-chip time">提交于 {{ formatDate(item.created_at) }}</span>
+                <span class="report-chip category">{{ categoryText(item.reportCategory, item.reportCategoryLabel) }}</span>
+                <span class="report-chip time">提交于 {{ formatDate(item.createdAt) }}</span>
               </div>
             </div>
             <span :class="['status-badge', item.status]">{{ statusText(item.status) }}</span>
           </div>
 
-          <p class="report-reason">{{ item.report_reason || '未填写举报原因' }}</p>
+          <p class="report-reason">{{ item.reportReason || '未填写举报原因' }}</p>
 
           <div class="report-footer">
             <div class="report-footer-meta">
-              <span v-if="item.updated_at">最近更新 {{ formatDate(item.updated_at) }}</span>
-              <span v-if="item.handled_at">处理于 {{ formatDate(item.handled_at) }}</span>
-              <span v-if="!item.handled_at && item.status === 'pending'">等待平台处理</span>
-              <span v-else-if="!item.handled_at && item.status === 'processing'">平台正在跟进</span>
+              <span v-if="item.updatedAt">最近更新 {{ formatDate(item.updatedAt) }}</span>
+              <span v-if="item.handledAt">处理于 {{ formatDate(item.handledAt) }}</span>
+              <span v-if="!item.handledAt && item.status === 'pending'">等待平台处理</span>
+              <span v-else-if="!item.handledAt && item.status === 'processing'">平台正在跟进</span>
             </div>
             <span class="detail-link">查看详情 →</span>
           </div>

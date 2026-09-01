@@ -3,7 +3,7 @@
     ref="cardRef"
     :to="`/shop/${shop.id}`" 
     class="shop-card"
-    :class="{ pinned: shop.is_pinned }"
+    :class="{ pinned: shop.isPinned }"
     :style="tiltStyle"
     @mouseenter="handleMouseEnter"
     @mousemove="handleMouseMove"
@@ -15,8 +15,8 @@
     <!-- 小店图片 -->
     <div class="shop-image">
       <img 
-        v-if="shop.image_url" 
-        :src="shop.image_url" 
+        v-if="shop.imageUrl"
+        :src="shop.imageUrl"
         :alt="shop.name"
         @error="handleImageError"
       />
@@ -25,7 +25,7 @@
       </div>
       
       <!-- 置顶标记 -->
-      <div v-if="shop.is_pinned" class="pinned-badge">
+      <div v-if="shop.isPinned" class="pinned-badge">
         <span>📌</span>
       </div>
     </div>
@@ -41,10 +41,10 @@
           :candidates="ownerAvatarCandidates"
           :seed="ownerAvatarSeed"
           :size="48"
-          :alt="shop.owner_username"
+          :alt="shop.ownerUsername"
           class="owner-avatar"
         />
-        <span class="owner-name">{{ shop.owner_username }}</span>
+        <span class="owner-name">{{ shop.ownerUsername }}</span>
       </div>
       
       <!-- 标签 -->
@@ -191,11 +191,11 @@ const parsedTags = computed(() => {
 
 // 店主头像 URL
 const ownerAvatarSeed = computed(() =>
-  props.shop.owner_username || props.shop.owner_user_id || props.shop.name || 'shop'
+  props.shop.ownerUsername || props.shop.ownerUserId || props.shop.name || 'shop'
 )
 
 const ownerAvatarCandidates = computed(() =>
-  buildAvatarCandidates(props.shop.owner_avatar_template, 48)
+  buildAvatarCandidates(props.shop.ownerAvatarTemplate, 48)
 )
 
 // 处理图片加载错误

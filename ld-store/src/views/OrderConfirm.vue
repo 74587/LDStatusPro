@@ -382,8 +382,8 @@ const productId = computed(() => {
   return Number.isInteger(parsed) && parsed > 0 ? parsed : 0
 })
 const productName = computed(() => String(product.value?.name || '未命名物品'))
-const productImage = computed(() => String(product.value?.image_url || product.value?.imageUrl || ''))
-const sellerUsername = computed(() => String(product.value?.seller_username || product.value?.sellerUsername || '未知'))
+const productImage = computed(() => String(product.value?.imageUrl || ''))
+const sellerUsername = computed(() => String(product.value?.sellerUsername || '未知'))
 const isCdk = computed(() => isCdkProduct(product.value))
 const isPlatformOrder = computed(() => isPlatformOrderProduct(product.value))
 const originalUnitPrice = computed(() => Number(product.value?.price || 0))
@@ -479,9 +479,9 @@ const purchaseTrustLevel = computed(() => {
   return Number.isInteger(parsed) && parsed > 0 ? Math.min(parsed, 4) : 0
 })
 const isSeller = computed(() => (
-  String(userStore.user?.id || '') === String(product.value?.seller_user_id ?? product.value?.sellerUserId ?? '')
+  String(userStore.user?.id || '') === String(product.value?.sellerUserId ?? '')
 ))
-const isTestMode = computed(() => !!(product.value?.is_test_mode || product.value?.isTestMode))
+const isTestMode = computed(() => !!product.value?.isTestMode)
 const isOrderCreationMaintenanceBlocked = computed(() => (
   isRestrictedMaintenanceMode() && !isMaintenanceFeatureEnabled('orderCreate')
 ))
