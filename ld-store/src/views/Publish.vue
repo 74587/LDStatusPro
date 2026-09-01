@@ -148,165 +148,29 @@
           </div>
         </section>
 
-        <!-- 基本信息 -->
-        <div class="form-card">
-          <h2 class="card-title">基本信息</h2>
-          
-          <div class="form-group">
-            <label class="form-label required">物品名称</label>
-            <input
-              v-model="form.name"
-              type="text"
-              class="form-input"
-              :class="{ 'input-error': showError('name', nameError) }"
-              placeholder="请输入物品名称（2-50字符）"
-              maxlength="50"
-              ref="nameInput"
-              @input="markTouched('name')"
-            />
-            <p class="form-counter">{{ form.name.length }}/50</p>
-            <p v-if="showError('name', nameError)" class="form-error">{{ nameError }}</p>
-          </div>
-          
-          <div class="form-group">
-            <div class="form-label-row">
-              <label class="form-label required">物品描述</label>
-              <div class="desc-mode-tabs">
-                <button
-                  type="button"
-                  :class="['desc-mode-tab', { active: descMode === 'write' }]"
-                  @click="descMode = 'write'"
-                >编辑</button>
-                <button
-                  type="button"
-                  :class="['desc-mode-tab', { active: descMode === 'preview' }]"
-                  @click="descMode = 'preview'"
-                >预览</button>
-              </div>
-            </div>
-            <textarea
-              v-if="descMode === 'write'"
-              v-model="form.description"
-              class="form-textarea"
-              :class="{ 'input-error': showError('description', descriptionError) }"
-              :placeholder="descriptionPlaceholder"
-              rows="4"
-              maxlength="1000"
-              ref="descriptionInput"
-              @input="markTouched('description')"
-            ></textarea>
-            <div
-              v-else
-              class="form-textarea-preview markdown-content"
-              :class="{ 'is-empty': !descriptionPreview }"
-              v-html="descriptionPreview || '暂无内容，切换到「编辑」填写物品描述'"
-            ></div>
-            <p class="form-hint">支持 Markdown：**加粗**、*斜体*、++下划线++、`代码`；网址和图片语法显示为可点击链接（新窗口打开）</p>
-            <p class="form-counter">{{ form.description.length }}/1000</p>
-            <p v-if="showError('description', descriptionError)" class="form-error">{{ descriptionError }}</p>
-          </div>
-          
-          <div class="form-group">
-            <label class="form-label required">物品分类</label>
-            <div class="category-select">
-              <button
-                v-for="cat in categories"
-                :key="cat.id || cat.name"
-                type="button"
-                :class="['category-btn', { active: form.categoryId === cat.id }]"
-                @click="form.categoryId = cat.id"
-              >
-                {{ cat.name }}
-              </button>
-            </div>
-            <p v-if="categoriesLoading" class="form-hint">正在加载物品分类...</p>
-            <div v-else-if="categoriesLoadError" class="category-load-error" role="alert">
-              <p class="form-error">{{ categoriesLoadError }}</p>
-              <button type="button" class="category-retry-btn" @click="loadCategories">重新加载</button>
-            </div>
-            <!-- 入站分类价格提示 -->
-            <div v-if="isRuzhanCategory" class="category-price-notice">
-              <span class="notice-icon">注意</span>
-              <span class="notice-text">始皇指导价：入站分类物品<strong>折后价格不得低于 500 LDC</strong></span>
-            </div>
-          </div>
-          
-          <div class="form-row">
-            <div class="form-group">
-              <label class="form-label required">价格 (LDC)</label>
-              <input
-                v-model="form.price"
-                type="number"
-                class="form-input"
-                :class="{ 'input-error': showError('price', priceError) || ruzhanPriceError }"
-                placeholder="0.00"
-                min="0.01"
-                max="99999999"
-                step="0.01"
-                ref="priceInput"
-                @input="markTouched('price')"
-              />
-              <p v-if="showError('price', priceError)" class="form-error">{{ priceError }}</p>
-              <p v-else-if="ruzhanPriceError" class="form-error">{{ ruzhanPriceError }}</p>
-            </div>
-            
-            <div class="form-group">
-              <label class="form-label">折扣</label>
-              <input
-                v-model="form.discount"
-                type="number"
-                class="form-input"
-                :class="{ 'input-error': showError('discount', discountError) || ruzhanPriceError }"
-                placeholder="1"
-                min="0.01"
-                max="1"
-                step="0.01"
-                ref="discountInput"
-                @input="markTouched('discount')"
-              />
-              <p v-if="showError('discount', discountError)" class="form-error">{{ discountError }}</p>
-              <p v-else class="form-hint">范围 0.01-1，0.8 表示8折，1 表示原价</p>
-            </div>
-          </div>
-          <!-- 入站分类折后价格显示 -->
-          <div v-if="isRuzhanCategory && finalPrice > 0" class="final-price-display">
-            <span class="price-label">折后价格：</span>
-            <span class="price-value" :class="{ 'price-error': finalPrice < 500 }">
-              {{ finalPrice.toFixed(2) }} LDC
-            </span>
-            <span v-if="finalPrice < 500" class="price-warning">（最低 500 LDC）</span>
-          </div>
-          
-          <div class="form-group">
-            <label class="form-label required">物品图片</label>
-            <input
-              v-model="form.imageUrl"
-              type="url"
-              class="form-input"
-              :class="{ 'input-error': showError('image', imageDisplayError) }"
-              placeholder="https://..."
-              :maxlength="MAX_PRODUCT_IMAGE_URL_LENGTH"
-              @blur="validateImageLoad"
-              ref="imageInput"
-              @input="markTouched('image')"
-            />
-            <p v-if="showError('image', imageDisplayError)" class="form-error">{{ imageDisplayError }}</p>
-            <p v-else-if="imageLoadError" class="form-error">{{ imageLoadError }}</p>
-            <p v-else-if="imageValidating" class="form-hint loading-hint">正在验证图片...</p>
-            <p v-else-if="imageValidated" class="form-hint success-hint">图片验证通过</p>
-            <div v-else class="form-hint-with-link">
-              <p class="form-hint">推荐尺寸 16:9，必须使用 HTTPS 链接，不支持 linux.do 图床</p>
-              <router-link to="/ld-image" target="_blank" class="image-bed-link">
-                没有图床？试试 <strong>士多图床</strong>，即刻上传图片并获取在线链接
-              </router-link>
-            </div>
-            
-            <!-- 图片预览 -->
-            <div v-if="imagePreviewUrl && !imageLoadError" class="image-preview">
-              <img :src="imagePreviewUrl" alt="图片预览" @error="onPreviewError" />
-            </div>
-          </div>
-        </div>
+        <ProductEditorForm
+          ref="productEditorFormRef"
+          v-model="form"
+          v-model:desc-mode="descMode"
+          variant="publish"
+          :categories="categories"
+          :categories-loading="categoriesLoading"
+          :categories-load-error="categoriesLoadError"
+          :description-preview="descriptionPreview"
+          :description-placeholder="descriptionPlaceholder"
+          :errors="productEditorDisplayErrors"
+          :is-ruzhan-category="isRuzhanCategory"
+          :ruzhan-price-error="ruzhanPriceError"
+          :final-price="finalPrice"
+          :image-validating="imageValidating"
+          :image-validated="imageValidated"
+          :image-load-error="imageLoadError"
+          :image-preview-url="imagePreviewUrl"
+          @touched="markTouched"
+          @retry-categories="loadCategories"
+          @validate-image="validateImageLoad"
+          @preview-error="onPreviewError"
+        />
         
         <!-- 物品类型 -->
         <div class="form-card">
@@ -528,73 +392,7 @@
         </SellerStickySummary>
       </form>
 
-      <form v-else class="publish-form" @submit.prevent="submitBuyRequest">
-        <div class="form-card">
-          <h3 class="card-title">求购信息</h3>
-
-          <div class="form-group">
-            <label class="form-label required">求购标题</label>
-            <input
-              v-model="buyForm.title"
-              type="text"
-              class="form-input"
-              :class="{ 'input-error': showBuyError('title', buyTitleError) }"
-              placeholder="例如：收一个月 Claude 会员"
-              maxlength="60"
-              ref="buyTitleInput"
-              @input="markBuyTouched('title')"
-            />
-            <p class="form-counter">{{ buyForm.title.length }}/60</p>
-            <p v-if="showBuyError('title', buyTitleError)" class="form-error">{{ buyTitleError }}</p>
-          </div>
-
-          <div class="form-group">
-            <label class="form-label required">详细需求</label>
-            <textarea
-              v-model="buyForm.details"
-              class="form-textarea"
-              :class="{ 'input-error': showBuyError('details', buyDetailsError) }"
-              placeholder="请写清楚具体需求、交付方式、时效要求等（10-2000 字）"
-              rows="6"
-              maxlength="2000"
-              ref="buyDetailsInput"
-              @input="markBuyTouched('details')"
-            ></textarea>
-            <p class="form-counter">{{ buyForm.details.length }}/2000</p>
-            <p v-if="showBuyError('details', buyDetailsError)" class="form-error">{{ buyDetailsError }}</p>
-          </div>
-
-          <div class="form-group">
-            <label class="form-label required">预算价格 (LDC)</label>
-            <input
-              v-model="buyForm.price"
-              type="number"
-              class="form-input"
-              :class="{ 'input-error': showBuyError('price', buyPriceError) }"
-              placeholder="0.00"
-              min="0.01"
-              max="99999999"
-              step="0.01"
-              ref="buyPriceInput"
-              @input="markBuyTouched('price')"
-            />
-            <p v-if="showBuyError('price', buyPriceError)" class="form-error">{{ buyPriceError }}</p>
-            <p class="form-hint">发布后可在会话中继续协商，并可随时调价。</p>
-          </div>
-        </div>
-
-        <div class="form-card buy-safe-card">
-          <h3 class="card-title">安全说明</h3>
-          <p class="form-hint">平台会展示随机用户名与密码进行沟通，真实信息默认不公开。</p>
-          <p class="form-hint">聊天内容会自动检测违禁词，命中后无法发送。</p>
-        </div>
-
-        <div class="form-actions">
-          <button type="submit" class="submit-btn" :disabled="!canSubmitBuy || buySubmitting">
-            {{ buySubmitting ? '发布中...' : '发布求购' }}
-          </button>
-        </div>
-      </form>
+      <BuyRequestEditorForm v-else @busy="buySubmitting = $event" />
     </div>
   </div>
 </template>
@@ -610,21 +408,25 @@ import { useToast } from '@/composables/useToast'
 import { useDialog } from '@/composables/useDialog'
 import { validateProductName, validateProductDescription, validatePrice } from '@/utils/security'
 import { renderProductDescription } from '@/utils/renderProductDescription'
-import { createBuyRequestRequest } from '@/services/shop/buyRequestService'
 import { CDK_UPLOAD_LIMITS } from '@/config/cdkQuota'
 import SellerStickySummary from '@/components/seller/SellerStickySummary.vue'
 import PurchaseLimitSelector from '@/components/product/PurchaseLimitSelector.vue'
+import ProductEditorForm from '@/components/product-editor/ProductEditorForm.vue'
+import BuyRequestEditorForm from '@/components/product-editor/BuyRequestEditorForm.vue'
 import {
-  PRODUCT_PUBLISH_PAYMENT_SOURCE,
-  clearProductPublishDraft,
-  readProductPublishDraft,
-  writeProductPublishDraft
+  buildProductCreatePayload,
+  createProductEditorFormState,
+  useProductEditor
+} from '@/composables/product-editor/useProductEditor'
+import { useProductDraft } from '@/composables/product-editor/useProductDraft'
+import {
+  createSubmissionToken,
+  isUncertainMutationResult,
+  reconcileByPolling
+} from '@/composables/product-editor/useSubmissionReconciliation'
+import {
+  PRODUCT_PUBLISH_PAYMENT_SOURCE
 } from '@/utils/productPublishDraft'
-import {
-  MAX_PRODUCT_IMAGE_URL_LENGTH,
-  getProductImageUrlError,
-  preloadProductImage
-} from '@/utils/productImageValidation'
 
 const props = defineProps({
   initialMode: {
@@ -656,19 +458,6 @@ const dontShowAgain = ref(false)
 const lockedMode = computed(() => props.lockedMode)
 const publishMode = ref(props.initialMode === 'buy' ? 'buy' : 'product')
 const buySubmitting = ref(false)
-const buySubmitAttempted = ref(false)
-
-const buyForm = ref({
-  title: '',
-  details: '',
-  price: ''
-})
-
-const buyTouched = ref({
-  title: false,
-  details: false,
-  price: false
-})
 
 const submitAttempted = ref(false)
 const submitTokenState = ref({
@@ -685,33 +474,15 @@ const touched = ref({
   cdkCodes: false
 })
 
-const nameInput = ref(null)
-const descriptionInput = ref(null)
-const priceInput = ref(null)
-const discountInput = ref(null)
-const imageInput = ref(null)
+const productEditorFormRef = ref(null)
 const stockInput = ref(null)
 const cdkCodesInput = ref(null)
 const maxPurchaseQuantityInput = ref(null)
-const buyTitleInput = ref(null)
-const buyDetailsInput = ref(null)
-const buyPriceInput = ref(null)
 
 const fieldRefs = {
-  name: nameInput,
-  description: descriptionInput,
-  price: priceInput,
-  discount: discountInput,
-  image: imageInput,
   stock: stockInput,
   cdkCodes: cdkCodesInput,
   maxPurchaseQuantity: maxPurchaseQuantityInput
-}
-
-const buyFieldRefs = {
-  title: buyTitleInput,
-  details: buyDetailsInput,
-  price: buyPriceInput
 }
 
 function markTouched(field) {
@@ -720,26 +491,12 @@ function markTouched(field) {
   }
 }
 
-function markBuyTouched(field) {
-  if (field in buyTouched.value) {
-    buyTouched.value[field] = true
-  }
-}
-
 function focusField(field) {
-  const elRef = fieldRefs[field]
-  if (elRef?.value) {
-    elRef.value.scrollIntoView({ behavior: 'smooth', block: 'center' })
-    try {
-      elRef.value.focus({ preventScroll: true })
-    } catch (e) {
-      // ignore focus errors
-    }
+  if (['name', 'description', 'price', 'discount', 'image'].includes(field)) {
+    productEditorFormRef.value?.focusField?.(field)
+    return
   }
-}
-
-function focusBuyField(field) {
-  const elRef = buyFieldRefs[field]
+  const elRef = fieldRefs[field]
   if (elRef?.value) {
     elRef.value.scrollIntoView({ behavior: 'smooth', block: 'center' })
     try {
@@ -755,7 +512,6 @@ const GUIDE_MODAL_KEY = 'ld_store_publish_guide_seen'
 const PRODUCT_SUBMIT_TIMEOUT_MS = 90000
 const PRODUCT_SUBMIT_STATUS_MAX_RETRIES = 8
 const PRODUCT_SUBMIT_STATUS_RETRY_INTERVAL_MS = 2000
-const PRODUCT_DRAFT_SAVE_DEBOUNCE_MS = 600
 
 // 关闭弹窗
 function closeGuideModal() {
@@ -766,134 +522,48 @@ function closeGuideModal() {
 }
 
 function createDefaultProductForm(categoryId = null) {
-  return {
-    name: '',
-    description: '',
-    categoryId,
-    price: '',
-    discount: 1,
-    imageUrl: '',
-    productType: 'normal',
-    stock: '',
-    purchaseTrustLevel: 0,
-    cdkCodes: '',
-    sharedCdkEnabled: false,
-    sharedCdkCode: '',
-    isTestMode: false,
-    purchaseLimitType: 'none',
-    maxPurchaseQuantity: '',
-    purchaseLimitPeriodDays: 0
-  }
+  return createProductEditorFormState({ categoryId })
 }
 
 // 表单数据
 const form = ref(createDefaultProductForm())
-const draftReady = ref(false)
-const draftDirty = ref(false)
-const draftState = ref('idle')
-const draftSavedAt = ref(0)
-const draftError = ref('')
-const hasRestoredDraft = ref(false)
-const restoredDraftAt = ref(0)
-const restoredSensitiveFields = ref([])
 const restoredCategoryId = ref(null)
 const restoredCategoryNotice = ref('')
-let draftSaveTimer = null
-
-const draftStatusText = computed(() => {
-  if (draftState.value === 'error') {
-    return draftError.value || '自动保存失败，离开页面可能丢失内容'
-  }
-  if (draftSavedAt.value) return `已自动保存 ${formatDraftTime(draftSavedAt.value)}`
-  return '自动保存已开启'
+const {
+  draftReady,
+  draftDirty,
+  draftState,
+  draftSavedAt,
+  draftError,
+  hasRestoredDraft,
+  restoredDraftAt,
+  restoredSensitiveFields,
+  draftStatusText,
+  formatDraftTime,
+  clearDraftSaveTimer,
+  flushProductDraft,
+  retryDraftSave,
+  restoreProductDraft: restoreDraft,
+  clearPersistedProductDraft: clearDraft,
+  markDirty: markDraftDirty
+} = useProductDraft({
+  getUser: () => userStore.currentUser,
+  form,
+  isActive: () => publishMode.value === 'product'
 })
 
-function formatDraftTime(value) {
-  const date = new Date(Number(value || 0))
-  if (Number.isNaN(date.getTime())) return ''
-  const now = new Date()
-  const time = date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false })
-  if (date.toDateString() === now.toDateString()) return time
-  return `${date.getMonth() + 1}月${date.getDate()}日 ${time}`
-}
-
-function clearDraftSaveTimer() {
-  if (draftSaveTimer !== null) {
-    window.clearTimeout(draftSaveTimer)
-    draftSaveTimer = null
-  }
-}
-
-function persistProductDraft() {
-  clearDraftSaveTimer()
-  if (!draftReady.value || !draftDirty.value || publishMode.value !== 'product') return true
-
-  const result = writeProductPublishDraft(userStore.currentUser, form.value)
-  if (!result.success) {
-    draftState.value = 'error'
-    draftError.value = '自动保存失败，离开页面可能丢失内容'
-    return false
-  }
-
-  draftDirty.value = false
-  draftState.value = 'saved'
-  draftSavedAt.value = result.draft.updatedAt
-  draftError.value = ''
-  return true
-}
-
-function scheduleProductDraftSave() {
-  clearDraftSaveTimer()
-  draftSaveTimer = window.setTimeout(persistProductDraft, PRODUCT_DRAFT_SAVE_DEBOUNCE_MS)
-}
-
-function flushProductDraft() {
-  if (!draftReady.value) return true
-  return persistProductDraft()
-}
-
-function retryDraftSave() {
-  draftDirty.value = true
-  persistProductDraft()
-}
-
 function restoreProductDraft() {
-  const result = readProductPublishDraft(userStore.currentUser)
-  if (result.error) {
-    draftState.value = 'error'
-    draftError.value = '草稿读取失败，本次填写仍会继续尝试自动保存'
-    return
-  }
-  if (!result.draft) return
-
-  const draft = result.draft
-  form.value = {
-    ...createDefaultProductForm(),
-    ...draft.form,
-    cdkCodes: '',
-    sharedCdkCode: ''
-  }
-  hasRestoredDraft.value = true
-  restoredDraftAt.value = draft.updatedAt
-  restoredSensitiveFields.value = draft.sensitiveFieldsOmitted
-  restoredCategoryId.value = draft.form.categoryId
-  draftSavedAt.value = draft.updatedAt
-  draftState.value = 'saved'
+  const draft = restoreDraft(() => createDefaultProductForm())
+  restoredCategoryId.value = draft?.form.categoryId ?? null
 }
 
 function clearPersistedProductDraft() {
-  clearDraftSaveTimer()
-  draftReady.value = false
-  draftDirty.value = false
-  clearProductPublishDraft(userStore.currentUser)
-  hasRestoredDraft.value = false
-  restoredDraftAt.value = 0
-  restoredSensitiveFields.value = []
-  restoredCategoryId.value = null
-  restoredCategoryNotice.value = ''
-  draftSavedAt.value = 0
-  draftState.value = 'idle'
-  draftError.value = ''
+  const cleared = clearDraft()
+  if (cleared) {
+    restoredCategoryId.value = null
+    restoredCategoryNotice.value = ''
+  }
+  return cleared
 }
 
 async function discardProductDraft() {
@@ -905,7 +575,7 @@ async function discardProductDraft() {
 
   clearDraftSaveTimer()
   draftReady.value = false
-  if (!clearProductPublishDraft(userStore.currentUser)) {
+  if (!clearPersistedProductDraft()) {
     draftState.value = 'error'
     draftError.value = '无法清除草稿，请稍后重试'
     draftReady.value = true
@@ -927,11 +597,6 @@ async function discardProductDraft() {
   showTestModeModal.value = false
   resetImageValidation()
   clearSubmissionTokenState()
-  hasRestoredDraft.value = false
-  restoredDraftAt.value = 0
-  restoredSensitiveFields.value = []
-  restoredCategoryId.value = null
-  restoredCategoryNotice.value = ''
   draftDirty.value = false
   draftSavedAt.value = 0
   draftState.value = 'idle'
@@ -1058,12 +723,6 @@ const isRuzhanCategory = computed(() => {
   return selectedCategory?.name === '入站'
 })
 
-// 折后价格
-const finalPrice = computed(() => {
-  const price = parseFloat(form.value.price) || 0
-  const discount = parseFloat(form.value.discount) || 1
-  return price * discount
-})
 const selectedCategoryName = computed(() => categories.value.find(category => Number(category.id) === Number(form.value.categoryId))?.name || '未选择分类')
 
 // 入站分类价格错误提示
@@ -1116,86 +775,19 @@ const submitButtonText = computed(() => {
   return form.value.productType === 'cdk' ? '发布并上传CDK' : '发布物品'
 })
 
-// 图片加载验证状态
-const imageValidating = ref(false)
-const imageValidated = ref(false)
-const imageLoadError = ref('')
-const imagePreviewUrl = ref('')
-const lastValidatedUrl = ref('')
-let imageValidationSequence = 0
-let pendingImageValidation = null
-let pendingImageValidationUrl = ''
-
-function resetImageValidation() {
-  imageValidationSequence += 1
-  pendingImageValidation = null
-  pendingImageValidationUrl = ''
-  imageValidating.value = false
-  imageValidated.value = false
-  imageLoadError.value = ''
-  imagePreviewUrl.value = ''
-  lastValidatedUrl.value = ''
-}
-
-// 验证图片是否可加载
-async function validateImageLoad() {
-  const url = form.value.imageUrl?.trim()
-  
-  // 清空或格式错误时重置状态
-  if (!url || imageUrlError.value) {
-    resetImageValidation()
-    return false
-  }
-  
-  if (url === lastValidatedUrl.value && imageValidated.value) return true
-  if (pendingImageValidation && pendingImageValidationUrl === url) {
-    return pendingImageValidation
-  }
-
-  const validationSequence = ++imageValidationSequence
-  pendingImageValidationUrl = url
-  imageValidating.value = true
-  imageValidated.value = false
-  imageLoadError.value = ''
-  imagePreviewUrl.value = ''
-
-  const validationPromise = (async () => {
-    try {
-      await preloadProductImage(url)
-      if (validationSequence !== imageValidationSequence || form.value.imageUrl?.trim() !== url) return false
-
-      imageValidated.value = true
-      imagePreviewUrl.value = url
-      lastValidatedUrl.value = url
-      return true
-    } catch (error) {
-      if (validationSequence !== imageValidationSequence || form.value.imageUrl?.trim() !== url) return false
-      imageLoadError.value = '图片无法加载，请检查链接是否有效'
-      lastValidatedUrl.value = ''
-      return false
-    } finally {
-      if (validationSequence === imageValidationSequence) {
-        imageValidating.value = false
-      }
-      if (pendingImageValidation === validationPromise) {
-        pendingImageValidation = null
-        pendingImageValidationUrl = ''
-      }
-    }
-  })()
-
-  pendingImageValidation = validationPromise
-  return validationPromise
-}
-
-// 预览图片加载失败
-function onPreviewError() {
-  imageValidationSequence += 1
-  imageLoadError.value = '图片加载失败，请检查链接是否有效'
-  imagePreviewUrl.value = ''
-  imageValidated.value = false
-  lastValidatedUrl.value = ''
-}
+const {
+  errors: productEditorErrors,
+  finalPrice,
+  purchaseLimitSummary,
+  imageValidating,
+  imageValidated,
+  imageLoadError,
+  imagePreviewUrl,
+  lastValidatedUrl,
+  resetImageValidation,
+  validateImageLoad,
+  onPreviewError
+} = useProductEditor(form, { minimumStock: 1, requireCdkCodes: true })
 
 // 图片URL验证（只有输入内容后才验证格式，空值不报错）
 // 字段级校验
@@ -1258,19 +850,6 @@ const purchaseLimitPeriodDaysError = computed(() => {
   return ''
 })
 
-const purchaseLimitSummary = computed(() => {
-  if (form.value.productType === 'cdk' && form.value.sharedCdkEnabled) return '每位用户永久累计 1 件'
-  const quantity = Number(form.value.maxPurchaseQuantity || 0)
-  if (form.value.purchaseLimitType === 'per_order' && quantity > 0) return `每单 ${quantity} 件`
-  if (form.value.purchaseLimitType === 'per_user' && quantity > 0) {
-    const periodDays = Number(form.value.purchaseLimitPeriodDays || 0)
-    return periodDays > 0
-      ? `每位用户最近 ${periodDays} 天 ${quantity} 件`
-      : `每位用户永久累计 ${quantity} 件`
-  }
-  return '不限制'
-})
-
 const cdkCodesError = computed(() => {
   if (form.value.productType !== 'cdk') return ''
   const source = form.value.sharedCdkEnabled ? form.value.sharedCdkCode : form.value.cdkCodes
@@ -1285,40 +864,11 @@ const cdkCodesError = computed(() => {
   }
   return ''
 })
-const buyTitleError = computed(() => {
-  const value = buyForm.value.title?.trim() || ''
-  if (!value) return '请输入求购标题'
-  if (value.length < 2 || value.length > 60) return '标题需要 2-60 个字符'
-  return ''
-})
-
-const buyDetailsError = computed(() => {
-  const value = buyForm.value.details?.trim() || ''
-  if (!value) return '请输入详细需求'
-  if (value.length < 10 || value.length > 2000) return '详细需求需要 10-2000 个字符'
-  return ''
-})
-
-const buyPriceError = computed(() => {
-  const result = validatePrice(buyForm.value.price)
-  return result.valid ? '' : result.error
-})
-
-const canSubmitBuy = computed(() => {
-  return !buyTitleError.value && !buyDetailsError.value && !buyPriceError.value
-})
-
-function showBuyError(field, err) {
-  return !!err && (buyTouched.value[field] || buySubmitAttempted.value)
-}
-
 function showError(field, err) {
   return !!err && (touched.value[field] || submitAttempted.value)
 }
 
-const imageUrlError = computed(() => {
-  return getProductImageUrlError(form.value.imageUrl) || null
-})
+const imageUrlError = computed(() => productEditorErrors.value.imageUrl || null)
 
 const imageDisplayError = computed(() => {
   const url = form.value.imageUrl?.trim()
@@ -1326,6 +876,14 @@ const imageDisplayError = computed(() => {
   if (imageLoadError.value) return imageLoadError.value
   return imageUrlError.value || ''
 })
+
+const productEditorDisplayErrors = computed(() => ({
+  name: showError('name', nameError.value) ? nameError.value : '',
+  description: showError('description', descriptionError.value) ? descriptionError.value : '',
+  price: showError('price', priceError.value) ? priceError.value : '',
+  discount: showError('discount', discountError.value) ? discountError.value : '',
+  image: showError('image', imageDisplayError.value) ? imageDisplayError.value : ''
+}))
 
 // 是否可以提交
 const canSubmit = computed(() => {
@@ -1371,17 +929,6 @@ async function checkMerchantConfig() {
   }
 }
 
-function wait(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms))
-}
-
-function generateSubmissionToken() {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-    return `pub_${crypto.randomUUID().replace(/-/g, '')}`
-  }
-  return `pub_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 14)}`
-}
-
 function buildProductFingerprint(productData) {
   return JSON.stringify({
     name: productData.name || '',
@@ -1407,7 +954,7 @@ function resolveSubmissionToken(productData) {
   const fingerprint = buildProductFingerprint(productData)
   if (!submitTokenState.value.token || submitTokenState.value.fingerprint !== fingerprint) {
     submitTokenState.value = {
-      token: generateSubmissionToken(),
+      token: createSubmissionToken(),
       fingerprint
     }
   }
@@ -1421,28 +968,16 @@ function clearSubmissionTokenState() {
   }
 }
 
-function isUncertainSubmitResult(result) {
-  const status = Number(result?.status || 0)
-  const message = String(result?.error || '').toLowerCase()
-  if (status === 0) return true
-  return message.includes('超时')
-    || message.includes('网络')
-    || message.includes('failed to fetch')
-    || message.includes('network')
-    || message.includes('abort')
-}
-
 async function pollProductSubmissionResult(submissionToken) {
-  for (let i = 0; i < PRODUCT_SUBMIT_STATUS_MAX_RETRIES; i += 1) {
-    const statusResult = await inventoryStore.getProductSubmissionStatus(submissionToken)
-    if (statusResult?.success && statusResult.data?.exists && statusResult.data?.product?.id) {
-      return { confirmed: true, product: statusResult.data.product }
-    }
-    if (i < PRODUCT_SUBMIT_STATUS_MAX_RETRIES - 1) {
-      await wait(PRODUCT_SUBMIT_STATUS_RETRY_INTERVAL_MS)
-    }
-  }
-  return { confirmed: false, product: null }
+  const result = await reconcileByPolling(
+    async () => {
+      const statusResult = await inventoryStore.getProductSubmissionStatus(submissionToken)
+      return statusResult?.success ? statusResult.data?.product || null : null
+    },
+    product => Boolean(product?.id),
+    { retries: PRODUCT_SUBMIT_STATUS_MAX_RETRIES, intervalMs: PRODUCT_SUBMIT_STATUS_RETRY_INTERVAL_MS }
+  )
+  return { confirmed: result.confirmed, product: result.value }
 }
 
 async function confirmSubmitAfterUncertainResult(submissionToken) {
@@ -1579,41 +1114,7 @@ async function submitForm() {
   submitting.value = true
   
   try {
-    // 构建物品数据（与客户端脚本保持一致）
-    const productData = {
-      name: form.value.name.trim(),
-      categoryId: form.value.categoryId,
-      description: form.value.description.trim(),
-      price: parseFloat(form.value.price),
-      discount: parseFloat(form.value.discount) || 1,
-      imageUrl,
-      productType: form.value.productType,
-      purchaseTrustLevel: Number(form.value.purchaseTrustLevel) || 0,
-      purchaseLimitType: form.value.purchaseLimitType,
-      maxPurchaseQuantity: form.value.purchaseLimitType === 'none'
-        ? 0
-        : Number(form.value.maxPurchaseQuantity),
-      purchaseLimitPeriodDays: form.value.purchaseLimitType === 'per_user'
-        ? Number(form.value.purchaseLimitPeriodDays || 0)
-        : 0
-    }
-    
-    // 类型特定数据
-    if (form.value.productType === 'normal') {
-      productData.stock = Number(form.value.stock)
-    } else if (form.value.productType === 'cdk') {
-      productData.sharedCdkEnabled = form.value.sharedCdkEnabled
-      productData.sharedCdkCode = form.value.sharedCdkEnabled ? form.value.sharedCdkCode.trim() : ''
-      if (form.value.sharedCdkEnabled) {
-        productData.cdkCodes = form.value.sharedCdkCode.trim()
-      } else if (form.value.cdkCodes.trim()) {
-        productData.cdkCodes = form.value.cdkCodes.trim()
-      }
-      // 测试模式
-      if (form.value.isTestMode) {
-        productData.isTestMode = true
-      }
-    }
+    const productData = buildProductCreatePayload(form.value)
 
     const submissionToken = resolveSubmissionToken(productData)
     productData.submissionToken = submissionToken
@@ -1622,7 +1123,7 @@ async function submitForm() {
     const result = await inventoryStore.createProduct(productData, { timeout: PRODUCT_SUBMIT_TIMEOUT_MS })
     
     if (!result.success) {
-      if (isUncertainSubmitResult(result)) {
+      if (isUncertainMutationResult(result)) {
         await confirmSubmitAfterUncertainResult(submissionToken)
         return
       }
@@ -1650,54 +1151,10 @@ async function submitForm() {
   }
 }
 
-// 初始化
-async function submitBuyRequest() {
-  buySubmitAttempted.value = true
-
-  if (buyTitleError.value) {
-    toast.error(buyTitleError.value)
-    focusBuyField('title')
-    return
-  }
-  if (buyDetailsError.value) {
-    toast.error(buyDetailsError.value)
-    focusBuyField('details')
-    return
-  }
-  if (buyPriceError.value) {
-    toast.error(buyPriceError.value)
-    focusBuyField('price')
-    return
-  }
-
-  buySubmitting.value = true
-  try {
-    const result = await createBuyRequestRequest({
-      title: buyForm.value.title.trim(),
-      details: buyForm.value.details.trim(),
-      price: parseFloat(buyForm.value.price)
-    })
-
-    if (!result.success) {
-      toast.error(result.error || '发布求购失败')
-      return
-    }
-
-    toast.success('求购发布成功，已提交管理员审核')
-    router.push('/user/buy-requests')
-  } catch (error) {
-    toast.error(error.message || '发布求购失败')
-  } finally {
-    buySubmitting.value = false
-  }
-}
-
 watch(
   form,
   () => {
-    if (!draftReady.value || publishMode.value !== 'product') return
-    draftDirty.value = true
-    scheduleProductDraftSave()
+    markDraftDirty()
   },
   { deep: true, flush: 'sync' }
 )

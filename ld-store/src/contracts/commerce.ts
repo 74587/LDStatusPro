@@ -379,23 +379,26 @@ export const ExternalProductLinkResponseSchema = looseObject({
   paymentLink: NonemptyStringSchema
 })
 
+export type ProductEditorProductType = 'normal' | 'cdk' | 'link'
+export type PurchaseLimitType = 'none' | 'per_order' | 'per_user'
+
 export interface ProductEditorFormState {
   name: string
   description: string
   price: string
-  discount: string
-  categoryId: string
+  discount: string | number
+  categoryId: string | number | null
   imageUrl: string
-  productType: string
-  stock: string
+  productType: ProductEditorProductType
+  stock: string | number
   purchaseTrustLevel: number
-  purchaseLimitType: string
-  maxPurchaseQuantity: string
-  purchaseLimitPeriodDays: string
+  purchaseLimitType: PurchaseLimitType
+  maxPurchaseQuantity: string | number
+  purchaseLimitPeriodDays: string | number
+  cdkCodes: string
   sharedCdkEnabled: boolean
   sharedCdkCode: string
   isTestMode: boolean
-  tags: string[]
 }
 
 export interface ProductCreatePayload {
@@ -404,11 +407,26 @@ export interface ProductCreatePayload {
   price: number
   categoryId: number
   imageUrl: string
-  productType: string
+  productType: ProductEditorProductType
+  discount: number
+  purchaseTrustLevel: number
+  purchaseLimitType: PurchaseLimitType
+  maxPurchaseQuantity: number
+  purchaseLimitPeriodDays: number
+  stock?: number
+  cdkCodes?: string
+  sharedCdkEnabled?: boolean
+  sharedCdkCode?: string
+  isTestMode?: boolean
   submissionToken?: string
 }
 
-export type ProductUpdatePayload = Partial<Omit<ProductCreatePayload, 'submissionToken'>>
+export type ProductUpdatePayload = Omit<ProductCreatePayload, 'productType' | 'submissionToken'> & {
+  stock?: number
+  sharedCdkEnabled?: boolean
+  sharedCdkCode?: string
+  isTestMode?: boolean
+}
 
 export type Order = InferOutput<typeof OrderSchema>
 export type BuyOrder = InferOutput<typeof BuyOrderSchema>
