@@ -79,8 +79,10 @@
             <button
               v-for="tab in sortTabs"
               :key="tab.value"
+              type="button"
               class="sort-btn"
               :class="{ active: currentSort === tab.value }"
+              :aria-pressed="currentSort === tab.value"
               @click="handleSortChange(tab.value)"
             >
               {{ tab.label }}
@@ -88,7 +90,9 @@
           </div>
           <div class="catalog-filters">
             <div class="price-filter">
+              <label for="home-price-min" class="sr-only">最低折后价</label>
               <input
+                id="home-price-min"
                 v-model="priceMinInput"
                 type="number"
                 min="0"
@@ -98,7 +102,9 @@
                 @keyup.enter="applyPriceFilter"
               />
               <span class="price-filter-separator">-</span>
+              <label for="home-price-max" class="sr-only">最高折后价</label>
               <input
+                id="home-price-max"
                 v-model="priceMaxInput"
                 type="number"
                 min="0"
@@ -107,17 +113,24 @@
                 placeholder="最高折后价"
                 @keyup.enter="applyPriceFilter"
               />
-              <button class="price-filter-btn" @click="applyPriceFilter">筛选</button>
+              <button type="button" class="price-filter-btn" @click="applyPriceFilter">筛选</button>
               <button
                 v-if="hasDraftPriceFilter || hasActivePriceFilter"
+                type="button"
                 class="price-filter-btn secondary"
                 @click="clearPriceFilter"
               >
                 清空
               </button>
             </div>
-            <label class="stock-filter" @click="handleToggleInStock">
-              <span class="checkbox" :class="{ checked: inStockOnly }">
+            <label class="stock-filter">
+              <input
+                type="checkbox"
+                class="stock-filter-input"
+                :checked="inStockOnly"
+                @change="handleToggleInStock"
+              />
+              <span class="checkbox" :class="{ checked: inStockOnly }" aria-hidden="true">
                 <span class="checkmark" v-if="inStockOnly">✓</span>
               </span>
               <span class="filter-label">只看有货</span>
@@ -309,26 +322,31 @@
             v-for="item in buyRequests"
             :key="item.id"
             class="buy-card"
-            @click="goBuyRequestDetail(item.id)"
           >
-            <div class="buy-card-head">
-              <h3 class="buy-card-title">{{ item.title }}</h3>
-              <span :class="['buy-status-pill', `buy-status-${buyStatusClass(item.status)}`]">
-                {{ buyStatusText(item.status) }}
-              </span>
-            </div>
-            <p class="buy-card-detail">{{ item.details }}</p>
-            <div class="buy-card-meta">
-              <span class="buy-price">{{ item.budgetPrice }} LDC</span>
-              <span class="buy-meta-sep">·</span>
-              <span>{{ item.requesterPublicUsername }}</span>
-              <span class="buy-meta-sep">·</span>
-              <span>密码 {{ item.requesterPublicPassword }}</span>
-            </div>
-            <div class="buy-card-footer">
-              <span>会话 {{ item.sessionCount || 0 }}</span>
-              <span>{{ formatRelativeTime(item.updatedAt || item.createdAt) }}</span>
-            </div>
+            <router-link
+              :to="`/buy-request/${item.id}`"
+              class="buy-card-link"
+              :aria-label="`查看求购：${item.title}`"
+            >
+              <div class="buy-card-head">
+                <h3 class="buy-card-title">{{ item.title }}</h3>
+                <span :class="['buy-status-pill', `buy-status-${buyStatusClass(item.status)}`]">
+                  {{ buyStatusText(item.status) }}
+                </span>
+              </div>
+              <p class="buy-card-detail">{{ item.details }}</p>
+              <div class="buy-card-meta">
+                <span class="buy-price">{{ item.budgetPrice }} LDC</span>
+                <span class="buy-meta-sep">·</span>
+                <span>{{ item.requesterPublicUsername }}</span>
+                <span class="buy-meta-sep">·</span>
+                <span>密码 {{ item.requesterPublicPassword }}</span>
+              </div>
+              <div class="buy-card-footer">
+                <span>会话 {{ item.sessionCount || 0 }}</span>
+                <span>{{ formatRelativeTime(item.updatedAt || item.createdAt) }}</span>
+              </div>
+            </router-link>
           </article>
         </div>
 
@@ -1180,10 +1198,6 @@ function publishBuyRequest() {
   router.push('/buy-requests/new')
 }
 
-function goBuyRequestDetail(id) {
-  router.push(`/buy-request/${id}`)
-}
-
 async function loadCatalogState({
   categoryId = shopStore.currentCategory,
   sortKey = shopStore.currentSort || 'default',
@@ -1774,6 +1788,17 @@ function clearTrendHover() {
   animation: fadeIn 0.3s ease;
 }
 
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
@@ -1824,6 +1849,14 @@ function clearTrendHover() {
 .sort-btn:hover {
   color: var(--text-secondary);
   background: var(--bg-tertiary);
+}
+
+.sort-btn:focus-visible,
+.price-filter-btn:focus-visible,
+.stock-filter-input:focus-visible + .checkbox,
+.buy-card-link:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 3px;
 }
 
 .sort-btn.active {
@@ -1884,12 +1917,20 @@ function clearTrendHover() {
 
 /* 库存筛选 */
 .stock-filter {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 6px;
   cursor: pointer;
   user-select: none;
   flex-shrink: 0;
+}
+
+.stock-filter-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
 }
 
 .stock-filter .checkbox {
@@ -2238,13 +2279,19 @@ function clearTrendHover() {
   background: var(--bg-card);
   border: 1px solid var(--border-light);
   border-radius: 14px;
-  padding: 14px;
+  height: 100%;
+  transition: all 0.2s ease;
+  isolation: isolate;
+}
+
+.buy-card-link {
   display: flex;
   flex-direction: column;
   height: 100%;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  isolation: isolate;
+  padding: 14px;
+  border-radius: inherit;
+  color: inherit;
+  text-decoration: none;
 }
 
 .buy-card:hover {
@@ -2504,6 +2551,7 @@ function clearTrendHover() {
 
   .sort-btn {
     flex-shrink: 0;
+    min-height: 44px;
   }
 
   .catalog-filters {
@@ -2511,11 +2559,11 @@ function clearTrendHover() {
     width: 100%;
     justify-content: flex-start;
     gap: 8px;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
   }
 
   .price-filter {
-    width: auto;
+    width: 100%;
     gap: 4px;
     flex-shrink: 1;
     min-width: 0;
@@ -2525,7 +2573,8 @@ function clearTrendHover() {
     flex: 1 1 0;
     width: auto;
     min-width: 0;
-    padding: 6px 6px;
+    min-height: 44px;
+    padding: 6px 8px;
   }
 
   .price-filter-separator {
@@ -2533,8 +2582,13 @@ function clearTrendHover() {
   }
 
   .price-filter-btn {
-    padding: 6px 8px;
+    min-height: 44px;
+    padding: 6px 10px;
     flex-shrink: 0;
+  }
+
+  .stock-filter {
+    min-height: 44px;
   }
   
   .tab-icon {
@@ -2609,24 +2663,26 @@ function clearTrendHover() {
   }
 
   .stores-search-input {
-    padding: 8px 8px;
-    padding-right: 34px;
-    font-size: 13px;
+    min-height: 44px;
+    padding: 8px 48px 8px 10px;
+    font-size: 16px;
   }
 
   .stores-search-btn {
-    width: 28px;
-    height: 28px;
+    width: 40px;
+    height: 40px;
   }
 
   .stores-tag-btn {
-    padding: 4px 10px;
-    font-size: 11px;
+    min-height: 44px;
+    padding: 6px 10px;
+    font-size: 12px;
   }
 
   .stores-reset-btn {
+    min-height: 44px;
     padding: 7px 12px;
-    font-size: 11px;
+    font-size: 12px;
   }
 
   .buy-header {
@@ -2657,19 +2713,25 @@ function clearTrendHover() {
   }
 
   .buy-toolbar-input {
-    padding: 8px 8px;
-    padding-right: 34px;
-    font-size: 13px;
+    min-height: 44px;
+    padding: 8px 48px 8px 10px;
+    font-size: 16px;
   }
 
   .buy-toolbar-btn-search {
-    width: 28px;
-    height: 28px;
+    width: 40px;
+    height: 40px;
   }
 
   .buy-toolbar-btn-refresh {
+    min-height: 44px;
     padding: 8px 10px;
     font-size: 12px;
+  }
+
+  .buy-publish-btn,
+  .buy-page-btn {
+    min-height: 44px;
   }
 }
 
