@@ -2,36 +2,66 @@
   <div class="ld-image-page">
     <div class="page-container">
       <div class="page-header">
-        <h1 class="page-title">🖼️ 士多图床</h1>
+        <h1 class="page-title">
+          <Images :size="30" :stroke-width="1.8" aria-hidden="true" />
+          <span>士多图床</span>
+        </h1>
         <p class="page-desc">上传图片，获取永久在线链接（支持 jpg、png、gif、webp）</p>
       </div>
 
       <!-- 使用须知 -->
       <div class="notice-section">
-        <div class="notice-header" @click="showNotice = !showNotice">
-          <span class="notice-icon">📢</span>
+        <button
+          type="button"
+          class="notice-header"
+          :aria-expanded="showNotice"
+          aria-controls="ld-image-notice-content"
+          @click="showNotice = !showNotice"
+        >
+          <Megaphone class="notice-icon" :size="18" aria-hidden="true" />
           <span class="notice-title">使用须知</span>
-          <span class="notice-toggle">{{ showNotice ? '▼' : '▶' }}</span>
-        </div>
+          <ChevronDown class="collapse-icon" :class="{ expanded: showNotice }" :size="18" aria-hidden="true" />
+        </button>
         <Transition name="slide">
-          <div v-if="showNotice" class="notice-content">
+          <div v-if="showNotice" id="ld-image-notice-content" class="notice-content">
             <ul class="notice-list">
-              <li><strong>✅ CF-R2存储</strong>：配有域名和证书，稳定、安全、高效。</li>
-              <li><strong>🚫 禁止上传</strong>：色情、暴力、血腥、政治敏感、侵权等违规内容</li>
-              <li><strong>📏 文件限制</strong>：按阶梯限制单图大小（5MB / 10MB / 15MB），支持 jpg/png/gif/webp 格式</li>
-              <li><strong>💾 存储说明</strong>：图片永久存储，删除后不可恢复</li>
-              <li><strong>🔗 外链使用</strong>：可直接引用图片 URL，支持 Markdown 格式</li>
-              <li><strong>⚠️ 违规处理</strong>：上传违规内容将被删除并封禁账号</li>
+              <li>
+                <ShieldCheck class="notice-item-icon success" :size="17" aria-hidden="true" />
+                <span><strong>CF-R2 存储</strong>：配有域名和证书，稳定、安全、高效。</span>
+              </li>
+              <li>
+                <Ban class="notice-item-icon danger" :size="17" aria-hidden="true" />
+                <span><strong>禁止上传</strong>：色情、暴力、血腥、政治敏感、侵权等违规内容</span>
+              </li>
+              <li>
+                <Ruler class="notice-item-icon" :size="17" aria-hidden="true" />
+                <span><strong>文件限制</strong>：按阶梯限制单图大小（5MB / 10MB / 15MB），支持 jpg/png/gif/webp 格式</span>
+              </li>
+              <li>
+                <HardDrive class="notice-item-icon" :size="17" aria-hidden="true" />
+                <span><strong>存储说明</strong>：图片永久存储，删除后不可恢复</span>
+              </li>
+              <li>
+                <Link2 class="notice-item-icon" :size="17" aria-hidden="true" />
+                <span><strong>外链使用</strong>：可直接引用图片 URL，支持 Markdown 格式</span>
+              </li>
+              <li>
+                <ShieldAlert class="notice-item-icon warning" :size="17" aria-hidden="true" />
+                <span><strong>违规处理</strong>：上传违规内容将被删除并封禁账号</span>
+              </li>
             </ul>
           </div>
         </Transition>
       </div>
 
       <div class="pay-return-banner">
-        <div class="pay-return-title">⚠️ 支付完成后请立即回到本页确认</div>
+        <div class="pay-return-title">
+          <TriangleAlert :size="18" aria-hidden="true" />
+          <span>支付完成后请立即回到本页确认</span>
+        </div>
         <p class="pay-return-text">
           付费上传会在新页面发起支付。完成后请返回当前页面点击
-          <strong>“✅ 我已支付，立即检查”</strong>，系统才会继续上传。
+          <strong>“我已支付，立即检查”</strong>，系统才会继续上传。
         </p>
         <template v-if="showPayOrderActions">
           <p class="pay-return-meta">
@@ -39,13 +69,17 @@
           </p>
           <div class="pay-return-actions">
             <button v-if="paymentUrl" class="pay-return-btn reopen" @click="openPayment">
-              🔗 再次前往支付页
+              <ExternalLink :size="16" aria-hidden="true" />
+              <span>再次前往支付页</span>
             </button>
             <button class="pay-return-btn confirm" @click="checkPayment" :disabled="checking">
-              {{ checking ? '检查中...' : '✅ 我已支付，立即检查' }}
+              <LoaderCircle v-if="checking" class="icon-spin" :size="16" aria-hidden="true" />
+              <CircleCheck v-else :size="16" aria-hidden="true" />
+              <span>{{ checking ? '检查中...' : '我已支付，立即检查' }}</span>
             </button>
             <button class="pay-return-btn cancel" @click="cancelPayment" :disabled="checking">
-              ✖ 取消本次支付
+              <X :size="16" aria-hidden="true" />
+              <span>取消本次支付</span>
             </button>
           </div>
           <p v-if="payError" class="pay-error pay-inline-error">{{ payError }}</p>
@@ -54,7 +88,7 @@
 
       <!-- 维护提示（非免费用户） -->
       <div v-if="isLoggedIn && !isMaintenanceTester && isMaintenance" class="maintenance-notice">
-        <div class="maintenance-icon">🔧</div>
+        <Wrench class="maintenance-icon" :size="54" :stroke-width="1.5" aria-hidden="true" />
         <h3>图床服务维护中</h3>
         <p>付费上传功能正在维护，预计很快恢复。给您带来不便，敬请谅解。</p>
         <p class="maintenance-hint">如有紧急需求，请联系管理员。</p>
@@ -62,7 +96,7 @@
 
       <!-- 未登录提示 -->
       <div v-if="!isLoggedIn" class="login-prompt">
-        <div class="prompt-icon">🔐</div>
+        <LockKeyhole class="prompt-icon" :size="48" :stroke-width="1.5" aria-hidden="true" />
         <h3>请先登录</h3>
         <p>登录后即可使用图床服务</p>
         <router-link to="/login" class="login-btn">立即登录</router-link>
@@ -92,20 +126,22 @@
             <!-- 预览 -->
             <div v-if="previewUrl" class="preview-container">
               <img :src="previewUrl" alt="预览" class="preview-image" @error="handlePreviewError" />
-              <button class="clear-btn" @click.stop="clearFile">✕</button>
+              <button type="button" class="clear-btn" aria-label="移除已选图片" title="移除已选图片" @click.stop="clearFile">
+                <X :size="16" aria-hidden="true" />
+              </button>
             </div>
 
             <!-- 上传提示 -->
-            <div v-else class="upload-hint">
-              <div class="upload-icon">📤</div>
+            <button v-else type="button" class="upload-hint upload-trigger" @click.stop="triggerFileSelect">
+              <CloudUpload class="upload-icon" :size="48" :stroke-width="1.5" aria-hidden="true" />
               <p class="hint-text">点击选择图片、拖拽或 Ctrl+V 粘贴</p>
               <p class="hint-sub">支持 jpg、png、gif、webp，当前最大 {{ currentMaxSizeMB }}MB</p>
-            </div>
+            </button>
           </div>
 
           <!-- 费用说明 -->
           <div class="fee-notice">
-            <span class="fee-icon">💰</span>
+            <Coins class="fee-icon" :size="19" aria-hidden="true" />
             <span class="fee-text">
               <template v-if="isFreeUser">
                 您是免费用户，免支付上传（当前单图上限 {{ currentMaxSizeMB }}MB）
@@ -120,12 +156,21 @@
 
           <!-- 阶梯定价说明 -->
           <div v-if="!isFreeUser && priceInfo" class="price-tiers">
-            <div class="tiers-header" @click="showTiers = !showTiers">
-              <span>📊 阶梯定价</span>
-              <span class="tiers-toggle">{{ showTiers ? '▼' : '▶' }}</span>
-            </div>
+            <button
+              type="button"
+              class="tiers-header"
+              :aria-expanded="showTiers"
+              aria-controls="ld-image-tiers-content"
+              @click="showTiers = !showTiers"
+            >
+              <span class="tiers-label">
+                <ChartNoAxesColumnIncreasing :size="17" aria-hidden="true" />
+                <span>阶梯定价</span>
+              </span>
+              <ChevronDown class="collapse-icon" :class="{ expanded: showTiers }" :size="18" aria-hidden="true" />
+            </button>
             <Transition name="slide">
-              <div v-if="showTiers" class="tiers-content">
+              <div v-if="showTiers" id="ld-image-tiers-content" class="tiers-content">
                 <div 
                   v-for="tier in priceInfo.tiers" 
                   :key="tier.min"
@@ -152,23 +197,28 @@
             @click="startUpload"
           >
             <template v-if="uploadStatus === 'idle'">
-              {{ isFreeUser ? '🚀 免费上传' : '💳 支付并上传' }}
+              <CloudUpload v-if="isFreeUser" :size="19" aria-hidden="true" />
+              <CreditCard v-else :size="19" aria-hidden="true" />
+              <span>{{ isFreeUser ? '免费上传' : '支付并上传' }}</span>
             </template>
             <template v-else-if="uploadStatus === 'paying'">
-              ⏳ 等待支付...
+              <LoaderCircle class="icon-spin" :size="19" aria-hidden="true" />
+              <span>等待支付...</span>
             </template>
             <template v-else-if="uploadStatus === 'uploading'">
-              ⬆️ 上传中...
+              <Upload class="upload-progress-icon" :size="19" aria-hidden="true" />
+              <span>上传中...</span>
             </template>
             <template v-else-if="uploadStatus === 'success'">
-              ✅ 上传成功
+              <CircleCheck :size="19" aria-hidden="true" />
+              <span>上传成功</span>
             </template>
           </button>
 
           <!-- 上传结果 -->
           <div v-if="uploadResult" class="upload-result">
             <div class="result-header">
-              <span class="result-icon">✅</span>
+              <CircleCheck class="result-icon" :size="20" aria-hidden="true" />
               <span class="result-title">上传成功</span>
             </div>
             <div class="result-url">
@@ -179,23 +229,32 @@
                 class="url-input"
                 ref="urlInput"
               />
-              <button class="copy-btn" @click="copyUrl">
-                {{ copied ? '✓ 已复制' : '📋 复制' }}
+              <button type="button" class="copy-btn" @click="copyUrl">
+                <Check v-if="copied" :size="17" aria-hidden="true" />
+                <Copy v-else :size="17" aria-hidden="true" />
+                <span>{{ copied ? '已复制' : '复制' }}</span>
               </button>
             </div>
-            <div class="result-preview" @click="openViewerFromResult" title="查看大图">
+            <button type="button" class="result-preview" aria-label="查看已上传图片的大图" @click="openViewerFromResult">
               <img :src="uploadResult.url" alt="已上传图片" />
-              <div class="result-preview-hint">🔍 查看大图</div>
-            </div>
+              <span class="result-preview-hint">
+                <ZoomIn :size="18" aria-hidden="true" />
+                <span>查看大图</span>
+              </span>
+            </button>
           </div>
         </div>
 
         <!-- 上传历史 -->
         <div class="history-section">
           <div class="section-header">
-            <h2 class="section-title">📚 上传历史</h2>
-            <button v-if="history.length > 0" class="refresh-btn" @click="loadHistory">
-              🔄 刷新
+            <h2 class="section-title">
+              <History :size="20" aria-hidden="true" />
+              <span>上传历史</span>
+            </h2>
+            <button v-if="history.length > 0" type="button" class="refresh-btn" :disabled="historyLoading" @click="loadHistory">
+              <RefreshCw :class="{ 'icon-spin': historyLoading }" :size="17" aria-hidden="true" />
+              <span>刷新</span>
             </button>
           </div>
 
@@ -209,7 +268,7 @@
           </div>
 
           <div v-else-if="history.length === 0" class="empty-state">
-            <div class="empty-icon">📭</div>
+            <Inbox class="empty-icon" :size="48" :stroke-width="1.4" aria-hidden="true" />
             <p>暂无上传记录</p>
           </div>
 
@@ -218,22 +277,25 @@
               v-for="(item, index) in history"
               :key="item.id"
               class="history-item"
-              @click="openViewerFromHistory(index)"
-              title="查看大图"
             >
-              <div class="item-image">
-                <img :src="item.url" :alt="item.filename" loading="lazy" />
-              </div>
-              <div class="item-info">
-                <p class="item-name">{{ item.filename }}</p>
-                <p class="item-date">{{ formatDate(item.created_at) }}</p>
-              </div>
+              <button type="button" class="history-open" title="查看大图" @click="openViewerFromHistory(index)">
+                <span class="item-image">
+                  <img :src="item.url" :alt="item.filename" loading="lazy" />
+                  <span class="item-image-zoom" aria-hidden="true">
+                    <ZoomIn :size="22" />
+                  </span>
+                </span>
+                <span class="item-info">
+                  <span class="item-name">{{ item.filename }}</span>
+                  <span class="item-date">{{ formatDate(item.created_at) }}</span>
+                </span>
+              </button>
               <div class="item-actions">
-                <button class="item-copy" @click.stop="copyHistoryUrl(item.url)" title="复制链接">
-                  📋
+                <button type="button" class="item-copy" aria-label="复制图片链接" title="复制链接" @click.stop="copyHistoryUrl(item.url)">
+                  <Copy :size="16" aria-hidden="true" />
                 </button>
-                <button class="item-delete" @click.stop="confirmDelete(item)" title="删除图片">
-                  🗑️
+                <button type="button" class="item-delete" aria-label="删除图片" title="删除图片" @click.stop="confirmDelete(item)">
+                  <Trash2 :size="16" aria-hidden="true" />
                 </button>
               </div>
             </div>
@@ -251,7 +313,9 @@
               <span class="viewer-name">{{ viewerCurrent?.filename }}</span>
               <span class="viewer-date">{{ formatDate(viewerCurrent?.created_at) }}</span>
             </div>
-            <button class="viewer-close" @click="closeViewer" title="关闭 (Esc)">✕</button>
+            <button type="button" class="viewer-close" aria-label="关闭图片查看器" title="关闭 (Esc)" @click="closeViewer">
+              <X :size="19" aria-hidden="true" />
+            </button>
           </div>
 
           <div class="viewer-stage">
@@ -259,8 +323,11 @@
               v-if="viewerItems.length > 1"
               class="viewer-nav prev"
               @click="prevViewer"
+              aria-label="上一张"
               title="上一张 (←)"
-            >‹</button>
+            >
+              <ChevronLeft :size="25" aria-hidden="true" />
+            </button>
             <div class="viewer-image-wrap">
               <img :src="viewerCurrent?.url" :alt="viewerCurrent?.filename" />
             </div>
@@ -268,8 +335,11 @@
               v-if="viewerItems.length > 1"
               class="viewer-nav next"
               @click="nextViewer"
+              aria-label="下一张"
               title="下一张 (→)"
-            >›</button>
+            >
+              <ChevronRight :size="25" aria-hidden="true" />
+            </button>
           </div>
 
           <div class="viewer-footer">
@@ -280,19 +350,29 @@
               <span class="viewer-hint">Esc 关闭 · ←/→ 切换</span>
             </div>
             <div class="viewer-actions">
-              <button class="viewer-btn" @click="copyViewerText('url')">
-                {{ viewerCopied === 'url' ? '✓ 已复制' : '📋 复制链接' }}
+              <button type="button" class="viewer-btn" @click="copyViewerText('url')">
+                <Check v-if="viewerCopied === 'url'" :size="16" aria-hidden="true" />
+                <Copy v-else :size="16" aria-hidden="true" />
+                <span>{{ viewerCopied === 'url' ? '已复制' : '复制链接' }}</span>
               </button>
-              <button class="viewer-btn" @click="copyViewerText('md')">
-                {{ viewerCopied === 'md' ? '✓ 已复制' : '🔗 复制 Markdown' }}
+              <button type="button" class="viewer-btn" @click="copyViewerText('md')">
+                <Check v-if="viewerCopied === 'md'" :size="16" aria-hidden="true" />
+                <Link2 v-else :size="16" aria-hidden="true" />
+                <span>{{ viewerCopied === 'md' ? '已复制' : '复制 Markdown' }}</span>
               </button>
               <a
                 class="viewer-btn"
                 :href="viewerCurrent?.url"
                 target="_blank"
                 rel="noopener"
-              >↗ 新标签打开</a>
-              <button class="viewer-btn danger" @click="confirmDelete(viewerCurrent)">🗑️ 删除</button>
+              >
+                <ExternalLink :size="16" aria-hidden="true" />
+                <span>新标签打开</span>
+              </a>
+              <button type="button" class="viewer-btn danger" @click="confirmDelete(viewerCurrent)">
+                <Trash2 :size="16" aria-hidden="true" />
+                <span>删除</span>
+              </button>
             </div>
           </div>
         </div>
@@ -305,8 +385,13 @@
         <div v-if="showDeleteModal" class="modal-overlay" @click.self="cancelDelete">
           <div class="delete-modal">
             <div class="modal-header">
-              <h3>🗑️ 删除确认</h3>
-              <button class="close-btn" @click="cancelDelete">✕</button>
+              <h3>
+                <Trash2 :size="20" aria-hidden="true" />
+                <span>删除确认</span>
+              </h3>
+              <button type="button" class="close-btn" aria-label="关闭删除确认" @click="cancelDelete">
+                <X :size="18" aria-hidden="true" />
+              </button>
             </div>
             <div class="modal-body">
               <div class="delete-preview" v-if="deleteTarget">
@@ -329,6 +414,38 @@
 
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import {
+  Ban,
+  ChartNoAxesColumnIncreasing,
+  Check,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  CircleCheck,
+  CloudUpload,
+  Coins,
+  Copy,
+  CreditCard,
+  ExternalLink,
+  HardDrive,
+  History,
+  Images,
+  Inbox,
+  Link2,
+  LoaderCircle,
+  LockKeyhole,
+  Megaphone,
+  RefreshCw,
+  Ruler,
+  ShieldAlert,
+  ShieldCheck,
+  Trash2,
+  TriangleAlert,
+  Upload,
+  Wrench,
+  X,
+  ZoomIn
+} from '@lucide/vue'
 import { useUserStore } from '@/stores/user'
 import { useToast } from '@/composables/useToast'
 import { api } from '@/utils/api'
@@ -881,10 +998,17 @@ onBeforeUnmount(() => {
 }
 
 .pay-return-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 16px;
   font-weight: 700;
   color: var(--palette-hex-b45309);
   margin-bottom: 6px;
+}
+
+.pay-return-title svg {
+  flex-shrink: 0;
 }
 
 .pay-return-text {
@@ -912,6 +1036,10 @@ onBeforeUnmount(() => {
 }
 
 .pay-return-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
   border: none;
   border-radius: 10px;
   padding: 10px 12px;
@@ -959,6 +1087,10 @@ onBeforeUnmount(() => {
 }
 
 .page-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
   font-size: 28px;
   font-weight: 700;
   color: var(--text-primary);
@@ -978,7 +1110,12 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   gap: 8px;
+  width: 100%;
   padding: 12px 16px;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  text-align: left;
   cursor: pointer;
   transition: background 0.2s;
 }
@@ -988,7 +1125,8 @@ onBeforeUnmount(() => {
 }
 
 .notice-icon {
-  font-size: 18px;
+  color: var(--color-primary);
+  flex-shrink: 0;
 }
 
 .notice-title {
@@ -998,9 +1136,14 @@ onBeforeUnmount(() => {
   color: var(--text-primary);
 }
 
-.notice-toggle {
-  font-size: 12px;
+.collapse-icon {
   color: var(--text-tertiary);
+  flex-shrink: 0;
+  transition: transform var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.collapse-icon.expanded {
+  transform: rotate(180deg);
 }
 
 .notice-content {
@@ -1015,10 +1158,31 @@ onBeforeUnmount(() => {
 }
 
 .notice-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
   font-size: 13px;
   color: var(--text-secondary);
   padding: 6px 0;
   line-height: 1.5;
+}
+
+.notice-item-icon {
+  color: var(--text-tertiary);
+  flex: 0 0 auto;
+  margin-top: 2px;
+}
+
+.notice-item-icon.success {
+  color: var(--color-success);
+}
+
+.notice-item-icon.warning {
+  color: var(--color-warning);
+}
+
+.notice-item-icon.danger {
+  color: var(--color-danger);
 }
 
 .notice-list li strong {
@@ -1063,8 +1227,9 @@ onBeforeUnmount(() => {
 }
 
 .maintenance-icon {
-  font-size: 56px;
-  margin-bottom: 16px;
+  display: block;
+  color: var(--palette-hex-e65100);
+  margin: 0 auto 16px;
 }
 
 .maintenance-notice h3 {
@@ -1097,6 +1262,10 @@ onBeforeUnmount(() => {
   color: var(--palette-hex-ffab91);
 }
 
+:root.dark .maintenance-icon {
+  color: var(--palette-hex-ffab91);
+}
+
 :root.dark .maintenance-notice p {
   color: var(--palette-hex-ffccbc);
 }
@@ -1116,8 +1285,9 @@ onBeforeUnmount(() => {
 }
 
 .prompt-icon {
-  font-size: 48px;
-  margin-bottom: 16px;
+  display: block;
+  color: var(--color-primary);
+  margin: 0 auto 16px;
 }
 
 .login-prompt h3 {
@@ -1186,8 +1356,18 @@ onBeforeUnmount(() => {
 }
 
 .upload-icon {
-  font-size: 48px;
-  margin-bottom: 16px;
+  display: block;
+  color: var(--color-success);
+  margin: 0 auto 16px;
+}
+
+.upload-trigger {
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
 }
 
 .hint-text {
@@ -1248,7 +1428,8 @@ onBeforeUnmount(() => {
 }
 
 .fee-icon {
-  font-size: 18px;
+  color: var(--color-warning);
+  flex-shrink: 0;
 }
 
 .fee-text {
@@ -1279,20 +1460,25 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  width: 100%;
   padding: 12px 16px;
+  border: 0;
+  background: transparent;
+  font-family: inherit;
   cursor: pointer;
   font-size: 14px;
   color: var(--text-secondary);
   transition: background 0.2s;
 }
 
-.tiers-header:hover {
-  background: var(--bg-tertiary);
+.tiers-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.tiers-toggle {
-  font-size: 12px;
-  color: var(--text-muted);
+.tiers-header:hover {
+  background: var(--bg-tertiary);
 }
 
 .tiers-content {
@@ -1344,7 +1530,10 @@ onBeforeUnmount(() => {
 
 /* 上传按钮 */
 .upload-btn {
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   width: 100%;
   padding: 16px;
   background: linear-gradient(135deg, var(--color-success) 0%, var(--palette-hex-7a9a7a) 100%);
@@ -1384,7 +1573,8 @@ onBeforeUnmount(() => {
 }
 
 .result-icon {
-  font-size: 20px;
+  color: var(--color-success);
+  flex-shrink: 0;
 }
 
 .result-title {
@@ -1411,6 +1601,10 @@ onBeforeUnmount(() => {
 }
 
 .copy-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
   padding: 12px 16px;
   background: var(--color-success);
   color: var(--palette-hex-ffffff);
@@ -1428,10 +1622,15 @@ onBeforeUnmount(() => {
 }
 
 .result-preview {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
   border-radius: 10px;
   overflow: hidden;
   position: relative;
   cursor: zoom-in;
+  background: transparent;
 }
 
 .result-preview img {
@@ -1478,6 +1677,9 @@ onBeforeUnmount(() => {
 }
 
 .section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 18px;
   font-weight: 600;
   color: var(--text-primary);
@@ -1485,6 +1687,10 @@ onBeforeUnmount(() => {
 }
 
 .refresh-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
   padding: 8px 16px;
   background: var(--bg-secondary);
   border: none;
@@ -1499,6 +1705,11 @@ onBeforeUnmount(() => {
   background: var(--bg-tertiary);
 }
 
+.refresh-btn:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
 /* 空状态 */
 .empty-state {
   text-align: center;
@@ -1507,8 +1718,8 @@ onBeforeUnmount(() => {
 }
 
 .empty-icon {
-  font-size: 48px;
-  margin-bottom: 12px;
+  display: block;
+  margin: 0 auto 12px;
 }
 
 /* 加载状态 */
@@ -1567,7 +1778,6 @@ onBeforeUnmount(() => {
   background: var(--bg-secondary);
   border-radius: 12px;
   overflow: hidden;
-  cursor: pointer;
   transition: color var(--motion-duration-fast) var(--motion-ease-standard), background-color var(--motion-duration-fast) var(--motion-ease-standard), border-color var(--motion-duration-fast) var(--motion-ease-standard), box-shadow var(--motion-duration-fast) var(--motion-ease-standard), opacity var(--motion-duration-fast) var(--motion-ease-standard), transform var(--motion-duration-fast) var(--motion-ease-standard);
   position: relative;
 }
@@ -1577,7 +1787,20 @@ onBeforeUnmount(() => {
   box-shadow: var(--shadow-md);
 }
 
+.history-open {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: zoom-in;
+}
+
 .item-image {
+  display: block;
   width: 100%;
   height: 100px;
   overflow: hidden;
@@ -1585,21 +1808,21 @@ onBeforeUnmount(() => {
   cursor: zoom-in;
 }
 
-.item-image::after {
-  content: '🔍';
+.item-image-zoom {
   position: absolute;
   inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   background: var(--palette-rgba-0-0-0-0p25);
-  font-size: 22px;
+  color: var(--palette-hex-ffffff);
   opacity: 0;
   transition: opacity 0.2s;
   pointer-events: none;
 }
 
-.history-item:hover .item-image::after {
+.history-item:hover .item-image-zoom,
+.history-open:focus-visible .item-image-zoom {
   opacity: 1;
 }
 
@@ -1610,10 +1833,12 @@ onBeforeUnmount(() => {
 }
 
 .item-info {
+  display: block;
   padding: 10px 12px;
 }
 
 .item-name {
+  display: block;
   font-size: 12px;
   color: var(--text-primary);
   margin: 0 0 4px;
@@ -1623,6 +1848,7 @@ onBeforeUnmount(() => {
 }
 
 .item-date {
+  display: block;
   font-size: 11px;
   color: var(--text-tertiary);
   margin: 0;
@@ -1638,7 +1864,8 @@ onBeforeUnmount(() => {
   transition: opacity 0.2s;
 }
 
-.history-item:hover .item-actions {
+.history-item:hover .item-actions,
+.history-item:focus-within .item-actions {
   opacity: 1;
 }
 
@@ -1650,7 +1877,10 @@ onBeforeUnmount(() => {
   border: none;
   border-radius: 8px;
   cursor: pointer;
-  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--palette-hex-ffffff);
   transition: background 0.2s;
 }
 
@@ -1755,6 +1985,9 @@ onBeforeUnmount(() => {
 }
 
 .modal-header h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 18px;
   font-weight: 600;
   color: var(--text-primary);
@@ -1762,6 +1995,9 @@ onBeforeUnmount(() => {
 }
 
 .close-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 32px;
   height: 32px;
   border-radius: 8px;
@@ -1857,13 +2093,15 @@ onBeforeUnmount(() => {
 }
 
 .viewer-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 36px;
   height: 36px;
   border-radius: 10px;
   border: none;
   background: var(--palette-rgba-255-255-255-0p12);
   color: var(--palette-hex-ffffff);
-  font-size: 16px;
   cursor: pointer;
   transition: background 0.2s, transform 0.2s;
   flex-shrink: 0;
@@ -1909,15 +2147,13 @@ onBeforeUnmount(() => {
   border: none;
   background: var(--palette-rgba-255-255-255-0p12);
   color: var(--palette-hex-ffffff);
-  font-size: 26px;
-  line-height: 1;
   cursor: pointer;
   transition: background 0.2s, transform 0.2s;
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding-bottom: 4px;
+  padding: 0;
 }
 
 .viewer-nav:hover {
@@ -1984,6 +2220,23 @@ onBeforeUnmount(() => {
   background: var(--palette-rgba-220-38-38-0p8);
 }
 
+.icon-spin {
+  animation: icon-spin 0.9s linear infinite;
+}
+
+.upload-progress-icon {
+  animation: upload-progress 0.9s ease-in-out infinite alternate;
+}
+
+@keyframes icon-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes upload-progress {
+  from { transform: translateY(2px); }
+  to { transform: translateY(-2px); }
+}
+
 @keyframes viewer-pop {
   from { opacity: 0; transform: scale(0.96); }
   to { opacity: 1; transform: scale(1); }
@@ -2011,6 +2264,28 @@ onBeforeUnmount(() => {
 
   .viewer-nav.prev { left: 8px; }
   .viewer-nav.next { right: 8px; }
+}
+
+@media (hover: none) {
+  .item-actions {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pay-return-banner,
+  .skeleton,
+  .viewer-image-wrap,
+  .icon-spin,
+  .upload-progress-icon {
+    animation: none;
+  }
+
+  .collapse-icon,
+  .viewer-close,
+  .viewer-nav {
+    transition: none;
+  }
 }
 
 /* 工具类 */
