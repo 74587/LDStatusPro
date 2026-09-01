@@ -37,8 +37,10 @@ jobs:
       - run: npm run check:architecture
       - run: npm run check:styles
       - run: npm run check:csp
+      - run: npm run validate:noindex
       - run: npm run test
       - run: npm run build
       - run: npm run check:csp:build
+      - run: npm run validate:noindex:build
       - run: npm run validate:og
       - run: npm run check:bundle
