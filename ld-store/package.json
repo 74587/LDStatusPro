@@ -6,9 +6,11 @@
   "scripts": {
     "dev": "vite",
     "test": "vitest run",
-    "lint": "eslint . --ext .js,.vue --ignore-pattern dist --ignore-pattern node_modules --ignore-pattern .wrangler",
+    "lint": "eslint . --ext .js,.vue --ignore-pattern dist --ignore-pattern node_modules --ignore-pattern .wrangler --max-warnings=0",
     "lint:fix": "npm run lint -- --fix",
-    "check": "npm run lint && npm run test && npm run build && npm run validate:og",
+    "check": "npm run lint && npm audit --audit-level=low && npm run test && npm run build && npm run validate:og && npm run check:bundle",
+    "check:deploy": "npm run lint && npm audit --audit-level=low && npm run build && npm run validate:og && npm run check:bundle",
+    "check:bundle": "node scripts/check-bundle-budget.mjs",
     "build": "vite build",
     "validate:og": "node scripts/validate-open-graph.mjs",
     "build:private-metadata": "bash scripts/build-private-metadata.sh",

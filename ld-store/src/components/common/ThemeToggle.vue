@@ -46,7 +46,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useTheme, THEME_MODES } from '@/composables/useTheme'
 
-const props = defineProps({
+defineProps({
   showText: {
     type: Boolean,
     default: false

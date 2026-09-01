@@ -492,7 +492,7 @@ function validateAndSetFile(file) {
 }
 
 // 预览图片加载失败
-function handlePreviewError(e) {
+function handlePreviewError() {
   console.error('Preview image load error')
   // 尝试重新读取文件
   if (selectedFile.value) {

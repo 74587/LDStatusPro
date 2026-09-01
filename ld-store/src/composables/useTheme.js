@@ -2,7 +2,7 @@
  * 主题切换 composable
  * 支持：跟随系统、浅色模式、深色模式
  */
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 
 // 主题模式
 export const THEME_MODES = {

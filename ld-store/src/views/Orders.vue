@@ -1139,38 +1139,6 @@ function goToOrderReview(order) {
   router.push({ path: `/product/${productId}`, hash: '#comments' })
 }
 
-// 是否有发货内容
-function hasDeliveryContent(order) {
-  return !!(order.cdk || order.delivery_content || order.deliveryContent)
-}
-
-// 获取发货内容
-function getDeliveryContent(order) {
-  return order.cdk || order.delivery_content || order.deliveryContent || ''
-}
-
-function getDeliveryCodes(order) {
-  const content = getDeliveryContent(order)
-  if (!content) return []
-  return String(content)
-    .split(/\r?\n/g)
-    .filter((item) => item.trim().length > 0)
-}
-
-// 切换CDK显示
-function toggleCdkVisibility(order) {
-  order._showCdk = !order._showCdk
-}
-
-// 复制CDK
-function copyCdk(order) {
-  const content = getDeliveryContent(order)
-  if (content) {
-    navigator.clipboard.writeText(content)
-    toast.success(isCdkOrder(order) ? 'CDK 已复制到剪贴板' : '发货内容已复制到剪贴板')
-  }
-}
-
 function getDeliverPlaceholder(order) {
   if (isNormalOrder(order)) {
     return '请输入交付说明、联系方式、服务结果或其他履约信息'
@@ -1223,7 +1191,6 @@ async function handleRepay(order) {
     if (!isPopup) cleanupPreparedTab(preparedWindow)
     if (isPopup && popup) {
       const refOrder = order
-      const refOrderNo = orderNo
       watchPaymentPopup(popup, () => {
         if (isBuyRequestOrder(refOrder)) {
           handleRefreshBuyOrder(refOrder)

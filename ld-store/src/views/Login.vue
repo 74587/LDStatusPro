@@ -93,13 +93,12 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { api } from '@/utils/api'
 import { useToast } from '@/composables/useToast'
 import { sanitizePostLoginRedirect } from '@/utils/navigation'
 
 const route = useRoute()
-const router = useRouter()
 const toast = useToast()
 
 const loading = ref(false)
