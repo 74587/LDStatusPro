@@ -54,7 +54,11 @@ function htmlAsset() {
     <link rel="canonical" href="https://old.example/path">
     <link rel="alternate" type="application/json+oembed" href="/old.json">
   </head><body><div id="app"></div></body></html>`, {
-    headers: { 'content-type': 'text/html', 'content-length': '999' }
+    headers: {
+      'content-type': 'text/html',
+      'content-length': '999',
+      'content-security-policy': "default-src 'self'; script-src 'self'; object-src 'none'"
+    }
   })
 }
 
@@ -204,6 +208,7 @@ describe('Worker responses and oEmbed', () => {
     expect(response.status).toBe(200)
     expect(response.headers.get('cache-control')).toBe('no-store, no-cache, must-revalidate')
     expect(response.headers.get('x-robots-tag')).toBe('noindex, nofollow, noarchive')
+    expect(response.headers.get('content-security-policy')).toContain("script-src 'self'")
     expect(response.headers.get('content-length')).toBeNull()
     expect(await response.text()).toContain('property="og:title"')
 
