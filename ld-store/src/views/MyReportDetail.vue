@@ -118,12 +118,12 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useShopStore } from '@/stores/shop'
+import { useProductStore } from '@/stores/product'
 import EmptyState from '@/components/common/EmptyState.vue'
 
 const route = useRoute()
 const router = useRouter()
-const shopStore = useShopStore()
+const productStore = useProductStore()
 
 const loading = ref(false)
 const report = ref(null)
@@ -173,7 +173,7 @@ function formatDate(value) {
 async function loadDetail() {
   loading.value = true
   try {
-    const result = await shopStore.fetchMyReportDetail(route.params.id)
+    const result = await productStore.fetchMyReportDetail(route.params.id)
     report.value = result?.data?.report || null
     logs.value = result?.data?.logs || []
   } finally {

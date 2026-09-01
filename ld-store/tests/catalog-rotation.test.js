@@ -5,7 +5,7 @@ import { URL } from 'node:url'
 import { parse, compileTemplate } from '@vue/compiler-sfc'
 import { beginCatalogRotation, catalogRotationKey, rememberCatalogSlate } from '../src/utils/catalogRotation'
 import { fetchProductsRequest } from '../src/services/shop/catalogService'
-import { useShopStore } from '../src/stores/shop'
+import { useCatalogStore } from '../src/stores/catalog'
 import { api } from '../src/utils/api'
 
 vi.mock('../src/utils/api', () => ({ api: { get: vi.fn(), post: vi.fn() } }))
@@ -85,14 +85,14 @@ describe('V2.2 recommendation rotation', () => {
   it('page reload rotates automatically while retaining the prior slate for overlap control', async () => {
     const response = catalogResponse({ products: [{ id: 1 }] })
     api.get.mockResolvedValue(response)
-    await useShopStore().fetchProducts({ forceRefresh: true })
+    await useCatalogStore().fetchProducts({ forceRefresh: true })
     const initial = new URL(api.get.mock.lastCall[0], 'http://localhost')
     expect(initial.searchParams.get('rotationId')).toBe(first)
     expect(initial.searchParams.has('previousSlateId')).toBe(false)
 
     // A full page reload recreates Pinia but retains this tab's sessionStorage.
     setActivePinia(createPinia())
-    await useShopStore().fetchProducts({ forceRefresh: true })
+    await useCatalogStore().fetchProducts({ forceRefresh: true })
     const reloaded = new URL(api.get.mock.lastCall[0], 'http://localhost')
     expect(reloaded.searchParams.get('rotationId')).toBe(second)
     expect(reloaded.searchParams.get('previousSlateId')).toBe(first)
@@ -106,7 +106,7 @@ describe('V2.2 recommendation rotation', () => {
     expect(descriptor.template.content).toContain('class="products-grid" :aria-busy="loading"')
   })
   it('failed rotation retains the visible list, page, context, and cursor', async () => {
-    const store = useShopStore()
+    const store = useCatalogStore()
     store.restoreFromCache({ products: [{ id: 1 }], page: 3, total: 80, hasMore: true,
       cursor: 'old-cursor', rankingContext: { slateId: first } })
     let finish
@@ -122,7 +122,7 @@ describe('V2.2 recommendation rotation', () => {
     expect(store.loading).toBe(false)
   })
   it('newer filter request wins over a late failed rotation', async () => {
-    const store = useShopStore()
+    const store = useCatalogStore()
     store.restoreFromCache({ products: [{ id: 1 }] })
     let finish
     api.get.mockImplementationOnce(() => new Promise(resolve => { finish = resolve }))
@@ -130,7 +130,7 @@ describe('V2.2 recommendation rotation', () => {
     api.get.mockResolvedValueOnce(catalogResponse({ products: [{ id: 2 }] }))
     await store.fetchProducts({ categoryId: 2 })
     finish({ success: false, error: 'late failure' })
-    expect((await old).cancelled).toBe(true)
+    expect((await old).aborted).toBe(true)
     expect(store.products.map(item => item.id)).toEqual([2])
   })
 })

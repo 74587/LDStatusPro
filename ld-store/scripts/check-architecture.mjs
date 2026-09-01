@@ -33,6 +33,10 @@ for (const file of sourceFiles(sourceRoot)) {
     failures.push(`${path}: service 不能反向依赖 view、component 或 store`)
   }
 
+  if (/(?:@\/stores\/shop|(?:\.\.\/)+stores\/shop|\.\/shop)(?:['"]|\b)/.test(source)) {
+    failures.push(`${path}: 禁止重新引入已删除的全能 shop store`)
+  }
+
   const isUiOrStore = /^(?:src\/(?:views|components|stores)\/)/.test(path)
   if (isUiOrStore && !apiAllowlist.has(path)) {
     if (/from\s+['"][^'"]*utils\/api['"]/.test(source)) {

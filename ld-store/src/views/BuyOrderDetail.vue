@@ -88,7 +88,7 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useShopStore } from '@/stores/shop'
+import { useOrderStore } from '@/stores/order'
 import { isMaintenanceFeatureEnabled, isRestrictedMaintenanceMode } from '@/config/maintenance'
 import { useToast } from '@/composables/useToast'
 import { formatPrice } from '@/utils/format'
@@ -98,7 +98,7 @@ import { ORDER_LIST_SCROLL_SOURCE, readOrderScrollSnapshot } from '@/utils/order
 
 const route = useRoute()
 const router = useRouter()
-const shopStore = useShopStore()
+const orderStore = useOrderStore()
 const toast = useToast()
 
 const loading = ref(true)
@@ -195,7 +195,7 @@ async function loadOrderDetail() {
 
   loading.value = true
   try {
-    const result = await shopStore.getBuyOrderDetail(orderNo.value)
+    const result = await orderStore.getBuyOrderDetail(orderNo.value)
     if (!result.success) {
       toast.error(result.error || '加载订单详情失败')
       order.value = null
@@ -221,7 +221,7 @@ async function handleRepay() {
 
   const preparedWindow = preparePaymentPopup()
   try {
-    const result = await shopStore.getBuyOrderPaymentUrl(orderNo.value)
+    const result = await orderStore.getBuyOrderPaymentUrl(orderNo.value)
     const paymentUrl = result?.data?.paymentUrl || ''
     if (!result?.success || !paymentUrl) {
       cleanupPreparedTab(preparedWindow)
@@ -260,7 +260,7 @@ async function handleRefresh() {
   if (!orderNo.value || refreshing.value) return
   refreshing.value = true
   try {
-    const result = await shopStore.refreshBuyOrderStatus(orderNo.value)
+    const result = await orderStore.refreshBuyOrderStatus(orderNo.value)
     if (!result?.success) {
       toast.error(result?.error || '刷新状态失败')
       return

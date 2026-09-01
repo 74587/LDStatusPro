@@ -119,7 +119,7 @@
 
 <script setup>
 import { computed, nextTick, onActivated, onDeactivated, onMounted, onUnmounted, ref, watch } from 'vue'
-import { useShopStore } from '@/stores/shop'
+import { useCatalogStore } from '@/stores/catalog'
 import { useToast } from '@/composables/useToast'
 import ProductCard from '@/components/product/ProductCard.vue'
 import CategoryFilter from '@/components/product/CategoryFilter.vue'
@@ -130,7 +130,7 @@ import { createTtlLruCache } from '@/utils/ttlLruCache'
 
 defineOptions({ name: 'ProductsMarketplace' })
 
-const shopStore = useShopStore()
+const shopStore = useCatalogStore()
 const toast = useToast()
 const sentinel = ref(null)
 const initialLoading = ref(true)
@@ -162,7 +162,7 @@ const maintenanceCatalogHint = computed(() => (
 ))
 
 function consumeStoreError(fallback = '') {
-  return shopStore.consumeLastError?.() || fallback
+  return shopStore.consumeError('products') || fallback
 }
 
 function toSafeArray(value) {
@@ -296,7 +296,7 @@ function setupInfiniteScroll() {
     activeRequest?.abort()
     activeRequest = new AbortController()
     const result = await shopStore.loadMore({ signal: activeRequest.signal })
-    if (result?.success === false && !result.cancelled) {
+    if (result?.success === false && !result.aborted) {
       toast.error(result.error || consumeStoreError('加载更多失败，请稍后重试'))
       return
     }
@@ -346,7 +346,7 @@ async function runCatalogAction(options) {
   activeRequest?.abort()
   activeRequest = new AbortController()
   const result = await loadCatalogState({ ...options, actionId, signal: activeRequest.signal })
-  if (!result?.success && !result?.cancelled) {
+  if (!result?.success && !result?.cancelled && !result?.aborted) {
     toast.error(result?.error || consumeStoreError('加载物品失败，请稍后重试'))
   }
 }
@@ -389,9 +389,8 @@ function clearPriceFilter() {
 
 async function initialize() {
   if (hasInitialized.value) return
-  await shopStore.fetchCategories()
-  const categoryError = consumeStoreError('')
-  if (categoryError) toast.warning(categoryError)
+  const categoriesResult = await shopStore.fetchCategories()
+  if (!categoriesResult.success) toast.warning(categoriesResult.error || '加载分类失败，请稍后重试')
   activeRequest?.abort()
   activeRequest = new AbortController()
   const result = await loadCatalogState({

@@ -603,7 +603,8 @@
 import { ref, computed, nextTick, onBeforeUnmount, onMounted, watch } from 'vue'
 import { CircleAlert, CircleCheck, Clock3, Cloud, FlaskConical, Image as ImageIcon, ShieldAlert } from '@lucide/vue'
 import { onBeforeRouteLeave, useRouter, useRoute } from 'vue-router'
-import { useShopStore } from '@/stores/shop'
+import { useCatalogStore } from '@/stores/catalog'
+import { useInventoryStore } from '@/stores/inventory'
 import { useUserStore } from '@/stores/user'
 import { useToast } from '@/composables/useToast'
 import { useDialog } from '@/composables/useDialog'
@@ -638,7 +639,8 @@ const props = defineProps({
 
 const router = useRouter()
 const route = useRoute()
-const shopStore = useShopStore()
+const catalogStore = useCatalogStore()
+const inventoryStore = useInventoryStore()
 const userStore = useUserStore()
 const toast = useToast()
 const dialog = useDialog()
@@ -993,9 +995,9 @@ async function loadCategories() {
   categoriesLoading.value = true
   categoriesLoadError.value = ''
   try {
-    const result = await shopStore.fetchCategories()
-    const availableCategories = Array.isArray(result)
-      ? result.filter(cat => cat.name !== '小店' && cat.name !== '友情小店')
+    const result = await catalogStore.fetchCategories()
+    const availableCategories = result.success && Array.isArray(result.data.categories)
+      ? result.data.categories.filter(cat => cat.name !== '小店' && cat.name !== '友情小店')
       : []
 
     if (availableCategories.length === 0) {
@@ -1353,13 +1355,13 @@ async function checkMerchantConfig() {
   merchantStatusLoaded.value = false
   merchantConfigError.value = ''
   try {
-    const result = await shopStore.fetchMerchantConfig()
-    if (!result) {
+    const result = await inventoryStore.fetchMerchantConfig()
+    if (!result.success) {
       merchantConfigured.value = false
-      merchantConfigError.value = '收款配置状态加载失败，请刷新页面后重试'
+      merchantConfigError.value = result.error || '收款配置状态加载失败，请刷新页面后重试'
       return
     }
-    const config = result?.data?.data || result?.data || result || {}
+    const config = result.data || {}
     merchantConfigured.value = !!config.configured && !!config.isActive && !!config.isVerified
   } catch (error) {
     merchantConfigured.value = false
@@ -1432,7 +1434,7 @@ function isUncertainSubmitResult(result) {
 
 async function pollProductSubmissionResult(submissionToken) {
   for (let i = 0; i < PRODUCT_SUBMIT_STATUS_MAX_RETRIES; i += 1) {
-    const statusResult = await shopStore.getProductSubmissionStatus(submissionToken)
+    const statusResult = await inventoryStore.getProductSubmissionStatus(submissionToken)
     if (statusResult?.success && statusResult.data?.exists && statusResult.data?.product?.id) {
       return { confirmed: true, product: statusResult.data.product }
     }
@@ -1617,7 +1619,7 @@ async function submitForm() {
     productData.submissionToken = submissionToken
     
     // 创建物品
-    const result = await shopStore.createProduct(productData, { timeout: PRODUCT_SUBMIT_TIMEOUT_MS })
+    const result = await inventoryStore.createProduct(productData, { timeout: PRODUCT_SUBMIT_TIMEOUT_MS })
     
     if (!result.success) {
       if (isUncertainSubmitResult(result)) {

@@ -372,7 +372,8 @@ import {
   UserRound,
   UsersRound
 } from '@lucide/vue'
-import { useShopStore } from '@/stores/shop'
+import { useCatalogStore } from '@/stores/catalog'
+import { useOrderStore } from '@/stores/order'
 import { useToast } from '@/composables/useToast'
 import { useDialog } from '@/composables/useDialog'
 import { isMaintenanceFeatureEnabled, isRestrictedMaintenanceMode } from '@/config/maintenance'
@@ -392,7 +393,8 @@ import { resolveOrderPartyIdentity } from '@/utils/orderPartyIdentity'
 
 const route = useRoute()
 const router = useRouter()
-const shopStore = useShopStore()
+const catalogStore = useCatalogStore()
+const orderStore = useOrderStore()
 const toast = useToast()
 const dialog = useDialog()
 
@@ -470,7 +472,7 @@ const canRefreshPaymentStatus = computed(() => {
 
 const categoryNameMap = computed(() => {
   const map = new Map()
-  const list = Array.isArray(shopStore.categories) ? shopStore.categories : []
+  const list = Array.isArray(catalogStore.categories) ? catalogStore.categories : []
   for (const cat of list) {
     if (cat?.id == null) continue
     map.set(String(cat.id), cat.name || '')
@@ -585,11 +587,10 @@ async function loadOrder(options = {}) {
     }
     const orderId = route.params.id
     const role = currentRole.value
-    const result = await shopStore.fetchOrderDetail(orderId, role)
-    // 解包可能嵌套的数据
-    order.value = result?.order || result?.data?.order || result
-    // 订单日志
-    orderLogs.value = result?.logs || result?.data?.logs || []
+    const result = await orderStore.fetchOrderDetail(orderId, role)
+    if (!result.success) throw new Error(result.error || '加载订单详情失败')
+    order.value = result.data.order
+    orderLogs.value = result.data.logs || []
   } catch (error) {
     if (!silent) {
       toast.error('加载订单详情失败')
@@ -830,7 +831,7 @@ async function handleRefreshPaymentStatus() {
 
   checkingPayment.value = true
   try {
-    const result = await shopStore.refreshOrderStatus(orderNo)
+    const result = await orderStore.refreshOrderStatus(orderNo)
     if (!result?.success) {
       toast.error(extractErrorMessage(result, '检查支付状态失败'))
       return
@@ -866,7 +867,7 @@ async function handleRepay() {
   paying.value = true
 
   try {
-    const result = await shopStore.getPaymentUrl(orderNo)
+    const result = await orderStore.getPaymentUrl(orderNo)
     const paymentUrl = result?.data?.paymentUrl
 
     if (!result?.success || !paymentUrl) {
@@ -914,7 +915,8 @@ async function handleCancelOrder() {
   try {
     cancelling.value = true
     const orderNo = order.value?.orderNo
-    await shopStore.cancelOrder(orderNo)
+    const result = await orderStore.cancelOrder(orderNo)
+    if (!result.success) throw new Error(result.error || '取消失败')
     toast.success('订单已取消')
     goBack()
   } catch (error) {
@@ -927,7 +929,7 @@ async function handleCancelOrder() {
 onMounted(async () => {
   await Promise.all([
     loadOrder(),
-    shopStore.fetchCategories().catch(() => null)
+    catalogStore.fetchCategories()
   ])
   startPendingOrderAutoRefresh()
 })

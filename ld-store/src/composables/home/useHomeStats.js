@@ -1,5 +1,5 @@
 import { ref } from 'vue'
-import { useShopStore } from '@/stores/shop'
+import { useCatalogStore } from '@/stores/catalog'
 
 const EMPTY_STATS = {
   products: { total: 0, online: 0 },
@@ -8,15 +8,15 @@ const EMPTY_STATS = {
 }
 
 export function useHomeStats() {
-  const shopStore = useShopStore()
+  const catalogStore = useCatalogStore()
   const stats = ref(structuredClone(EMPTY_STATS))
 
   async function refreshStats() {
-    const data = await shopStore.fetchPublicStats()
-    if (data) stats.value = data
+    const result = await catalogStore.fetchPublicStats()
+    if (result.success) stats.value = result.data
     return {
-      success: !!data,
-      error: data ? '' : (shopStore.consumeLastError?.() || '加载首页统计失败，请稍后重试')
+      success: result.success,
+      error: result.success ? '' : (result.error || '加载首页统计失败，请稍后重试')
     }
   }
 

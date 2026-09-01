@@ -129,7 +129,7 @@ import {
   TestTube2,
   Wrench
 } from '@lucide/vue'
-import { useShopStore } from '@/stores/shop'
+import { useProductStore } from '@/stores/product'
 import AvatarImage from '@/components/common/AvatarImage.vue'
 import { formatCompactCount, formatNumber, formatRelativeTime, formatPrice } from '@/utils/format'
 import { buildAvatarCandidates } from '@/utils/avatar'
@@ -167,8 +167,8 @@ const props = defineProps({
   }
 })
 
-const shopStore = useShopStore()
-const isBlocked = computed(() => shopStore.isProductBlocked(props.product.id))
+const productStore = useProductStore()
+const isBlocked = computed(() => productStore.isProductBlocked(props.product.id))
 
 
 // 图片加载状态

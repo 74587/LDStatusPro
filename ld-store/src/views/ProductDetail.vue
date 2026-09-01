@@ -980,7 +980,7 @@ import {
   Wrench,
   X
 } from '@lucide/vue'
-import { useShopStore } from '@/stores/shop'
+import { useProductStore } from '@/stores/product'
 import { useUserStore } from '@/stores/user'
 import { useCheckoutStore } from '@/stores/checkout'
 import { isMaintenanceFeatureEnabled, isRestrictedMaintenanceMode } from '@/config/maintenance'
@@ -994,7 +994,7 @@ import StarRatingDisplay from '@/components/common/StarRatingDisplay.vue'
 import StarRatingInput from '@/components/common/StarRatingInput.vue'
 import ProductStockIndicator from '@/components/product/ProductStockIndicator.vue'
 import { buildAvatarCandidates } from '@/utils/avatar'
-import { fetchExternalProductLinkRequest, fetchProductRequest } from '@/services/shop/catalogService'
+import { fetchExternalProductLinkRequest } from '@/services/shop/catalogService'
 import {
   isCdkProduct,
   isLegacyLinkProduct,
@@ -1013,7 +1013,7 @@ import {
 
 const route = useRoute()
 const router = useRouter()
-const shopStore = useShopStore()
+const productStore = useProductStore()
 const userStore = useUserStore()
 const checkoutStore = useCheckoutStore()
 const toast = useToast()
@@ -1415,7 +1415,7 @@ async function refreshRestockSubscriptionStatus() {
 
   restockStatusLoading.value = true
   try {
-    const result = await shopStore.getProductRestockSubscriptionStatus(product.value.id)
+    const result = await productStore.getProductRestockSubscriptionStatus(product.value.id)
     if (requestId !== latestRestockStatusRequestId) return
 
     if (result?.success) {
@@ -1458,11 +1458,8 @@ onMounted(async () => {
     return
   }
   
-  // 获取分类
-  await shopStore.fetchCategories()
-  
   // 获取物品详情
-  const result = await fetchProductRequest(String(productId))
+  const result = await productStore.fetchProduct(String(productId))
   if (result?.success && result?.data?.product) {
     product.value = result.data.product
     detailErrorMessage.value = ''
@@ -1514,9 +1511,9 @@ async function restoreCheckoutReturnState() {
   const draft = checkoutStore.consumeProductReturn(product.value.id)
   if (!draft) return false
 
-  const latestProduct = await shopStore.fetchProduct(product.value.id)
-  if (latestProduct) {
-    product.value = { ...product.value, ...latestProduct }
+  const latestResult = await productStore.fetchProduct(product.value.id)
+  if (latestResult.success) {
+    product.value = { ...product.value, ...latestResult.data.product }
   }
 
   await nextTick()
@@ -1709,7 +1706,7 @@ async function loadComments(page = 1) {
 
   commentLoading.value = true
   try {
-    const result = await shopStore.fetchProductComments(product.value.id, { page: targetPage, pageSize: 10 })
+    const result = await productStore.fetchProductComments(product.value.id, { page: targetPage, pageSize: 10 })
     if (!result?.success) {
       const message = typeof result?.error === 'object'
         ? (result.error?.message || result.error?.code || '加载评论失败')
@@ -1817,7 +1814,7 @@ async function voteComment(comment, voteType) {
   try {
     const currentVote = normalizeCommentVoteType(comment.viewerVote)
     const targetVote = currentVote === voteType ? '' : voteType
-    const result = await shopStore.voteProductComment(safeCommentId, targetVote)
+    const result = await productStore.voteProductComment(safeCommentId, targetVote)
     if (!result?.success) {
       const message = typeof result?.error === 'object'
         ? (result.error?.message || result.error?.code || '点赞操作失败')
@@ -1867,7 +1864,7 @@ async function loadCommentReplies(commentId, page = 1, options = {}) {
 
   commentReplyLoadingMap.value[safeCommentId] = true
   try {
-    const result = await shopStore.fetchProductCommentReplies(safeCommentId, {
+    const result = await productStore.fetchProductCommentReplies(safeCommentId, {
       page: targetPage,
       pageSize: 10
     })
@@ -1959,7 +1956,7 @@ async function submitCommentReply(comment) {
 
   commentReplySubmittingMap.value[safeCommentId] = true
   try {
-    const result = await shopStore.createProductCommentReply(safeCommentId, content)
+    const result = await productStore.createProductCommentReply(safeCommentId, content)
     if (!result?.success) {
       const message = typeof result?.error === 'object'
         ? (result.error?.message || result.error?.code || '回复发布失败')
@@ -2008,7 +2005,7 @@ async function submitComment() {
     if (viewerHasPurchased.value && !viewerHasRated.value && selectedCommentRating.value !== null) {
       payload.rating = selectedCommentRating.value
     }
-    const result = await shopStore.createProductComment(product.value.id, payload)
+    const result = await productStore.createProductComment(product.value.id, payload)
     if (!result?.success) {
       const message = typeof result?.error === 'object'
         ? (result.error?.message || result.error?.code || '评论发布失败')
@@ -2041,7 +2038,7 @@ async function deleteComment(comment) {
 
   commentDeletingId.value = comment.id
   try {
-    const result = await shopStore.deleteProductComment(comment.id)
+    const result = await productStore.deleteProductComment(comment.id)
     if (!result?.success) {
       const message = typeof result?.error === 'object'
         ? (result.error?.message || result.error?.code || '删除评论失败')
@@ -2098,7 +2095,7 @@ async function submitCommentReport() {
   commentReportSubmitting.value = true
   commentReportingId.value = commentReportTarget.value.id
   try {
-    const result = await shopStore.reportProductComment(commentReportTarget.value.id, reason)
+    const result = await productStore.reportProductComment(commentReportTarget.value.id, reason)
     if (!result?.success) {
       const message = typeof result?.error === 'object'
         ? (result.error?.message || result.error?.code || '举报提交失败')
@@ -2158,8 +2155,8 @@ async function toggleFavorite() {
   favoriteSubmitting.value = true
   try {
     const result = isFavorited.value
-      ? await shopStore.removeFavorite(product.value.id)
-      : await shopStore.addFavorite(product.value.id)
+      ? await productStore.removeFavorite(product.value.id)
+      : await productStore.addFavorite(product.value.id)
 
     if (!result?.success) {
       const message = typeof result?.error === 'object'
@@ -2215,7 +2212,7 @@ async function markNotInterested() {
 
   favoriteSubmitting.value = true
   try {
-    const result = await shopStore.blockProduct(product.value.id)
+    const result = await productStore.blockProduct(product.value.id)
     if (!result?.success) {
       const message = typeof result?.error === 'object'
         ? (result.error?.message || result.error?.code || '设置不感兴趣失败，请稍后重试')
@@ -2343,7 +2340,7 @@ async function submitReport() {
 
   reportSubmitting.value = true
   try {
-    const result = await shopStore.reportProduct(product.value.id, {
+    const result = await productStore.reportProduct(product.value.id, {
       reason,
       reportCategory: reportCategory.value
     })
@@ -2394,7 +2391,7 @@ async function handleSubscribeRestock() {
 
   restockSubscribeLoading.value = true
   try {
-    const result = await shopStore.subscribeProductRestock(product.value.id)
+    const result = await productStore.subscribeProductRestock(product.value.id)
     if (result?.success) {
       restockSubscribed.value = true
       toast.success(result?.data?.message || '订阅成功，补货后将通过系统消息通知你')

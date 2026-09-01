@@ -349,7 +349,7 @@ import {
   Truck
 } from '@lucide/vue'
 import { useRouter, useRoute } from 'vue-router'
-import { useShopStore } from '@/stores/shop'
+import { useOrderStore } from '@/stores/order'
 import { isMaintenanceFeatureEnabled, isRestrictedMaintenanceMode } from '@/config/maintenance'
 import { useToast } from '@/composables/useToast'
 import { useDialog } from '@/composables/useDialog'
@@ -389,7 +389,7 @@ import {
 
 const router = useRouter()
 const route = useRoute()
-const shopStore = useShopStore()
+const orderStore = useOrderStore()
 const toast = useToast()
 const dialog = useDialog()
 
@@ -727,21 +727,23 @@ async function loadOrders(append = false) {
     const requestRole = currentRole.value
     let result
     if (requestRole === 'buy') {
-      result = await shopStore.fetchMyBuyOrders(queryOptions)
+      result = await orderStore.fetchBuyRequestOrders(queryOptions)
     } else if (requestRole === 'buyer') {
-      result = await shopStore.fetchMyOrders(queryOptions)
+      result = await orderStore.fetchBuyerOrders(queryOptions)
     } else {
-      result = await shopStore.fetchSellerOrders(queryOptions)
+      result = await orderStore.fetchSellerOrders(queryOptions)
     }
 
     if (!orderRequestGuard.isLatest(requestToken)) return
 
-    const ordersList = Array.isArray(result?.orders) ? result.orders : []
-    const totalPages = Number(result?.pagination?.totalPages || 0)
+    if (!result.success) throw new Error(result.error || '加载订单失败')
+    const payload = result.data
+    const ordersList = Array.isArray(payload.orders) ? payload.orders : []
+    const totalPages = Number(payload.pagination?.totalPages || 0)
     orderPagination.value = {
-      page: Number(result?.pagination?.page || page.value || 1),
-      pageSize: Number(result?.pagination?.pageSize || pageSize),
-      total: Number(result?.pagination?.total || ordersList.length),
+      page: Number(payload.pagination?.page || page.value || 1),
+      pageSize: Number(payload.pagination?.pageSize || pageSize),
+      total: Number(payload.pagination?.total || ordersList.length),
       totalPages: Math.max(1, totalPages || 1)
     }
     hasMore.value = page.value < totalPages
@@ -1168,8 +1170,8 @@ async function handleRepay(order) {
 
   try {
     const result = isBuyRequestOrder(order)
-      ? await shopStore.getBuyOrderPaymentUrl(orderNo)
-      : await shopStore.getPaymentUrl(orderNo)
+      ? await orderStore.getBuyOrderPaymentUrl(orderNo)
+      : await orderStore.getPaymentUrl(orderNo)
     const paymentUrl = result?.data?.paymentUrl
 
     if (!result?.success || !paymentUrl) {
@@ -1220,7 +1222,7 @@ async function handleRefreshOrder(order) {
 
   refreshingOrderId.value = orderNo
   try {
-    const result = await shopStore.refreshOrderStatus(orderNo)
+    const result = await orderStore.refreshOrderStatus(orderNo)
     if (!result?.success) {
       toast.error(extractErrorMessage(result, '检查支付状态失败'))
       return
@@ -1256,7 +1258,7 @@ async function handleRefreshBuyOrder(order) {
 
   refreshingBuyOrderId.value = orderNo
   try {
-    const result = await shopStore.refreshBuyOrderStatus(orderNo)
+    const result = await orderStore.refreshBuyOrderStatus(orderNo)
     if (!result?.success) {
       toast.error(extractErrorMessage(result, '刷新状态失败'))
       return
@@ -1298,7 +1300,8 @@ async function handleCancelOrder(order) {
   cancellingOrderId.value = orderNo
 
   try {
-    await shopStore.cancelOrder(orderNo)
+    const result = await orderStore.cancelOrder(orderNo)
+    if (!result.success) throw new Error(result.error || '取消失败')
     toast.update(loadingId, { type: 'success', message: '订单已取消' })
     // 刷新订单列表
     await loadOrders()
@@ -1323,7 +1326,7 @@ async function submitManualDeliver(order) {
   deliveringOrderId.value = orderNo
   
   try {
-    const result = await shopStore.deliverOrder(orderNo, content)
+    const result = await orderStore.deliverOrder(orderNo, content)
     if (result?.success === false) {
       toast.update(loadingId, {
         type: 'error',
@@ -1331,7 +1334,7 @@ async function submitManualDeliver(order) {
       })
       return
     }
-    toast.update(loadingId, { type: 'success', message: result?.message || '发货成功' })
+    toast.update(loadingId, { type: 'success', message: result?.data?.message || result?.message || '发货成功' })
     closeDeliverForm()
     await loadOrders()
   } catch (error) {

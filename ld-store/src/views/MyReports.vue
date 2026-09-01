@@ -101,7 +101,7 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { useShopStore } from '@/stores/shop'
+import { useProductStore } from '@/stores/product'
 import LiquidTabs from '@/components/common/LiquidTabs.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 
@@ -114,7 +114,7 @@ const FILTER_OPTIONS = Object.freeze([
 ])
 
 const router = useRouter()
-const shopStore = useShopStore()
+const productStore = useProductStore()
 
 const loading = ref(false)
 const reports = ref([])
@@ -169,7 +169,7 @@ function formatDate(value) {
 async function loadReports() {
   loading.value = true
   try {
-    const result = await shopStore.fetchMyReports({ status: statusFilter.value, page: 1, pageSize: 50 })
+    const result = await productStore.fetchMyReports({ status: statusFilter.value, page: 1, pageSize: 50 })
     reports.value = result?.data?.reports || []
   } finally {
     loading.value = false

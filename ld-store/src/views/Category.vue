@@ -92,7 +92,7 @@
 <script setup>
 import { ref, computed, watch, onActivated, onDeactivated, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
-import { useShopStore } from '@/stores/shop'
+import { useCatalogStore } from '@/stores/catalog'
 import { useToast } from '@/composables/useToast'
 import { fetchProductsRequest } from '@/services/shop/catalogService'
 import { MAINTENANCE_STATE, isMaintenanceFeatureEnabled, isRestrictedMaintenanceMode } from '@/config/maintenance'
@@ -104,7 +104,7 @@ import LiquidTabs from '@/components/common/LiquidTabs.vue'
 defineOptions({ name: 'Category' })
 
 const route = useRoute()
-const shopStore = useShopStore()
+const catalogStore = useCatalogStore()
 const toast = useToast()
 
 const loading = ref(true)
@@ -147,7 +147,7 @@ const sortTabs = sortOptions.map((option) => ({
 }))
 
 const category = computed(() => String(route.params.name || '').trim())
-const categories = computed(() => Array.isArray(shopStore.categories) ? shopStore.categories : [])
+const categories = computed(() => Array.isArray(catalogStore.categories) ? catalogStore.categories : [])
 const resolvedCategory = computed(() => categories.value.find((item) => (
   String(item?.name || '').trim() === category.value || String(item?.id || '') === category.value
 )) || null)
@@ -212,7 +212,7 @@ function syncPriceFilterInputs(priceMin, priceMax) {
 
 async function ensureCategoriesLoaded() {
   if (categories.value.length > 0) return
-  await shopStore.fetchCategories()
+  await catalogStore.fetchCategories()
 }
 
 async function loadProducts(append = false) {

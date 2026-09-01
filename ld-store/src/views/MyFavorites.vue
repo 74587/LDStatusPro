@@ -171,7 +171,7 @@
 import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { EyeOff, Heart, RotateCcw, Search } from '@lucide/vue'
-import { useShopStore } from '@/stores/shop'
+import { useProductStore } from '@/stores/product'
 import { useToast } from '@/composables/useToast'
 import { useDialog } from '@/composables/useDialog'
 import { formatPrice, formatRelativeTime } from '@/utils/format'
@@ -180,7 +180,7 @@ import EmptyState from '@/components/common/EmptyState.vue'
 
 const route = useRoute()
 const router = useRouter()
-const shopStore = useShopStore()
+const productStore = useProductStore()
 const toast = useToast()
 const dialog = useDialog()
 
@@ -307,15 +307,16 @@ async function loadCollection(tabId, { append = false, page: requestedPage } = {
 
   try {
     const loader = tabId === 'favorites'
-      ? shopStore.fetchMyFavorites
-      : shopStore.fetchBlockedProducts
+      ? productStore.fetchFavorites
+      : productStore.fetchBlocked
     const result = await loader({
       page: targetPage,
       pageSize,
       search: searchTerms[tabId]
     })
-    const items = Array.isArray(result?.products) ? result.products : []
-    const total = Number(result?.pagination?.total || 0)
+    if (!result.success) throw new Error(result.error || '列表加载失败')
+    const items = Array.isArray(result.data?.products) ? result.data.products : []
+    const total = Number(result.data?.pagination?.total || 0)
 
     state.items = append ? [...state.items, ...items] : items
     state.page = targetPage
@@ -387,7 +388,7 @@ async function removeFavorite(item) {
 
   currentAction.value = `favorite:${item.id}`
   try {
-    const result = await shopStore.removeFavorite(item.id)
+    const result = await productStore.removeFavorite(item.id)
     if (!result?.success) throw new Error(getErrorMessage(result, '移除收藏失败'))
     await removeCurrentItem('favorites', item.id)
     toast.success(result?.message || result?.data?.message || '已取消收藏')
@@ -408,7 +409,7 @@ async function blockFavorite(item) {
 
   currentAction.value = `block:${item.id}`
   try {
-    const result = await shopStore.blockProduct(item.id)
+    const result = await productStore.blockProduct(item.id)
     if (!result?.success) throw new Error(getErrorMessage(result, '设置不感兴趣失败'))
     await removeCurrentItem('favorites', item.id)
     lists.blocked.loaded = false
@@ -424,7 +425,7 @@ async function restoreProduct(item) {
   if (!item?.id || isItemBusy(item.id)) return
   currentAction.value = `restore:${item.id}`
   try {
-    const result = await shopStore.unblockProduct(item.id)
+    const result = await productStore.unblockProduct(item.id)
     if (!result?.success) throw new Error(getErrorMessage(result, '恢复展示失败'))
     await removeCurrentItem('blocked', item.id)
     toast.success(result?.message || result?.data?.message || '已恢复展示')

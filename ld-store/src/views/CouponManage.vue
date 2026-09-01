@@ -91,7 +91,7 @@
 <script setup>
 import { computed, nextTick, onMounted, reactive, ref } from 'vue'
 import { ArrowUpRight, CircleAlert, CircleCheck, Link2, LockKeyhole, Search, TicketPercent, WalletCards } from '@lucide/vue'
-import { useShopStore } from '@/stores/shop'
+import { useInventoryStore } from '@/stores/inventory'
 import { useToast } from '@/composables/useToast'
 import SellerCouponDetailDrawer from '@/components/seller/SellerCouponDetailDrawer.vue'
 import LiquidTabs from '@/components/common/LiquidTabs.vue'
@@ -102,7 +102,7 @@ import SellerStatusBadge from '@/components/seller/SellerStatusBadge.vue'
 import { createCouponRequest, fetchSellerCouponsRequest, formatCouponDate, formatCouponRule } from '@/services/shop/couponService'
 import { buildSellerCouponQuery, COUPON_CAMPAIGN_STATES, getCouponCampaignStateMeta } from '@/utils/sellerCoupons'
 
-const shopStore = useShopStore()
+const inventoryStore = useInventoryStore()
 const toast = useToast()
 const viewMode = ref('list')
 const viewTabs = [
@@ -191,7 +191,13 @@ function openDetails(campaign) { selectedCampaign.value = campaign; drawerOpen.v
 function closeDetails() { drawerOpen.value = false }
 async function handleCampaignChanged(updated) { if (selectedCampaign.value?.id === updated?.id) selectedCampaign.value = { ...selectedCampaign.value, ...updated }; await loadCampaigns(pagination.page); const refreshed = campaigns.value.find(item => item.id === selectedCampaign.value?.id); if (refreshed) selectedCampaign.value = refreshed }
 
-onMounted(async () => { productsLoading.value = true; products.value = await shopStore.fetchMyProducts(true); productsLoading.value = false; await loadCampaigns() })
+onMounted(async () => {
+  productsLoading.value = true
+  const result = await inventoryStore.fetchProducts()
+  products.value = result.success ? result.data.products : []
+  productsLoading.value = false
+  await loadCampaigns()
+})
 </script>
 
 <style scoped>

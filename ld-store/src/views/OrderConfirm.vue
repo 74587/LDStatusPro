@@ -315,7 +315,8 @@ import {
   ShoppingBag,
   TicketPercent,
 } from '@lucide/vue'
-import { useShopStore } from '@/stores/shop'
+import { useProductStore } from '@/stores/product'
+import { useOrderStore } from '@/stores/order'
 import { useUserStore } from '@/stores/user'
 import { shouldPreserveCheckoutDraft, useCheckoutStore } from '@/stores/checkout'
 import { useToast } from '@/composables/useToast'
@@ -355,7 +356,8 @@ defineOptions({ name: 'OrderConfirm' })
 
 const route = useRoute()
 const router = useRouter()
-const shopStore = useShopStore()
+const productStore = useProductStore()
+const orderStore = useOrderStore()
 const userStore = useUserStore()
 const checkoutStore = useCheckoutStore()
 const toast = useToast()
@@ -642,7 +644,8 @@ function scheduleQuote() {
 }
 
 async function loadProduct({ force = true } = {}) {
-  const nextProduct = await shopStore.fetchProduct(productId.value, force)
+  const result = await productStore.fetchProduct(productId.value, force)
+  const nextProduct = result.success ? result.data.product : null
   if (!nextProduct) {
     product.value = null
     loadError.value = '物品不存在、已下架或暂时无法读取。'
@@ -732,7 +735,7 @@ async function submitOrder() {
       return
     }
 
-    const result = await shopStore.createOrder(productId.value, normalizedQuantity, selectedCouponClaimId.value)
+    const result = await orderStore.createOrder(productId.value, normalizedQuantity, selectedCouponClaimId.value)
     const orderNo = result?.data?.orderNo
 
     if (result?.success && orderNo) {

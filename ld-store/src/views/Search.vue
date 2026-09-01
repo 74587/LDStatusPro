@@ -206,7 +206,7 @@
 <script setup>
 import { computed, ref, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { useShopStore } from '@/stores/shop'
+import { useCatalogStore } from '@/stores/catalog'
 import { useToast } from '@/composables/useToast'
 import { storage } from '@/utils/storage'
 import { DEFAULT_SEARCH_KEYWORDS, loadSearchHistory, saveSearchHistory, clearSearchHistory as clearStoredSearchHistory } from '@/utils/search'
@@ -216,7 +216,7 @@ import EmptyState from '@/components/common/EmptyState.vue'
 import Skeleton from '@/components/common/Skeleton.vue'
 
 const route = useRoute()
-const shopStore = useShopStore()
+const shopStore = useCatalogStore()
 const toast = useToast()
 
 const searchInput = ref(null)
@@ -414,16 +414,6 @@ async function doSearch(options = {}) {
       lastCompletedQuery = trimmedKeyword
     }
 
-    const latestError = shopStore.consumeLastError?.() || ''
-    if (latestError) {
-      searchError.value = latestError
-      if (!append) {
-        results.value = []
-        totalResults.value = 0
-        hasMore.value = false
-      }
-      toast.error(latestError)
-    }
   } catch (error) {
     if (requestId !== latestSearchRequestId) return
     console.error('Search error:', error)
@@ -452,20 +442,17 @@ async function fetchSearchResults(searchKeyword, requestPage = 1) {
     priceMax: appliedPriceMax.value
   })
 
-  if (Array.isArray(result)) {
-    return {
-      products: result,
-      total: result.length,
-      hasMore: false
-    }
-  }
+  if (!result.success) throw new Error(result.error || '搜索失败，请稍后重试')
+  const pagination = result.data.pagination
 
   return {
-    products: result?.products || [],
-    total: result?.total || 0,
-    hasMore: Boolean(result?.hasMore),
-    page: Number(result?.page || requestPage),
-    cursorRestarted: result?.cursorRestarted === true
+    products: result.data.products || [],
+    total: pagination.total || 0,
+    hasMore: typeof pagination.hasMore === 'boolean'
+      ? pagination.hasMore
+      : requestPage * pagination.pageSize < pagination.total,
+    page: Number(result.data.cursorRestarted ? 1 : (pagination.page || requestPage)),
+    cursorRestarted: result.data.cursorRestarted === true
   }
 }
 

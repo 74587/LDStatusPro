@@ -112,7 +112,8 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useShopStore } from '@/stores/shop'
+import { useCatalogStore } from '@/stores/catalog'
+import { useProductStore } from '@/stores/product'
 import { useUserStore } from '@/stores/user'
 import AvatarImage from '@/components/common/AvatarImage.vue'
 import { useToast } from '@/composables/useToast'
@@ -125,7 +126,8 @@ defineOptions({ name: 'MerchantProfile' })
 
 const route = useRoute()
 const router = useRouter()
-const shopStore = useShopStore()
+const catalogStore = useCatalogStore()
+const productStore = useProductStore()
 const userStore = useUserStore()
 const toast = useToast()
 
@@ -139,7 +141,7 @@ const products = ref([])
 const loading = ref(true)
 const error = ref('')
 
-const categories = computed(() => shopStore.categories || [])
+const categories = computed(() => catalogStore.categories || [])
 const routeUsername = computed(() => String(route.params.username || '').trim())
 const merchantAvatarSeed = computed(() =>
   merchant.value?.name || merchant.value?.username || merchant.value?.userId || 'merchant'
@@ -213,8 +215,8 @@ async function loadMerchantProfile() {
   loading.value = true
   try {
     const [profileResult] = await Promise.all([
-      shopStore.fetchMerchantProfile(username),
-      shopStore.fetchCategories().catch(() => [])
+      productStore.fetchMerchantProfile(username),
+      catalogStore.fetchCategories()
     ])
 
     if (!profileResult?.success || !profileResult.data?.merchant) {

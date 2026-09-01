@@ -223,7 +223,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useShopStore } from '@/stores/shop'
+import { useInventoryStore } from '@/stores/inventory'
 import { useToast } from '@/composables/useToast'
 import { useDialog } from '@/composables/useDialog'
 import {
@@ -236,7 +236,7 @@ import { fetchDiscoveryPreferenceRequest, updateDiscoveryPreferenceRequest } fro
 import SellerStatusBadge from '@/components/seller/SellerStatusBadge.vue'
 import { ArrowLeft, CircleAlert, Copy, Eye, EyeOff, LockKeyhole, PackageCheck, Send } from '@lucide/vue'
 
-const shopStore = useShopStore()
+const inventoryStore = useInventoryStore()
 const toast = useToast()
 const dialog = useDialog()
 const route = useRoute()
@@ -295,9 +295,9 @@ async function loadSettings() {
   try {
     loading.value = true
     loadError.value = ''
-    const result = await shopStore.fetchMerchantConfig()
-    // 解包嵌套 data
-    const data = result?.data?.data || result?.data || result || {}
+    const result = await inventoryStore.fetchMerchantConfig()
+    if (!result.success) throw new Error(result.error || '加载设置失败')
+    const data = result.data || {}
     config.value = data
     stats.value = data.stats || {}
     ldcPid.value = data.ldcPid || ''

@@ -211,7 +211,7 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { useShopStore } from '@/stores/shop'
+import { useCatalogStore } from '@/stores/catalog'
 import { useUserStore } from '@/stores/user'
 import AvatarImage from '@/components/common/AvatarImage.vue'
 import { useDialog } from '@/composables/useDialog'
@@ -240,7 +240,7 @@ const otherLinks = [
 
 const router = useRouter()
 const userStore = useUserStore()
-const shopStore = useShopStore()
+const catalogStore = useCatalogStore()
 const dialog = useDialog()
 const toast = useToast()
 
@@ -353,13 +353,13 @@ async function loadDashboard() {
   dashboardLoading.value = true
   dashboardError.value = ''
   try {
-    const result = await shopStore.fetchUserDashboard()
-    if (result) {
-      dashboard.value = result
+    const result = await catalogStore.fetchUserDashboard()
+    if (result.success) {
+      dashboard.value = result.data
       return
     }
     dashboard.value = null
-    dashboardError.value = shopStore.consumeLastError?.() || '个人统计加载失败，请稍后重试'
+    dashboardError.value = result.error || '个人统计加载失败，请稍后重试'
   } catch (error) {
     dashboard.value = null
     dashboardError.value = error.message || '个人统计加载失败，请稍后重试'

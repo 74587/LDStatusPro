@@ -326,7 +326,8 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useShopStore } from '@/stores/shop'
+import { useCatalogStore } from '@/stores/catalog'
+import { useInventoryStore } from '@/stores/inventory'
 import { useToast } from '@/composables/useToast'
 import { useDialog } from '@/composables/useDialog'
 import { validateProductName, validateProductDescription, validatePrice } from '@/utils/security'
@@ -349,7 +350,8 @@ import {
 
 const route = useRoute()
 const router = useRouter()
-const shopStore = useShopStore()
+const catalogStore = useCatalogStore()
+const inventoryStore = useInventoryStore()
 const toast = useToast()
 const dialog = useDialog()
 
@@ -435,10 +437,10 @@ const initialTestModeEnabled = computed(() => !!(product.value?.is_test_mode || 
 // 加载分类
 async function loadCategories() {
   try {
-    const result = await shopStore.fetchCategories()
-    if (result && result.length > 0) {
+    const result = await catalogStore.fetchCategories()
+    if (result.success && result.data.categories.length > 0) {
       // 过滤掉小店分类（小店入驻使用独立的小店集市）
-      categories.value = result
+      categories.value = result.data.categories
         .filter(cat => cat.name !== '小店' && cat.name !== '友情小店')
         .map(cat => ({
           id: cat.id,
@@ -674,7 +676,8 @@ function hasExpectedProductState(latestProduct, expectedData, expectedType) {
 
 async function pollUpdateResult(productId, expectedData, expectedType) {
   for (let i = 0; i < EDIT_SAVE_STATUS_MAX_RETRIES; i += 1) {
-    const latestProduct = await shopStore.fetchMyProductDetail(productId)
+    const latestResult = await inventoryStore.fetchProductDetail(productId)
+    const latestProduct = latestResult.success ? latestResult.data.product : null
     if (hasExpectedProductState(latestProduct, expectedData, expectedType)) {
       return { confirmed: true, product: latestProduct }
     }
@@ -750,7 +753,8 @@ async function loadProduct() {
   try {
     loading.value = true
     const productId = route.params.id
-    product.value = await shopStore.fetchMyProductDetail(productId)
+    const result = await inventoryStore.fetchProductDetail(productId)
+    product.value = result.success ? result.data.product : null
     
     if (product.value) {
       // 填充表单，处理多种字段名格式
@@ -937,7 +941,7 @@ async function submitForm() {
     }
     
     // 更新物品
-    const result = await shopStore.updateProduct(product.value.id, updateData, { timeout: EDIT_SAVE_TIMEOUT_MS })
+    const result = await inventoryStore.updateProduct(product.value.id, updateData, { timeout: EDIT_SAVE_TIMEOUT_MS })
     
     // 检查返回结果
     if (result?.success === false) {

@@ -273,7 +273,7 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { Check, CircleAlert, Copy, Download, Hash, KeyRound, Link2, Package, PackageOpen, Plus, Search, Store, Tag, X } from '@lucide/vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useShopStore } from '@/stores/shop'
+import { useInventoryStore } from '@/stores/inventory'
 import { useMerchantEnforcementStore } from '@/stores/merchantEnforcement'
 import { isMaintenanceFeatureEnabled, isRestrictedMaintenanceMode } from '@/config/maintenance'
 import { useToast } from '@/composables/useToast'
@@ -299,7 +299,7 @@ import {
 
 const router = useRouter()
 const route = useRoute()
-const shopStore = useShopStore()
+const inventoryStore = useInventoryStore()
 const merchantEnforcementStore = useMerchantEnforcementStore()
 const toast = useToast()
 const dialog = useDialog()
@@ -433,12 +433,9 @@ async function loadProducts() {
   try {
     loading.value = true
     
-    const result = await shopStore.fetchMyProducts()
-    
-    // result 可能是数组或者包含 products 的对象
-    let productList = Array.isArray(result) ? result : (result?.products || result || [])
-    
-    products.value = productList
+    const result = await inventoryStore.fetchProducts()
+    if (!result.success) throw new Error(result.error || '加载物品失败')
+    products.value = result.data.products
   } catch (error) {
     toast.error('加载物品失败')
   } finally {
@@ -513,7 +510,7 @@ async function toggleStatus(product) {
   try {
     if (isActive) {
       // 下架操作
-      const result = await shopStore.offlineProduct(product.id)
+      const result = await inventoryStore.offlineProduct(product.id)
       if (result?.success === false) {
         toast.update(loadingId, {
           type: 'error',
@@ -525,7 +522,7 @@ async function toggleStatus(product) {
       toast.update(loadingId, { type: 'success', message: '物品已下架' })
     } else {
       // 重新上架操作（重新提交审核）
-      const result = await shopStore.updateProduct(product.id, {
+      const result = await inventoryStore.updateProduct(product.id, {
         name: product.name,
         categoryId: product.categoryId,
         description: product.description,
@@ -592,7 +589,7 @@ async function deleteProduct(product) {
   const loadingId = toast.loading('正在删除物品...')
 
   try {
-    const result = await shopStore.deleteProduct(product.id)
+    const result = await inventoryStore.deleteProduct(product.id)
     if (result?.success === false) {
       toast.update(loadingId, {
         type: 'error',
@@ -601,7 +598,7 @@ async function deleteProduct(product) {
       return
     }
     products.value = products.value.filter(p => p.id !== product.id)
-    toast.update(loadingId, { type: 'success', message: result?.message || '物品已删除' })
+    toast.update(loadingId, { type: 'success', message: result?.data?.message || result?.message || '物品已删除' })
   } catch (error) {
     toast.update(loadingId, {
       type: 'error',
@@ -653,7 +650,7 @@ async function addCdks() {
 
   addingCdk.value = true
   try {
-    const result = await shopStore.addProductCdks(currentProduct.value.id, codes)
+    const result = await inventoryStore.addCdk(currentProduct.value.id, codes)
     if (!result.success) {
       toast.error(result.error || '添加 CDK 失败')
       return
@@ -667,9 +664,11 @@ async function addCdks() {
     newCdkText.value = ''
 
     // 刷新 CDK 列表与统计（未售出余额实时更新）
-    const refreshed = await shopStore.fetchCdkList(currentProduct.value.id, { status: cdkStatusFilter.value })
-    cdkList.value = sortCdkListByStatus(refreshed?.cdks || [])
-    cdkStats.value = refreshed?.stats || cdkStats.value
+    const refreshed = await inventoryStore.fetchCdkList(currentProduct.value.id, { status: cdkStatusFilter.value })
+    if (refreshed.success) {
+      cdkList.value = sortCdkListByStatus(refreshed.data.cdks || [])
+      cdkStats.value = refreshed.data.stats || cdkStats.value
+    }
 
     // 更新库存（用后端返回的库存，避免去重导致的偏差）
     const index = products.value.findIndex(p => p.id === currentProduct.value.id)
@@ -969,10 +968,11 @@ async function loadCdkList() {
   cdkLoading.value = true
   try {
     // fetchCdkList 返回 { cdks, stats, batches, pagination }
-    const result = await shopStore.fetchCdkList(currentProduct.value.id, { status: cdkStatusFilter.value })
-    cdkList.value = sortCdkListByStatus(result?.cdks || [])
-    cdkStats.value = result?.stats || { total: 0, available: 0, locked: 0, sold: 0 }
-    if (result?.sharedMode && currentProduct.value) {
+    const result = await inventoryStore.fetchCdkList(currentProduct.value.id, { status: cdkStatusFilter.value })
+    if (!result.success) throw new Error(result.error || '加载 CDK 列表失败')
+    cdkList.value = sortCdkListByStatus(result.data.cdks || [])
+    cdkStats.value = result.data.stats || { total: 0, available: 0, locked: 0, sold: 0 }
+    if (result.data.sharedMode && currentProduct.value) {
       currentProduct.value.sharedCdkEnabled = true
     }
   } catch (error) {
@@ -998,7 +998,8 @@ async function deleteCdkItem(cdk) {
   const loadingId = toast.loading('正在删除 CDK...')
 
   try {
-    await shopStore.deleteProductCdk(currentProduct.value.id, cdk.id)
+    const result = await inventoryStore.deleteCdk(currentProduct.value.id, cdk.id)
+    if (!result.success) throw new Error(result.error || '删除 CDK 失败')
     cdkList.value = cdkList.value.filter(item => item.id !== cdk.id)
     toast.update(loadingId, { type: 'success', message: 'CDK 已删除' })
 
@@ -1047,21 +1048,22 @@ async function clearAllCdks() {
   const loadingId = toast.loading('正在清空 CDK...')
   
   try {
-    const result = await shopStore.clearCdk(currentProduct.value.id)
+    const result = await inventoryStore.clearCdk(currentProduct.value.id)
+    if (!result.success) throw new Error(result.error || '清空 CDK 失败')
     
     // 重新加载 CDK 列表和统计
     await loadCdkList()
     
     toast.update(loadingId, {
       type: 'success',
-      message: `已清空 ${result?.deleted || availableCount} 个 CDK`
+      message: `已清空 ${result.data?.deleted || availableCount} 个 CDK`
     })
     
     // 更新产品库存
     const index = products.value.findIndex(p => p.id === currentProduct.value.id)
     if (index !== -1) {
       products.value[index].availableStock = 0
-      products.value[index].stock = result?.stock || 0
+      products.value[index].stock = result.data?.stock || 0
     }
   } catch (error) {
     console.error('Clear CDK error:', error)

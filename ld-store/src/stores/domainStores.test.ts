@@ -3,7 +3,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { useCatalogStore } from './catalog'
 import { useOrderStore } from './order'
-import { useShopStore } from './shop'
 
 const mocks = vi.hoisted(() => ({
   fetchProducts: vi.fn(),
@@ -143,13 +142,12 @@ describe('storefront domain stores', () => {
     expect(Array.isArray(result)).toBe(false)
   })
 
-  it('keeps the temporary shop facade synchronized with focused store state', async () => {
+  it('exposes catalog state directly without a compatibility facade', async () => {
     mocks.fetchProducts.mockResolvedValue(productPage(9, 1))
     const catalog = useCatalogStore()
-    const facade = useShopStore()
 
-    await catalog.fetchProducts({ page: 1 })
-    expect(facade.products[0]?.id).toBe(9)
-    expect(facade.products).toEqual(catalog.products)
+    const result = await catalog.fetchProducts({ page: 1 })
+    expect(result.success).toBe(true)
+    expect(catalog.products[0]?.id).toBe(9)
   })
 })
