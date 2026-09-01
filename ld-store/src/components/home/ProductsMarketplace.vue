@@ -124,6 +124,7 @@ import CategoryFilter from '@/components/product/CategoryFilter.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 import Skeleton from '@/components/common/Skeleton.vue'
 import { MAINTENANCE_STATE, isMaintenanceFeatureEnabled, isRestrictedMaintenanceMode } from '@/config/maintenance'
+import { createTtlLruCache } from '@/utils/ttlLruCache'
 
 defineOptions({ name: 'ProductsMarketplace' })
 
@@ -135,8 +136,8 @@ const hasInitialized = ref(false)
 const priceMinInput = ref('')
 const priceMaxInput = ref('')
 const gridColumns = ref(2)
-const categoryCache = ref(new Map())
 const CATEGORY_CACHE_TTL = 5 * 60 * 1000
+const categoryCache = createTtlLruCache({ ttl: CATEGORY_CACHE_TTL, max: 24 })
 let lastLoadedAt = 0
 let observer = null
 let latestCatalogActionId = 0
@@ -219,20 +220,19 @@ function isSameCatalogState(categoryId, sortKey, filters = buildCatalogFilters()
 
 function tryRestoreFromCache(categoryId, sortKey, filters = buildCatalogFilters()) {
   const key = getCacheKey(categoryId, sortKey, filters)
-  const cached = categoryCache.value.get(key)
-  if (cached && Array.isArray(cached.products) && Date.now() - cached.timestamp < CATEGORY_CACHE_TTL) {
+  const cached = categoryCache.get(key)
+  if (cached && Array.isArray(cached.products)) {
     shopStore.restoreFromCache(cached)
     syncPriceFilterInputs(cached.priceMin, cached.priceMax)
     initialLoading.value = false
     return true
   }
-  if (cached) categoryCache.value.delete(key)
   return false
 }
 
 function saveCache(categoryId, sortKey, filters = buildCatalogFilters()) {
   const products = toSafeArray(shopStore.products)
-  categoryCache.value.set(getCacheKey(categoryId, sortKey, filters), {
+  categoryCache.set(getCacheKey(categoryId, sortKey, filters), {
     categoryId,
     products: [...products],
     total: Number.isFinite(Number(shopStore.total)) ? Number(shopStore.total) : products.length,
@@ -243,8 +243,7 @@ function saveCache(categoryId, sortKey, filters = buildCatalogFilters()) {
     sort: sortKey || 'default',
     inStockOnly: !!filters.inStockOnly,
     priceMin: filters.priceMin ?? null,
-    priceMax: filters.priceMax ?? null,
-    timestamp: Date.now()
+    priceMax: filters.priceMax ?? null
   })
 }
 
@@ -356,7 +355,7 @@ function handleSortChange(sortKey) {
 }
 
 async function handleToggleInStock() {
-  categoryCache.value.clear()
+  categoryCache.clear()
   shopStore.setInStockOnly(!shopStore.inStockOnly)
   await runCatalogAction({
     categoryId: shopStore.currentCategory,
