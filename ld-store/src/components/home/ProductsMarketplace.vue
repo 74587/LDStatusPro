@@ -91,6 +91,8 @@
         :key="product.id"
         :product="product"
         :categories="categories"
+        :image-loading="priorityImageIds.has(product.id) ? 'eager' : 'lazy'"
+        :fetch-priority="priorityImageIds.has(product.id) ? 'high' : 'auto'"
       />
       <div v-if="hasMore" ref="sentinel" class="load-more">
         <div v-if="loading" class="loading-indicator">
@@ -253,6 +255,9 @@ const marketCategories = computed(() => categories.value.filter((category) => {
   return name && name !== '小店' && name !== '友情小店'
 }))
 const marketProducts = computed(() => toSafeArray(shopStore.products).filter((product) => product?.product_type !== 'store'))
+const priorityImageIds = computed(() => new Set(
+  marketProducts.value.filter((product) => !!product?.image_url).slice(0, 4).map((product) => product.id)
+))
 const currentCategory = computed(() => shopStore.currentCategory)
 const currentCategoryName = computed(() => shopStore.currentCategoryName)
 const currentSort = computed(() => shopStore.currentSort)

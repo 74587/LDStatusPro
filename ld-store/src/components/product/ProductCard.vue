@@ -48,7 +48,8 @@
         :src="product.image_url"
         :alt="product.name"
         :class="['cover-image', { loaded: imageLoaded }]"
-        loading="lazy"
+        :loading="imageLoading"
+        :fetchpriority="fetchPriority"
         @load="handleImageLoad"
         @error="handleImageError"
       />
@@ -153,6 +154,16 @@ const props = defineProps({
   categories: {
     type: Array,
     default: () => []
+  },
+  imageLoading: {
+    type: String,
+    default: 'lazy',
+    validator: (value) => ['eager', 'lazy'].includes(value)
+  },
+  fetchPriority: {
+    type: String,
+    default: 'auto',
+    validator: (value) => ['high', 'auto', 'low'].includes(value)
   }
 })
 

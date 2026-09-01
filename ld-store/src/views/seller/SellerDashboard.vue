@@ -99,14 +99,19 @@
             </div>
             <LiquidTabs v-model="chartView" class="chart-view-switch" :tabs="chartViews" size="sm" aria-label="趋势图指标" />
           </div>
-          <Suspense>
-            <SellerTrendChart :trend="dashboard.trend" :view="chartView" />
-            <template #fallback>
-              <div class="seller-chart-async-placeholder skeleton" role="status">
-                <span class="sr-only">趋势图加载中</span>
-              </div>
-            </template>
-          </Suspense>
+          <div ref="chartLoadTarget" class="seller-chart-load-boundary">
+            <Suspense v-if="shouldLoadChart">
+              <SellerTrendChart :trend="dashboard.trend" :view="chartView" />
+              <template #fallback>
+                <div class="seller-chart-async-placeholder skeleton" role="status">
+                  <span class="sr-only">趋势图加载中</span>
+                </div>
+              </template>
+            </Suspense>
+            <div v-else class="seller-chart-async-placeholder skeleton" role="status">
+              <span class="sr-only">趋势图将在接近视口时加载</span>
+            </div>
+          </div>
           <div v-if="chartView !== 'views'" class="source-summary">
             <div>
               <span>商品销售</span>
@@ -258,7 +263,7 @@
 </template>
 
 <script setup>
-import { computed, defineAsyncComponent, onMounted, ref } from 'vue'
+import { computed, defineAsyncComponent, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import {
   AlertCircle, ArrowUpRight, CalendarDays, ChevronDown, ChevronRight, CircleCheck, ClipboardList,
   CreditCard, Eye, Minus, PackageCheck, PackageOpen, Plus, RefreshCw, ShoppingBag,
@@ -283,7 +288,10 @@ const errorMessage = ref('')
 const dashboard = ref(null)
 const selectedRange = ref('30d')
 const chartView = ref('revenue')
+const chartLoadTarget = ref(null)
+const shouldLoadChart = ref(false)
 let requestSequence = 0
+let chartObserver = null
 
 const rangeOptions = [
   { value: '7d', label: '近 7 天' },
@@ -406,7 +414,29 @@ function changeRange(range) {
   loadDashboard({ preserve: true })
 }
 
+function setupDeferredChart() {
+  if (shouldLoadChart.value || !chartLoadTarget.value) return
+  chartObserver?.disconnect()
+  if (typeof IntersectionObserver !== 'function') {
+    shouldLoadChart.value = true
+    return
+  }
+  chartObserver = new IntersectionObserver((entries) => {
+    if (!entries.some((entry) => entry.isIntersecting)) return
+    shouldLoadChart.value = true
+    chartObserver?.disconnect()
+    chartObserver = null
+  }, { rootMargin: '200px 0px' })
+  chartObserver.observe(chartLoadTarget.value)
+}
+
 onMounted(loadDashboard)
+watch(dashboard, async (value) => {
+  if (!value) return
+  await nextTick()
+  setupDeferredChart()
+})
+onUnmounted(() => chartObserver?.disconnect())
 </script>
 
 <style scoped>
@@ -468,6 +498,7 @@ html.dark .primary-action { color: #0d151d; background: var(--seller-jade); }
 .dashboard-primary-grid { display: grid; grid-template-columns: minmax(0,1.9fr) minmax(290px,.8fr); gap: 16px; }
 .dashboard-secondary-grid { display: grid; grid-template-columns: minmax(0,1.5fr) minmax(300px,.7fr); gap: 16px; }
 .trend-card { min-width: 0; }
+.seller-chart-load-boundary { min-height: 300px; }
 .seller-chart-async-placeholder { min-height: 300px; border-radius: 0; }
 .chart-view-switch button { padding: 0 10px; }
 .source-summary { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 1px; margin: 0 22px 16px; overflow: hidden; border: 1px solid var(--seller-border); border-radius: 10px; background: var(--seller-border); }
