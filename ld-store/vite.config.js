@@ -82,8 +82,16 @@ export default defineConfig({
     },
     rollupOptions: {
       output: {
-        manualChunks: {
-          'vendor': ['vue', 'vue-router', 'pinia']
+        manualChunks(id) {
+          const normalizedId = id.replaceAll('\\', '/')
+          if (
+            normalizedId.includes('/node_modules/vue/')
+            || normalizedId.includes('/node_modules/@vue/')
+            || normalizedId.includes('/node_modules/vue-router/')
+            || normalizedId.includes('/node_modules/pinia/')
+          ) {
+            return 'vendor'
+          }
         }
       }
     }
