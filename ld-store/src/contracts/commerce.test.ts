@@ -4,7 +4,8 @@ import {
   MerchantConfigSchema,
   OrderListResponseSchema,
   OrderRefundResponseSchema,
-  SellerRefundListResponseSchema
+  SellerRefundListResponseSchema,
+  SystemMessagesResponseSchema
 } from './commerce'
 import type { ApiResult } from '@/utils/api'
 
@@ -39,6 +40,42 @@ describe('commerce service contracts', () => {
     })
     expect(result.data.pagination).toMatchObject({ pageSize: 20, totalPages: 1 })
   })
+
+  it('normalizes PostgreSQL count strings in system-message pagination', () => {
+    const result = validateApiResult(
+      success({
+        messages: [{ id: 123092 }],
+        pagination: pagination({ total: '108', total_pages: 6 }),
+        summary: { total_unread: 0 }
+      }),
+      SystemMessagesResponseSchema,
+      { endpoint: '/api/shop/messages/system', schemaName: 'SystemMessagesResponse' }
+    )
+
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.pagination.total).toBe(108)
+      expect(result.data.pagination.totalPages).toBe(6)
+    }
+  })
+
+  it.each(['-1', '1.5', '108 messages'])(
+    'rejects an invalid system-message count string: %s',
+    (total) => {
+      vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const result = validateApiResult(
+        success({
+          messages: [],
+          pagination: pagination({ total }),
+          summary: { total_unread: 0 }
+        }),
+        SystemMessagesResponseSchema,
+        { endpoint: '/api/shop/messages/system', schemaName: 'SystemMessagesResponse' }
+      )
+
+      expect(result).toMatchObject({ success: false, kind: 'contract', errorCode: 'INVALID_RESPONSE' })
+    }
+  )
 
   it('preserves external disputes as a distinct server-authoritative state', () => {
     const result = validateApiResult(

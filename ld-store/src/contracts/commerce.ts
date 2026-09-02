@@ -11,7 +11,9 @@ import {
   number,
   optional,
   pipe,
+  regex,
   string,
+  transform,
   union,
   unknown,
   type InferOutput
@@ -20,6 +22,10 @@ import { PaginationSchema, ProductSchema } from './catalog'
 
 const PositiveIntegerSchema = pipe(number(), integer(), minValue(1))
 const NonnegativeIntegerSchema = pipe(number(), integer(), minValue(0))
+const PostgreSqlCountSchema = union([
+  NonnegativeIntegerSchema,
+  pipe(string(), regex(/^\d+$/), transform(Number))
+])
 const NonemptyStringSchema = pipe(string(), minLength(1))
 const EntityIdSchema = union([PositiveIntegerSchema, NonemptyStringSchema])
 
@@ -319,7 +325,12 @@ export const BuyMessageCreatedResponseSchema = looseObject({
 
 export const SystemMessagesResponseSchema = looseObject({
   messages: array(looseObject({ id: EntityIdSchema })),
-  pagination: PaginationSchema,
+  pagination: looseObject({
+    total: PostgreSqlCountSchema,
+    page: PositiveIntegerSchema,
+    pageSize: PositiveIntegerSchema,
+    totalPages: NonnegativeIntegerSchema
+  }),
   summary: looseObject({ totalUnread: NonnegativeIntegerSchema })
 })
 
