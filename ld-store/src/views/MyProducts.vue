@@ -918,15 +918,17 @@ function canToggleStatus(product) {
 const CDK_STATUS_PRIORITY = {
   locked: 0,
   available: 1,
-  sold: 2
+  sold: 2,
+  expired: 3,
+  disabled: 4
 }
 
 function normalizeCdkStatus(status) {
   const normalized = String(status || '').trim().toLowerCase()
-  if (normalized === 'locked' || normalized === 'available' || normalized === 'sold') {
+  if (['locked', 'available', 'sold', 'expired', 'disabled'].includes(normalized)) {
     return normalized
   }
-  return 'available'
+  return 'unknown'
 }
 
 function sortCdkListByStatus(list) {
@@ -952,9 +954,12 @@ function getCdkStatusText(status) {
   const map = {
     locked: '锁定中',
     available: '可用',
-    sold: '已售出'
+    sold: '已售出',
+    expired: '已过期',
+    disabled: '已停用',
+    unknown: '未知状态'
   }
-  return map[status] || '可用'
+  return map[status] || map.unknown
 }
 
 function isCdkDeletable(cdk) {
@@ -1943,7 +1948,15 @@ watch(
   background: var(--bg-tertiary);
 }
 
-.cdk-item.sold .cdk-code {
+.cdk-item.expired,
+.cdk-item.disabled,
+.cdk-item.unknown {
+  background: var(--bg-tertiary);
+}
+
+.cdk-item.sold .cdk-code,
+.cdk-item.expired .cdk-code,
+.cdk-item.disabled .cdk-code {
   color: var(--text-placeholder);
   text-decoration: line-through;
 }
@@ -1982,6 +1995,13 @@ watch(
 }
 
 .cdk-status.sold {
+  background: var(--bg-tertiary);
+  color: var(--text-tertiary);
+}
+
+.cdk-status.expired,
+.cdk-status.disabled,
+.cdk-status.unknown {
   background: var(--bg-tertiary);
   color: var(--text-tertiary);
 }

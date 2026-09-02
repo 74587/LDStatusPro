@@ -13,6 +13,7 @@ import {
   pipe,
   regex,
   string,
+  transform,
   union,
   unknown,
   type InferOutput
@@ -24,8 +25,22 @@ const NumericIdStringSchema = pipe(string(), regex(/^[1-9]\d*$/))
 const EntityIdSchema = union([PositiveIntegerSchema, NumericIdStringSchema])
 const NonemptyStringSchema = pipe(string(), minLength(1))
 
+export const PostgreSqlCountSchema = union([
+  NonnegativeIntegerSchema,
+  pipe(string(), regex(/^\d+$/), transform(Number))
+])
+
 export const PaginationSchema = looseObject({
   total: NonnegativeIntegerSchema,
+  page: PositiveIntegerSchema,
+  pageSize: PositiveIntegerSchema,
+  totalPages: NonnegativeIntegerSchema,
+  hasMore: optional(boolean()),
+  nextCursor: optional(nullable(string()))
+})
+
+export const PostgreSqlCountPaginationSchema = looseObject({
+  total: PostgreSqlCountSchema,
   page: PositiveIntegerSchema,
   pageSize: PositiveIntegerSchema,
   totalPages: NonnegativeIntegerSchema,
@@ -229,7 +244,7 @@ export const BuyRequestSchema = looseObject({
 
 export const MarketplaceBuyRequestsResponseSchema = looseObject({
   requests: array(BuyRequestSchema),
-  pagination: PaginationSchema
+  pagination: PostgreSqlCountPaginationSchema
 })
 
 const HotboardProductSchema = looseObject({

@@ -1001,7 +1001,8 @@ function getStatusText(status, orderData) {
     external_dispute: '已转 Credit 处理',
     delivered: '已发货',
     expired: '已过期',
-    uploaded: '已上传'
+    uploaded: '已上传',
+    failed: '上传失败'
   }
   return map[status] || status || '未知'
 }
@@ -1018,7 +1019,8 @@ function getStatusClass(status) {
     external_dispute: 'status-external-dispute',
     delivered: 'status-delivered',
     expired: 'status-expired',
-    uploaded: 'status-completed'
+    uploaded: 'status-completed',
+    failed: 'status-cancelled'
   }
   return map[status] || ''
 }

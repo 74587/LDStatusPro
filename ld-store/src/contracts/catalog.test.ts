@@ -145,6 +145,34 @@ describe('catalog service contracts', () => {
     expect(result).toMatchObject({ success: false, kind: 'contract', errorCode: 'INVALID_RESPONSE' })
   })
 
+  it('normalizes PostgreSQL count strings for marketplace buy-request pagination', () => {
+    const result = validateApiResult(
+      success({
+        requests: [{ id: 1, title: '求购服务', status: 'open' }],
+        pagination: validPagination({ total: '130' })
+      }),
+      MarketplaceBuyRequestsResponseSchema,
+      { endpoint: '/api/shop/buy-requests', schemaName: 'MarketplaceBuyRequestsResponse' }
+    )
+
+    expect(result.success).toBe(true)
+    if (result.success) expect(result.data.pagination.total).toBe(130)
+  })
+
+  it('rejects malformed PostgreSQL count strings for marketplace buy requests', () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const result = validateApiResult(
+      success({
+        requests: [],
+        pagination: validPagination({ total: '130 rows' })
+      }),
+      MarketplaceBuyRequestsResponseSchema,
+      { endpoint: '/api/shop/buy-requests', schemaName: 'MarketplaceBuyRequestsResponse' }
+    )
+
+    expect(result).toMatchObject({ success: false, kind: 'contract', errorCode: 'INVALID_RESPONSE' })
+  })
+
   it('logs only endpoint, schema and issue paths for invalid payloads', () => {
     const warning = vi.spyOn(console, 'warn').mockImplementation(() => {})
     validateApiResult(

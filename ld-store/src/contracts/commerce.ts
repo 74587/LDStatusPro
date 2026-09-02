@@ -11,26 +11,27 @@ import {
   number,
   optional,
   pipe,
-  regex,
   string,
   transform,
   union,
   unknown,
   type InferOutput
 } from 'valibot'
-import { PaginationSchema, ProductSchema } from './catalog'
+import {
+  PaginationSchema,
+  PostgreSqlCountPaginationSchema,
+  PostgreSqlCountSchema,
+  ProductSchema
+} from './catalog'
 
 const PositiveIntegerSchema = pipe(number(), integer(), minValue(1))
 const NonnegativeIntegerSchema = pipe(number(), integer(), minValue(0))
-const PostgreSqlCountSchema = union([
-  NonnegativeIntegerSchema,
-  pipe(string(), regex(/^\d+$/), transform(Number))
-])
 const NonemptyStringSchema = pipe(string(), minLength(1))
 const EntityIdSchema = union([PositiveIntegerSchema, NonemptyStringSchema])
 
 export const OrderStatusSchema = union([
   literal('pending'),
+  pipe(literal('pending_payment'), transform(() => 'pending' as const)),
   literal('paying'),
   literal('paid'),
   literal('delivered'),
@@ -38,7 +39,9 @@ export const OrderStatusSchema = union([
   literal('cancelled'),
   literal('refunded'),
   literal('external_dispute'),
-  literal('expired')
+  literal('expired'),
+  literal('uploaded'),
+  literal('failed')
 ])
 
 export const BuyOrderStatusSchema = union([
@@ -93,7 +96,13 @@ export const ProductMutationResponseSchema = looseObject({
 
 export const CdkSchema = looseObject({
   id: EntityIdSchema,
-  status: union([literal('available'), literal('locked'), literal('sold')])
+  status: union([
+    literal('available'),
+    literal('locked'),
+    literal('sold'),
+    literal('expired'),
+    literal('disabled')
+  ])
 })
 
 export const CdkListResponseSchema = looseObject({
@@ -279,7 +288,7 @@ export const BuyRequestSchema = looseObject({
 
 export const BuyRequestListResponseSchema = looseObject({
   requests: array(BuyRequestSchema),
-  pagination: PaginationSchema
+  pagination: PostgreSqlCountPaginationSchema
 })
 
 export const BuyRequestDetailResponseSchema = looseObject({

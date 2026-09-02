@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { validateApiResult } from './apiContract'
 import {
+  BuyRequestListResponseSchema,
+  CdkListResponseSchema,
   MerchantConfigSchema,
   OrderListResponseSchema,
   OrderRefundResponseSchema,
@@ -41,6 +43,26 @@ describe('commerce service contracts', () => {
     expect(result.data.pagination).toMatchObject({ pageSize: 20, totalPages: 1 })
   })
 
+  it('accepts LD image order states and normalizes the historical pending alias', () => {
+    const result = validateApiResult(
+      success({
+        orders: [
+          { order_no: 'LI-100', status: 'uploaded', order_type: 'image' },
+          { order_no: 'LI-101', status: 'failed', order_type: 'image' },
+          { order_no: 'LD-102', status: 'pending_payment' }
+        ],
+        pagination: pagination({ total: 3 })
+      }),
+      OrderListResponseSchema,
+      { endpoint: '/api/shop/orders', schemaName: 'OrderListResponse' }
+    )
+
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.orders.map((order) => order.status)).toEqual(['uploaded', 'failed', 'pending'])
+    }
+  })
+
   it('normalizes PostgreSQL count strings in system-message pagination', () => {
     const result = validateApiResult(
       success({
@@ -76,6 +98,38 @@ describe('commerce service contracts', () => {
       expect(result).toMatchObject({ success: false, kind: 'contract', errorCode: 'INVALID_RESPONSE' })
     }
   )
+
+  it('normalizes PostgreSQL count strings in the seller buy-request list', () => {
+    const result = validateApiResult(
+      success({
+        requests: [{ id: 94, title: '求购服务', status: 'open' }],
+        pagination: pagination({ total: '130', total_pages: 7 })
+      }),
+      BuyRequestListResponseSchema,
+      { endpoint: '/api/shop/buy-requests/my', schemaName: 'BuyRequestListResponse' }
+    )
+
+    expect(result.success).toBe(true)
+    if (result.success) expect(result.data.pagination.total).toBe(130)
+  })
+
+  it('accepts legacy expired and disabled CDK inventory states', () => {
+    const result = validateApiResult(
+      success({
+        cdks: [
+          { id: 1, status: 'expired' },
+          { id: 2, status: 'disabled' }
+        ],
+        stats: {},
+        pagination: pagination({ total: 2 })
+      }),
+      CdkListResponseSchema,
+      { endpoint: '/api/shop/products/:id/cdk', schemaName: 'CdkListResponse' }
+    )
+
+    expect(result.success).toBe(true)
+    if (result.success) expect(result.data.cdks.map((item) => item.status)).toEqual(['expired', 'disabled'])
+  })
 
   it('preserves external disputes as a distinct server-authoritative state', () => {
     const result = validateApiResult(
