@@ -149,4 +149,27 @@ describe('commerce service contracts', () => {
     expect(result).toMatchObject({ success: false, kind: 'contract', errorCode: 'INVALID_RESPONSE' })
     expect(JSON.stringify(warning.mock.calls[0])).not.toContain('private-merchant-id')
   })
+
+  it('accepts an unconfigured merchant with a null masked payment identifier', () => {
+    const result = validateApiResult(
+      success({
+        configured: false,
+        is_active: false,
+        is_verified: false,
+        verified_at: null,
+        ldc_pid: null,
+        stats: {
+          total_orders: 0,
+          total_revenue: 0,
+          this_month_orders: 0,
+          this_month_revenue: 0
+        }
+      }),
+      MerchantConfigSchema,
+      { endpoint: '/api/shop/merchant/config', schemaName: 'MerchantConfig' }
+    )
+
+    expect(result.success).toBe(true)
+    if (result.success) expect(result.data.ldcPid).toBeNull()
+  })
 })

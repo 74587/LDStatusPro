@@ -225,7 +225,7 @@ export const MerchantConfigSchema = looseObject({
   isActive: boolean(),
   isVerified: boolean(),
   verifiedAt: optional(nullable(unknown())),
-  ldcPid: optional(string()),
+  ldcPid: optional(nullable(string())),
   stats: optional(looseObject({}))
 })
 
