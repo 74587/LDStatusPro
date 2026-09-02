@@ -4,6 +4,7 @@ import { parse, compileTemplate } from '@vue/compiler-sfc'
 
 const homeSource = readFileSync(new globalThis.URL('../src/views/Home.vue', import.meta.url), 'utf8')
 const productsSource = readFileSync(new globalThis.URL('../src/components/home/ProductsMarketplace.vue', import.meta.url), 'utf8')
+const filterSheetSource = readFileSync(new globalThis.URL('../src/components/home/CatalogFilterSheet.vue', import.meta.url), 'utf8')
 const buySource = readFileSync(new globalThis.URL('../src/components/home/BuyRequestMarketplace.vue', import.meta.url), 'utf8')
 const indexHtml = readFileSync(new globalThis.URL('../index.html', import.meta.url), 'utf8')
 const { descriptor } = parse(homeSource)
@@ -29,6 +30,10 @@ describe('home marketplace accessibility', () => {
     expect(productsSource).toContain('type="checkbox"')
     expect(productsSource).toContain(':checked="inStockOnly"')
     expect(productsSource).toContain(':aria-pressed="currentSort === tab.value"')
+    expect(productsSource).toContain('id="home-mobile-sort"')
+    expect(productsSource).toContain('aria-haspopup="dialog"')
+    expect(productsSource).toContain('class="mobile-filter-badge"')
+    expect(productsSource).toContain(':aria-label="mobileFilterAriaLabel"')
     expect(productsSource).not.toContain('class="stock-filter" @click')
   })
 
@@ -44,8 +49,20 @@ describe('home marketplace accessibility', () => {
     expect(productsSource).toContain('.stock-filter-input:focus-visible + .checkbox')
   })
 
-  it('does not reuse the desktop filter flex basis as mobile block height', () => {
+  it('replaces the three-row mobile filters with one compact toolbar', () => {
     const mobileStyles = productsSource.slice(productsSource.indexOf('@media (max-width: 768px)'))
-    expect(mobileStyles).toContain('.catalog-filters { width: 100%; justify-content: flex-start; gap: 8px; flex: none; }')
+    expect(mobileStyles).toContain('.sort-section { display: none; }')
+    expect(mobileStyles).toContain('.mobile-catalog-toolbar { width: 100%; min-width: 0; display: flex;')
+    expect(mobileStyles).toContain('.mobile-sort-control select { width: 100%; min-width: 0; min-height: 44px;')
+    expect(mobileStyles).toContain('.mobile-filter-trigger { min-height: 44px;')
+    expect(mobileStyles).not.toContain('overflow-x: auto')
+  })
+
+  it('gives the mobile filter sheet labels, safe-area spacing, and reduced-motion support', () => {
+    expect(filterSheetSource).toContain('role="dialog"')
+    expect(filterSheetSource).toContain('aria-modal="true"')
+    expect(filterSheetSource).toContain('inputmode="decimal"')
+    expect(filterSheetSource).toContain('env(safe-area-inset-bottom, 0px)')
+    expect(filterSheetSource).toContain('@media (prefers-reduced-motion: reduce)')
   })
 })

@@ -72,6 +72,47 @@
       </div>
     </div>
 
+    <div class="mobile-catalog-toolbar">
+      <label for="home-mobile-sort" class="sr-only">商品排序</label>
+      <span class="mobile-sort-control">
+        <select
+          id="home-mobile-sort"
+          :value="currentSort"
+          :disabled="loading"
+          @change="handleMobileSortChange"
+        >
+          <option v-for="tab in sortTabs" :key="tab.value" :value="tab.value">
+            {{ tab.mobileLabel }}
+          </option>
+        </select>
+        <ChevronDown :size="17" aria-hidden="true" />
+      </span>
+      <button
+        type="button"
+        class="mobile-filter-trigger"
+        aria-haspopup="dialog"
+        aria-controls="home-catalog-filter-sheet"
+        :aria-expanded="mobileFilterOpen"
+        :aria-label="mobileFilterAriaLabel"
+        :disabled="loading"
+        @click="openMobileFilters"
+      >
+        <SlidersHorizontal :size="17" aria-hidden="true" />
+        <span>筛选</span>
+        <span v-if="activeFilterCount" class="mobile-filter-badge" aria-hidden="true">{{ activeFilterCount }}</span>
+      </button>
+    </div>
+
+    <CatalogFilterSheet
+      :open="mobileFilterOpen"
+      :price-min="shopStore.currentPriceMin"
+      :price-max="shopStore.currentPriceMax"
+      :in-stock-only="inStockOnly"
+      :loading="filterApplying"
+      @close="closeMobileFilters"
+      @apply="handleMobileFilterApply"
+    />
+
     <div class="products-header">
       <span class="products-count">
         <template v-if="isProductListHiddenByMaintenance">{{ maintenanceTitle }}</template>
@@ -119,14 +160,17 @@
 
 <script setup>
 import { computed, nextTick, onActivated, onDeactivated, onMounted, onUnmounted, ref, watch } from 'vue'
+import { ChevronDown, SlidersHorizontal } from '@lucide/vue'
 import { useCatalogStore } from '@/stores/catalog'
 import { useToast } from '@/composables/useToast'
 import ProductCard from '@/components/product/ProductCard.vue'
 import CategoryFilter from '@/components/product/CategoryFilter.vue'
+import CatalogFilterSheet from '@/components/home/CatalogFilterSheet.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 import Skeleton from '@/components/common/Skeleton.vue'
 import { MAINTENANCE_STATE, isMaintenanceFeatureEnabled, isRestrictedMaintenanceMode } from '@/config/maintenance'
 import { createTtlLruCache } from '@/utils/ttlLruCache'
+import { normalizePriceFilterInput, normalizePriceFilterRange } from '@/utils/catalogFilters'
 
 defineOptions({ name: 'ProductsMarketplace' })
 
@@ -137,6 +181,8 @@ const initialLoading = ref(true)
 const hasInitialized = ref(false)
 const priceMinInput = ref('')
 const priceMaxInput = ref('')
+const mobileFilterOpen = ref(false)
+const filterApplying = ref(false)
 const gridColumns = ref(2)
 const CATEGORY_CACHE_TTL = 5 * 60 * 1000
 const categoryCache = createTtlLruCache({ ttl: CATEGORY_CACHE_TTL, max: 24 })
@@ -146,11 +192,11 @@ let latestCatalogActionId = 0
 let activeRequest = null
 
 const sortTabs = [
-  { value: 'default', label: '默认' },
-  { value: 'newest', label: '最新' },
-  { value: 'price_asc', label: '价格↑' },
-  { value: 'price_desc', label: '价格↓' },
-  { value: 'sales', label: '销量' }
+  { value: 'default', label: '默认', mobileLabel: '默认排序' },
+  { value: 'newest', label: '最新', mobileLabel: '最新上架' },
+  { value: 'price_asc', label: '价格↑', mobileLabel: '价格最低' },
+  { value: 'price_desc', label: '价格↓', mobileLabel: '价格最高' },
+  { value: 'sales', label: '销量', mobileLabel: '销量优先' }
 ]
 
 const isProductListHiddenByMaintenance = computed(() => (
@@ -167,23 +213,6 @@ function consumeStoreError(fallback = '') {
 
 function toSafeArray(value) {
   return Array.isArray(value) ? value : []
-}
-
-function normalizePriceFilterInput(value) {
-  const text = String(value ?? '').trim()
-  if (!text) return null
-  const parsed = Number.parseFloat(text)
-  if (!Number.isFinite(parsed)) return null
-  return Math.max(0, Math.round(parsed * 100) / 100)
-}
-
-function normalizePriceFilterRange(priceMin, priceMax) {
-  let normalizedMin = normalizePriceFilterInput(priceMin)
-  let normalizedMax = normalizePriceFilterInput(priceMax)
-  if (normalizedMin !== null && normalizedMax !== null && normalizedMin > normalizedMax) {
-    ;[normalizedMin, normalizedMax] = [normalizedMax, normalizedMin]
-  }
-  return { priceMin: normalizedMin, priceMax: normalizedMax }
 }
 
 function syncPriceFilterInputs(priceMin, priceMax) {
@@ -269,12 +298,19 @@ const hasActivePriceFilter = computed(() => shopStore.currentPriceMin !== null |
 const hasDraftPriceFilter = computed(() => (
   normalizePriceFilterInput(priceMinInput.value) !== null || normalizePriceFilterInput(priceMaxInput.value) !== null
 ))
+const activeFilterCount = computed(() => Number(inStockOnly.value) + Number(hasActivePriceFilter.value))
 const activePriceFilterLabel = computed(() => {
   const { priceMin, priceMax } = buildCatalogFilters()
   if (priceMin !== null && priceMax !== null) return `价格 ${priceMin} - ${priceMax} LDC`
   if (priceMin !== null) return `价格 ≥ ${priceMin} LDC`
   if (priceMax !== null) return `价格 ≤ ${priceMax} LDC`
   return ''
+})
+const mobileFilterAriaLabel = computed(() => {
+  const activeLabels = []
+  if (inStockOnly.value) activeLabels.push('只看有货')
+  if (activePriceFilterLabel.value) activeLabels.push(activePriceFilterLabel.value)
+  return activeLabels.length ? `筛选，已启用：${activeLabels.join('，')}` : '筛选物品'
 })
 
 watch(
@@ -286,6 +322,11 @@ watch(
 function updateGridColumns() {
   const width = window.innerWidth
   gridColumns.value = width >= 1024 ? 4 : (width >= 768 ? 3 : 2)
+}
+
+function handleViewportResize() {
+  updateGridColumns()
+  if (window.innerWidth > 768) mobileFilterOpen.value = false
 }
 
 function setupInfiniteScroll() {
@@ -349,6 +390,7 @@ async function runCatalogAction(options) {
   if (!result?.success && !result?.cancelled && !result?.aborted) {
     toast.error(result?.error || consumeStoreError('加载物品失败，请稍后重试'))
   }
+  return result
 }
 
 function handleCategorySelect(categoryId) {
@@ -357,6 +399,75 @@ function handleCategorySelect(categoryId) {
 
 function handleSortChange(sortKey) {
   return runCatalogAction({ categoryId: shopStore.currentCategory, sortKey, filters: buildCatalogFilters() })
+}
+
+function handleMobileSortChange(event) {
+  return handleSortChange(event.target.value)
+}
+
+function openMobileFilters() {
+  if (!loading.value) mobileFilterOpen.value = true
+}
+
+function closeMobileFilters() {
+  if (!filterApplying.value) mobileFilterOpen.value = false
+}
+
+function captureCatalogSnapshot() {
+  return {
+    categoryId: shopStore.currentCategory,
+    products: [...toSafeArray(shopStore.products)],
+    total: shopStore.total,
+    hasMore: shopStore.hasMore,
+    page: shopStore.page,
+    cursor: shopStore.catalogCursor || '',
+    rankingContext: shopStore.rankingContext || null,
+    sort: shopStore.currentSort || 'default',
+    inStockOnly: !!shopStore.inStockOnly,
+    priceMin: shopStore.currentPriceMin,
+    priceMax: shopStore.currentPriceMax
+  }
+}
+
+async function handleMobileFilterApply(draft) {
+  if (filterApplying.value) return
+  const filters = buildCatalogFilters(draft)
+  const stockChanged = filters.inStockOnly !== !!shopStore.inStockOnly
+  const priceChanged = filters.priceMin !== shopStore.currentPriceMin || filters.priceMax !== shopStore.currentPriceMax
+  syncPriceFilterInputs(filters.priceMin, filters.priceMax)
+
+  if (!stockChanged && !priceChanged) {
+    mobileFilterOpen.value = false
+    return
+  }
+
+  const previousSnapshot = captureCatalogSnapshot()
+  if (stockChanged) {
+    categoryCache.clear()
+    shopStore.setInStockOnly(filters.inStockOnly)
+  }
+
+  filterApplying.value = true
+  try {
+    const result = await runCatalogAction({
+      categoryId: shopStore.currentCategory,
+      sortKey: shopStore.currentSort || 'default',
+      filters,
+      useCache: !stockChanged
+    })
+    if (result?.success) {
+      mobileFilterOpen.value = false
+      return
+    }
+    if (!result?.cancelled && !result?.aborted) {
+      shopStore.restoreFromCache(previousSnapshot)
+      syncPriceFilterInputs(previousSnapshot.priceMin, previousSnapshot.priceMax)
+      await nextTick()
+      setupInfiniteScroll()
+    }
+  } finally {
+    filterApplying.value = false
+  }
 }
 
 async function handleToggleInStock() {
@@ -406,13 +517,13 @@ async function initialize() {
 }
 
 onMounted(() => {
-  updateGridColumns()
-  window.addEventListener('resize', updateGridColumns)
+  handleViewportResize()
+  window.addEventListener('resize', handleViewportResize)
   initialize()
 })
 
 onActivated(async () => {
-  window.addEventListener('resize', updateGridColumns)
+  window.addEventListener('resize', handleViewportResize)
   if (!hasInitialized.value || initialLoading.value) return
   if (Date.now() - lastLoadedAt >= CATEGORY_CACHE_TTL) {
     activeRequest?.abort()
@@ -428,13 +539,14 @@ onDeactivated(() => {
   latestCatalogActionId++
   activeRequest?.abort()
   observer?.disconnect()
-  window.removeEventListener('resize', updateGridColumns)
+  window.removeEventListener('resize', handleViewportResize)
+  mobileFilterOpen.value = false
 })
 
 onUnmounted(() => {
   activeRequest?.abort()
   observer?.disconnect()
-  window.removeEventListener('resize', updateGridColumns)
+  window.removeEventListener('resize', handleViewportResize)
 })
 
 watch(hasMore, (value) => {
@@ -445,9 +557,10 @@ watch(hasMore, (value) => {
 <style scoped>
 .section-content { min-height: 360px; animation: fade-in .3s ease; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
-.filter-section, .sort-section { margin-bottom: 12px; }
+.filter-section, .sort-section, .mobile-catalog-toolbar { margin-bottom: 12px; }
 .sort-section, .catalog-filters, .sort-options, .price-filter, .stock-filter, .products-header, .loading-indicator { display: flex; align-items: center; }
 .sort-section { justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.mobile-catalog-toolbar { display: none; }
 .sort-options { gap: 4px; flex-wrap: wrap; }
 .catalog-filters { justify-content: flex-end; gap: 12px; flex: 1 1 360px; flex-wrap: wrap; }
 .sort-btn { min-height: 32px; padding: 4px 10px; font-size: 12px; color: var(--text-tertiary); background: transparent; border: 0; border-radius: 12px; cursor: pointer; white-space: nowrap; transition: color .2s ease, background-color .2s ease; }
@@ -478,12 +591,17 @@ watch(hasMore, (value) => {
 @media (min-width: 768px) { .products-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media (min-width: 1024px) { .products-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 @media (max-width: 768px) {
-  .sort-section { flex-direction: column; align-items: stretch; gap: 8px; }
-  .sort-options { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
-  .sort-btn, .price-filter-input, .price-filter-btn, .stock-filter { min-height: 44px; }
-  .catalog-filters { width: 100%; justify-content: flex-start; gap: 8px; flex: none; }
-  .price-filter { width: 100%; gap: 4px; }
-  .price-filter-input { flex: 1 1 0; width: auto; min-width: 0; }
+  .sort-section { display: none; }
+  .mobile-catalog-toolbar { width: 100%; min-width: 0; display: flex; align-items: center; gap: 8px; }
+  .mobile-sort-control { position: relative; min-width: 0; flex: 1 1 auto; display: flex; align-items: center; }
+  .mobile-sort-control select { width: 100%; min-width: 0; min-height: 44px; appearance: none; padding: 0 38px 0 13px; overflow: hidden; border: 1px solid var(--border-color); border-radius: 13px; background: var(--bg-card); color: var(--text-primary); font-size: 14px; font-weight: 600; text-overflow: ellipsis; cursor: pointer; touch-action: manipulation; }
+  .mobile-sort-control svg { position: absolute; right: 13px; color: var(--text-tertiary); pointer-events: none; }
+  .mobile-filter-trigger { min-height: 44px; flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 0 13px; border: 1px solid var(--border-color); border-radius: 13px; background: var(--bg-secondary); color: var(--text-secondary); font-size: 14px; font-weight: 700; white-space: nowrap; cursor: pointer; touch-action: manipulation; transition: background-color var(--motion-duration-fast) var(--motion-ease-standard), border-color var(--motion-duration-fast) var(--motion-ease-standard), color var(--motion-duration-fast) var(--motion-ease-standard); }
+  .mobile-filter-trigger[aria-expanded="true"], .mobile-filter-trigger:active { border-color: var(--border-interactive); background: var(--action-secondary); color: var(--action-secondary-text); }
+  .mobile-filter-badge { min-width: 20px; height: 20px; display: inline-grid; place-items: center; padding: 0 5px; border-radius: 999px; background: var(--action-primary); color: var(--action-primary-text); font-size: 11px; line-height: 1; font-variant-numeric: tabular-nums; }
+  .mobile-sort-control select:disabled, .mobile-filter-trigger:disabled { cursor: not-allowed; opacity: .5; }
+  .mobile-sort-control select:focus-visible, .mobile-filter-trigger:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 3px; }
+  .filter-tag { display: none; }
 }
 @keyframes fade-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 @keyframes spin { to { transform: rotate(360deg); } }
