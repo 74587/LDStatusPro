@@ -5,6 +5,7 @@ import { useToast } from '@/composables/useToast'
 import { useNotificationSummaryStore } from '@/stores/notificationSummary'
 import {
   approveRefundRequest,
+  proactiveRefundRequest,
   contactRefundBuyerRequest,
   createRefundRequest,
   fetchOrderRefundRequest,
@@ -34,6 +35,7 @@ interface RefundOrder extends Record<string, unknown> {
 }
 
 interface RefundState {
+  fulfillment?: { canProactivelyRefund?: boolean }
   eligibility?: { canApply?: boolean; message?: string }
   refund?: RefundRecord | null
   disputeGuideUrl?: string
@@ -80,7 +82,7 @@ export function useOrderRefund(options: UseOrderRefundOptions) {
     : `暂不可提交：${eligibility.value?.message || '未能确认退款申请资格，请刷新后重试。'}`)
   const disputeGuideUrl = computed(() => refundState.value?.disputeGuideUrl || 'https://credit.linux.do/docs/how-to-use#争议处理')
   const statusMeta = computed(() => getRefundStatusMeta(refund.value?.status))
-  const stages = computed(() => buildRefundStages(refund.value?.status, Boolean(refund.value)))
+  const stages = computed(() => buildRefundStages(refund.value?.status, Boolean(refund.value), String(refund.value?.source || 'buyer')))
   const refundAmount = computed(() => Number(options.order.value?.paidAmount ?? options.order.value?.amount ?? 0))
   const counterpartyUsername = computed(() => isBuyer.value
     ? (options.order.value?.sellerUsername || options.order.value?.seller?.username)
@@ -90,9 +92,14 @@ export function useOrderRefund(options: UseOrderRefundOptions) {
     orderNo.value,
     isBuyer.value ? 'buyer' : 'seller'
   ))
+  const canProactivelyRefund = computed(() => !isBuyer.value && !refund.value
+    && refundState.value?.fulfillment?.canProactivelyRefund === true)
   const canSellerDecide = computed(() => !isBuyer.value && ['requested', 'negotiating', 'failed'].includes(String(refund.value?.status || '')))
+  const canSellerReject = computed(() => !isBuyer.value && String(refund.value?.source || 'buyer') === 'buyer'
+    && ['requested', 'negotiating'].includes(String(refund.value?.status || '')))
   const canSellerContact = computed(() => !isBuyer.value && ['requested', 'negotiating', 'failed', 'unknown'].includes(String(refund.value?.status || '')))
-  const showSellerActions = computed(() => canSellerDecide.value || canSellerContact.value)
+  const showSellerActions = computed(() => canSellerDecide.value || canSellerReject.value || canSellerContact.value)
+  const refundSourceLabel = computed(() => ({ system: '系统超时保障', seller: '卖家主动退款', buyer: '买家售后申请' }[String(refund.value?.source || 'buyer')] || '退款处理'))
   const contactActionLabel = computed(() => refund.value?.status === 'requested' ? '标记为协商中' : '补充协商记录')
   const buyerGuidance = computed(() => {
     const guidance: Record<string, { title: string; description: string; tone: string }> = {
@@ -193,6 +200,10 @@ export function useOrderRefund(options: UseOrderRefundOptions) {
     closeSellerAction()
     if (refundState.value?.refund?.status === 'external_dispute') {
       toast.warning('检测到订单已转 Credit 处理，LD 士多未继续同意或拒绝退款')
+    } else if (refundState.value?.refund?.status === 'unknown') {
+      toast.warning('退款结果待核对，系统已停止自动重试')
+    } else if (refundState.value?.refund?.status === 'failed') {
+      toast.error('退款未完成，请按失败原因修复后重试')
     } else {
       toast.success(successMessage)
     }
@@ -240,6 +251,16 @@ export function useOrderRefund(options: UseOrderRefundOptions) {
     await applySellerResult(result, '退款已完成')
   }
 
+  async function proactivelyRefund() {
+    if (!canProactivelyRefund.value || sellerSubmitting.value) return
+    const confirmed = await dialog.confirm(`将为订单 ${orderNo.value} 原路退回全部 ${refundAmount.value.toFixed(2)} LDC。成功后不可撤销，库存、优惠券和限购额度不会恢复；截止后发起且成功的退款仍按超时规则计次。`, { title: '无法履约，主动全额退款', confirmText: '确认全额退款', cancelText: '返回检查' })
+    if (!confirmed) return
+    sellerSubmitting.value = true
+    const result = await proactiveRefundRequest(orderNo.value)
+    sellerSubmitting.value = false
+    await applySellerResult(result, '退款处理结果已更新')
+  }
+
   function stop() {
     loadRequestId += 1
     loadController?.abort('caller')
@@ -256,9 +277,9 @@ export function useOrderRefund(options: UseOrderRefundOptions) {
     loading, loadError, refundState, refund, eligibility, formOpen, submitting, errors, errorSummary,
     sellerActionMode, sellerMessage, sellerActionError, sellerSubmitting, form, orderNo, isBuyer,
     canApplyRefund, refundAvailabilityMessage, disputeGuideUrl, statusMeta, stages, refundAmount,
-    counterpartyMessageUrl, canSellerDecide, canSellerContact, showSellerActions, contactActionLabel,
+    counterpartyMessageUrl, canSellerDecide, canSellerReject, canSellerContact, showSellerActions, contactActionLabel, refundSourceLabel,
     buyerGuidance, loadRefund, toggleForm, closeForm, validateField, submitRefund, openSellerAction,
-    closeSellerAction, submitSellerAction, approveRefund, REFUND_REASON_OPTIONS, formatRefundDate,
+    closeSellerAction, submitSellerAction, approveRefund, proactivelyRefund, canProactivelyRefund, REFUND_REASON_OPTIONS, formatRefundDate,
     getRefundReasonLabel
   }
 }

@@ -1,3 +1,4 @@
+import { FulfillmentInfoSchema } from './fulfillment'
 import {
   array,
   boolean,
@@ -38,6 +39,7 @@ export const OrderStatusSchema = union([
   literal('completed'),
   literal('cancelled'),
   literal('refunded'),
+  literal('refund_pending'),
   literal('external_dispute'),
   literal('expired'),
   literal('uploaded'),
@@ -121,6 +123,7 @@ export const CommerceActionResponseSchema = union([
 ])
 
 export const OrderSchema = looseObject({
+  fulfillment: optional(FulfillmentInfoSchema),
   orderNo: NonemptyStringSchema,
   status: OrderStatusSchema
 })
@@ -177,6 +180,7 @@ export const RefundSchema = looseObject({
 })
 
 export const OrderRefundResponseSchema = looseObject({
+  fulfillment: optional(FulfillmentInfoSchema),
   role: union([literal('buyer'), literal('seller')]),
   eligibility: looseObject({
     canApply: boolean(),

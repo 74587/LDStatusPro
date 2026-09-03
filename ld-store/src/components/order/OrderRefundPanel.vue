@@ -221,8 +221,9 @@
           </div>
 
           <dl>
+            <div><dt>发起方式</dt><dd>{{ refundSourceLabel }}</dd></div>
             <div><dt>退款原因</dt><dd>{{ getRefundReasonLabel(refund.reasonCode) }}</dd></div>
-            <div>
+            <div v-if="String(refund.source || 'buyer') === 'buyer'">
               <dt>联系记录</dt>
               <dd :class="['refund-contact-state', { 'is-confirmed': refund.buyerContactedSeller }]">
                 {{ refund.buyerContactedSeller ? '买家表示已联系' : '未记录已联系' }}
@@ -263,7 +264,7 @@
             <button v-if="canSellerContact" type="button" class="refund-btn refund-btn--secondary" :aria-expanded="sellerActionMode === 'contact'" :disabled="sellerSubmitting" @click="openSellerAction('contact')">
               {{ contactActionLabel }}
             </button>
-            <button v-if="canSellerDecide" type="button" class="refund-btn refund-btn--outline-danger" :aria-expanded="sellerActionMode === 'reject'" :disabled="sellerSubmitting" @click="openSellerAction('reject')">
+            <button v-if="canSellerReject" type="button" class="refund-btn refund-btn--outline-danger" :aria-expanded="sellerActionMode === 'reject'" :disabled="sellerSubmitting" @click="openSellerAction('reject')">
               拒绝申请
             </button>
             <router-link v-if="refund.status === 'unknown'" to="/support" class="refund-btn refund-btn--primary">联系平台核对</router-link>
@@ -301,6 +302,10 @@
         </div>
       </div>
     </template>
+    <div v-if="!loading && !loadError && canProactivelyRefund" class="refund-actions">
+      <button type="button" class="refund-btn refund-btn--danger" :disabled="sellerSubmitting" @click="proactivelyRefund">{{ sellerSubmitting ? '退款处理中…' : '无法履约，主动全额退款' }}</button>
+      <p class="refund-availability">到期前主动退款成功不计超时；请先核对订单实付金额。</p>
+    </div>
   </section>
 </template>
 
@@ -332,6 +337,8 @@ const props = withDefaults(defineProps<{
 }>(), { role: 'buyer' })
 const emit = defineEmits<{ updated: [] }>()
 const {
+  canProactivelyRefund,
+  proactivelyRefund,
   loading,
   loadError,
   refund,
@@ -353,9 +360,11 @@ const {
   refundAmount,
   counterpartyMessageUrl,
   canSellerDecide,
+  canSellerReject,
   canSellerContact,
   showSellerActions,
   contactActionLabel,
+  refundSourceLabel,
   buyerGuidance,
   loadRefund,
   toggleForm,

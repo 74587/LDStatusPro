@@ -39,6 +39,7 @@
           </div>
         </div>
 
+        <FulfillmentPolicyNotice v-if="!isCdk" />
         <div class="checkout-grid">
           <div class="checkout-main-column">
             <section class="checkout-card product-card" aria-labelledby="product-card-title">
@@ -300,6 +301,7 @@
 </template>
 
 <script setup>
+import FulfillmentPolicyNotice from '@/components/order/FulfillmentPolicyNotice.vue'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 import {

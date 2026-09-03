@@ -1,5 +1,6 @@
 <template>
   <div class="publish-page">
+    <SellerFulfillmentPanel />
     <Transition name="submit-mask">
       <div
         v-if="publishOverlayVisible"
@@ -398,6 +399,7 @@
 </template>
 
 <script setup>
+import SellerFulfillmentPanel from '@/components/seller/SellerFulfillmentPanel.vue'
 import { ref, computed, nextTick, onBeforeUnmount, onMounted, watch } from 'vue'
 import { CircleAlert, CircleCheck, Clock3, Cloud, FlaskConical, Image as ImageIcon, ShieldAlert } from '@lucide/vue'
 import { onBeforeRouteLeave, useRouter, useRoute } from 'vue-router'

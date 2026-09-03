@@ -1,5 +1,6 @@
 <template>
   <div class="seller-dashboard">
+    <SellerFulfillmentPanel />
     <div v-if="loading" class="dashboard-loading" aria-live="polite" aria-label="正在加载经营概览">
       <div class="skeleton brief-skeleton"></div>
       <div class="skeleton-row">
@@ -263,6 +264,7 @@
 </template>
 
 <script setup>
+import SellerFulfillmentPanel from '@/components/seller/SellerFulfillmentPanel.vue'
 import { computed, defineAsyncComponent, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import {
   AlertCircle, ArrowUpRight, CalendarDays, ChevronDown, ChevronRight, CircleCheck, ClipboardList,

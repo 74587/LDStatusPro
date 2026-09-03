@@ -18,6 +18,9 @@
 
     <h2 id="pending-delivery">处理待发货订单</h2>
     <HelpSteps :steps="deliverySteps" />
+    <HelpCallout title="先看发货截止时间" tone="warning">
+      普通物品按支付成功后连续 72 小时计算。48 小时未发货会下架物品；到期后发货入口停止，系统自动发起全额退款。无法履约时请在截止前使用主动全额退款。<router-link to="/docs/shipping-deadline">查看计次和异常规则</router-link>
+    </HelpCallout>
     <HelpCallout title="先确认支付结果，再交付" tone="warning">
       只有订单页面确认已支付并进入需要履约的状态时才开始发货。不要依据买家单独发送的截图跳过订单状态。
     </HelpCallout>
@@ -34,6 +37,7 @@
     <h2 id="status-and-result">完成后确认</h2>
     <dl class="status-list">
       <div><dt>待发货</dt><dd>订单已等待卖家处理，是经营概览和订单页优先关注的待办。</dd></div>
+      <div><dt>超时退款处理中</dt><dd>订单已过发货期限，不可继续发货；关注退款成功、失败或待核对结果。</dd></div>
       <div><dt>已发货</dt><dd>交付信息已经写入订单，买家可在订单详情查看。</dd></div>
       <div><dt>已完成</dt><dd>交易流程结束；仍需按已承诺范围处理必要售后。</dd></div>
       <div><dt>已取消 / 已过期</dt><dd>不要继续交付；如状态与实际支付不符，先反馈核对。</dd></div>

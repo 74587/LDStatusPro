@@ -253,6 +253,7 @@
           <div class="description-content markdown-content" v-html="renderedProductDescription"></div>
         </div>
 
+        <FulfillmentDeadline v-if="['paid', 'refund_pending'].includes(order.status)" :order="order" />
         <OrderRefundPanel
           v-if="isPlatformOrder(order)"
           :order="order"
@@ -338,6 +339,7 @@
 </template>
 
 <script setup>
+import FulfillmentDeadline from '@/components/order/FulfillmentDeadline.vue'
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
@@ -713,6 +715,7 @@ function getStatusText(status) {
     completed: '已完成',
     cancelled: '已取消',
     refunded: '已退款',
+    refund_pending: '退款处理中',
     external_dispute: '已转 Credit 处理',
     delivered: '已发货',
     expired: '已过期'
@@ -745,6 +748,7 @@ function getStatusClass(status) {
     completed: 'status-success',
     cancelled: 'status-cancelled',
     refunded: 'status-refunded',
+    refund_pending: 'status-info',
     external_dispute: 'status-external-dispute',
     delivered: 'status-info',
     expired: 'status-cancelled'

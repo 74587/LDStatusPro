@@ -6,9 +6,10 @@ export const REFUND_REASON_OPTIONS = Object.freeze([
   { value: 'other', label: '其他问题' }
 ])
 
-const REASON_LABELS = Object.freeze(Object.fromEntries(
-  REFUND_REASON_OPTIONS.map(option => [option.value, option.label])
-))
+const REASON_LABELS = Object.freeze({
+  ...Object.fromEntries(REFUND_REASON_OPTIONS.map(option => [option.value, option.label])),
+  shipment_timeout: '卖家超时未发货'
+})
 
 const STATUS_META = Object.freeze({
   requested: { label: '等待卖家处理', tone: 'warning', description: '退款申请已提交，卖家尚未处理。' },
@@ -40,7 +41,13 @@ const REFUND_EVENT_META = Object.freeze({
   refund_succeeded: { label: 'LDC 积分退款成功', tone: 'success', icon: 'success' },
   refund_failed: { label: '退款执行失败', tone: 'danger', icon: 'failed' },
   refund_unknown: { label: '退款结果等待核对', tone: 'warning', icon: 'unknown' },
-  external_dispute_detected: { label: '检测到 Credit 外部处理', tone: 'warning', icon: 'external' }
+  external_dispute_detected: { label: '检测到 Credit 外部处理', tone: 'warning', icon: 'external' },
+  automatic_refund_started: { label: '系统因超时发起全额退款', tone: 'info', icon: 'approved' },
+  seller_refund_started: { label: '卖家主动发起全额退款', tone: 'info', icon: 'approved' },
+  refund_admin_confirmed: { label: '平台登记 Credit 核对结果', tone: 'info', icon: 'update' },
+  admin_confirmed_refunded: { label: '平台确认 Credit 已退款', tone: 'success', icon: 'success' },
+  admin_confirmed_failed: { label: '平台确认退款未完成', tone: 'danger', icon: 'failed' },
+  admin_confirmed_external_dispute: { label: '平台确认已转 Credit 处理', tone: 'warning', icon: 'external' }
 })
 
 function createStage(index, state = 'pending', options = {}) {
@@ -54,10 +61,12 @@ function createStage(index, state = 'pending', options = {}) {
   }
 }
 
-export function buildRefundStages(status, hasRefund = true) {
+export function buildRefundStages(status, hasRefund = true, source = 'buyer') {
   if (!hasRefund) return []
 
   const value = String(status || '')
+  const requestDone = source === 'system' ? '系统已触发超时保障' : source === 'seller' ? '卖家已主动退款' : '申请信息已送达'
+  const decisionDone = source === 'buyer' ? '卖家已同意退款' : '无需卖家审批'
   const pending = index => createStage(index)
   const done = (index, description) => createStage(index, 'done', { description })
   const current = (index, description, tone = 'info') => createStage(index, 'current', {
@@ -73,7 +82,7 @@ export function buildRefundStages(status, hasRefund = true) {
 
   if (value === 'requested') {
     return [
-      done(0, '申请信息已送达'),
+      done(0, requestDone),
       current(1, '等待卖家响应', 'warning'),
       pending(2),
       pending(3)
@@ -82,7 +91,7 @@ export function buildRefundStages(status, hasRefund = true) {
 
   if (value === 'negotiating') {
     return [
-      done(0, '申请信息已送达'),
+      done(0, requestDone),
       current(1, '双方正在协商'),
       pending(2),
       pending(3)
@@ -91,8 +100,8 @@ export function buildRefundStages(status, hasRefund = true) {
 
   if (value === 'processing') {
     return [
-      done(0, '申请信息已送达'),
-      done(1, '卖家已同意退款'),
+      done(0, requestDone),
+      done(1, decisionDone),
       current(2, '正在提交 Credit'),
       pending(3)
     ]
@@ -103,8 +112,8 @@ export function buildRefundStages(status, hasRefund = true) {
     result.label = '已退款'
     result.current = true
     return [
-      done(0, '申请信息已送达'),
-      done(1, '卖家已同意退款'),
+      done(0, requestDone),
+      done(1, decisionDone),
       done(2, 'Credit 已确认退款'),
       result
     ]
@@ -118,7 +127,7 @@ export function buildRefundStages(status, hasRefund = true) {
     const result = error(3, '查看卖家说明')
     result.label = '已拒绝'
     return [
-      done(0, '申请信息已送达'),
+      done(0, requestDone),
       done(1, '卖家已作出决定'),
       skipped,
       result
@@ -127,8 +136,8 @@ export function buildRefundStages(status, hasRefund = true) {
 
   if (value === 'failed') {
     return [
-      done(0, '申请信息已送达'),
-      done(1, '卖家已同意退款'),
+      done(0, requestDone),
+      done(1, decisionDone),
       error(2, '可检查原因后重试'),
       pending(3)
     ]
@@ -136,8 +145,8 @@ export function buildRefundStages(status, hasRefund = true) {
 
   if (value === 'unknown') {
     return [
-      done(0, '申请信息已送达'),
-      done(1, '卖家已同意退款'),
+      done(0, requestDone),
+      done(1, decisionDone),
       error(2, '需人工核对 Credit', 'warning'),
       pending(3)
     ]

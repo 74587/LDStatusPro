@@ -73,3 +73,10 @@ export async function fetchSellerRefundsRequest(options: SellerRefundListOptions
     'SellerRefundListResponse'
   ), '加载退款售后列表失败，请稍后重试')
 }
+
+export async function proactiveRefundRequest(orderNo: string) {
+  return withServiceFailure(async () => validatedRefundRequest(
+    await api.post(`${orderPath(orderNo)}/proactive`, { confirm: true }),
+    '/api/shop/orders/:orderNo/refund/proactive'
+  ), '执行主动退款失败，请查看退款状态')
+}

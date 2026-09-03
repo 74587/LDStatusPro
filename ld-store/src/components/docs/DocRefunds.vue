@@ -6,6 +6,9 @@
     <HelpCallout title="只支持原订单全额退款" tone="warning">
       Credit 退款接口要求退回原订单全额，LD 士多不支持部分退款。同一订单只能建立一条退款申请。
     </HelpCallout>
+    <HelpCallout title="普通物品超时无需买家申请" tone="info">
+      普通物品支付后 72 小时仍未发货，系统会自动发起实付全额退款；已有申请、协商或拒绝不会阻止超时保障。只有 Credit 明确成功后才显示“已退款”。<router-link to="/docs/shipping-deadline">查看发货时限规则</router-link>
+    </HelpCallout>
 
     <h2 id="before-request">申请前先准备</h2>
     <ul>
@@ -32,7 +35,7 @@
 
     <h2 id="refund-exceptions">退款执行失败或结果待核实</h2>
     <ul>
-      <li><strong>执行失败：</strong>页面已收到明确失败结果。卖家按提示检查原收款凭证或订单状态后，可从订单详情重试。</li>
+      <li><strong>执行失败：</strong>页面已收到明确失败结果。卖家按提示检查原收款凭证、余额或订单状态后，可从订单详情重试；管理员也可在留下核对依据后安全重试。</li>
       <li><strong>结果待核实：</strong>请求可能已送达 Credit，但商城未获得可确认结果。为防止重复退款，页面不提供重试；双方应保留订单号并联系 LD 士多核实。</li>
       <li><strong>已转 Credit 处理：</strong>Credit 中的原订单已不再是 success 状态，LD 士多会结束本地退款流程。这不代表积分已退回，请到 Credit 核对争议状态、交易记录和余额。</li>
       <li>在结果明确前，卖家不要通过其他入口对同一订单重复操作，买家也不必重复提交申请。</li>

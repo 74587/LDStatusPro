@@ -47,7 +47,7 @@
           <SellerOrderPartyIdentity :order="order" :role="isBuyRequestOrder(order) ? 'counterparty' : 'buyer'" />
         </template>
         <template #cell-amount="{ row: order }"><strong class="seller-order-amount">{{ order.totalPrice || order.amount || 0 }}</strong><small class="seller-order-unit">LDC</small></template>
-        <template #cell-status="{ row: order }"><SellerStatusBadge :tone="resolveSellerStatusTone(order.status)" :label="getStatusText(order.status, order)" /><small v-if="order.status === 'pending'" class="seller-order-expiry">{{ getExpireCountdownText(order) }}</small></template>
+        <template #cell-status="{ row: order }"><FulfillmentDeadline v-if="['paid','refund_pending'].includes(order.status)" :order="order" compact /><SellerStatusBadge :tone="resolveSellerStatusTone(order.status)" :label="getStatusText(order.status, order)" /><small v-if="order.status === 'pending'" class="seller-order-expiry">{{ getExpireCountdownText(order) }}</small></template>
         <template #cell-actions="{ row: order }">
           <div class="seller-order-actions">
             <button v-if="showManualDeliver(order)" type="button" class="seller-row-primary" :aria-expanded="isDeliverFormVisible(order)" @click="openDeliverForm(order)"><PackageCheck :size="15" aria-hidden="true" />立即发货</button>
@@ -74,7 +74,7 @@
           </div>
           <dl class="seller-order-mobile-grid"><div><dt>{{ isBuyRequestOrder(order) ? '求购方' : '买家' }}</dt><dd class="seller-order-mobile-party"><SellerOrderPartyIdentity :order="order" :role="isBuyRequestOrder(order) ? 'counterparty' : 'buyer'" /></dd></div><div><dt>金额</dt><dd>{{ order.totalPrice || order.amount || 0 }} LDC</dd></div><div><dt>时间</dt><dd>{{ formatDate(order.createdAt) }}</dd></div><div><dt>来源</dt><dd>{{ currentRole === 'buy' ? '求购服务' : '商品订单' }}</dd></div></dl>
           <p v-if="order.status === 'pending'" class="seller-order-mobile-expiry">{{ getExpireCountdownText(order) }}</p>
-          <div class="seller-order-mobile-actions"><button v-if="showManualDeliver(order)" type="button" class="seller-row-primary" :aria-expanded="isDeliverFormVisible(order)" @click="openDeliverForm(order)"><PackageCheck :size="15" aria-hidden="true" />立即发货</button><button v-if="isBuyRequestOrder(order) && (order.status === 'pending' || order.status === 'paid') && !isPaymentMaintenanceBlocked" type="button" class="seller-row-secondary" :disabled="refreshingBuyOrderId === getOrderKey(order)" @click="handleRefreshBuyOrder(order)"><RefreshCw :size="15" aria-hidden="true" />刷新</button><button v-if="currentRole === 'seller' && order.status === 'pending'" type="button" class="seller-row-danger" :disabled="cancellingOrderId === getOrderKey(order)" @click="handleCancelOrder(order)">取消订单</button><router-link :to="getOrderDetailTarget(order)" class="seller-row-detail" @click="handleOrderCardClick">订单详情<ArrowUpRight :size="14" aria-hidden="true" /></router-link></div>
+          <FulfillmentDeadline v-if="['paid','refund_pending'].includes(order.status)" :order="order" compact /><div class="seller-order-mobile-actions"><button v-if="showManualDeliver(order)" type="button" class="seller-row-primary" :aria-expanded="isDeliverFormVisible(order)" @click="openDeliverForm(order)"><PackageCheck :size="15" aria-hidden="true" />立即发货</button><button v-if="isBuyRequestOrder(order) && (order.status === 'pending' || order.status === 'paid') && !isPaymentMaintenanceBlocked" type="button" class="seller-row-secondary" :disabled="refreshingBuyOrderId === getOrderKey(order)" @click="handleRefreshBuyOrder(order)"><RefreshCw :size="15" aria-hidden="true" />刷新</button><button v-if="currentRole === 'seller' && order.status === 'pending'" type="button" class="seller-row-danger" :disabled="cancellingOrderId === getOrderKey(order)" @click="handleCancelOrder(order)">取消订单</button><router-link :to="getOrderDetailTarget(order)" class="seller-row-detail" @click="handleOrderCardClick">订单详情<ArrowUpRight :size="14" aria-hidden="true" /></router-link></div>
         </template>
         <template #expanded="{ row: order }">
           <ManualDeliveryEditor v-model="deliverContent" variant="seller" :input-id="`delivery-${getOrderKey(order)}`" :placeholder="getDeliverPlaceholder(order)" :hint="getDeliverHint(order)" :submitting="deliveringOrderId === getOrderKey(order)" @cancel="closeDeliverForm" @submit="submitManualDeliver(order)" />
@@ -213,7 +213,8 @@
           </router-link>
           
           <!-- 发货内容仅在订单详情页展示，列表卡片不直接暴露 CDK/发货内容。 -->
-          
+          <FulfillmentDeadline v-if="isPlatformOrder(order) && ['paid', 'refund_pending'].includes(order.status)" :order="order" compact />
+
           <div class="order-footer">
             <div class="order-amount-wrap compact">
               <span class="order-amount">{{ order.totalPrice || order.amount }} LDC</span>
@@ -311,6 +312,7 @@
 </template>
 
 <script setup>
+import FulfillmentDeadline from '@/components/order/FulfillmentDeadline.vue'
 import { computed, ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import {
   ArrowUpRight,
@@ -893,7 +895,7 @@ function isPaidOvertime(order) {
 
 function showManualDeliver(order) {
   if (currentRole.value !== 'seller') return false
-  if (isNormalOrder(order)) return order.status === 'paid'
+  if (isNormalOrder(order)) return order.status === 'paid' && order.fulfillment?.canDeliver !== false && (!order.fulfillment?.deadlineAt || Date.parse(order.fulfillment.deadlineAt) > nowTs.value)
   return isCdkOrder(order) && isPaidOvertime(order)
 }
 
@@ -998,6 +1000,7 @@ function getStatusText(status, orderData) {
     completed: '已完成',
     cancelled: '已取消',
     refunded: '已退款',
+    refund_pending: '退款处理中',
     external_dispute: '已转 Credit 处理',
     delivered: '已发货',
     expired: '已过期',
@@ -1016,6 +1019,7 @@ function getStatusClass(status) {
     completed: 'status-completed',
     cancelled: 'status-cancelled',
     refunded: 'status-refunded',
+    refund_pending: 'status-info',
     external_dispute: 'status-external-dispute',
     delivered: 'status-delivered',
     expired: 'status-expired',
