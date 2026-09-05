@@ -20,11 +20,10 @@ function normalizeItem(item = {}) {
   const contentType = ['text', 'markdown', 'html'].includes(item.contentType)
     ? item.contentType
     : 'text'
-  const maxLength = mode === 'popup' ? 5000 : 200
-  const content = String(item.content || '').trim().slice(0, maxLength)
+  const content = String(item.content || '').trim()
   const type = ['info', 'warning', 'success'].includes(item.type) ? item.type : 'info'
   const popupDismissKey = String(item.popupDismissKey || '').trim() || `popup-${Number(item.id || 0)}`
-  const title = String(item.title || '').trim().slice(0, 120)
+  const title = String(item.title || '').trim()
 
   return {
     id: Number(item.id || 0),
