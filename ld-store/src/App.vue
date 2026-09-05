@@ -88,7 +88,7 @@ import {
 const route = useRoute()
 const userStore = useUserStore()
 const notificationSummaryStore = useNotificationSummaryStore()
-const { announcementLoaded, fetchAnnouncements } = useAnnouncement()
+const { announcementLoaded, startAnnouncements, stopAnnouncements } = useAnnouncement()
 const isMaintenanceRoute = computed(() => route.name === 'Maintenance')
 const isSellerRoute = computed(() => route.meta.layout === 'seller')
 const isRestrictedHomeRoute = computed(() => false)
@@ -136,11 +136,13 @@ watch(showDoodleBg, (value) => {
   }
 })
 
+onUnmounted(stopAnnouncements)
+
 // 初始化
 onMounted(() => {
   // 全站维护时避免触发额外初始化链路
   if (!isFullMaintenanceMode()) {
-    void fetchAnnouncements().catch(() => [])
+    startAnnouncements()
   }
 })
 
