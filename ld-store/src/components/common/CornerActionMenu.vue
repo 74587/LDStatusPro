@@ -3,8 +3,33 @@
     ref="menuRef"
     class="corner-menu"
     :class="{ 'is-open': isOpen, 'is-visible': showMenu }"
+    @keydown.esc.stop.prevent="closeMenuWithFocus"
+    @focusout="handleFocusOut"
   >
     <button
+      ref="triggerRef"
+      type="button"
+      class="corner-fab"
+      @click.stop="toggleMenu"
+      :aria-expanded="String(isOpen)"
+      aria-label="快捷菜单"
+    >
+      <span class="fab-label">功能按钮</span>
+      <span class="fab-glow" aria-hidden="true"></span>
+      <svg class="fab-icon" :class="{ 'is-open': isOpen }" viewBox="0 0 24 24" aria-hidden="true">
+        <path
+          d="M12 4v6M12 14v6M4 12h6M14 12h6"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+        />
+        <circle cx="12" cy="12" r="2.5" fill="currentColor" />
+      </svg>
+    </button>
+
+    <button
+      type="button"
+      :inert="!isOpen || !showMenu ? '' : undefined"
       class="corner-action action-doodle"
       :class="{ 'is-active': isEnabled }"
       :style="actionStyle(0)"
@@ -54,6 +79,8 @@
     </button>
 
     <button
+      type="button"
+      :inert="!isOpen || !showMenu ? '' : undefined"
       class="corner-action action-support"
       :style="actionStyle(1)"
       @click.stop="openSupport"
@@ -80,6 +107,8 @@
     </button>
 
     <button
+      type="button"
+      :inert="!isOpen || !showMenu ? '' : undefined"
       class="corner-action action-merchant"
       :style="actionStyle(2)"
       @click.stop="openMerchantServices"
@@ -117,6 +146,19 @@
       <span class="action-label">卖家后台</span>
     </button>
 
+    <router-link
+      to="/announcements"
+      :inert="!isOpen || !showMenu ? '' : undefined"
+      class="corner-action action-announcements"
+      :style="actionStyle(3)"
+      @click.stop="isOpen = false"
+      title="公告中心"
+      aria-label="公告中心"
+    >
+      <Megaphone class="action-icon" :size="20" :stroke-width="1.5" aria-hidden="true" />
+      <span class="action-label">公告中心</span>
+    </router-link>
+
     <Transition name="backtop-fade">
       <button
         v-if="showBackToTop"
@@ -143,31 +185,13 @@
         </svg>
       </button>
     </Transition>
-
-    <button
-      class="corner-fab"
-      @click.stop="toggleMenu"
-      :aria-expanded="String(isOpen)"
-      aria-label="快捷菜单"
-    >
-      <span class="fab-label">功能按钮</span>
-      <span class="fab-glow" aria-hidden="true"></span>
-      <svg class="fab-icon" :class="{ 'is-open': isOpen }" viewBox="0 0 24 24" aria-hidden="true">
-        <path
-          d="M12 4v6M12 14v6M4 12h6M14 12h6"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-        />
-        <circle cx="12" cy="12" r="2.5" fill="currentColor" />
-      </svg>
-    </button>
   </div>
 </template>
 
 <script setup>
 import { ref, watch, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { Megaphone } from '@lucide/vue'
 
 const props = defineProps({
   modelValue: {
@@ -181,15 +205,18 @@ const emit = defineEmits(['update:modelValue'])
 const router = useRouter()
 const route = useRoute()
 const menuRef = ref(null)
+const triggerRef = ref(null)
+let revealTimer
 const showMenu = ref(false)
 const isOpen = ref(false)
 const isEnabled = ref(props.modelValue)
 const showBackToTop = ref(false)
 
-const radius = 78
+const radius = 116
 const positions = [
   { x: 0, y: radius },
-  { x: radius * 0.72, y: radius * 0.72 },
+  { x: radius * 0.5, y: radius * 0.866 },
+  { x: radius * 0.866, y: radius * 0.5 },
   { x: radius, y: 0 }
 ]
 
@@ -213,6 +240,15 @@ const actionStyle = (index) => {
 
 function toggleMenu() {
   isOpen.value = !isOpen.value
+}
+
+function closeMenuWithFocus() {
+  isOpen.value = false
+  triggerRef.value?.focus()
+}
+
+function handleFocusOut(event) {
+  if (!menuRef.value?.contains(event.relatedTarget)) isOpen.value = false
 }
 
 function toggleDoodle() {
@@ -258,7 +294,7 @@ function handleDocClick(event) {
 }
 
 onMounted(() => {
-  setTimeout(() => {
+  revealTimer = setTimeout(() => {
     showMenu.value = true
   }, 450)
   updateBackToTopVisibility()
@@ -267,6 +303,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  clearTimeout(revealTimer)
   document.removeEventListener('click', handleDocClick)
   window.removeEventListener('scroll', handleScroll)
 })
@@ -449,6 +486,18 @@ watch(
   box-shadow: var(--corner-merchant-hover-shadow);
 }
 
+.action-announcements {
+  color: var(--action-primary);
+  background: var(--surface-paper-card);
+  border-color: var(--border-default-semantic);
+  text-decoration: none;
+}
+
+.corner-menu :focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 4px;
+}
+
 .action-label {
   position: absolute;
   right: 56px;
@@ -519,11 +568,11 @@ watch(
 }
 
 .backtop-button.is-shifted {
-  transform: translateY(-82px);
+  transform: translateY(-128px);
 }
 
 .backtop-button.is-shifted:hover {
-  transform: translateY(-84px);
+  transform: translateY(-130px);
 }
 
 .backtop-icon {
@@ -641,8 +690,8 @@ watch(
   }
 
   .corner-action {
-    width: 42px;
-    height: 42px;
+    width: 44px;
+    height: 44px;
   }
 
   .corner-fab {
@@ -653,16 +702,16 @@ watch(
   .backtop-button {
     right: 2px;
     bottom: 62px;
-    width: 40px;
-    height: 40px;
+    width: 44px;
+    height: 44px;
   }
 
   .backtop-button.is-shifted {
-    transform: translateY(-72px);
+    transform: translateY(-128px);
   }
 
   .backtop-button.is-shifted:hover {
-    transform: translateY(-74px);
+    transform: translateY(-130px);
   }
 
   .action-label {
