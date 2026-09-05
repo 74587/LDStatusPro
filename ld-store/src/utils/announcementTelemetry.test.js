@@ -21,3 +21,12 @@ it('requires sustained visibility, retries the same event ID and clears account 
   await telemetry.flushAnnouncementEvents(); expect(send).toHaveBeenCalledTimes(2)
   telemetry.announcementImpression.unmounted(element)
 })
+
+it('excludes explicitly marked synthetic sessions',async()=>{
+  vi.stubEnv('PROD',true)
+  vi.stubGlobal('location',{search:'?context_synthetic=true'})
+  const telemetry=await import('./announcementTelemetry')
+  telemetry.trackAnnouncement({id:1},'open','detail')
+  await telemetry.flushAnnouncementEvents()
+  expect(send).not.toHaveBeenCalled()
+})

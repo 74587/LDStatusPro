@@ -1,5 +1,6 @@
 import { sendAnnouncementEvents } from '@/services/announcementService'
 let identity = 'guest', queue = [], timer = null, flushing = false, generation = 0
+const syntheticSession = new URLSearchParams(globalThis.location?.search || '').get('context_synthetic') === 'true'
 let sessionId
 function session() {
   if (sessionId) return sessionId
@@ -25,7 +26,7 @@ export async function flushAnnouncementEvents() {
   finally { flushing = false; queue = queue.filter(event => event.attempts < 6); schedule() }
 }
 export function trackAnnouncement(item, event, placement) {
-  if (!import.meta.env.PROD || navigator.webdriver || !item?.id) return
+  if (!import.meta.env.PROD || syntheticSession || navigator.webdriver || navigator.globalPrivacyControl === true || navigator.doNotTrack === '1' || !item?.id) return
   queue.push({ eventId: crypto.randomUUID(), announcementId: item.id, contentVersion: item.contentVersion || 1, reminderVersion: item.reminderVersion || 1, placement, event, sessionId: session(), attempts: 0 })
   if (queue.length > 100) queue.shift()
   schedule()
