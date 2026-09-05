@@ -1,3 +1,4 @@
+import { setAnnouncementTelemetryIdentity } from '@/utils/announcementTelemetry'
 import { computed, ref } from 'vue'
 import { fetchAnnouncementsRequest } from '@/services/announcementService'
 
@@ -75,6 +76,7 @@ function configureAnnouncements(account, target) {
   generation++; fetchPromise = null; items.value = []; loaded.value = false; lastFetchedAt = 0
   identity.value = account; placement.value = target; preferencesReady.value = account === 'guest'
   setAnnouncementPreferenceIdentity(account)
+  setAnnouncementTelemetryIdentity(account)
   if (subscribers) void fetchAnnouncements(true)
 }
 function storageChanged(event) {

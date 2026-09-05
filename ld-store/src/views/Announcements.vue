@@ -1,4 +1,5 @@
 <script setup>
+import { announcementImpression as vAnnouncementImpression, trackAnnouncement } from '@/utils/announcementTelemetry'
 import { computed, ref, watch, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { Megaphone, ArrowLeft, ArrowRight, Copy } from '@lucide/vue'
@@ -26,12 +27,17 @@ async function load(target = 1) {
 }
 async function copyLink() { try { await navigator.clipboard.writeText(window.location.href); feedback.value = '链接已复制' } catch { feedback.value = '复制失败，可以复制浏览器地址' } }
 async function acknowledge() {
+  const ticket = sequence, current = item.value
   acknowledging.value = true
-  const result = await acknowledgeAnnouncement(item.value.id, item.value.contentVersion)
-  if (result.success) { acknowledged.value = true; feedback.value = '已记录本版本的知悉确认' }
-  else feedback.value = result.error || '确认失败，请重试'
-  acknowledging.value = false
+  try {
+    const result = await acknowledgeAnnouncement(current.id, current.contentVersion)
+    if (ticket !== sequence) return
+    if (result.success) { acknowledged.value = true; feedback.value = '已记录本版本的知悉确认' }
+    else feedback.value = result.error || '确认失败，请重试'
+  } catch { if (ticket === sequence) feedback.value = '确认失败，请重试' }
+  finally { acknowledging.value = false }
 }
+
 watch([() => route.params.id, () => announcementIdentity(userStore)], () => { items.value = []; item.value = null; void load() }, { immediate: true })
 onUnmounted(() => { sequence++; controller?.abort() })
 </script>
@@ -43,11 +49,11 @@ onUnmounted(() => { sequence++; controller?.abort() })
     <p v-if="loading" role="status">正在加载公告…</p>
     <div v-if="error" class="announcement-error" role="alert">{{ error }}<button class="announcement-button secondary" @click="load(page)">重试</button></div>
     <template v-else-if="detail && item">
-      <article class="announcement-document"><header><span class="announcement-eyebrow">{{ item.status === 'expired' ? '历史公告 · 已结束' : '站内公告' }}</span><h1>{{ item.title || '站内公告' }}</h1><p class="announcement-meta">{{ date(item.publishedAt || item.createdAt) }} · 北京时间<span v-if="item.contentVersion"> · 版本 {{ item.contentVersion }}</span></p></header><AnnouncementContent :content="item.content" :content-type="item.contentType" /><footer><a v-if="item.actionUrl" class="announcement-button" :href="item.actionUrl" :target="item.actionUrl.startsWith('/') ? undefined : '_blank'" rel="noopener noreferrer">{{ item.actionLabel }}<ArrowRight :size="16" aria-hidden="true" /></a><button class="announcement-button secondary" @click="copyLink"><Copy :size="16" aria-hidden="true" />复制链接</button><template v-if="item.requiresAcknowledgement"><button v-if="userStore.isLoggedIn" class="announcement-button secondary" :disabled="acknowledging || acknowledged" @click="acknowledge">{{ acknowledged ? '已知悉本版本' : acknowledging ? '正在记录…' : '我已阅读并知悉' }}</button><router-link v-else to="/login" class="announcement-back">登录后可记录知悉确认</router-link></template></footer></article>
+      <article class="announcement-document"><header v-announcement-impression="{item,event:'open',placement:'detail'}"><span class="announcement-eyebrow">{{ item.status === 'expired' ? '历史公告 · 已结束' : '站内公告' }}</span><h1>{{ item.title || '站内公告' }}</h1><p class="announcement-meta">{{ date(item.publishedAt || item.createdAt) }} · 北京时间<span v-if="item.contentVersion"> · 版本 {{ item.contentVersion }}</span></p></header><AnnouncementContent :content="item.content" :content-type="item.contentType" /><footer><a v-if="item.actionUrl" @click="trackAnnouncement(item, 'action', 'detail')" class="announcement-button" :href="item.actionUrl" :target="item.actionUrl.startsWith('/') ? undefined : '_blank'" rel="noopener noreferrer">{{ item.actionLabel }}<ArrowRight :size="16" aria-hidden="true" /></a><button class="announcement-button secondary" @click="copyLink"><Copy :size="16" aria-hidden="true" />复制链接</button><template v-if="item.requiresAcknowledgement"><button v-if="userStore.isLoggedIn" class="announcement-button secondary" :disabled="acknowledging || acknowledged" @click="acknowledge">{{ acknowledged ? '已知悉本版本' : acknowledging ? '正在记录…' : '我已阅读并知悉' }}</button><router-link v-else to="/login" class="announcement-back">登录后可记录知悉确认</router-link></template></footer></article>
     </template>
     <template v-else-if="!detail">
       <p v-if="!loading && !items.length" class="announcement-empty">暂无符合条件的公告，可调整关键词或时间范围。</p>
-      <div class="announcement-list"><router-link v-for="entry in items" :key="entry.id" :to="`/announcements/${entry.id}`" class="announcement-list-item"><div><span class="announcement-eyebrow">{{ entry.status === 'expired' ? '已结束' : '当前公告' }}</span><h2>{{ entry.title || '站内公告' }}</h2><p>{{ entry.summary || '查看公告详情' }}</p><time>{{ date(entry.publishedAt || entry.createdAt) }}</time></div><ArrowRight :size="20" aria-hidden="true" /></router-link></div>
+      <div class="announcement-list"><router-link v-for="entry in items" :key="entry.id" :to="`/announcements/${entry.id}`" v-announcement-impression="{item:entry,placement:'center'}" class="announcement-list-item"><div><span class="announcement-eyebrow">{{ entry.status === 'expired' ? '已结束' : '当前公告' }}</span><h2>{{ entry.title || '站内公告' }}</h2><p>{{ entry.summary || '查看公告详情' }}</p><time>{{ date(entry.publishedAt || entry.createdAt) }}</time></div><ArrowRight :size="20" aria-hidden="true" /></router-link></div>
       <nav v-if="total" class="announcement-pagination" aria-label="公告分页"><button class="announcement-button secondary" :disabled="page <= 1 || loading" @click="load(page - 1)">上一页</button><span>{{ page }} / {{ pages }} · {{ total }} 条</span><button class="announcement-button secondary" :disabled="page >= pages || loading" @click="load(page + 1)">下一页</button></nav>
     </template>
     <p v-if="feedback" role="status">{{ feedback }}</p>
