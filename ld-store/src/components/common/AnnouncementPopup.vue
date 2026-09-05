@@ -7,7 +7,7 @@ import { useUserStore } from '@/stores/user'
 import { announcementIdentity, announcementPreferenceRevision, sessionHasPopup, markPopupShown, isAnnouncementDismissed, dismissAnnouncement } from '@/utils/announcementPreferences'
 import AnnouncementContent from './AnnouncementContent.vue'
 const route = useRoute(), store = useUserStore()
-const { announcementItems } = useAnnouncement()
+const { announcementItems, announcementPreferencesReady } = useAnnouncement()
 const identity = computed(() => announcementIdentity(store))
 const active = ref(null), dialog = ref(null), title = ref(null)
 const safeRoutes = new Set(['Home','Category','Search','MerchantProfile','ShopDetail','Shop','SellerDashboard'])
@@ -22,14 +22,14 @@ function backdrop(event) {
   const rect = dialog.value.getBoundingClientRect()
   if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) dismiss()
 }
-watch([announcementItems, () => route.name, identity, announcementPreferenceRevision, () => store.sessionReady], () => {
+watch([announcementItems, announcementPreferencesReady, () => route.name, identity, announcementPreferenceRevision, () => store.sessionReady], () => {
   if (active.value) {
     const latest = announcementItems.value.find(item => item.id === active.value.id)
     if (identity.value !== openedIdentity || !safeRoutes.has(route.name) || !latest || isAnnouncementDismissed(identity.value, latest)) active.value = null
     else active.value = latest
     return
   }
-  if (!store.sessionReady || !safeRoutes.has(route.name) || sessionHasPopup(identity.value)) return
+  if (!store.sessionReady || !announcementPreferencesReady.value || !safeRoutes.has(route.name) || sessionHasPopup(identity.value)) return
   const item = announcementItems.value.find(item => item.mode === 'popup' && !isAnnouncementDismissed(identity.value, item))
   if (item) { openedIdentity = identity.value; active.value = item }
 }, { immediate: true })

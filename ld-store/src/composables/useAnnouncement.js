@@ -1,6 +1,11 @@
 import { computed, ref } from 'vue'
 import { fetchAnnouncementsRequest } from '@/services/announcementService'
 
+import { setAnnouncementPreferenceIdentity, syncAnnouncementPreferences, announcementPreferenceRevision } from '@/utils/announcementPreferences'
+const identity = ref('guest')
+const placement = ref('storefront')
+const preferencesReady = ref(true)
+let generation = 0
 const items = ref([])
 const loading = ref(false)
 const loaded = ref(false)
@@ -26,9 +31,14 @@ async function fetchAnnouncements(force = false) {
   if (!force && loaded.value && Date.now() - lastFetchedAt < 30_000) return activeItems.value
   if (fetchPromise) return fetchPromise
   loading.value = true
+  const ticket = generation
+  const account = identity.value
   fetchPromise = (async () => {
     try {
-      const response = await fetchAnnouncementsRequest()
+      const response = await fetchAnnouncementsRequest(undefined, placement.value)
+      if (ticket !== generation) return activeItems.value
+      preferencesReady.value = await syncAnnouncementPreferences(account)
+      if (ticket !== generation) return activeItems.value
       if (!response?.success || !Array.isArray(response.data?.items)) throw new Error(response?.error?.message || '加载公告失败')
       serverOffset = response.data.timestamp - Date.now()
       now.value = Date.now() + serverOffset
@@ -36,11 +46,10 @@ async function fetchAnnouncements(force = false) {
       lastFetchedAt = Date.now()
       error.value = ''
     } catch (err) {
+      if (ticket !== generation) return activeItems.value
       error.value = err.message || '加载公告失败'
     } finally {
-      loaded.value = true
-      loading.value = false
-      fetchPromise = null
+      if (ticket === generation) { loaded.value = true; loading.value = false; fetchPromise = null }
     }
     return activeItems.value
   })()
@@ -61,10 +70,21 @@ function resume() {
     void fetchAnnouncements(true)
   }
 }
+function configureAnnouncements(account, target) {
+  if (account === identity.value && target === placement.value) return
+  generation++; fetchPromise = null; items.value = []; loaded.value = false; lastFetchedAt = 0
+  identity.value = account; placement.value = target; preferencesReady.value = account === 'guest'
+  setAnnouncementPreferenceIdentity(account)
+  if (subscribers) void fetchAnnouncements(true)
+}
+function storageChanged(event) {
+  if (!event.key || event.key.startsWith('ld-announcement:')) announcementPreferenceRevision.value++
+}
 function startAnnouncements() {
   if (++subscribers !== 1) return
   document.addEventListener('visibilitychange', resume)
   window.addEventListener('online', resume)
+  window.addEventListener('storage', storageChanged)
   interval = setInterval(tick, 1000)
   void fetchAnnouncements()
 }
@@ -75,9 +95,10 @@ function stopAnnouncements() {
   interval = null
   document.removeEventListener('visibilitychange', resume)
   window.removeEventListener('online', resume)
+  window.removeEventListener('storage', storageChanged)
 }
 export function useAnnouncement() {
   return { announcementItems: activeItems, announcementLoading: loading,
-    announcementLoaded: loaded, announcementError: error, fetchAnnouncements,
+    announcementLoaded: loaded, announcementPreferencesReady: preferencesReady, configureAnnouncements, announcementError: error, fetchAnnouncements,
     startAnnouncements, stopAnnouncements }
 }

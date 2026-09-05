@@ -8,7 +8,7 @@
     <!-- 顶部导航栏 -->
     <AppHeader v-if="showHeader" />
     <AnnouncementBar v-if="showAnnouncementBar" />
-    <AnnouncementPopup v-if="showAnnouncementBar" />
+    <AnnouncementPopup v-if="!isMaintenanceRoute && announcementLoaded" />
 
     <!-- 主内容区域 -->
     <component :is="isSellerRoute ? 'div' : 'main'" class="main-content">
@@ -67,6 +67,7 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { useNotificationSummaryStore } from '@/stores/notificationSummary'
+import { announcementIdentity } from '@/utils/announcementPreferences'
 import { useAnnouncement } from '@/composables/useAnnouncement'
 import AppHeader from '@/components/layout/AppHeader.vue'
 import AnnouncementBar from '@/components/common/AnnouncementBar.vue'
@@ -88,7 +89,7 @@ import {
 const route = useRoute()
 const userStore = useUserStore()
 const notificationSummaryStore = useNotificationSummaryStore()
-const { announcementLoaded, startAnnouncements, stopAnnouncements } = useAnnouncement()
+const { announcementLoaded, configureAnnouncements, startAnnouncements, stopAnnouncements } = useAnnouncement()
 const isMaintenanceRoute = computed(() => route.name === 'Maintenance')
 const isSellerRoute = computed(() => route.meta.layout === 'seller')
 const isRestrictedHomeRoute = computed(() => false)
@@ -102,6 +103,7 @@ const showAnnouncementBar = computed(() => (
   && !isSellerRoute.value
   && announcementLoaded.value
 ))
+watch([() => announcementIdentity(userStore), isSellerRoute], ([account, seller]) => configureAnnouncements(account, seller ? 'seller' : 'storefront'), { immediate: true })
 const showRouterView = computed(() => userStore.sessionReady)
 
 // 需要缓存的页面组件名称

@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router'
 import { Megaphone, ArrowLeft, ArrowRight, Copy } from '@lucide/vue'
 import { fetchAnnouncementCenter, fetchAnnouncementDetail, acknowledgeAnnouncement } from '@/services/announcementService'
 import AnnouncementContent from '@/components/common/AnnouncementContent.vue'
+import { announcementIdentity } from '@/utils/announcementPreferences'
 import { useUserStore } from '@/stores/user'
 const route = useRoute(), userStore = useUserStore()
 const items = ref([]), item = ref(null), page = ref(1), pages = ref(1), total = ref(0), search = ref(''), status = ref('')
@@ -31,7 +32,7 @@ async function acknowledge() {
   else feedback.value = result.error || '确认失败，请重试'
   acknowledging.value = false
 }
-watch([() => route.params.id, () => userStore.currentUser?.id, () => userStore.isLoggedIn], () => { items.value = []; item.value = null; void load() }, { immediate: true })
+watch([() => route.params.id, () => announcementIdentity(userStore)], () => { items.value = []; item.value = null; void load() }, { immediate: true })
 onUnmounted(() => { sequence++; controller?.abort() })
 </script>
 <template>

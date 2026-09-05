@@ -135,7 +135,8 @@
 
       <main id="seller-main" ref="sellerMain" class="seller-main" tabindex="-1">
         <div class="seller-view-stage">
-          <router-view v-slot="{ Component, route: childRoute }">
+          <AnnouncementBar />
+      <router-view v-slot="{ Component, route: childRoute }">
             <transition name="seller-route">
               <component :is="Component" :key="resolveSellerViewKey(childRoute)" />
             </transition>
@@ -147,6 +148,7 @@
 </template>
 
 <script setup>
+import AnnouncementBar from '@/components/common/AnnouncementBar.vue'
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useRoute, useRouter } from 'vue-router'
