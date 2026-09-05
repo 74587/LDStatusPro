@@ -20,6 +20,7 @@ import { useNotificationSummaryStore } from '@/stores/notificationSummary'
 
 interface OrderListOptions {
   role?: string
+  displayStatus?: string
   status?: string
   search?: string
   timeRange?: string
@@ -142,7 +143,15 @@ export const useOrderStore = defineStore('order', () => {
     return result
   }
 
+  function updateOrderPresentation(orderNo: string, fields: Pick<Order, 'displayStatus' | 'refundStatus' | 'orderActions'>) {
+    for (const rows of [buyerOrders.value, sellerOrders.value]) {
+      const cached = rows.find(order => order.orderNo === orderNo)
+      if (cached) Object.assign(cached, fields)
+    }
+  }
+
   return {
+    updateOrderPresentation,
     buyerOrders,
     sellerOrders,
     buyRequestOrders,

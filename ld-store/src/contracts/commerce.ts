@@ -122,7 +122,17 @@ export const CommerceActionResponseSchema = union([
   })
 ])
 
+export const OrderActionsSchema = looseObject({
+  canDeliver: boolean(), canConfirm: boolean(),
+  deliveryDisabledReason: nullable(string()), confirmDisabledReason: nullable(string())
+})
+export const OrderPresentationFields = {
+  displayStatus: optional(union([OrderStatusSchema, literal('refund_failed')])),
+  refundStatus: optional(nullable(RefundStatusSchema)),
+  orderActions: optional(OrderActionsSchema)
+}
 export const OrderSchema = looseObject({
+  ...OrderPresentationFields,
   fulfillment: optional(FulfillmentInfoSchema),
   orderNo: NonemptyStringSchema,
   status: OrderStatusSchema
@@ -192,6 +202,7 @@ export const RefundSchema = looseObject({
 })
 
 export const OrderRefundResponseSchema = looseObject({
+  ...OrderPresentationFields,
   serverNow: optional(string()),
   responsePolicyEnabled: optional(boolean()),
   fulfillment: optional(FulfillmentInfoSchema),

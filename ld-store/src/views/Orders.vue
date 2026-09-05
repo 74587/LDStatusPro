@@ -4,7 +4,7 @@
       <SellerPageToolbar eyebrow="交易台账" description="统一处理商品订单与求购服务订单。筛选、页码与来源会保留在地址中。">
         <!-- Tab selection/focus belongs to each control; pending feedback belongs to the list. -->
         <LiquidTabs :modelValue="currentRole" :tabs="roleTabs" class="seller-source-tabs" size="sm" aria-label="订单来源" @update:modelValue="switchRole" />
-        <LiquidTabs v-if="currentRole !== 'buy'" :modelValue="statusFilter" :tabs="statusTabs" class="seller-status-tabs" size="sm" aria-label="订单状态" @update:modelValue="selectStatus" />
+        <OrderStatusFilter v-if="currentRole !== 'buy'" :modelValue="statusFilter" class="seller-status-tabs" size="sm" aria-label="订单状态" @update:modelValue="selectStatus" />
         <AppSelect v-model="timeRange" class="seller-order-select" :options="timeRangeOptions" placeholder="选择时间范围" @change="applyFilters" />
         <form class="seller-order-search" role="search" @submit.prevent="applyFilters">
           <Search :size="17" aria-hidden="true" />
@@ -47,7 +47,7 @@
           <SellerOrderPartyIdentity :order="order" :role="isBuyRequestOrder(order) ? 'counterparty' : 'buyer'" />
         </template>
         <template #cell-amount="{ row: order }"><strong class="seller-order-amount">{{ order.totalPrice || order.amount || 0 }}</strong><small class="seller-order-unit">LDC</small></template>
-        <template #cell-status="{ row: order }"><FulfillmentDeadline v-if="['paid','refund_pending'].includes(order.status)" :order="order" compact /><SellerStatusBadge :tone="resolveSellerStatusTone(order.status)" :label="getStatusText(order.status, order)" /><small v-if="order.status === 'pending'" class="seller-order-expiry">{{ getExpireCountdownText(order) }}</small></template>
+        <template #cell-status="{ row: order }"><FulfillmentDeadline v-if="['paid','refund_pending'].includes(order.status)" :order="order" compact /><div class="seller-order-status"><SellerStatusBadge :tone="resolveSellerStatusTone(displayOrderStatus(order))" :label="getStatusText(displayOrderStatus(order), order)" /><small v-if="displayOrderStatus(order) !== order.status || refundStageText(order)" class="seller-order-progress">履约：{{ orderFulfillmentLabel(order) }}<span v-if="refundStageText(order)"> · {{ refundStageText(order) }}</span></small></div><small v-if="order.status === 'pending'" class="seller-order-expiry">{{ getExpireCountdownText(order) }}</small></template>
         <template #cell-actions="{ row: order }">
           <div class="seller-order-actions">
             <button v-if="showManualDeliver(order)" type="button" class="seller-row-primary" :aria-expanded="isDeliverFormVisible(order)" @click="openDeliverForm(order)"><PackageCheck :size="15" aria-hidden="true" />立即发货</button>
@@ -70,7 +70,7 @@
               <strong v-else>{{ getOrderDisplayName(order) }}</strong>
               <small>{{ getOrderKey(order) }}</small>
             </div>
-            <SellerStatusBadge :tone="resolveSellerStatusTone(order.status)" :label="getStatusText(order.status, order)" />
+            <div class="seller-order-status"><SellerStatusBadge :tone="resolveSellerStatusTone(displayOrderStatus(order))" :label="getStatusText(displayOrderStatus(order), order)" /><small v-if="displayOrderStatus(order) !== order.status || refundStageText(order)" class="seller-order-progress">履约：{{ orderFulfillmentLabel(order) }}<span v-if="refundStageText(order)"> · {{ refundStageText(order) }}</span></small></div>
           </div>
           <dl class="seller-order-mobile-grid"><div><dt>{{ isBuyRequestOrder(order) ? '求购方' : '买家' }}</dt><dd class="seller-order-mobile-party"><SellerOrderPartyIdentity :order="order" :role="isBuyRequestOrder(order) ? 'counterparty' : 'buyer'" /></dd></div><div><dt>金额</dt><dd>{{ order.totalPrice || order.amount || 0 }} LDC</dd></div><div><dt>时间</dt><dd>{{ formatDate(order.createdAt) }}</dd></div><div><dt>来源</dt><dd>{{ currentRole === 'buy' ? '求购服务' : '商品订单' }}</dd></div></dl>
           <p v-if="order.status === 'pending'" class="seller-order-mobile-expiry">{{ getExpireCountdownText(order) }}</p>
@@ -100,10 +100,10 @@
       />
 
       <!-- 状态筛选（求购订单状态体系不同，不显示） -->
-      <LiquidTabs
+      <OrderStatusFilter
         v-if="currentRole !== 'buy'"
         :modelValue="statusFilter"
-        :tabs="statusTabs"
+        :include-image="!sellerMode"
         class="status-tabs"
         layout="equal"
         size="sm"
@@ -181,8 +181,8 @@
                 {{ getExpireCountdownText(order) }}
               </span>
             </div>
-            <span :class="['order-status', getStatusClass(order.status)]">
-              {{ getStatusText(order.status, order) }}
+            <span :class="['order-status', getStatusClass(displayOrderStatus(order))]">
+              {{ getStatusText(displayOrderStatus(order), order) }}<small v-if="refundStageText(order)"> · {{ refundStageText(order) }}</small>
             </span>
           </router-link>
 
@@ -213,6 +213,7 @@
           </router-link>
           
           <!-- 发货内容仅在订单详情页展示，列表卡片不直接暴露 CDK/发货内容。 -->
+          <p v-if="displayOrderStatus(order) !== order.status" class="order-fulfillment-progress">履约：{{ orderFulfillmentLabel(order) }}</p>
           <FulfillmentDeadline v-if="isPlatformOrder(order) && ['paid', 'refund_pending'].includes(order.status)" :order="order" compact />
 
           <div class="order-footer">
@@ -316,17 +317,13 @@ import FulfillmentDeadline from '@/components/order/FulfillmentDeadline.vue'
 import { computed, ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import {
   ArrowUpRight,
-  CircleX,
   ClipboardList,
   ClipboardPenLine,
-  MoreHorizontal,
-  Package,
   PackageCheck,
   RefreshCw,
   Search,
   ShoppingBag,
   ShoppingCart,
-  Truck
 } from '@lucide/vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useOrderStore } from '@/stores/order'
@@ -336,6 +333,8 @@ import { useDialog } from '@/composables/useDialog'
 import { useOrderActions } from '@/composables/orders/useOrderActions'
 import { useOrderListController } from '@/composables/orders/useOrderListController'
 import AppSelect from '@/components/common/AppSelect.vue'
+import OrderStatusFilter from '@/components/orders/OrderStatusFilter.vue'
+import { orderStatusLabel, displayOrderStatus, refundStageText, orderFulfillmentLabel } from '@/utils/orderPresentation'
 import LiquidTabs from '@/components/common/LiquidTabs.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 import SellerOrderPartyIdentity from '@/components/seller/SellerOrderPartyIdentity.vue'
@@ -416,13 +415,6 @@ const timeRangeOptions = [
   { value: '6m', label: '最近半年' },
   { value: '1y', label: '最近一年' }
 ]
-const statusTabs = computed(() => [
-  { value: '', label: '全部', iconComponent: props.sellerMode ? null : ClipboardList },
-  { value: 'paid', label: '待发货', iconComponent: props.sellerMode ? null : Package },
-  { value: 'delivered', label: '已发货', iconComponent: props.sellerMode ? null : Truck },
-  { value: 'cancelled', label: '已取消', iconComponent: props.sellerMode ? null : CircleX },
-  { value: 'other', label: '其他', iconComponent: props.sellerMode ? null : MoreHorizontal }
-])
 const deliverFormOrderId = ref(null)
 const deliverContent = ref('')
 const nowTs = ref(Date.now())
@@ -690,7 +682,7 @@ function buildOrderQueryOptions() {
       source: currentRole.value === 'buy' ? 'service' : 'product',
       search: orderSearch.value,
       timeRange: timeRange.value,
-      status: toOrderApiStatusFilter(statusFilter.value),
+      displayStatus: toOrderApiStatusFilter(statusFilter.value),
       categoryId: activeCategoryId.value,
       dealOnly: onlyDealOrders.value
     })
@@ -708,7 +700,7 @@ function buildOrderQueryOptions() {
     options.dealOnly = true
   }
   if (currentRole.value !== 'buy' && statusFilter.value) {
-    options.status = toOrderApiStatusFilter(statusFilter.value)
+    options.displayStatus = toOrderApiStatusFilter(statusFilter.value)
   }
   if (currentRole.value === 'buy') {
     options.role = props.sellerMode ? 'provider' : 'requester'
@@ -894,6 +886,7 @@ function isPaidOvertime(order) {
 }
 
 function showManualDeliver(order) {
+  if (order.orderActions?.canDeliver === false) return false
   if (currentRole.value !== 'seller') return false
   if (isNormalOrder(order)) return order.status === 'paid' && order.fulfillment?.canDeliver !== false && (!order.fulfillment?.deadlineAt || Date.parse(order.fulfillment.deadlineAt) > nowTs.value)
   return isCdkOrder(order) && isPaidOvertime(order)
@@ -993,21 +986,7 @@ function getStatusText(status, orderData) {
     }
     return buyMap[status] || status || '未知'
   }
-  const map = {
-    pending: '待支付',
-    paying: '支付中',
-    paid: '待发货',
-    completed: '已完成',
-    cancelled: '已取消',
-    refunded: '已退款',
-    refund_pending: '退款处理中',
-    external_dispute: '已转 Credit 处理',
-    delivered: '已发货',
-    expired: '已过期',
-    uploaded: '已上传',
-    failed: '上传失败'
-  }
-  return map[status] || status || '未知'
+  return orderStatusLabel(status)
 }
 
 // 状态样式
@@ -1019,7 +998,8 @@ function getStatusClass(status) {
     completed: 'status-completed',
     cancelled: 'status-cancelled',
     refunded: 'status-refunded',
-    refund_pending: 'status-info',
+    refund_pending: 'status-refund-pending',
+    refund_failed: 'status-refund-failed',
     external_dispute: 'status-external-dispute',
     delivered: 'status-delivered',
     expired: 'status-expired',
@@ -1349,6 +1329,14 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+.seller-order-status { min-width: 0; }
+.seller-order-progress { display: block; margin-top: 4px; color: var(--text-secondary-semantic); font-size: 11px; line-height: 1.5; }
+
+.status-refund-pending { color: var(--status-info); background: color-mix(in srgb, var(--status-info) 10%, var(--surface-card)); }
+.status-refund-failed { color: var(--status-danger); background: color-mix(in srgb, var(--status-danger) 10%, var(--surface-card)); }
+.order-status small { font-size: inherit; }
+.order-fulfillment-progress { margin: 8px 0; color: var(--text-secondary-semantic); font-size: 12px; }
+
 .orders-page {
   min-height: 100vh;
   padding-bottom: 80px;

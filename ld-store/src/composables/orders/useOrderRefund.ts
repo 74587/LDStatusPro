@@ -1,5 +1,6 @@
+import { useOrderStore } from '@/stores/order'
 import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch, type Ref } from 'vue'
-import type { Refund } from '@/contracts/commerce'
+import type { Refund, Order } from '@/contracts/commerce'
 import { useDialog } from '@/composables/useDialog'
 import { useToast } from '@/composables/useToast'
 import { useNotificationSummaryStore } from '@/stores/notificationSummary'
@@ -35,6 +36,9 @@ interface RefundOrder extends Record<string, unknown> {
 }
 
 interface RefundState {
+  displayStatus?: Order['displayStatus']
+  refundStatus?: Order['refundStatus']
+  orderActions?: Order['orderActions']
   serverNow?: string
   responsePolicyEnabled?: boolean
   fulfillment?: { canProactivelyRefund?: boolean }
@@ -56,6 +60,7 @@ interface UseOrderRefundOptions {
 }
 
 export function useOrderRefund(options: UseOrderRefundOptions) {
+  const orderStore = useOrderStore()
   const dialog = useDialog()
   const toast = useToast()
   const notificationSummaryStore = useNotificationSummaryStore()
@@ -127,11 +132,22 @@ export function useOrderRefund(options: UseOrderRefundOptions) {
     loadError.value = ''
     const result = await fetchOrderRefundRequest(orderNo.value, { signal: loadController.signal })
     if (currentRequestId !== loadRequestId || loadController.signal.aborted) return null
-    if (result.success) refundState.value = result.data
+    if (result.success) {
+      refundState.value = result.data
+      if (result.data.displayStatus && (result.data.displayStatus !== options.order.value?.displayStatus || result.data.refundStatus !== options.order.value?.refundStatus)) options.onUpdated?.()
+    }
     else loadError.value = getRefundErrorMessage(result, '加载退款状态失败，请稍后重试')
     loading.value = false
     return result
   }
+
+  watch(refundState, (state) => {
+    if (state?.displayStatus) orderStore.updateOrderPresentation(orderNo.value, {
+      displayStatus: state.displayStatus,
+      refundStatus: state.refundStatus,
+      orderActions: state.orderActions
+    })
+  })
 
   function toggleForm() {
     if (!canApplyRefund.value) return
@@ -278,7 +294,7 @@ export function useOrderRefund(options: UseOrderRefundOptions) {
   onMounted(() => {
     void loadRefund()
     refreshTimer = setInterval(() => {
-      if (!document.hidden && !autoRefreshPaused.value && !loading.value && !sellerSubmitting.value && !submitting.value && !formOpen.value && !sellerActionMode.value && ['requested', 'negotiating', 'processing'].includes(String(refund.value?.status || ''))) void loadRefund(true)
+      if (!document.hidden && !autoRefreshPaused.value && !loading.value && !sellerSubmitting.value && !submitting.value && !formOpen.value && !sellerActionMode.value && ['requested', 'negotiating', 'processing', 'unknown', 'failed'].includes(String(refund.value?.status || ''))) void loadRefund(true)
     }, 30000)
   })
   onUnmounted(stop)

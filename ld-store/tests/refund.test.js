@@ -85,7 +85,7 @@ describe('订单退款买家流程', () => {
   })
 
   it('订单列表归并终态，详情与卖家退款台账保留独立语义', () => {
-    expect(ordersSource).toContain("{ value: 'other', label: '其他'")
+    expect(ordersSource).toContain("<OrderStatusFilter")
     expect(orderDetailSource).toContain("refund_external_dispute: '订单已转 Credit 处理'")
     expect(sellerRefundsSource).not.toContain('<template #summary>')
     expect(sellerRefundsSource).toContain("{ value: 'external_dispute', label: 'Credit 处理'")

@@ -11,6 +11,7 @@ export function buildSellerOrderQuery({
   search = '',
   timeRange = '1m',
   status = '',
+  displayStatus = '',
   categoryId = 0,
   dealOnly = false
 } = {}) {
@@ -29,6 +30,7 @@ export function buildSellerOrderQuery({
   if (Number.isInteger(normalizedCategoryId) && normalizedCategoryId > 0) options.categoryId = normalizedCategoryId
   if (dealOnly) options.dealOnly = true
   if (status) options.status = String(status)
+  if (displayStatus) options.displayStatus = String(displayStatus)
   return options
 }
 
@@ -132,6 +134,7 @@ export function filterAndSortSellerProducts(products = [], filters = {}, accesso
 
 export function resolveSellerStatusTone(status = '') {
   const value = String(status).toLowerCase()
+  if (value === 'refund_pending') return 'warning'
   if (value === 'external_dispute') return 'warning'
   if (value.includes('reject') || value.includes('refund')) return 'danger'
   if (value.includes('pending') || value === 'paid') return 'warning'

@@ -13,6 +13,7 @@ import { validateServiceResult, withServiceFailure } from '@/services/serviceCon
 
 interface OrderListOptions {
   role?: string
+  displayStatus?: string
   status?: string
   search?: string
   timeRange?: string
@@ -48,6 +49,7 @@ function buildOrderListParams(role: string, rawOptions: OrderListInput = {}) {
   const pageSize = getPositiveInt(options.pageSize, 20, 1, 50)
   const params = new URLSearchParams({ role, page: String(page), pageSize: String(pageSize) })
   if (status) params.set('status', status)
+  if (options.displayStatus) params.set('displayStatus', options.displayStatus)
   if (search) params.set('search', search)
   if (timeRange) params.set('timeRange', timeRange)
   if (Number.isInteger(categoryId) && categoryId > 0) params.set('categoryId', String(categoryId))

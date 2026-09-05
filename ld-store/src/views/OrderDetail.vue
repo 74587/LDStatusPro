@@ -41,13 +41,15 @@
       <!-- 订单详情 -->
       <template v-else>
         <!-- 订单状态卡片 -->
-        <div :class="['status-card', getStatusClass(order.status)]">
+        <div :class="['status-card', getStatusClass(displayOrderStatus(order))]">
           <div class="status-card__main">
             <div class="status-icon" aria-hidden="true">
-              <component :is="getStatusIcon(order.status)" :size="28" :stroke-width="1.8" />
+              <component :is="getStatusIcon(displayOrderStatus(order))" :size="28" :stroke-width="1.8" />
             </div>
             <div>
-              <div class="status-text">{{ getStatusText(order.status) }}</div>
+              <div class="status-text">{{ getStatusText(displayOrderStatus(order)) }}</div>
+              <p v-if="refundStageText(order)" class="status-time">{{ refundStageText(order) }}</p>
+              <p v-if="displayOrderStatus(order) !== order.status" class="status-time">履约：{{ orderFulfillmentLabel(order) }}</p>
               <div class="status-time" v-if="order.createdAt">
                 {{ formatDateTime(order.createdAt) }}
               </div>
@@ -339,6 +341,7 @@
 </template>
 
 <script setup>
+import { orderStatusLabel, displayOrderStatus, orderFulfillmentLabel, refundStageText } from '@/utils/orderPresentation'
 import FulfillmentDeadline from '@/components/order/FulfillmentDeadline.vue'
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -628,6 +631,8 @@ function getLogText(log) {
     pay: '支付成功',
     repay: '重新发起支付',
     deliver: '发货完成',
+    complete: '买家确认收货',
+    admin_complete: '管理员历史完结',
     refund_request: '买家申请退款',
     refund_reject: '卖家拒绝退款',
     refund_external_dispute: '订单已转 Credit 处理',
@@ -669,7 +674,7 @@ function getStatusTimestamp(orderData, logs = []) {
   const status = String(orderData.status || '')
   const logTimestampMap = {
     delivered: getTimelineTimestampFromLogs(logs, ['deliver']),
-    completed: getTimelineTimestampFromLogs(logs, ['deliver']),
+    completed: getTimelineTimestampFromLogs(logs, ['complete', 'completed', 'admin_complete']),
     paid: getTimelineTimestampFromLogs(logs, ['pay']),
     refunded: getTimelineTimestampFromLogs(logs, ['refund']),
     external_dispute: getTimelineTimestampFromLogs(logs, ['refund_external_dispute']),
@@ -678,7 +683,7 @@ function getStatusTimestamp(orderData, logs = []) {
   }
   const fieldMap = {
     delivered: orderData.deliveredAt,
-    completed: orderData.completedAt || orderData.deliveredAt,
+    completed: orderData.completedAt,
     paid: orderData.paidAt,
     refunded: orderData.refundedAt,
     external_dispute: orderData.updatedAt,
@@ -691,6 +696,7 @@ function getStatusTimestamp(orderData, logs = []) {
 }
 
 function getStatusTimeLabel(orderData) {
+  if (orderData?.status === 'completed' && orderLogs.value.some(log => log.action === 'admin_complete')) return '管理员完结时间'
   const status = String(orderData?.status || '')
   const map = {
     delivered: '发货时间',
@@ -708,19 +714,7 @@ function getStatusTimeLabel(orderData) {
 
 // 状态文字（paid 即「待发货」：已支付未发货，与列表待发货筛选一致）
 function getStatusText(status) {
-  const map = {
-    pending: '待支付',
-    paying: '支付中',
-    paid: '待发货',
-    completed: '已完成',
-    cancelled: '已取消',
-    refunded: '已退款',
-    refund_pending: '退款处理中',
-    external_dispute: '已转 Credit 处理',
-    delivered: '已发货',
-    expired: '已过期'
-  }
-  return map[status] || status || '未知'
+  return orderStatusLabel(status)
 }
 
 // 订单状态图标
@@ -748,7 +742,8 @@ function getStatusClass(status) {
     completed: 'status-success',
     cancelled: 'status-cancelled',
     refunded: 'status-refunded',
-    refund_pending: 'status-info',
+    refund_pending: 'status-refund-pending',
+    refund_failed: 'status-refund-failed',
     external_dispute: 'status-external-dispute',
     delivered: 'status-info',
     expired: 'status-cancelled'
@@ -938,6 +933,11 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+.status-refund-pending { color: var(--status-info); background: color-mix(in srgb, var(--status-info) 10%, var(--surface-card)); }
+.status-refund-failed { color: var(--status-danger); background: color-mix(in srgb, var(--status-danger) 10%, var(--surface-card)); }
+.order-status small { font-size: inherit; }
+.order-fulfillment-progress { margin: 8px 0; color: var(--text-secondary-semantic); font-size: 12px; }
+
 .order-detail-page {
   min-height: 100vh;
   padding-bottom: 100px;
