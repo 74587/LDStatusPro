@@ -1,92 +1,11 @@
-<template>
-  <section v-if="visibleItems.length > 0" class="announcement-bar" aria-label="站内公告">
-    <div class="announcement-bar__inner">
-      <article
-        v-for="item in visibleItems"
-        :key="item.id || item.content"
-        :class="['announcement-bar__item', `announcement-bar__item--${item.type}`]"
-      >
-        <span class="announcement-bar__icon">{{ typeIconMap[item.type] || '📢' }}</span>
-        <p class="announcement-bar__text">{{ item.content }}</p>
-      </article>
-    </div>
-  </section>
-</template>
-
 <script setup>
 import { computed } from 'vue'
+import { Megaphone, ArrowRight } from '@lucide/vue'
 import { useAnnouncement } from '@/composables/useAnnouncement'
-
 const { announcementItems } = useAnnouncement()
-
-const typeIconMap = {
-  info: '📢',
-  warning: '⚠️',
-  success: '🎉'
-}
-
-const visibleItems = computed(() => announcementItems.value.filter((item) => item?.content && item.mode === 'banner'))
+const banner = computed(() => announcementItems.value.find(item => item.mode === 'banner'))
 </script>
-
+<template><section v-if="banner" class="announcement-bar" aria-label="站内公告"><Megaphone :size="18" aria-hidden="true" /><p>{{ banner.summary || banner.content }}</p><router-link :to="`/announcements/${banner.id}`">查看详情<ArrowRight :size="16" aria-hidden="true" /></router-link></section></template>
 <style scoped>
-.announcement-bar {
-  width: min(100% - 24px, 1180px);
-  margin: 14px auto 0;
-}
-
-.announcement-bar__inner {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.announcement-bar__item {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 12px 14px;
-  border-radius: 16px;
-  border: 1px solid var(--border-color);
-  box-shadow: 0 8px 24px var(--palette-rgba-15-23-42-0p06);
-}
-
-.announcement-bar__item--info {
-  background: var(--palette-rgba-59-130-246-0p08);
-  border-color: var(--palette-rgba-59-130-246-0p18);
-}
-
-.announcement-bar__item--warning {
-  background: var(--palette-rgba-245-158-11-0p12);
-  border-color: var(--palette-rgba-245-158-11-0p25);
-}
-
-.announcement-bar__item--success {
-  background: var(--palette-rgba-16-185-129-0p1);
-  border-color: var(--palette-rgba-16-185-129-0p22);
-}
-
-.announcement-bar__icon {
-  flex: 0 0 auto;
-  line-height: 1.4;
-}
-
-.announcement-bar__text {
-  margin: 0;
-  line-height: 1.6;
-  color: var(--text-primary);
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-
-@media (max-width: 768px) {
-  .announcement-bar {
-    width: min(100% - 20px, 1180px);
-    margin-top: 10px;
-  }
-
-  .announcement-bar__item {
-    border-radius: 14px;
-    padding: 11px 12px;
-  }
-}
+.announcement-bar{display:flex;align-items:center;gap:var(--space-3);width:min(calc(100% - 24px),1180px);margin:var(--space-3) auto 0;padding:var(--space-2) var(--space-4);border:1px solid var(--border-default-semantic);border-radius:var(--radius-md);background:var(--surface-subtle);color:var(--text-primary-semantic)}.announcement-bar>svg{flex-shrink:0}.announcement-bar p{margin:0;line-height:1.6;font-size:var(--text-size-sm);overflow-wrap:anywhere;flex:1;min-width:0}.announcement-bar a{display:inline-flex;align-items:center;gap:var(--space-1);min-height:44px;white-space:nowrap;color:var(--text-link);font-size:var(--text-size-sm);text-decoration:underline}@media(max-width:600px){.announcement-bar{gap:var(--space-2);padding:var(--space-2) var(--space-3)}}
 </style>

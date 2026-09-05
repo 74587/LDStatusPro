@@ -16,7 +16,7 @@
 </template>
 
 <script setup>
-import { ClipboardList, House, LogIn, Search, UserRound } from '@lucide/vue'
+import { ClipboardList, Megaphone, House, LogIn, Search, UserRound } from '@lucide/vue'
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useUserStore } from '@/stores/user'
@@ -35,7 +35,8 @@ const showFooter = computed(() => {
 const navItems = computed(() => {
   const items = [
     { path: '/', iconComponent: House, label: '首页' },
-    { path: '/search', iconComponent: Search, label: '搜索' }
+    { path: '/search', iconComponent: Search, label: '搜索' },
+    { path: '/announcements', iconComponent: Megaphone, label: '公告' }
   ]
   
   if (userStore.isLoggedIn) {

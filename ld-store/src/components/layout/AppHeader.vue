@@ -96,6 +96,7 @@
         </a>
       </div>
       
+      <router-link v-if="!isMobile" to="/announcements" class="github-btn" aria-label="公告中心">公告</router-link>
       <!-- 右侧操作区 -->
       <div class="header-actions">
         <!-- 主题切换 -->

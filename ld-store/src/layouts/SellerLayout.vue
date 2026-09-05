@@ -56,6 +56,7 @@
       </nav>
 
       <div class="seller-sidebar-footer">
+        <router-link to="/announcements" class="seller-market-link" @click="closeDrawer">公告中心</router-link>
         <router-link to="/" class="seller-market-link" @click="closeDrawer">
           <ArrowLeft :size="17" aria-hidden="true" />
           返回物品广场
