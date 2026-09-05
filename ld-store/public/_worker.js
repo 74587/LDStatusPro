@@ -19,6 +19,7 @@ const DYNAMIC_ROUTES = [
 ]
 
 const STATIC_ROUTES = [
+  { pattern: /^\/announcements(?:\/[1-9]\d*)?\/?$/, title: '公告中心 - LD士多', description: '查看 LD士多 平台动态、公告与规则。' },
   { pattern: /^\/$/, title: DEFAULT_TITLE, description: DEFAULT_DESCRIPTION },
   { pattern: /^\/search\/?$/, title: '搜索 - LD士多', description: '搜索 LD士多 中的公开商品与服务。' },
   { pattern: /^\/docs(?:\/[^/]+)?\/?$/, title: '使用文档 - LD士多', description: '查看 LD士多 的购买、发布、交付与售后使用指南。' },

@@ -361,3 +361,14 @@ describe('same-origin OG image proxy', () => {
     expect(response.headers.get('x-robots-tag')).toBe(NOINDEX_POLICY)
   })
 })
+
+describe('announcement deep links', () => {
+  it.each(['/announcements','/announcements/11'])('serves %s without requesting personalized content at the edge',async path=>{
+    const externalFetch=vi.fn();vi.stubGlobal('fetch',externalFetch)
+    const response=await worker.fetch(new Request(`https://ldcstore.com${path}?context_synthetic=true`),{...env,ASSETS:{fetch:vi.fn(async()=>htmlAsset())}})
+    expect(response.status).toBe(200)
+    expect(response.headers.get('x-robots-tag')).toBe(NOINDEX_POLICY)
+    expect(await response.text()).toContain('公告中心 - LD士多')
+    expect(externalFetch).not.toHaveBeenCalled()
+  })
+})
