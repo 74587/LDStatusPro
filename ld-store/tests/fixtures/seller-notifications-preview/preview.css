@@ -1,0 +1,4 @@
+body { margin: 0; }
+.seller-shell.preview-shell { display: block; min-height: 100vh; }
+.preview-shell .seller-main { max-width: 1100px; margin: auto; padding: 24px; }
+@media (max-width: 640px) { .preview-shell .seller-main { padding: 12px; } }

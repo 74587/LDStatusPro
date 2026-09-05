@@ -1,3 +1,4 @@
+/* global window, document, Event */
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
@@ -8,7 +9,7 @@ vi.mock('qrcode', () => ({ default: { toDataURL: vi.fn().mockResolvedValue('data
 const initial = { available: true, status: 'unbound', telegramUsername: null, pendingExpiresAt: null, lastDelivery: null }
 let wrapper
 beforeEach(() => { vi.useFakeTimers(); vi.resetAllMocks(); requests.fetchNotificationChannel.mockResolvedValue({ success: true, data: { ...initial } }) })
-afterEach(() => { wrapper?.unmount(); vi.useRealTimers() })
+afterEach(() => { wrapper?.unmount(); vi.restoreAllMocks(); vi.useRealTimers() })
 async function open() { wrapper = mount(SellerNotifications); await flushPromises(); return wrapper }
 function button(label) { return wrapper.findAll('button').find(b => b.text() === label) }
 describe('seller notification settings', () => {
@@ -44,4 +45,28 @@ describe('seller notification settings', () => {
     await button('解除绑定').trigger('click'); expect(button('确认解除绑定')).toBeDefined()
     expect(requests.changeTelegramChannel).not.toHaveBeenCalled()
   })
+  it('polls only while visible and never overlaps a slow status request', async () => {
+    const pending = new Date(Date.now() + 600000).toISOString()
+    requests.fetchNotificationChannel.mockResolvedValue({ success: true, data: { ...initial, pendingExpiresAt: pending } })
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible')
+    await open()
+    let resolve
+    requests.fetchNotificationChannel.mockImplementation(() => new Promise(done => { resolve = done }))
+    await vi.advanceTimersByTimeAsync(10000)
+    expect(requests.fetchNotificationChannel).toHaveBeenCalledTimes(2)
+    resolve({ success: true, data: { ...initial, status: 'enabled' } }); await flushPromises()
+    expect(wrapper.text()).toContain('已开启')
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden')
+    await vi.advanceTimersByTimeAsync(10000)
+    expect(requests.fetchNotificationChannel).toHaveBeenCalledTimes(2)
+  })
+  it('removes an expired mobile link without extending its expiry', async () => {
+    requests.beginTelegramBinding.mockResolvedValue({ success: true, data: { url: 'https://t.me/test_bot?start=example', expiresAt: new Date(Date.now() + 5000).toISOString() } })
+    await open(); await button('连接 Telegram').trigger('click'); await flushPromises()
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden')
+    await vi.advanceTimersByTimeAsync(6000)
+    expect(wrapper.text()).toContain('绑定链接已失效')
+    expect(wrapper.find('a[href="https://t.me/test_bot?start=example"]').exists()).toBe(false)
+  })
+
 })

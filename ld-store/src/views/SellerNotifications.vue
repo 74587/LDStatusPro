@@ -82,7 +82,7 @@ import { useSellerNotifications } from '@/composables/useSellerNotifications'
 const { state, binding, loading, busy, error, feedback, waiting, remainingMinutes, load, begin, change, test, copy } = useSellerNotifications()
 const qr = ref('')
 const confirmUnbind = ref(false)
-const statusLabel = computed(() => ({ unbound: '未绑定', enabled: '已开启', paused: '已暂停', unavailable: '渠道异常' })[state.value?.status] || '未绑定')
+const statusLabel = computed(() => waiting.value ? '等待确认' : ({ unbound: '未绑定', enabled: '已开启', paused: '已暂停', unavailable: '渠道异常' })[state.value?.status] || '未绑定')
 const deliveryLabel = computed(() => ({ pending: '等待发送', sending: '正在发送', accepted: 'Telegram 已接受', failed: '发送失败', unknown: '发送结果待核对', skipped: '已取消或无需提醒' })[state.value?.lastDelivery?.status] || '')
 const formatDate = value => new Date(value).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', hour12: false }) + '（北京时间）'
 async function unbind() { await change('unbind'); confirmUnbind.value = false }
@@ -97,6 +97,9 @@ watch(() => binding.value?.url, async (url, _old, onCleanup) => {
 </script>
 <style scoped>
 .seller-notifications { max-width: 900px; }
+.page-title { margin: 4px 0 8px; font-size: 28px; font-weight: 650; }
+.notification-card h2 { font-size: 18px; font-weight: 650; }
+.notification-card h3 { font-size: 16px; font-weight: 600; }
 .notification-eyebrow, .notification-hint, .notification-last { color: var(--seller-muted); }
 .notification-card { padding: 24px; margin-top: 20px; background: var(--seller-surface); border: 1px solid var(--seller-border); border-radius: 16px; }
 .notification-heading { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }

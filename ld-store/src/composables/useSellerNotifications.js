@@ -13,23 +13,31 @@ export function useSellerNotifications() {
   let disposed = false
   let generation = 0
   let lastPoll = 0
+  let reading = false
   const expiresAt = computed(() => binding.value?.expiresAt || state.value?.pendingExpiresAt)
   const waiting = computed(() => !!expiresAt.value && Date.parse(expiresAt.value) > now.value)
   const remainingMinutes = computed(() => Math.max(0, Math.ceil((Date.parse(expiresAt.value || '') - now.value) / 60000)))
   async function load() {
-    if (busy.value) return
+    if (busy.value || reading) return
+    reading = true
     const current = ++generation
     loading.value = !state.value
-    const result = await fetchNotificationChannel()
-    if (disposed || current !== generation) return
-    loading.value = false
-    if (!result.success) { error.value = result.error; return }
-    error.value = ''
-    const previouslyWaiting = !!binding.value
-    state.value = result.data
-    if (!result.data.pendingExpiresAt && binding.value) {
-      binding.value = null
-      if (previouslyWaiting && result.data.status === 'enabled') feedback.value = '已连接 Telegram，重要通知已开启。'
+    try {
+      const result = await fetchNotificationChannel()
+      if (disposed || current !== generation) return
+      if (!result.success) { error.value = result.error; return }
+      error.value = ''
+      const previouslyWaiting = !!binding.value
+      state.value = result.data
+      if (!result.data.pendingExpiresAt && binding.value) {
+        binding.value = null
+        if (previouslyWaiting && result.data.status === 'enabled') feedback.value = '已连接 Telegram，重要通知已开启。'
+      }
+    } catch {
+      if (!disposed && current === generation) error.value = '无法读取通知状态，请重试'
+    } finally {
+      reading = false
+      if (!disposed && current === generation) loading.value = false
     }
   }
   async function run(action) {
@@ -71,6 +79,7 @@ export function useSellerNotifications() {
       if (!result.success) { error.value = result.error; return }
       feedback.value = '测试通知已排队，请在 Telegram 中查看。'
     })
+    if (!disposed && !error.value) await load()
   }
   async function copy() {
     if (!binding.value || !waiting.value) return
@@ -86,7 +95,7 @@ export function useSellerNotifications() {
     timer = window.setInterval(() => {
       now.value = Date.now()
       if (document.visibilityState !== 'visible' || busy.value || loading.value) return
-      if (waiting.value && now.value - lastPoll >= 3000) { lastPoll = now.value; void load() }
+      if ((waiting.value || (state.value?.available && ['pending', 'sending'].includes(state.value?.lastDelivery?.status))) && now.value - lastPoll >= 3000) { lastPoll = now.value; void load() }
     }, 1000)
     document.addEventListener('visibilitychange', resume)
     window.addEventListener('focus', resume)
