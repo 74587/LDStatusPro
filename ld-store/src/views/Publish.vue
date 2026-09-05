@@ -1,6 +1,6 @@
 <template>
   <div class="publish-page">
-    <SellerFulfillmentPanel />
+    <FulfillmentRuleDialog v-bind="fulfillmentReminder.dialogProps" @confirm="fulfillmentReminder.confirm" @cancel="fulfillmentReminder.cancel" @retry="fulfillmentReminder.retry" />
     <Transition name="submit-mask">
       <div
         v-if="publishOverlayVisible"
@@ -19,7 +19,7 @@
 
     <!-- 使用说明弹窗 -->
     <Teleport to="body">
-      <Transition name="modal">
+      <Transition name="modal" @after-leave="guideClosing = false">
         <div v-if="showGuideModal" class="guide-modal-overlay" @click.self="closeGuideModal">
           <div class="guide-modal">
             <div class="guide-modal-header">
@@ -149,6 +149,28 @@
           </div>
         </section>
 
+        <div class="form-card product-type-section">
+          <div class="type-heading"><h2 id="product-type-title" class="card-title">物品类型</h2><router-link to="/docs/product-types" target="_blank" rel="noopener noreferrer">物品类型说明<ArrowUpRight :size="14" aria-hidden="true" /></router-link></div>
+          <div class="type-select" role="radiogroup" aria-labelledby="product-type-title">
+            <button
+              v-for="(type, index) in productTypes"
+              :key="type.id"
+              type="button"
+              role="radio"
+              :aria-checked="form.productType === type.id"
+              :tabindex="form.productType === type.id ? 0 : -1"
+              :disabled="fulfillmentReminder.pending || productSubmittingBusy"
+              :class="['type-card', { active: form.productType === type.id }]"
+              @click="selectProductType(type.id)"
+              @keydown="handleProductTypeKeydown($event, index)"
+            >
+              <component :is="type.icon" class="type-icon" :size="22" :stroke-width="1.7" aria-hidden="true" />
+              <span class="type-info"><span class="type-name">{{ type.name }}</span><span class="type-desc">{{ type.desc }}</span></span>
+              <CircleCheck v-if="form.productType === type.id" class="type-selected-icon" :size="20" aria-hidden="true" />
+            </button>
+          </div>
+        </div>
+
         <ProductEditorForm
           ref="productEditorFormRef"
           v-model="form"
@@ -172,31 +194,10 @@
           @validate-image="validateImageLoad"
           @preview-error="onPreviewError"
         />
-        
-        <!-- 物品类型 -->
-        <div class="form-card">
-          <h2 class="card-title">物品类型</h2>
-          
-          <div class="type-select">
-            <div
-              v-for="type in productTypes"
-              :key="type.id"
-              :class="['type-card', { active: form.productType === type.id }]"
-              @click="form.productType = type.id"
-            >
-              <div v-if="type.icon" class="type-icon">{{ type.icon }}</div>
-              <div class="type-info">
-                <h4 class="type-name">{{ type.name }}</h4>
-                <p class="type-desc">{{ type.desc }}</p>
-              </div>
-              <div class="type-check" v-if="form.productType === type.id">✓</div>
-            </div>
-          </div>
-        </div>
-        
+
         <!-- 普通物品设置 -->
         <div class="form-card" v-if="form.productType === 'normal'">
-          <h2 class="card-title">普通物品设置</h2>
+          <div class="type-heading"><h2 class="card-title">普通物品设置</h2><button type="button" class="rule-text-link" @click="fulfillmentReminder.request({ force: true })">查看发货规则<ArrowUpRight :size="14" aria-hidden="true" /></button></div>
 
           <div class="cdk-config-notice">
             <div class="notice-header">
@@ -389,7 +390,7 @@
           <p class="seller-summary-meta">{{ selectedCategoryName }} · {{ form.productType === 'cdk' ? '自动发卡' : '普通物品' }}</p>
           <dl class="seller-summary-facts"><div><dt>成交价</dt><dd>{{ finalPrice > 0 ? finalPrice.toFixed(2) : '—' }} LDC</dd></div><div><dt>{{ form.productType === 'cdk' ? '卡密' : '库存' }}</dt><dd>{{ form.productType === 'cdk' ? (form.sharedCdkEnabled ? '共享模式' : `${cdkCount} 个`) : (form.stock || '—') }}</dd></div><div><dt>限购</dt><dd>{{ purchaseLimitSummary }}</dd></div></dl>
           <ul class="seller-readiness-list"><li :class="{ ready: merchantConfigured }"><span></span>{{ merchantReadinessText }}</li><li :class="{ ready: !!form.name.trim() }"><span></span>物品名称</li><li :class="{ ready: !!form.categoryId }"><span></span>物品分类</li><li :class="{ ready: imageValidated && lastValidatedUrl === form.imageUrl.trim() }"><span></span>图片验证</li></ul>
-          <template #action><button type="submit" class="submit-btn" :disabled="!canSubmit || productSubmittingBusy">{{ submitButtonText }}</button></template>
+          <template #action><button type="submit" class="submit-btn" :disabled="!canSubmit || productSubmittingBusy || fulfillmentReminder.pending">{{ submitButtonText }}</button></template>
         </SellerStickySummary>
       </form>
 
@@ -399,9 +400,10 @@
 </template>
 
 <script setup>
-import SellerFulfillmentPanel from '@/components/seller/SellerFulfillmentPanel.vue'
-import { ref, computed, nextTick, onBeforeUnmount, onMounted, watch } from 'vue'
-import { CircleAlert, CircleCheck, Clock3, Cloud, FlaskConical, Image as ImageIcon, ShieldAlert } from '@lucide/vue'
+import FulfillmentRuleDialog from '@/components/seller/FulfillmentRuleDialog.vue'
+import { useFulfillmentReminder } from '@/composables/useFulfillmentReminder'
+import { reactive, ref, computed, nextTick, onBeforeUnmount, onMounted, watch } from 'vue'
+import { ArrowUpRight, KeyRound, PackageCheck, CircleAlert, CircleCheck, Clock3, Cloud, FlaskConical, Image as ImageIcon, ShieldAlert } from '@lucide/vue'
 import { onBeforeRouteLeave, useRouter, useRoute } from 'vue-router'
 import { useCatalogStore } from '@/stores/catalog'
 import { useInventoryStore } from '@/stores/inventory'
@@ -448,6 +450,27 @@ const inventoryStore = useInventoryStore()
 const userStore = useUserStore()
 const toast = useToast()
 const dialog = useDialog()
+const fulfillmentReminder = reactive(useFulfillmentReminder(() => `${userStore.currentUser?.site || 'linux.do'}:${userStore.currentUser?.id || ''}`))
+const guideClosing = ref(false)
+const publishInitialized = ref(false)
+const restoredNormalReminderPending = ref(false)
+
+async function selectProductType(type) {
+  if (fulfillmentReminder.pending || productSubmittingBusy.value || form.value.productType === type) return
+  if (type === 'normal' && !await fulfillmentReminder.request()) return
+  form.value.productType = type
+}
+
+async function handleProductTypeKeydown(event, index) {
+  if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) return
+  event.preventDefault()
+  const next = event.key === 'Home' ? 0 : event.key === 'End' ? productTypes.length - 1
+    : (index + (['ArrowLeft', 'ArrowUp'].includes(event.key) ? -1 : 1) + productTypes.length) % productTypes.length
+  const group = event.currentTarget.closest('[role="radiogroup"]')
+  await selectProductType(productTypes[next].id)
+  await nextTick()
+  group?.querySelector('[aria-checked="true"]')?.focus()
+}
 
 const submitting = ref(false)
 const submitConfirming = ref(false)
@@ -517,6 +540,7 @@ const PRODUCT_SUBMIT_STATUS_RETRY_INTERVAL_MS = 2000
 
 // 关闭弹窗
 function closeGuideModal() {
+  guideClosing.value = true
   showGuideModal.value = false
   if (dontShowAgain.value) {
     localStorage.setItem(GUIDE_MODAL_KEY, 'true')
@@ -524,7 +548,7 @@ function closeGuideModal() {
 }
 
 function createDefaultProductForm(categoryId = null) {
-  return createProductEditorFormState({ categoryId })
+  return createProductEditorFormState({ categoryId, productType: 'cdk' })
 }
 
 // 表单数据
@@ -557,6 +581,7 @@ const {
 function restoreProductDraft() {
   const draft = restoreDraft(() => createDefaultProductForm())
   restoredCategoryId.value = draft?.form.categoryId ?? null
+  restoredNormalReminderPending.value = draft?.form.productType === 'normal'
 }
 
 function clearPersistedProductDraft() {
@@ -584,6 +609,8 @@ async function discardProductDraft() {
     return
   }
 
+  fulfillmentReminder.reset()
+  restoredNormalReminderPending.value = false
   form.value = createDefaultProductForm(categories.value[0]?.id ?? null)
   touched.value = {
     name: false,
@@ -704,8 +731,8 @@ async function loadCategories() {
 
 // 物品类型
 const productTypes = [
-  { id: 'normal', name: '普通物品', desc: '平台内支付、记录订单、卖家手动履约', icon: '' },
-  { id: 'cdk', name: '自动发卡', desc: '平台内支付+自动发放 CDK', icon: '' }
+  { id: 'cdk', name: 'CDK 物品', desc: '买家支付后，系统自动发放卡密', icon: KeyRound },
+  { id: 'normal', name: '普通物品', desc: '买家支付后，由您手动完成交付', icon: PackageCheck }
 ]
 const purchaseTrustLevelOptions = [0, 1, 2, 3, 4]
 const isSharedCdkMode = computed(() => form.value.productType === 'cdk' && !!form.value.sharedCdkEnabled)
@@ -1003,7 +1030,7 @@ async function confirmSubmitAfterUncertainResult(submissionToken) {
 
 // 提交表单
 async function submitForm() {
-  if (productSubmittingBusy.value) return
+  if (productSubmittingBusy.value || fulfillmentReminder.pending) return
   flushProductDraft()
   submitAttempted.value = true
 
@@ -1113,6 +1140,14 @@ async function submitForm() {
     return
   }
   
+  if (form.value.productType === 'normal') {
+    const snapshot = JSON.stringify(form.value)
+    const confirmationCount = fulfillmentReminder.confirmationCount
+    if (!await fulfillmentReminder.request({ refresh: true })) return
+    // A dialog confirms the rules only. Publishing always needs a separate click.
+    if (confirmationCount !== fulfillmentReminder.confirmationCount || snapshot !== JSON.stringify(form.value)) return
+  }
+
   submitting.value = true
   
   try {
@@ -1130,6 +1165,12 @@ async function submitForm() {
         return
       }
       clearSubmissionTokenState()
+      if (form.value.productType === 'normal' && ['FULFILLMENT_RULE_NOT_ACCEPTED', 'POLICY_VERSION_MISMATCH'].includes(result.errorCode)) {
+        fulfillmentReminder.reset()
+        submitting.value = false
+        await fulfillmentReminder.request({ force: true })
+        return
+      }
       toast.error(result.error || '发布失败')
       return
     }
@@ -1180,6 +1221,12 @@ watch(
   }
 )
 
+watch([showGuideModal, publishMode, publishInitialized, restoredNormalReminderPending, guideClosing], () => {
+  if (!publishInitialized.value || showGuideModal.value || guideClosing.value || publishMode.value !== 'product' || !restoredNormalReminderPending.value) return
+  restoredNormalReminderPending.value = false
+  if (form.value.productType === 'normal') void fulfillmentReminder.request()
+})
+
 watch(
   () => form.value.productType,
   (type) => {
@@ -1190,6 +1237,10 @@ watch(
     }
   }
 )
+
+watch(() => `${userStore.currentUser?.site || 'linux.do'}:${userStore.currentUser?.id || ''}`, () => {
+  restoredNormalReminderPending.value = form.value.productType === 'normal'
+})
 
 watch(
   publishMode,
@@ -1232,6 +1283,7 @@ onMounted(async () => {
     void validateImageLoad()
   }
 
+  publishInitialized.value = true
   window.addEventListener('pagehide', handleDraftPageHide)
   document.addEventListener('visibilitychange', handleDraftVisibilityChange)
 })
@@ -1933,8 +1985,8 @@ onBeforeUnmount(() => {
 }
 
 .type-card.active {
-  background: var(--color-success-bg);
-  border-color: var(--color-success);
+  background: var(--action-paper-accent-soft);
+  border-color: var(--action-paper-accent-strong);
 }
 
 .type-icon {
@@ -1956,19 +2008,6 @@ onBeforeUnmount(() => {
   font-size: 13px;
   color: var(--text-tertiary);
   margin: 0;
-}
-
-.type-check {
-  width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--color-success);
-  color: var(--palette-hex-ffffff);
-  border-radius: 50%;
-  font-size: 14px;
-  font-weight: 600;
 }
 
 /* 提交按钮 */
@@ -2408,4 +2447,18 @@ onBeforeUnmount(() => {
   background: var(--color-warning-bg);
   border: 1px solid var(--color-warning);
 }
+
+.type-heading { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px 16px; margin-bottom:18px; }
+.seller-product-form .type-heading .card-title { margin:0; }
+.type-heading a,.rule-text-link { display:inline-flex; align-items:center; gap:4px; min-height:44px; border:0; padding:0; background:transparent; color:var(--action-paper-accent-strong); font:inherit; font-size:13px; text-decoration:underline; text-underline-offset:3px; cursor:pointer; }
+.product-type-section .type-select { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+.type-card { position:relative; min-width:0; min-height:88px; font:inherit; text-align:left; color:var(--text-primary); }
+.type-card:disabled { cursor:wait; }
+.type-card:focus-visible { outline:3px solid var(--action-paper-accent-strong); outline-offset:3px; }
+.type-card .type-icon { flex-shrink:0; margin:0; color:var(--action-paper-accent-strong); }
+.type-info { display:grid; gap:6px; min-width:0; padding-right:24px; }
+.type-info .type-name,.type-info .type-desc { display:block; margin:0; }
+.type-info .type-desc { color:var(--text-secondary); }
+.type-selected-icon { position:absolute; right:12px; top:14px; color:var(--action-paper-accent-strong); }
+@media(max-width:640px) { .product-type-section .type-select { grid-template-columns:minmax(0,1fr); } }
 </style>

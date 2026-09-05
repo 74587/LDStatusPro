@@ -1,6 +1,5 @@
 <template>
   <div class="seller-dashboard">
-    <SellerFulfillmentPanel />
     <div v-if="loading" class="dashboard-loading" aria-live="polite" aria-label="正在加载经营概览">
       <div class="skeleton brief-skeleton"></div>
       <div class="skeleton-row">
@@ -41,6 +40,8 @@
           发布物品
         </router-link>
       </section>
+
+      <SellerFulfillmentPanel placement="summary" :state="fulfillmentState" />
 
       <section v-if="isNewSeller" class="opening-checklist" aria-labelledby="opening-title">
         <div class="section-heading opening-heading">
@@ -260,10 +261,13 @@
         </div>
       </section>
     </template>
+    <SellerFulfillmentPanel placement="details" :state="fulfillmentState" :error="fulfillmentError" :loading="fulfillmentLoading" @refresh="loadFulfillment" />
   </div>
 </template>
 
 <script setup>
+import { fetchSellerFulfillment } from '@/services/shop/fulfillmentService'
+import { useUserStore } from '@/stores/user'
 import SellerFulfillmentPanel from '@/components/seller/SellerFulfillmentPanel.vue'
 import { computed, defineAsyncComponent, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import {
@@ -432,7 +436,26 @@ function setupDeferredChart() {
   chartObserver.observe(chartLoadTarget.value)
 }
 
-onMounted(loadDashboard)
+const fulfillmentState = ref(null)
+const fulfillmentError = ref('')
+const fulfillmentLoading = ref(false)
+const fulfillmentUser = useUserStore()
+let fulfillmentRequest = 0
+async function loadFulfillment() {
+  const request = ++fulfillmentRequest
+  fulfillmentLoading.value = true
+  const result = await fetchSellerFulfillment()
+  if (request !== fulfillmentRequest) return
+  fulfillmentLoading.value = false
+  fulfillmentError.value = result.success ? '' : result.error
+  if (result.success) fulfillmentState.value = result.data
+}
+watch(() => `${fulfillmentUser.currentUser?.site}:${fulfillmentUser.currentUser?.id}`, () => {
+  fulfillmentState.value = null
+  void loadFulfillment()
+})
+onMounted(() => { void loadDashboard(); void loadFulfillment() })
+onUnmounted(() => { fulfillmentRequest++ })
 watch(dashboard, async (value) => {
   if (!value) return
   await nextTick()

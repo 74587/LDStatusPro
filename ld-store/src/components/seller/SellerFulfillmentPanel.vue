@@ -1,47 +1,73 @@
 <template>
-  <section v-if="state?.enabled || error" class="fulfillment-panel" aria-label="发货规则与履约记录">
-    <p v-if="error" role="alert">{{ error }} <button type="button" :disabled="busy" @click="load">重新加载</button></p>
-    <template v-if="state?.enabled">
-      <div class="fulfillment-panel__heading"><h2>发货与交易保障</h2><router-link to="/docs/shipping-deadline">完整规则</router-link></div>
-      <p>普通物品须在支付后 72 小时内交付；48 小时未发货下架，72 小时自动发起全额退款。最近 30 天累计 3 笔有效超时退款，限制新增交易 7 天。</p>
-      <p v-if="state.activeRestriction" role="status"><strong>本次新增交易限制至 {{ formatDate(state.activeRestriction.endsAt) }}（北京时间）</strong>。已有订单仍可履约及处理售后；到期不会自动上架物品。</p>
-      <p v-else>本轮有效超时记录：<strong>{{ state.validCount }}/3</strong><span v-if="state.validCount === 2">，再有 1 笔有效超时退款将触发限制。</span></p>
-      <form v-if="!state.accepted" @submit.prevent="accept">
-        <label><input v-model="checked" type="checkbox" />我已阅读并接受发货时限、自动全额退款及卖家限制规则</label>
-        <button type="submit" :disabled="!checked || busy">{{ busy ? '确认中…' : '确认规则，继续经营' }}</button>
-        <p>确认后可经营普通物品；如需更长交付时间，请暂勿通过此类型接单。</p>
-      </form>
-      <div class="fulfillment-panel__links"><router-link to="/seller/orders?status=paid">处理待发货订单</router-link><router-link to="/support">联系平台 / 申诉</router-link></div>
-      <details v-if="state.history.length"><summary>查看超时记录（{{ state.history.length }}）</summary>
-        <ul><li v-for="record in state.history" :key="record.id"><router-link :to="`/seller/orders/${encodeURIComponent(record.orderNo)}?source=product`">{{ record.orderNo }}</router-link>
-          <span>{{ formatDate(record.occurredAt) }} · {{ record.revokedAt ? '已撤销' : record.exemptReason ? '旧处罚周期，不重复计次' : record.penaltyId ? '已用于本轮处罚' : '超时记录' }}</span>
-          <span v-if="record.revokeReason">{{ record.revokeReason }}</span></li></ul>
-      </details>
-    </template>
+  <aside v-if="placement === 'summary' && state?.enabled && (state.validCount > 0 || state.activeRestriction)" class="fulfillment-summary" :class="{ restricted: state.activeRestriction }" aria-label="履约待办提醒">
+    <ShieldAlert :size="20" aria-hidden="true" />
+    <div>
+      <p v-if="state.activeRestriction"><strong>新增交易受限至 {{ formatDate(state.activeRestriction.endsAt) }}（北京时间）</strong><span>已有订单仍可交付及处理售后；到期不会自动上架物品。</span></p>
+      <p v-else><strong>最近 {{ state.windowDays }} 天有效超时记录 {{ state.validCount }}/{{ state.threshold }} 笔</strong><span v-if="state.validCount === state.threshold - 1">再有 1 笔有效超时退款将触发交易限制。</span></p>
+      <div class="fulfillment-links"><router-link to="/seller/orders?status=paid">处理待发货订单</router-link><a href="#seller-fulfillment-records" @click="openRecords">查看履约记录</a></div>
+    </div>
+  </aside>
+  <section v-else-if="placement === 'details'" id="seller-fulfillment-records" class="fulfillment-details" aria-label="发货规则与履约记录">
+    <details ref="records">
+      <summary>发货规则与履约记录</summary>
+      <div class="fulfillment-content">
+        <p v-if="loading" role="status">正在读取履约记录…</p>
+        <p v-else-if="error" role="alert">{{ error }} <button type="button" @click="$emit('refresh')">重新加载</button></p>
+        <template v-else-if="state">
+          <p v-if="!state.enabled">发货时限规则暂未启用。</p>
+          <template v-else>
+            <p>最近 {{ state.windowDays }} 天有效超时记录：<strong>{{ state.validCount }}/{{ state.threshold }} 笔</strong>。</p>
+            <p v-if="state.activeRestriction">新增交易受限至 {{ formatDate(state.activeRestriction.endsAt) }}（北京时间）。已有订单仍可交付及处理售后；到期不会自动上架物品。</p>
+            <button v-if="!state.accepted" type="button" :disabled="reminder.pending" @click="acceptRules">阅读并确认发货规则</button>
+          </template>
+          <div class="fulfillment-links"><router-link :to="state.ruleUrl">完整规则</router-link><router-link to="/seller/orders?status=paid">处理待发货订单</router-link><router-link :to="state.supportUrl">联系平台 / 申诉</router-link></div>
+          <details v-if="state.history.length" class="fulfillment-history"><summary>查看超时记录（{{ state.history.length }}）</summary>
+            <ul><li v-for="record in state.history" :key="record.id"><router-link :to="`/seller/orders/${encodeURIComponent(record.orderNo)}?source=product`">{{ record.orderNo }}</router-link>
+              <span>{{ formatDate(record.occurredAt) }} · {{ record.revokedAt ? '已撤销' : record.exemptReason ? '旧处罚周期，不重复计次' : record.penaltyId ? '已用于本轮处罚' : '超时记录' }}</span>
+              <span v-if="record.revokeReason">{{ record.revokeReason }}</span></li></ul>
+          </details>
+          <p v-else>暂无超时记录。</p>
+        </template>
+      </div>
+    </details>
+    <FulfillmentRuleDialog v-bind="reminder.dialogProps" @confirm="reminder.confirm" @cancel="reminder.cancel" @retry="reminder.retry" />
   </section>
 </template>
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { reactive, ref } from 'vue'
+import { ShieldAlert } from '@lucide/vue'
 import type { SellerFulfillment } from '@/contracts/fulfillment'
-import { acknowledgeFulfillment, fetchSellerFulfillment } from '@/services/shop/fulfillmentService'
-const state = ref<SellerFulfillment | null>(null), error = ref(''), checked = ref(false), busy = ref(false)
+import { useUserStore } from '@/stores/user'
+import { useFulfillmentReminder } from '@/composables/useFulfillmentReminder'
+import FulfillmentRuleDialog from './FulfillmentRuleDialog.vue'
+defineProps<{ placement: 'summary' | 'details'; state: SellerFulfillment | null; error?: string; loading?: boolean }>()
+const emit = defineEmits<{ refresh: [] }>()
+const userStore = useUserStore()
+const reminder = reactive(useFulfillmentReminder(() => `${userStore.currentUser?.site || 'linux.do'}:${userStore.currentUser?.id || ''}`))
+const records = ref<HTMLDetailsElement | null>(null)
 const formatDate = (value: string) => new Date(value).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', hour12: false })
-async function load() { const result = await fetchSellerFulfillment(); if (result.success) { state.value = result.data; error.value = '' } else error.value = result.error }
-async function accept() {
-  if (!checked.value || !state.value || busy.value) return
-  busy.value = true
-  const result = await acknowledgeFulfillment(state.value.policyVersion)
-  busy.value = false
-  if (result.success) { state.value = result.data; error.value = '' } else error.value = result.error
+async function acceptRules() { if (await reminder.request({ force: true })) emit('refresh') }
+function openRecords() {
+  const details = document.querySelector<HTMLDetailsElement>('#seller-fulfillment-records > details')
+  if (details) { details.open = true; details.querySelector('summary')?.focus() }
 }
-onMounted(load)
 </script>
 <style scoped>
-.fulfillment-panel { margin-bottom: 1rem; padding: 1.25rem; border: 1px solid var(--border-default-semantic); border-radius: var(--radius-lg, 16px); background: var(--surface-subtle); color: var(--text-primary-semantic); }
-.fulfillment-panel__heading, .fulfillment-panel__links { display: flex; align-items: center; flex-wrap: wrap; justify-content: space-between; gap: .75rem; }
-h2 { font-size: 1.1rem; margin: 0; } p, li { font-size: .875rem; line-height: 1.7; } p { color: var(--text-secondary-semantic); }
-a { color: var(--text-link); text-decoration: underline; } form, li { display: grid; gap: .75rem; }
-label { display: flex; align-items: flex-start; gap: .6rem; line-height: 1.6; font-size: .875rem; } input { margin-top: .35rem; }
-button { min-height: 44px; padding: .5rem 1rem; border: 1px solid var(--border-default-semantic); border-radius: var(--radius-md, 12px); background: var(--surface-card); color: var(--text-primary-semantic); cursor: pointer; }
-button:disabled { opacity: .55; cursor: not-allowed; } summary { cursor: pointer; padding: .75rem 0; } ul { padding-left: 1rem; } li { margin-bottom: 1rem; overflow-wrap: anywhere; }
+.fulfillment-summary { display:flex; align-items:flex-start; gap:12px; margin:18px 0; padding:16px 20px; border:1px solid var(--seller-border); border-radius:12px; background:var(--seller-surface-soft); color:var(--seller-ink); }
+.fulfillment-summary > svg { flex-shrink:0; margin-top:3px; color:var(--seller-warning); }
+.fulfillment-summary.restricted > svg { color:var(--seller-danger); }
+p { margin:0; font-size:14px; line-height:1.7; }
+p > span { display:block; color:var(--seller-muted); }
+.fulfillment-links { display:flex; flex-wrap:wrap; gap:4px 20px; }
+a { display:inline-flex; align-items:center; min-height:44px; font-size:14px; color:var(--seller-jade-strong); text-decoration:underline; text-underline-offset:3px; }
+.fulfillment-details { margin-top:24px; color:var(--seller-muted); border-top:1px solid var(--seller-border); scroll-margin-top:100px; }
+summary { width:fit-content; min-height:44px; padding:12px 0; box-sizing:border-box; cursor:pointer; font-size:14px; line-height:1.5; }
+.fulfillment-content { display:grid; gap:12px; padding:8px 0 16px; color:var(--seller-ink); }
+button { justify-self:start; min-height:44px; padding:8px 14px; border:1px solid var(--seller-border); border-radius:10px; color:var(--seller-jade-strong); background:var(--seller-surface); font:inherit; cursor:pointer; }
+button:disabled { opacity:.55; cursor:wait; }
+a:focus-visible,summary:focus-visible,button:focus-visible { outline:3px solid var(--seller-jade-strong); outline-offset:3px; }
+ul { list-style:none; padding:0; margin:0; }
+li { display:grid; gap:4px; border-top:1px solid var(--seller-border); padding:10px 0; font-size:14px; line-height:1.6; overflow-wrap:anywhere; }
+li span { color:var(--seller-muted); }
+@media(max-width:640px) { .fulfillment-summary { padding:14px; } }
 </style>
