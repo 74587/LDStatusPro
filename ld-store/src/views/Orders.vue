@@ -103,7 +103,6 @@
       <OrderStatusFilter
         v-if="currentRole !== 'buy'"
         :modelValue="statusFilter"
-        :include-image="!sellerMode"
         class="status-tabs"
         layout="equal"
         size="sm"
