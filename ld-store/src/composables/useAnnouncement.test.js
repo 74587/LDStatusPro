@@ -25,3 +25,15 @@ it('expires locally and retains valid content after failed refresh', async () =>
   await vi.advanceTimersByTimeAsync(60000)
   expect(fetchRequest).toHaveBeenCalledTimes(calls)
 })
+it('discards delayed responses after an audience context change', async () => {
+  let resolveOld
+  fetchRequest.mockImplementationOnce(() => new Promise(resolve => {resolveOld=resolve}))
+  const state = (await import('./useAnnouncement')).useAnnouncement()
+  const old = state.fetchAnnouncements(true)
+  state.configureAnnouncements('guest', 'seller')
+  fetchRequest.mockResolvedValue({success:true,data:{timestamp:Date.now(),items:[{id:2,content:'卖家位置'}]}})
+  await state.fetchAnnouncements(true)
+  resolveOld({success:true,data:{timestamp:Date.now(),items:[{id:1,content:'旧位置'}]}})
+  await old
+  expect(state.announcementItems.value.map(item=>item.id)).toEqual([2])
+})

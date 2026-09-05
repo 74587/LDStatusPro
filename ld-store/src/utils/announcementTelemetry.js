@@ -40,9 +40,10 @@ function observe(element, binding) {
   const clear = () => { clearTimeout(timer); timer = null }
   const update = () => {
     clear()
+    if (!counted && value.event === 'open' && ratio > 0 && document.visibilityState !== 'hidden') { counted = true; trackAnnouncement(value.item, 'open', value.placement); return }
     if (!counted && ratio >= .5 && document.visibilityState !== 'hidden') timer = setTimeout(() => { counted = true; trackAnnouncement(value.item, value.event || 'impression', value.placement) }, 1000)
   }
-  const observer = new IntersectionObserver(entries => { ratio = entries[0]?.intersectionRatio || 0; update() }, { threshold: [.5] })
+  const observer = new IntersectionObserver(entries => { ratio = entries[0]?.intersectionRatio || 0; update() }, { threshold: [0, .5] })
   observer.observe(element); document.addEventListener('visibilitychange', update)
   observations.set(element, { signature: `${identity}:${value.item.id}:${value.item.contentVersion}:${value.item.reminderVersion}:${value.placement}`, stop() { clear(); observer.disconnect(); document.removeEventListener('visibilitychange', update) } })
 }

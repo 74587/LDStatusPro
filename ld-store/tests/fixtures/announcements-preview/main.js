@@ -12,5 +12,5 @@ const item = { id: 11, title: '普通物品 72 小时发货保障规则已上线
 // Fixtures never contact any API or telemetry service.
 globalThis.fetch=async () => new globalThis.Response(JSON.stringify({ success:true,data:{items:[item,{...item,id:12,mode:'banner',summary:'收藏士多官网，随时回来看看。'}],item,pagination:{page:1,pageSize:20,total:2,totalPages:1},timestamp:Date.now()}}),{headers:{'content-type':'application/json'}})
 const router=createRouter({history:createWebHistory(),routes:[{path:'/',name:'Home',component:{render:()=>h('main',{},'士多首页 · 隔离预览')}},{path:'/announcements',component:Announcements},{path:'/announcements/:id',component:Announcements}]})
-const app=createApp({setup(){useUserStore().sessionReady=true;useAnnouncement().startAnnouncements();return ()=>h('div',[h(AnnouncementBar),h(AnnouncementPopup),h(RouterView)])}})
+const app=createApp({setup(){useUserStore().sessionReady=true;useAnnouncement().startAnnouncements();return ()=>h('div',[h('button',{onClick:()=>{globalThis.sessionStorage.clear();globalThis.localStorage.clear();globalThis.location.reload()}},'重置隔离预览'),h('button',{onClick:()=>globalThis.document.documentElement.classList.toggle('dark')},'切换预览主题'),h(AnnouncementBar),h(AnnouncementPopup),h(RouterView)])}})
 app.use(createPinia()).use(router).mount('#app')

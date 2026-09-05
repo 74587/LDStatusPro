@@ -45,7 +45,7 @@ async function fetchAnnouncements(force = false) {
       now.value = Date.now() + serverOffset
       items.value = response.data.items.map(normalizeItem)
       lastFetchedAt = Date.now()
-      error.value = ''
+      error.value = preferencesReady.value ? '' : '提醒状态暂未同步，稍后自动重试'
     } catch (err) {
       if (ticket !== generation) return activeItems.value
       error.value = err.message || '加载公告失败'

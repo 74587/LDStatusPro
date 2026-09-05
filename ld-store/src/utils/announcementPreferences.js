@@ -55,7 +55,7 @@ export async function syncAnnouncementPreferences(identity) {
       if (identity !== currentIdentity) return false
       const response = await saveAnnouncementState(record.id, { reminderVersion: record.reminderVersion, mode: record.mode })
       if (identity !== currentIdentity) return false
-      if (response.success) {
+      if (response.success || response.status === 404 || response.status === 409) {
         const latest = read('localStorage', pendingKey) || {}
         if (JSON.stringify(latest[key]) === JSON.stringify(record)) { delete latest[key]; write('localStorage', pendingKey, latest) }
       }
