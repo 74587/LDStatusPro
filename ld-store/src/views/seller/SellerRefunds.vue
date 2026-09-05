@@ -1,6 +1,6 @@
 <template>
   <div class="seller-refunds-page">
-    <SellerPageToolbar eyebrow="AFTER-SALES LEDGER" description="集中处理买家退款申请。优先通过 LINUX DO 沟通，确认同意后由系统按原订单金额全额退回 LDC。">
+    <SellerPageToolbar eyebrow="AFTER-SALES LEDGER" description="集中处理买家退款申请。请在订单显示的处理期限内作出决定，协商不延长时限；逾期未决定，系统将自动同意并发起全额退款。">
       <template #actions>
         <button type="button" class="refund-refresh" :disabled="loading" @click="loadRefunds">
           <RefreshCw :class="{ spinning: loading }" :size="16" aria-hidden="true" />刷新
@@ -34,6 +34,7 @@
         <router-link :to="detailTarget(row)" class="refund-order-link">
           <strong>{{ row.orderNo }}</strong>
           <small>{{ formatRefundDate(row.requestedAt) }}</small>
+          <RefundDeadlineNotice :refund="row" :server-now="serverNow" compact />
         </router-link>
       </template>
       <template #cell-buyer="{ row }">
@@ -51,6 +52,7 @@
           <SellerStatusBadge :label="getRefundStatusMeta(row.status).label" :tone="getRefundStatusMeta(row.status).tone" />
         </div>
         <div class="refund-mobile-product"><strong>{{ row.productName }}</strong><span>@{{ row.buyerUsername || '未知买家' }}</span></div>
+        <RefundDeadlineNotice :refund="row" :server-now="serverNow" compact />
         <p class="refund-mobile-reason">{{ getRefundReasonLabel(row.reasonCode) }} · {{ row.reasonDetail }}</p>
         <div class="refund-mobile-foot"><strong>{{ Number(row.refundAmount || 0).toFixed(2) }} LDC</strong><router-link :to="detailTarget(row)">查看处理<ArrowUpRight :size="14" aria-hidden="true" /></router-link></div>
       </template>
@@ -74,6 +76,7 @@ import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ArrowUpRight, BadgeCheck, CircleAlert, RefreshCw, Search } from '@lucide/vue'
 import SellerDataTable from '@/components/seller/SellerDataTable.vue'
+import RefundDeadlineNotice from '@/components/order/RefundDeadlineNotice.vue'
 import LiquidTabs from '@/components/common/LiquidTabs.vue'
 import SellerPageToolbar from '@/components/seller/SellerPageToolbar.vue'
 import SellerPagination from '@/components/seller/SellerPagination.vue'
@@ -88,6 +91,7 @@ const errorMessage = ref('')
 const refunds = ref([])
 const status = ref(String(route.query.status || 'action_required'))
 const search = ref(String(route.query.search || ''))
+const serverNow = ref('')
 const summary = reactive({ total: 0, requested: 0, negotiating: 0, exception: 0, externalDispute: 0, closed: 0, actionRequired: 0 })
 const pagination = reactive({ page: Number(route.query.page) || 1, pageSize: 20, total: 0, totalPages: 0 })
 
@@ -158,6 +162,7 @@ async function loadRefunds() {
     return
   }
   const data = result.data || result
+  serverNow.value = data.serverNow || ''
   refunds.value = Array.isArray(data.refunds) ? data.refunds : []
   Object.assign(summary, data.summary || {})
   Object.assign(pagination, data.pagination || {})

@@ -1,5 +1,5 @@
 <template>
-  <section :class="['refund-card', `is-${isBuyer ? 'buyer' : 'seller'}`]" aria-labelledby="refund-card-title">
+  <section id="order-refund" :class="['refund-card', `is-${isBuyer ? 'buyer' : 'seller'}`]" aria-labelledby="refund-card-title">
     <header class="refund-card__header">
       <div>
         <p class="refund-card__eyebrow">订单保障</p>
@@ -33,7 +33,7 @@
         <div class="refund-preflight__steps" aria-label="退款售后处理方式">
           <article>
             <span><RotateCcw :size="16" aria-hidden="true" /></span>
-            <div><strong>直接申请退款</strong><p>待卖家同意退款后，系统将按订单实付金额发起全额退款。</p></div>
+            <div><strong>直接申请退款</strong><p>{{ refundState?.responsePolicyEnabled ? '卖家应在申请后 72 小时内作出决定；逾期未决定，系统自动同意并发起全额退款。' : '待卖家同意退款后，系统将按订单实付金额发起全额退款。' }}</p></div>
           </article>
           <article>
             <span><MessageCircleMore :size="16" aria-hidden="true" /></span>
@@ -155,6 +155,8 @@
     </template>
 
     <template v-else>
+      <label v-if="['requested', 'negotiating', 'processing'].includes(refund.status)" class="refund-availability"><input v-model="autoRefreshPaused" type="checkbox" /> 暂停自动刷新退款状态</label>
+      <RefundDeadlineNotice :refund="refund" :server-now="refundState?.serverNow" />
       <div class="refund-stage-shell">
         <RefundStageTracker :stages="stages" />
       </div>
@@ -310,7 +312,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, toRef } from 'vue'
+onMounted(() => { if (window.location.hash === '#order-refund') document.getElementById('order-refund')?.scrollIntoView({ block: 'start' }) })
+import { computed, onMounted, toRef } from 'vue'
+import RefundDeadlineNotice from './RefundDeadlineNotice.vue'
 import {
   BadgeCheck,
   CircleAlert,
@@ -342,6 +346,8 @@ const {
   loading,
   loadError,
   refund,
+  refundState,
+  autoRefreshPaused,
   formOpen,
   submitting,
   errors,

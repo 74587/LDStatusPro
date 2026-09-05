@@ -171,7 +171,19 @@ export const BuyOrderPaymentResponseSchema = looseObject({
   message: optional(string())
 })
 
+const RefundResponseFields = {
+  decisionDeadlineAt: optional(nullable(string())),
+  responsePolicyVersion: optional(nullable(string())),
+  responsePolicySource: optional(nullable(string())),
+  executionTrigger: optional(nullable(string())),
+  overdue: optional(boolean()),
+  dueSoon: optional(boolean()),
+  attentionRequired: optional(boolean()),
+  allowedActions: optional(looseObject({ approve: boolean(), reject: boolean(), contact: boolean() }))
+}
+
 export const RefundSchema = looseObject({
+  ...RefundResponseFields,
   id: EntityIdSchema,
   orderNo: NonemptyStringSchema,
   status: RefundStatusSchema,
@@ -180,6 +192,8 @@ export const RefundSchema = looseObject({
 })
 
 export const OrderRefundResponseSchema = looseObject({
+  serverNow: optional(string()),
+  responsePolicyEnabled: optional(boolean()),
   fulfillment: optional(FulfillmentInfoSchema),
   role: union([literal('buyer'), literal('seller')]),
   eligibility: looseObject({
@@ -192,7 +206,9 @@ export const OrderRefundResponseSchema = looseObject({
 })
 
 export const SellerRefundListResponseSchema = looseObject({
+  serverNow: optional(string()),
   refunds: array(looseObject({
+    ...RefundResponseFields,
     id: EntityIdSchema,
     orderNo: NonemptyStringSchema,
     status: RefundStatusSchema,

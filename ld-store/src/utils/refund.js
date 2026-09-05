@@ -18,7 +18,7 @@ const STATUS_META = Object.freeze({
   failed: { label: '退款执行失败', tone: 'danger', description: '本次自动退款未完成，卖家可以查看原因并重试。' },
   unknown: { label: '退款结果待核对', tone: 'danger', description: '无法确认 Credit 是否已完成退款，为避免重复退回，系统已停止自动重试。' },
   refunded: { label: '已退款', tone: 'success', description: 'LDC 积分已由 LINUX DO Credit 原路退回。' },
-  rejected: { label: '卖家已拒绝', tone: 'danger', description: '请先查看卖家说明；协商仍无法解决时，可到 Credit 发起争议。' },
+  rejected: { label: '申请已拒绝', tone: 'danger', description: '请先查看卖家说明；协商仍无法解决时，可到 Credit 发起争议。' },
   external_dispute: {
     label: '已转 Credit 处理',
     tone: 'warning',
@@ -34,6 +34,14 @@ const REFUND_STAGE_DEFINITIONS = Object.freeze([
 ])
 
 const REFUND_EVENT_META = Object.freeze({
+  response_policy_enrolled: { label: '已通知双方退款处理时限', tone: 'info', icon: 'update' },
+  response_deadline_reminder: { label: '已提醒卖家临近截止时间', tone: 'warning', icon: 'update' },
+  response_timeout_approved: { label: '超时未决定，系统自动同意退款', tone: 'info', icon: 'approved' },
+  admin_approved: { label: '管理员同意退款', tone: 'info', icon: 'approved' },
+  admin_overridden: { label: '管理员改判退款', tone: 'info', icon: 'approved' },
+  admin_rejected: { label: '管理员驳回退款申请', tone: 'danger', icon: 'rejected' },
+  admin_retry_started: { label: '管理员核查后重试退款', tone: 'info', icon: 'update' },
+  contact_updated: { label: '卖家补充协商记录', tone: 'info', icon: 'contact' },
   requested: { label: '买家提交退款申请', tone: 'brand', icon: 'request' },
   contacted: { label: '卖家联系买家协商', tone: 'info', icon: 'contact' },
   approved: { label: '卖家同意全额退款', tone: 'info', icon: 'approved' },
@@ -61,12 +69,12 @@ function createStage(index, state = 'pending', options = {}) {
   }
 }
 
-export function buildRefundStages(status, hasRefund = true, source = 'buyer') {
+export function buildRefundStages(status, hasRefund = true, source = 'buyer', trigger = '') {
   if (!hasRefund) return []
 
   const value = String(status || '')
   const requestDone = source === 'system' ? '系统已触发超时保障' : source === 'seller' ? '卖家已主动退款' : '申请信息已送达'
-  const decisionDone = source === 'buyer' ? '卖家已同意退款' : '无需卖家审批'
+  const decisionDone = trigger === 'response_timeout' ? '系统已自动同意退款' : trigger.startsWith('admin_') ? '管理员已同意退款' : source === 'buyer' ? '卖家已同意退款' : '无需卖家审批'
   const pending = index => createStage(index)
   const done = (index, description) => createStage(index, 'done', { description })
   const current = (index, description, tone = 'info') => createStage(index, 'current', {

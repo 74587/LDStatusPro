@@ -35,6 +35,8 @@ interface RefundOrder extends Record<string, unknown> {
 }
 
 interface RefundState {
+  serverNow?: string
+  responsePolicyEnabled?: boolean
   fulfillment?: { canProactivelyRefund?: boolean }
   eligibility?: { canApply?: boolean; message?: string }
   refund?: RefundRecord | null
@@ -58,6 +60,8 @@ export function useOrderRefund(options: UseOrderRefundOptions) {
   const toast = useToast()
   const notificationSummaryStore = useNotificationSummaryStore()
   const loading = ref(true)
+  const autoRefreshPaused = ref(false)
+  let refreshTimer: ReturnType<typeof setInterval> | undefined
   const loadError = ref('')
   const refundState = ref<RefundState | null>(null)
   const formOpen = ref(false)
@@ -82,7 +86,7 @@ export function useOrderRefund(options: UseOrderRefundOptions) {
     : `暂不可提交：${eligibility.value?.message || '未能确认退款申请资格，请刷新后重试。'}`)
   const disputeGuideUrl = computed(() => refundState.value?.disputeGuideUrl || 'https://credit.linux.do/docs/how-to-use#争议处理')
   const statusMeta = computed(() => getRefundStatusMeta(refund.value?.status))
-  const stages = computed(() => buildRefundStages(refund.value?.status, Boolean(refund.value), String(refund.value?.source || 'buyer')))
+  const stages = computed(() => buildRefundStages(refund.value?.status, Boolean(refund.value), String(refund.value?.source || 'buyer'), String(refund.value?.executionTrigger || '')))
   const refundAmount = computed(() => Number(options.order.value?.paidAmount ?? options.order.value?.amount ?? 0))
   const counterpartyUsername = computed(() => isBuyer.value
     ? (options.order.value?.sellerUsername || options.order.value?.seller?.username)
@@ -94,10 +98,9 @@ export function useOrderRefund(options: UseOrderRefundOptions) {
   ))
   const canProactivelyRefund = computed(() => !isBuyer.value && !refund.value
     && refundState.value?.fulfillment?.canProactivelyRefund === true)
-  const canSellerDecide = computed(() => !isBuyer.value && ['requested', 'negotiating', 'failed'].includes(String(refund.value?.status || '')))
-  const canSellerReject = computed(() => !isBuyer.value && String(refund.value?.source || 'buyer') === 'buyer'
-    && ['requested', 'negotiating'].includes(String(refund.value?.status || '')))
-  const canSellerContact = computed(() => !isBuyer.value && ['requested', 'negotiating', 'failed', 'unknown'].includes(String(refund.value?.status || '')))
+  const canSellerDecide = computed(() => !isBuyer.value && (refund.value?.allowedActions?.approve ?? ['requested', 'negotiating', 'failed'].includes(String(refund.value?.status || ''))))
+  const canSellerReject = computed(() => !isBuyer.value && (refund.value?.allowedActions?.reject ?? ['requested', 'negotiating'].includes(String(refund.value?.status || ''))))
+  const canSellerContact = computed(() => !isBuyer.value && (refund.value?.allowedActions?.contact ?? ['requested', 'negotiating'].includes(String(refund.value?.status || ''))))
   const showSellerActions = computed(() => canSellerDecide.value || canSellerReject.value || canSellerContact.value)
   const refundSourceLabel = computed(() => ({ system: '系统超时保障', seller: '卖家主动退款', buyer: '买家售后申请' }[String(refund.value?.source || 'buyer')] || '退款处理'))
   const contactActionLabel = computed(() => refund.value?.status === 'requested' ? '标记为协商中' : '补充协商记录')
@@ -114,12 +117,13 @@ export function useOrderRefund(options: UseOrderRefundOptions) {
     return guidance[String(refund.value?.status || '')] || null
   })
 
-  async function loadRefund() {
+  async function loadRefund(mode?: unknown) {
+    const background = mode === true
     if (!orderNo.value) return null
     const currentRequestId = ++loadRequestId
     loadController?.abort('caller')
     loadController = new AbortController()
-    loading.value = true
+    if (!background) loading.value = true
     loadError.value = ''
     const result = await fetchOrderRefundRequest(orderNo.value, { signal: loadController.signal })
     if (currentRequestId !== loadRequestId || loadController.signal.aborted) return null
@@ -262,6 +266,7 @@ export function useOrderRefund(options: UseOrderRefundOptions) {
   }
 
   function stop() {
+    clearInterval(refreshTimer)
     loadRequestId += 1
     loadController?.abort('caller')
     loadController = null
@@ -270,11 +275,16 @@ export function useOrderRefund(options: UseOrderRefundOptions) {
   watch(orderNo, (next, previous) => {
     if (next && next !== previous) void loadRefund()
   })
-  onMounted(() => { void loadRefund() })
+  onMounted(() => {
+    void loadRefund()
+    refreshTimer = setInterval(() => {
+      if (!document.hidden && !autoRefreshPaused.value && !loading.value && !sellerSubmitting.value && !submitting.value && !formOpen.value && !sellerActionMode.value && ['requested', 'negotiating', 'processing'].includes(String(refund.value?.status || ''))) void loadRefund(true)
+    }, 30000)
+  })
   onUnmounted(stop)
 
   return {
-    loading, loadError, refundState, refund, eligibility, formOpen, submitting, errors, errorSummary,
+    autoRefreshPaused, loading, loadError, refundState, refund, eligibility, formOpen, submitting, errors, errorSummary,
     sellerActionMode, sellerMessage, sellerActionError, sellerSubmitting, form, orderNo, isBuyer,
     canApplyRefund, refundAvailabilityMessage, disputeGuideUrl, statusMeta, stages, refundAmount,
     counterpartyMessageUrl, canSellerDecide, canSellerReject, canSellerContact, showSellerActions, contactActionLabel, refundSourceLabel,
