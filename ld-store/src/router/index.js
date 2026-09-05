@@ -287,6 +287,12 @@ const routes = [
         meta: { title: '小店管理 - LD士多卖家后台' }
       },
       {
+        path: 'notifications',
+        name: 'SellerNotifications',
+        component: () => import('@/views/SellerNotifications.vue'),
+        meta: { title: '通知设置 - LD士多卖家后台' }
+      },
+      {
         path: 'payment',
         name: 'SellerPayment',
         component: () => import('@/views/Settings.vue'),

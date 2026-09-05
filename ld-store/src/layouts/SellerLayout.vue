@@ -157,6 +157,7 @@ import {
   ArrowLeft,
   BadgePercent,
   CreditCard,
+  Bell,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -239,6 +240,7 @@ const navigation = computed(() => [
   {
     label: '设置',
     items: [
+      { label: '通知设置', to: '/seller/notifications', activeRouteNames: ['SellerNotifications'], icon: Bell },
       { label: '收款设置', to: '/seller/payment', activeRouteNames: ['SellerPayment'], icon: CreditCard }
     ]
   }
