@@ -207,6 +207,7 @@ import {
   ArrowRight,
   ArrowUpRight,
   BadgePercent,
+  BellRing,
   BookOpen,
   Boxes,
   ChevronRight,
@@ -250,6 +251,7 @@ const router = useRouter()
 
 const iconMap = {
   BadgePercent,
+  BellRing,
   Boxes,
   CircleHelp,
   ClipboardCheck,

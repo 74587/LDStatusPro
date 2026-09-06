@@ -82,7 +82,7 @@ export function useSellerNotifications() {
       const result = await testTelegramChannel()
       if (disposed) return
       if (!result.success) { reportError(result.error); return }
-      toast.success('测试通知已排队，请在 Telegram 中查看。')
+      toast.success('测试通知已排队，可能延迟几秒，请稍候。')
     })
     if (!disposed && !error.value) await load()
   }

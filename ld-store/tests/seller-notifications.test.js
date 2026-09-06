@@ -42,7 +42,7 @@ describe('seller notification settings', () => {
     requests.fetchNotificationChannel.mockResolvedValue({ success: true, data: { ...initial, status: 'enabled' } })
     requests.testTelegramChannel.mockResolvedValue({ success: true, data: null })
     await open(); await button('发送测试通知').trigger('click'); await flushPromises()
-    expect(useUiStore().toasts).toEqual(expect.arrayContaining([expect.objectContaining({ type: 'success', message: '测试通知已排队，请在 Telegram 中查看。' })]))
+    expect(useUiStore().toasts).toEqual(expect.arrayContaining([expect.objectContaining({ type: 'success', message: '测试通知已排队，可能延迟几秒，请稍候。' })]))
     expect(wrapper.find('.notification-feedback').exists()).toBe(false)
   })
   it('does not offer binding when the provider is not configured', async () => {

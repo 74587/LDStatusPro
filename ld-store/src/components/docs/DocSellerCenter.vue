@@ -25,6 +25,7 @@
       <div><dt>优惠券管理</dt><dd>创建活动、分享领取链接，查看领取、占用、核销和让利。</dd></div>
       <div><dt>商家服务</dt><dd>查看士多甄选、士多优选等推广服务及当前可用名额。</dd></div>
       <div><dt>小店管理</dt><dd>维护店铺资料、分类和展示状态。</dd></div>
+      <div><dt>通知设置</dt><dd><router-link to="/docs/seller-notifications">配置 Telegram 通知</router-link>，接收待发货、退款和下架等重要提醒。</dd></div>
       <div><dt>收款设置</dt><dd>保存 LDC 收款凭证，复制回调地址并完成通知测试。</dd></div>
     </dl>
 

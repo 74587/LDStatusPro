@@ -34,6 +34,7 @@
             <button v-if="state.status === 'enabled'" type="button" class="notification-button notification-warning" :disabled="busy || confirmUnbind" @click="change('pause')"><Pause :size="16" aria-hidden="true" />暂停通知</button>
           </template>
         </div>
+        <p v-if="state.status === 'enabled' && !binding" class="notification-hint">测试消息可能延迟几秒，请稍候；短暂未收到不代表绑定失败。</p>
         <p v-if="state.status === 'unbound' && !binding" class="notification-hint">在机器人内确认即可完成连接，无需填写手机号或 Chat ID。</p>
 
         <div v-if="binding" class="notification-binding">
