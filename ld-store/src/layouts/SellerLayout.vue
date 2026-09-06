@@ -134,9 +134,9 @@
       </section>
 
       <main id="seller-main" ref="sellerMain" class="seller-main" tabindex="-1">
+        <AnnouncementBar />
         <div class="seller-view-stage">
-          <AnnouncementBar />
-      <router-view v-slot="{ Component, route: childRoute }">
+          <router-view v-slot="{ Component, route: childRoute }">
             <transition name="seller-route">
               <component :is="Component" :key="resolveSellerViewKey(childRoute)" />
             </transition>
@@ -464,6 +464,9 @@ html.dark .seller-shell {
 .seller-enforcement a { min-height: 44px; display: inline-flex; align-items: center; padding: 0 12px; border: 1px solid color-mix(in srgb, var(--seller-danger) 45%, var(--seller-border)); border-radius: 10px; color: var(--seller-danger); background: var(--seller-surface); font-size: 13px; font-weight: 600; }
 .seller-enforcement a:focus-visible { outline: 3px solid var(--seller-danger); outline-offset: 2px; }
 .seller-main { width: min(100%, 1480px); margin: 0 auto; padding: clamp(20px, 3vw, 38px); outline: none; }
+.seller-main > :deep(.announcement-bar),
+.seller-main > :deep(.announcement-refresh-status) { width: 100%; margin: 0 0 var(--space-5); }
+/* Only outgoing/incoming route views share a grid cell during transitions. */
 .seller-view-stage { min-height: calc(100dvh - 148px); display: grid; isolation: isolate; }
 .seller-view-stage > * { min-width: 0; grid-area: 1 / 1; }
 .seller-route-enter-active { transition: opacity 180ms ease, transform 180ms ease; }
