@@ -15,6 +15,17 @@ function setup(owner = `owner-${++ownerId}`) {
   return { create, lookup, options, controller: useCheckoutSubmission(options) }
 }
 describe('checkout result recovery', () => {
+  it('refreshes a confirmed but pending payment without creating another order', async () => {
+    const { controller, create, lookup } = setup()
+    create.mockResolvedValueOnce({ success: true, status: 200, data: { ...order, paymentState: 'unknown', paymentUrl: null } })
+    await controller.submit(input)
+    const token = controller.pending.value?.token
+    lookup.mockResolvedValueOnce({ success: true, status: 200, data: { exists: true, order: { ...order, paymentState: 'ready' } } })
+    expect(await controller.recover(true)).toMatchObject({ success: true, data: { paymentState: 'ready' } })
+    expect(controller.pending.value?.token).toBe(token)
+    expect(create).toHaveBeenCalledTimes(1)
+    controller.complete()
+  })
   it('recovers an order after a lost response without a second creation', async () => {
     const { controller, create, lookup } = setup()
     lookup.mockResolvedValue(found)

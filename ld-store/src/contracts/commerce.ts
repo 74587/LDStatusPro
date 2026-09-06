@@ -149,6 +149,8 @@ export const OrderDetailResponseSchema = looseObject({
 })
 
 export const OrderCreatedResponseSchema = looseObject({
+  paymentState: optional(string()),
+  retryAfterSeconds: optional(nullable(number())),
   orderNo: NonemptyStringSchema,
   orderId: EntityIdSchema,
   paymentUrl: optional(nullable(string())),

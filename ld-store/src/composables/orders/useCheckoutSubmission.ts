@@ -3,7 +3,7 @@ import type { ApiResult } from '@/utils/api'
 
 interface Input { productId: number; quantity: number; couponClaimId: number | null; expectedAmount: number }
 interface Pending extends Input { token: string }
-interface Created { orderNo: string; orderId: string | number; paymentUrl?: string | null }
+interface Created { orderNo: string; orderId: string | number; paymentUrl?: string | null; paymentState?: string; retryAfterSeconds?: number | null }
 interface Options {
   owner: string
   productId: number
@@ -76,7 +76,7 @@ export function useCheckoutSubmission(options: Options) {
     if (checking.value || !pending.value || !active) return unknown()
     checking.value = true
     try {
-      if (confirmed.value) return { success: true as const, status: 200, data: confirmed.value }
+      if (confirmed.value && !['pending', 'creating', 'unknown'].includes(confirmed.value.paymentState || '')) return { success: true as const, status: 200, data: confirmed.value }
       const result = await lookup()
       // Only an explicit retry replays the exact original payload and token.
       // Backend checks the original expected amount before creating anything.

@@ -801,6 +801,7 @@ async function finishCreatedOrder(order, preparedWindow = null) {
     } else {
       cleanupPreparedTab(preparedWindow)
       if (order.paymentUrl) toast.info('订单已创建，请在订单详情继续支付')
+      else if (['pending', 'creating', 'unknown'].includes(order.paymentState)) toast.info('订单已保存，支付结果确认中，请勿重复兑换')
     }
   } catch {
     cleanupPreparedTab(preparedWindow)
@@ -809,7 +810,7 @@ async function finishCreatedOrder(order, preparedWindow = null) {
   try {
     await router.replace({ name: 'OrderDetail', params: { id: order.orderNo }, query: { role: 'buyer' } })
     if (router.currentRoute.value.name === 'OrderDetail') {
-      submission.complete()
+      if (!['pending', 'creating', 'unknown'].includes(order.paymentState)) submission.complete()
       checkoutStore.clearCheckout(productId.value)
     }
   } catch {

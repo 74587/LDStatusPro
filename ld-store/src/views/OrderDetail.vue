@@ -304,6 +304,9 @@
 
         <!-- 操作按钮 -->
         <div class="actions" v-if="showActions">
+          <p v-if="paymentConfirming" class="maintenance-action-hint" role="status" aria-live="polite">
+            订单已保存，支付结果确认中。页面会自动更新，请勿重复兑换；确认完成后可继续支付。
+          </p>
           <div class="actions-row">
             <button
               v-if="canRepay"
@@ -326,7 +329,7 @@
               class="cancel-btn" 
               :class="{ 'full-width': !canRepay && !canRefreshPaymentStatus }"
               @click="handleCancelOrder"
-              :disabled="cancelling || paying"
+              :disabled="cancelling || paying || paymentConfirming"
             >
               {{ cancelling ? '取消中...' : '取消订单' }}
             </button>
@@ -475,8 +478,13 @@ const showActions = computed(() => {
   return order.value?.status === 'pending'
 })
 
+const paymentConfirming = computed(() => ['pending', 'creating', 'unknown'].includes(
+  order.value?.payment_init_status || order.value?.paymentInitStatus || ''
+))
+
 const canRepay = computed(() => {
   return !isPaymentMaintenanceBlocked.value
+    && !paymentConfirming.value
     && currentRole.value === 'buyer'
     && order.value?.status === 'pending'
     && isPlatformOrder(order.value)
