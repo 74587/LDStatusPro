@@ -7,5 +7,5 @@ export default defineConfig({
   envDir: false,
   plugins: [vue()],
   resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
-  test: { setupFiles: ['./tests/network-sandbox.js'] }
+  test: { include: ['src/**/*.test.{js,ts}', 'tests/**/*.test.{js,ts}'], setupFiles: ['./tests/network-sandbox.js'] }
 })

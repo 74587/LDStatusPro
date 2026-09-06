@@ -7,6 +7,7 @@ const appFiles = ['src/**/*.{js,vue}']
 const toolFiles = [
   'eslint.config.js',
   'vite.config.js',
+  'vite.e2e.config.js',
   'vitest.config.js',
   'tests/network-sandbox.js',
   'postcss.config.js',
@@ -16,7 +17,7 @@ const toolFiles = [
 
 export default [
   {
-    ignores: ['dist/**', '.csp-smoke-dist/**', 'node_modules/**', '.wrangler/**']
+    ignores: ['dist/**', 'test-results/**', 'playwright-report/**', '.csp-smoke-dist/**', 'node_modules/**', '.wrangler/**']
   },
   {
     ...js.configs.recommended,

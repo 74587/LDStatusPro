@@ -5,3 +5,6 @@ dist/
 .csp-smoke-dist/
 *.local
 .DS_Store
+
+ld-store/test-results/
+ld-store/playwright-report/
