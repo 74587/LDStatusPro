@@ -1,4 +1,4 @@
-import { boolean, nullable, object, picklist, string, literal, type InferOutput } from 'valibot'
+import { boolean, nullable, object, picklist, string, null_, type InferOutput } from 'valibot'
 import { api } from '@/utils/api'
 import { validateServiceResult, withServiceFailure } from '@/services/serviceContract'
 
@@ -22,5 +22,5 @@ export function changeTelegramChannel(action: 'enable' | 'pause' | 'unbind') {
   return withServiceFailure(async () => validateServiceResult(await api.post(`${endpoint}/telegram/state`, { action }), NotificationChannelSchema, endpoint, 'NotificationChannel'), '更新通知设置失败')
 }
 export function testTelegramChannel() {
-  return withServiceFailure(async () => validateServiceResult(await api.post(`${endpoint}/telegram/test`), object({ success: literal(true) }), endpoint, 'TelegramTest'), '发送测试通知失败')
+  return withServiceFailure(async () => validateServiceResult(await api.post(`${endpoint}/telegram/test`), null_(), endpoint, 'TelegramTest'), '发送测试通知失败')
 }

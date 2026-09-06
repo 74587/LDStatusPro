@@ -1,3 +1,4 @@
+import { useToast } from '@/composables/useToast'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { beginTelegramBinding, changeTelegramChannel, fetchNotificationChannel, testTelegramChannel } from '@/services/shop/notificationChannelService'
 
@@ -7,7 +8,12 @@ export function useSellerNotifications() {
   const loading = ref(true)
   const busy = ref(false)
   const error = ref('')
-  const feedback = ref('')
+  const toast = useToast()
+  function reportError(message) {
+    if (disposed) return
+    if (error.value !== message) toast.error(message)
+    error.value = message
+  }
   const now = ref(Date.now())
   let timer
   let disposed = false
@@ -25,16 +31,16 @@ export function useSellerNotifications() {
     try {
       const result = await fetchNotificationChannel()
       if (disposed || current !== generation) return
-      if (!result.success) { error.value = result.error; return }
+      if (!result.success) { reportError(result.error); return }
       error.value = ''
       const previouslyWaiting = !!binding.value
       state.value = result.data
       if (!result.data.pendingExpiresAt && binding.value) {
         binding.value = null
-        if (previouslyWaiting && result.data.status === 'enabled') feedback.value = '已连接 Telegram，重要通知已开启。'
+        if (previouslyWaiting && result.data.status === 'enabled') toast.success('已连接 Telegram，重要通知已开启。')
       }
     } catch {
-      if (!disposed && current === generation) error.value = '无法读取通知状态，请重试'
+      if (!disposed && current === generation) reportError('无法读取通知状态，请重试')
     } finally {
       reading = false
       if (!disposed && current === generation) loading.value = false
@@ -45,46 +51,45 @@ export function useSellerNotifications() {
     busy.value = true
     generation++
     error.value = ''
-    feedback.value = ''
-    try { await action() } catch { error.value = '操作失败，请稍后重试' }
+    try { await action() } catch { reportError('操作失败，请稍后重试') }
     finally { busy.value = false; loading.value = false }
   }
   async function begin() {
     await run(async () => {
       const result = await beginTelegramBinding()
       if (disposed) return
-      if (!result.success) { error.value = result.error; return }
+      if (!result.success) { reportError(result.error); return }
       // Keep the link only in memory; never persist a binding credential.
       const url = new URL(result.data.url)
-      if (url.origin !== 'https://t.me') { error.value = '绑定地址异常，请稍后重试'; return }
+      if (url.origin !== 'https://t.me') { reportError('绑定地址异常，请稍后重试'); return }
       binding.value = result.data
       now.value = Date.now()
-      feedback.value = '链接已就绪。打开 Telegram 后，在机器人内确认即可完成绑定。'
+      toast.info('链接已就绪，请在 Telegram 内确认绑定。')
     })
   }
   async function change(action) {
     await run(async () => {
       const result = await changeTelegramChannel(action)
       if (disposed) return
-      if (!result.success) { error.value = result.error; return }
+      if (!result.success) { reportError(result.error); return }
       state.value = result.data
       binding.value = null
-      feedback.value = action === 'unbind' ? '已解除绑定' : action === 'pause' ? '已暂停重要通知' : '已开启重要通知'
+      toast.success(action === 'unbind' ? '已解除绑定' : action === 'pause' ? '已暂停重要通知' : '已开启重要通知')
     })
   }
   async function test() {
     await run(async () => {
       const result = await testTelegramChannel()
       if (disposed) return
-      if (!result.success) { error.value = result.error; return }
-      feedback.value = '测试通知已排队，请在 Telegram 中查看。'
+      if (!result.success) { reportError(result.error); return }
+      toast.success('测试通知已排队，请在 Telegram 中查看。')
     })
     if (!disposed && !error.value) await load()
   }
   async function copy() {
     if (!binding.value || !waiting.value) return
-    try { await navigator.clipboard.writeText(binding.value.url); feedback.value = '绑定链接已复制，请勿转发给他人。' }
-    catch { error.value = '无法自动复制，请长按下方绑定链接复制。' }
+    try { await navigator.clipboard.writeText(binding.value.url); toast.success('绑定链接已复制，请勿转发给他人。') }
+    catch { reportError('无法自动复制，请长按下方绑定链接复制。') }
   }
   function resume() {
     now.value = Date.now()
@@ -106,5 +111,5 @@ export function useSellerNotifications() {
     document.removeEventListener('visibilitychange', resume)
     window.removeEventListener('focus', resume)
   })
-  return { state, binding, loading, busy, error, feedback, waiting, remainingMinutes, load, begin, change, test, copy }
+  return { state, binding, loading, busy, waiting, remainingMinutes, load, begin, change, test, copy }
 }

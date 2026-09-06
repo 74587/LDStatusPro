@@ -2,13 +2,15 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
+import { createPinia, setActivePinia } from 'pinia'
+import { useUiStore } from '../src/stores/ui'
 import SellerNotifications from '../src/views/SellerNotifications.vue'
 const requests = vi.hoisted(() => ({ fetchNotificationChannel: vi.fn(), beginTelegramBinding: vi.fn(), changeTelegramChannel: vi.fn(), testTelegramChannel: vi.fn() }))
 vi.mock('../src/services/shop/notificationChannelService', () => requests)
 vi.mock('qrcode', () => ({ default: { toDataURL: vi.fn().mockResolvedValue('data:image/png;base64,dGVzdA==') } }))
 const initial = { available: true, status: 'unbound', telegramUsername: null, pendingExpiresAt: null, lastDelivery: null }
 let wrapper
-beforeEach(() => { vi.useFakeTimers(); vi.resetAllMocks(); requests.fetchNotificationChannel.mockResolvedValue({ success: true, data: { ...initial } }) })
+beforeEach(() => { vi.useFakeTimers(); vi.resetAllMocks(); setActivePinia(createPinia()); requests.fetchNotificationChannel.mockResolvedValue({ success: true, data: { ...initial } }) })
 afterEach(() => { wrapper?.unmount(); vi.restoreAllMocks(); vi.useRealTimers() })
 async function open() { wrapper = mount(SellerNotifications); await flushPromises(); return wrapper }
 function button(label) { return wrapper.findAll('button').find(b => b.text() === label) }
@@ -31,8 +33,16 @@ describe('seller notification settings', () => {
     requests.fetchNotificationChannel.mockResolvedValue({ success: true, data: { ...initial, status: 'enabled' } })
     requests.changeTelegramChannel.mockResolvedValue({ success: false, error: '暂时无法保存' })
     await open(); await button('暂停通知').trigger('click'); await flushPromises()
-    expect(wrapper.find('[role="alert"]').text()).toContain('暂时无法保存')
+    expect(useUiStore().toasts).toEqual(expect.arrayContaining([expect.objectContaining({ type: 'error', message: '暂时无法保存' })]))
+    expect(wrapper.find('.notification-error').exists()).toBe(false)
     expect(button('暂停通知').attributes('disabled')).toBeUndefined()
+  })
+  it('uses the global success toast when a test notification is accepted', async () => {
+    requests.fetchNotificationChannel.mockResolvedValue({ success: true, data: { ...initial, status: 'enabled' } })
+    requests.testTelegramChannel.mockResolvedValue({ success: true, data: null })
+    await open(); await button('发送测试通知').trigger('click'); await flushPromises()
+    expect(useUiStore().toasts).toEqual(expect.arrayContaining([expect.objectContaining({ type: 'success', message: '测试通知已排队，请在 Telegram 中查看。' })]))
+    expect(wrapper.find('.notification-feedback').exists()).toBe(false)
   })
   it('does not offer binding when the provider is not configured', async () => {
     requests.fetchNotificationChannel.mockResolvedValue({ success: true, data: { ...initial, available: false } })

@@ -6,11 +6,10 @@
       <p>不在网站时，也能及时收到重要经营提醒。</p>
     </header>
     <p v-if="loading" role="status">正在加载通知设置…</p>
-    <div v-if="error" class="notification-error" role="alert">
-      <p>{{ error }}</p>
+    <div v-else-if="!state">
+      <p>暂时无法加载通知设置，请重试。</p>
       <button type="button" :disabled="busy" @click="load">重新加载</button>
     </div>
-    <p v-if="feedback" class="notification-feedback" role="status" aria-live="polite">{{ feedback }}</p>
     <template v-if="state">
       <section class="notification-card" aria-labelledby="telegram-title" :aria-busy="busy">
         <div class="notification-heading">
@@ -79,7 +78,7 @@ import { Send } from '@lucide/vue'
 import QRCode from 'qrcode'
 import SellerStatusBadge from '@/components/seller/SellerStatusBadge.vue'
 import { useSellerNotifications } from '@/composables/useSellerNotifications'
-const { state, binding, loading, busy, error, feedback, waiting, remainingMinutes, load, begin, change, test, copy } = useSellerNotifications()
+const { state, binding, loading, busy, waiting, remainingMinutes, load, begin, change, test, copy } = useSellerNotifications()
 const qr = ref('')
 const confirmUnbind = ref(false)
 const statusLabel = computed(() => waiting.value ? '等待确认' : ({ unbound: '未绑定', enabled: '已开启', paused: '已暂停', unavailable: '渠道异常' })[state.value?.status] || '未绑定')
@@ -120,9 +119,6 @@ button:focus-visible, a:focus-visible { outline: 2px solid var(--seller-jade-str
 .notification-scope { padding: 0; list-style: none; }
 .notification-scope li { display: grid; gap: 6px; padding: 12px 0; border-bottom: 1px solid var(--seller-border); }
 .notification-scope span { color: var(--seller-muted); }
-.notification-error, .notification-feedback { padding: 12px 16px; background: var(--seller-surface-soft); border-radius: 10px; }
-.notification-error { color: var(--color-error); }
-.notification-feedback { color: var(--seller-jade-strong); }
 p { line-height: 1.7; }
 @media (max-width: 640px) { .notification-card { padding: 18px; } .notification-qr { display: none; } .notification-actions > * { flex: 1 1 auto; } }
 </style>
