@@ -1,3 +1,4 @@
+import { useSessionScope } from '@/composables/useSessionScope'
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import type { BuyOrder, Order } from '@/contracts/commerce'
@@ -46,11 +47,19 @@ export const useOrderStore = defineStore('order', () => {
   let sellerRequestId = 0
   let buyRequestId = 0
 
+  const session = useSessionScope(() => {
+    buyerRequestId++; sellerRequestId++; buyRequestId++
+    buyerOrders.value = []; sellerOrders.value = []; buyRequestOrders.value = []
+    buyerOrdersLoading.value = false; sellerOrdersLoading.value = false; buyRequestOrdersLoading.value = false
+    buyerOrdersError.value = ''; sellerOrdersError.value = ''; buyRequestOrdersError.value = ''
+  })
+
   async function fetchBuyerOrders(options: OrderListOptions = {}) {
     const requestId = ++buyerRequestId
     buyerOrdersLoading.value = true
     try {
-      const result = await fetchOrdersByRoleRequest('buyer', options)
+      const result = await session.run(() => fetchOrdersByRoleRequest('buyer', options))
+      if (session.isStale(result)) return result
       if (requestId === buyerRequestId) {
         if (result.success) {
           buyerOrders.value = result.data.orders
@@ -73,7 +82,8 @@ export const useOrderStore = defineStore('order', () => {
     const requestId = ++sellerRequestId
     sellerOrdersLoading.value = true
     try {
-      const result = await fetchOrdersByRoleRequest('seller', options)
+      const result = await session.run(() => fetchOrdersByRoleRequest('seller', options))
+      if (session.isStale(result)) return result
       if (requestId === sellerRequestId) {
         if (result.success) {
           sellerOrders.value = result.data.orders
@@ -100,7 +110,8 @@ export const useOrderStore = defineStore('order', () => {
     const requestId = ++buyRequestId
     buyRequestOrdersLoading.value = true
     try {
-      const result = await fetchMyBuyOrdersRequest(options)
+      const result = await session.run(() => fetchMyBuyOrdersRequest(options))
+      if (session.isStale(result)) return result
       if (requestId === buyRequestId) {
         if (result.success) {
           buyRequestOrders.value = result.data.orders
@@ -121,19 +132,22 @@ export const useOrderStore = defineStore('order', () => {
 
   async function createOrder(productId: string | number, quantity = 1, couponClaimId: string | number | null = null, submissionToken = '', expectedAmount?: number) {
     const discoveryToken = getDiscoveryTokenForProduct(productId)
-    const result = await createOrderRequest(productId, quantity, couponClaimId, discoveryToken, submissionToken, expectedAmount)
+    const result = await session.run(() => createOrderRequest(productId, quantity, couponClaimId, discoveryToken, submissionToken, expectedAmount))
+    if (session.isStale(result)) return result
     if (result.success) clearDiscoveryTokenForProduct(productId)
     return result
   }
 
   async function cancelOrder(orderNo: string) {
-    const result = await cancelOrderRequest(orderNo)
+    const result = await session.run(() => cancelOrderRequest(orderNo))
+    if (session.isStale(result)) return result
     if (result.success) await fetchBuyerOrders()
     return result
   }
 
   async function deliverOrder(orderNo: string, content: string) {
-    const result = await deliverOrderRequest(orderNo, content)
+    const result = await session.run(() => deliverOrderRequest(orderNo, content))
+    if (session.isStale(result)) return result
     if (result.success) {
       const notificationSummaryStore = useNotificationSummaryStore()
       await Promise.all([

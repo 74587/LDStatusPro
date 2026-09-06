@@ -1,3 +1,4 @@
+import { useSessionScope } from '@/composables/useSessionScope'
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { useUserStore } from '@/stores/user'
@@ -112,6 +113,15 @@ export const useCatalogStore = defineStore('catalog', () => {
   let latestProductsRequestId = 0
   let latestSearchRequestId = 0
 
+  const session = useSessionScope(() => {
+    latestProductsRequestId++; latestSearchRequestId++
+    categories.value = []; categoryCache.value = { key: '', data: null, time: 0 }
+    invalidateCache(); clearSearch()
+    currentCategory.value = ''; total.value = 0
+    loading.value = false; searchLoading.value = false
+    categoriesError.value = ''; productsError.value = ''; statsError.value = ''; dashboardError.value = ''
+  })
+
   const currentCategoryName = computed(() => {
     if (!currentCategory.value) return '全部'
     return categories.value.find(item => String(item.id) === String(currentCategory.value))?.name || '全部'
@@ -133,7 +143,8 @@ export const useCatalogStore = defineStore('catalog', () => {
     }
 
     try {
-      const result = await fetchCategoriesRequest()
+      const result = await session.run(() => fetchCategoriesRequest())
+      if (session.isStale(result)) return result
       if (result.success) {
         categories.value = result.data.categories
         categoryCache.value = { key, data: result.data.categories, time: now }
@@ -211,7 +222,7 @@ export const useCatalogStore = defineStore('catalog', () => {
     const requestId = ++latestProductsRequestId
     loading.value = true
     try {
-      const result = await fetchProductsRequest({
+      const result = await session.run(() => fetchProductsRequest({
         page: requestPage,
         pageSize: DEFAULT_PAGE_SIZE,
         categoryId: currentCategory.value,
@@ -221,7 +232,8 @@ export const useCatalogStore = defineStore('catalog', () => {
         priceMax: currentPriceMax.value,
         cursor: requestPage > 1 ? catalogCursor.value : '',
         signal: requestSignal
-      })
+      }))
+      if (session.isStale(result)) return result
       if (requestId !== latestProductsRequestId) return cancelledFailure('请求已过期')
       if (!result.success) {
         restorePrevious()
@@ -302,7 +314,7 @@ export const useCatalogStore = defineStore('catalog', () => {
     searchQuery.value = keyword
     searchLoading.value = true
     try {
-      const result = await fetchProductsRequest({
+      const result = await session.run(() => fetchProductsRequest({
         search: keyword,
         page: searchPage,
         pageSize: searchPageSize,
@@ -312,7 +324,8 @@ export const useCatalogStore = defineStore('catalog', () => {
         priceMax: priceRange.priceMax,
         cursor: searchPage > 1 ? searchCursor.value : '',
         signal: options.signal
-      })
+      }))
+      if (session.isStale(result)) return result
       if (requestId !== latestSearchRequestId) return cancelledFailure('请求已过期')
       if (!result.success) {
         searchError.value = result.error || '搜索失败，请稍后重试'
@@ -374,13 +387,15 @@ export const useCatalogStore = defineStore('catalog', () => {
   }
 
   async function fetchPublicStats() {
-    const result = await fetchPublicStatsRequest()
+    const result = await session.run(() => fetchPublicStatsRequest())
+    if (session.isStale(result)) return result
     statsError.value = result.success ? '' : (result.error || '加载统计数据失败，请稍后重试')
     return result
   }
 
   async function fetchUserDashboard() {
-    const result = await fetchUserDashboardRequest()
+    const result = await session.run(() => fetchUserDashboardRequest())
+    if (session.isStale(result)) return result
     dashboardError.value = result.success ? '' : (result.error || '加载个人统计失败，请稍后重试')
     return result
   }

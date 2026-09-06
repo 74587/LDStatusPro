@@ -1,3 +1,4 @@
+import { useSessionScope } from '@/composables/useSessionScope'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { normalizeCouponSelectionMode } from '@/utils/checkoutCoupon'
@@ -85,6 +86,7 @@ function persistDraft(draft, storage = getSessionStorage()) {
 
 export const useCheckoutStore = defineStore('checkout', () => {
   const draft = ref(readStoredOrderConfirmDraft())
+  useSessionScope(() => clearCheckout())
 
   function getDraft(productId = null) {
     const current = normalizeOrderConfirmDraft(draft.value)

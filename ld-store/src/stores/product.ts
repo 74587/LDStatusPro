@@ -1,3 +1,4 @@
+import { useSessionScope } from '@/composables/useSessionScope'
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import type { Product } from '@/contracts/catalog'
@@ -43,6 +44,14 @@ export const useProductStore = defineStore('product', () => {
   let favoritesRequestId = 0
   let blocksRequestId = 0
 
+  const session = useSessionScope(() => {
+    favoritesRequestId++; blocksRequestId++
+    favorites.value = []; blockedProducts.value = []; blockedProductIds.value = new Set()
+    detailCache.clear()
+    favoritesLoading.value = false; blocksLoading.value = false
+    favoritesError.value = ''; blocksError.value = ''; detailError.value = ''
+  })
+
   async function fetchProduct(id: string | number, force = false) {
     const key = String(id)
     const cached = detailCache.get(key)
@@ -52,7 +61,8 @@ export const useProductStore = defineStore('product', () => {
     }
 
     try {
-      const result = await fetchProductRequest(id)
+      const result = await session.run(() => fetchProductRequest(id))
+      if (session.isStale(result)) return result
       if (result.success) {
         detailCache.set(key, { data: result.data.product as MutableProduct, time: Date.now() })
         detailError.value = ''
@@ -103,13 +113,15 @@ export const useProductStore = defineStore('product', () => {
   }
 
   async function addFavorite(productId: string | number) {
-    const result = await addFavoriteRequest(productId)
+    const result = await session.run(() => addFavoriteRequest(productId))
+    if (session.isStale(result)) return result
     if (result.success) setProductFavoriteState(productId, true)
     return result
   }
 
   async function removeFavorite(productId: string | number) {
-    const result = await removeFavoriteRequest(productId)
+    const result = await session.run(() => removeFavoriteRequest(productId))
+    if (session.isStale(result)) return result
     if (result.success) {
       setProductFavoriteState(productId, false)
       favorites.value = favorites.value.filter(item => String(item.id) !== String(productId))
@@ -118,7 +130,8 @@ export const useProductStore = defineStore('product', () => {
   }
 
   async function blockProduct(productId: string | number) {
-    const result = await blockProductRequest(productId)
+    const result = await session.run(() => blockProductRequest(productId))
+    if (session.isStale(result)) return result
     if (result.success) {
       setProductFavoriteState(productId, false)
       setProductBlockedState(productId, true)
@@ -127,7 +140,8 @@ export const useProductStore = defineStore('product', () => {
   }
 
   async function unblockProduct(productId: string | number) {
-    const result = await unblockProductRequest(productId)
+    const result = await session.run(() => unblockProductRequest(productId))
+    if (session.isStale(result)) return result
     if (result.success) setProductBlockedState(productId, false)
     return result
   }
@@ -136,7 +150,8 @@ export const useProductStore = defineStore('product', () => {
     const requestId = ++favoritesRequestId
     favoritesLoading.value = true
     try {
-      const result = await fetchFavoritesRequest(normalizeFavoritesOptions(options))
+      const result = await session.run(() => fetchFavoritesRequest(normalizeFavoritesOptions(options)))
+      if (session.isStale(result)) return result
       if (requestId === favoritesRequestId) {
         if (result.success) {
           favorites.value = result.data.products as MutableProduct[]
@@ -159,12 +174,13 @@ export const useProductStore = defineStore('product', () => {
     const requestId = ++blocksRequestId
     blocksLoading.value = true
     try {
-      const result = await fetchBlockedProductsRequest(normalizeFavoritesOptions(options))
+      const result = await session.run(() => fetchBlockedProductsRequest(normalizeFavoritesOptions(options)))
+      if (session.isStale(result)) return result
       if (requestId === blocksRequestId) {
         if (result.success) {
           blockedProducts.value = result.data.products as MutableProduct[]
           blockedProductIds.value = new Set([
-            ...blockedProductIds.value,
+            ...(Number(normalizeFavoritesOptions(options).page || 1) > 1 ? blockedProductIds.value : []),
             ...result.data.products.map(item => String(item.id))
           ])
           blocksError.value = ''

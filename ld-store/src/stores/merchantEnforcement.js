@@ -1,3 +1,4 @@
+import { useSessionScope } from '@/composables/useSessionScope'
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { fetchMerchantEnforcementRequest } from '@/services/shop/merchantService'
@@ -20,6 +21,8 @@ export const useMerchantEnforcementStore = defineStore('merchantEnforcement', ()
   const error = ref('')
   const refreshedAt = ref(0)
   let pendingRequest = null
+  let requestId = 0
+  const session = useSessionScope(reset)
 
   const sellingDisabled = computed(() => enforcement.value.status === 'disabled')
 
@@ -27,10 +30,12 @@ export const useMerchantEnforcementStore = defineStore('merchantEnforcement', ()
     if (!force && loaded.value && Date.now() - refreshedAt.value < 15_000) return true
     if (pendingRequest) return pendingRequest
 
+    const currentRequestId = ++requestId
     loading.value = true
     error.value = ''
     pendingRequest = (async () => {
-      const result = await fetchMerchantEnforcementRequest()
+      const result = await session.run(() => fetchMerchantEnforcementRequest())
+      if (session.isStale(result)) return false
       const payload = result?.success ? result.data : null
       if (result?.success === false || !payload?.enforcement) {
         error.value = result?.error || '卖家权限状态加载失败'
@@ -46,12 +51,15 @@ export const useMerchantEnforcementStore = defineStore('merchantEnforcement', ()
     try {
       return await pendingRequest
     } finally {
-      pendingRequest = null
-      loading.value = false
+      if (currentRequestId === requestId) {
+        pendingRequest = null
+        loading.value = false
+      }
     }
   }
 
   function reset() {
+    requestId++
     enforcement.value = { ...ACTIVE_STATE }
     history.value = []
     loading.value = false

@@ -1,3 +1,4 @@
+import { useSessionScope } from '@/composables/useSessionScope'
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import type { Product } from '@/contracts/catalog'
@@ -37,6 +38,14 @@ export const useInventoryStore = defineStore('inventory', () => {
   const merchantConfigError = ref('')
   let productsRequestId = 0
 
+  let configRequestId = 0
+  const session = useSessionScope(() => {
+    productsRequestId++; configRequestId++
+    products.value = []; merchantConfig.value = null
+    loading.value = false; merchantConfigLoading.value = false
+    error.value = ''; merchantConfigError.value = ''
+  })
+
   function invalidateProductCaches(id?: string | number) {
     useCatalogStore().invalidateCache()
     if (id !== undefined) useProductStore().invalidateProduct(id)
@@ -47,7 +56,8 @@ export const useInventoryStore = defineStore('inventory', () => {
     const requestId = ++productsRequestId
     loading.value = true
     try {
-      const result = await fetchMyProductsRequest({ signal: options.signal })
+      const result = await session.run(() => fetchMyProductsRequest({ signal: options.signal }))
+      if (session.isStale(result)) return result
       if (requestId === productsRequestId) {
         if (result.success) {
           products.value = result.data.products
@@ -67,7 +77,8 @@ export const useInventoryStore = defineStore('inventory', () => {
   }
 
   async function createProduct(data: ProductPayload, options: RequestOptions = {}) {
-    const result = await createProductRequest(data, options)
+    const result = await session.run(() => createProductRequest(data, options))
+    if (session.isStale(result)) return result
     if (result.success) {
       invalidateProductCaches()
       await fetchProducts()
@@ -76,7 +87,8 @@ export const useInventoryStore = defineStore('inventory', () => {
   }
 
   async function updateProduct(id: string | number, data: ProductPayload, options: RequestOptions = {}) {
-    const result = await updateProductRequest(id, data, options)
+    const result = await session.run(() => updateProductRequest(id, data, options))
+    if (session.isStale(result)) return result
     if (result.success) {
       invalidateProductCaches(id)
       await fetchProducts()
@@ -85,7 +97,8 @@ export const useInventoryStore = defineStore('inventory', () => {
   }
 
   async function offlineProduct(id: string | number) {
-    const result = await offlineProductRequest(id)
+    const result = await session.run(() => offlineProductRequest(id))
+    if (session.isStale(result)) return result
     if (result.success) {
       invalidateProductCaches(id)
       await fetchProducts()
@@ -94,7 +107,8 @@ export const useInventoryStore = defineStore('inventory', () => {
   }
 
   async function deleteProduct(id: string | number) {
-    const result = await deleteProductRequest(id)
+    const result = await session.run(() => deleteProductRequest(id))
+    if (session.isStale(result)) return result
     if (result.success) {
       invalidateProductCaches(id)
       products.value = products.value.filter(product => String(product.id) !== String(id))
@@ -103,21 +117,25 @@ export const useInventoryStore = defineStore('inventory', () => {
   }
 
   async function addCdk(productId: string | number, codes: string[]) {
-    const result = await addCdkRequest(productId, codes)
+    const result = await session.run(() => addCdkRequest(productId, codes))
+    if (session.isStale(result)) return result
     if (result.success) invalidateProductCaches(productId)
     return result
   }
 
   async function clearCdk(productId: string | number) {
-    const result = await clearCdkRequest(productId)
+    const result = await session.run(() => clearCdkRequest(productId))
+    if (session.isStale(result)) return result
     if (result.success) invalidateProductCaches(productId)
     return result
   }
 
   async function fetchMerchantConfig() {
+    const requestId = ++configRequestId
     merchantConfigLoading.value = true
     try {
-      const result = await fetchMerchantConfigRequest()
+      const result = await session.run(() => fetchMerchantConfigRequest())
+      if (session.isStale(result)) return result
       if (result.success) {
         merchantConfig.value = result.data
         merchantConfigError.value = ''
@@ -126,12 +144,13 @@ export const useInventoryStore = defineStore('inventory', () => {
       }
       return result
     } finally {
-      merchantConfigLoading.value = false
+      if (requestId === configRequestId) merchantConfigLoading.value = false
     }
   }
 
   async function updateMerchantConfig(config: Record<string, JsonValue>) {
-    const result = await updateMerchantConfigRequest(config)
+    const result = await session.run(() => updateMerchantConfigRequest(config))
+    if (session.isStale(result)) return result
     if (result.success) await fetchMerchantConfig()
     return result
   }

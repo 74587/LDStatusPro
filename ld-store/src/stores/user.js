@@ -59,6 +59,9 @@ export const useUserStore = defineStore('user', () => {
     if (!token.value || !currentUser.value) return false
     return !isTokenExpired(token.value)
   })
+  const sessionKey = computed(() => token.value && currentUser.value
+    ? JSON.stringify([currentUser.value.site || 'linux.do', String(currentUser.value.id || currentUser.value.username), currentUser.value.trust_level ?? null])
+    : 'guest')
   const username = computed(() => currentUser.value?.username || '')
   const avatarSeed = computed(() =>
     currentUser.value?.name || currentUser.value?.username || currentUser.value?.id || 'user'
@@ -144,6 +147,7 @@ export const useUserStore = defineStore('user', () => {
   function logout() {
     token.value = null
     user.value = null
+    ldcInfo.value = null
     sessionReady.value = true
     storage.remove('token')
     storage.remove('user')
@@ -178,6 +182,7 @@ export const useUserStore = defineStore('user', () => {
     sessionReady,
     // 计算属性
     isLoggedIn,
+    sessionKey,
     currentUser,
     username,
     avatar,

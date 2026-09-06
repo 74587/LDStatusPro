@@ -38,7 +38,7 @@
       </section>
       <router-view v-if="showRouterView" v-slot="{ Component, route }">
         <transition name="fade" mode="out-in">
-          <keep-alive :include="cachedViews" :max="12">
+          <keep-alive :key="userStore.sessionKey" :include="cachedViews" :max="12">
             <component :is="Component" :key="resolveAppViewKey(route)" />
           </keep-alive>
         </transition>
@@ -149,8 +149,9 @@ onMounted(() => {
 })
 
 watch(
-  [() => userStore.sessionReady, () => userStore.isLoggedIn],
+  [() => userStore.sessionReady, () => userStore.isLoggedIn, () => userStore.sessionKey],
   ([sessionReady, loggedIn]) => {
+    notificationSummaryStore.stopRealtime()
     if (sessionReady && loggedIn) {
       notificationSummaryStore.startRealtime()
     } else {
