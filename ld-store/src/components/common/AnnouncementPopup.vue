@@ -25,8 +25,8 @@ function backdrop(event) {
   const rect = dialog.value.getBoundingClientRect()
   if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) dismiss()
 }
-watch([announcementItems, announcementPreferencesReady, () => route.fullPath, identity, announcementPreferenceRevision, () => store.sessionReady], () => {
-  const nextVisitKey = JSON.stringify([identity.value, route.fullPath])
+watch([announcementItems, announcementPreferencesReady, () => route.path, identity, announcementPreferenceRevision, () => store.sessionReady], () => {
+  const nextVisitKey = JSON.stringify([identity.value, route.path])
   if (nextVisitKey !== visitKey) {
     visitKey = nextVisitKey
     shownForVisit = false
@@ -39,7 +39,7 @@ watch([announcementItems, announcementPreferencesReady, () => route.fullPath, id
     return
   }
   // A plain close lasts only for this visit. Polling must not reopen it;
-  // navigating or reloading starts another visit without a stored session cap.
+  // changing page paths or reloading starts another visit; query/hash changes do not.
   if (!store.sessionReady || !announcementPreferencesReady.value || !safeRoutes.has(route.name) || shownForVisit) return
   const item = announcementItems.value.find(item => item.mode === 'popup' && !isAnnouncementDismissed(identity.value, item))
   if (item) { openedIdentity = identity.value; shownForVisit = true; active.value = item }
@@ -64,5 +64,11 @@ onBeforeUnmount(() => { if (dialog.value?.open) { dialog.value.close(); document
   </dialog></Teleport>
 </template>
 <style scoped>
+/* The heading receives reading focus, but is not an interactive control. */
+.announcement-dialog h2:focus { outline: none; }
+.announcement-dialog :is(button, a):focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
 .announcement-dialog{width:min(calc(100% - 32px),680px);max-height:86dvh;max-height:min(86dvh,800px);margin:auto;padding:0;border:1px solid var(--border-default-semantic);border-radius:var(--radius-lg);background:var(--surface-card);color:var(--text-primary-semantic);box-shadow:var(--elevation-lg);overflow:hidden}.announcement-dialog[open]{display:flex;flex-direction:column}.announcement-dialog::backdrop{background:var(--surface-overlay)}.announcement-dialog header{display:flex;justify-content:space-between;align-items:start;gap:var(--space-4);padding:var(--space-6);flex-shrink:0;border-bottom:1px solid var(--border-default-semantic)}.announcement-dialog header>div{min-width:0}.announcement-dialog header p{display:flex;align-items:center;gap:var(--space-2);color:var(--text-secondary-semantic);font-size:var(--text-size-sm);margin:0 0 var(--space-2)}.announcement-dialog h2{font-weight:600;font-size:var(--text-size-lg);line-height:1.5;margin:0;overflow-wrap:anywhere}.announcement-close{display:flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;border:1px solid var(--border-default-semantic);background:var(--surface-subtle);color:inherit;border-radius:var(--radius-sm);cursor:pointer}.announcement-dialog-body{min-height:0;padding:var(--space-6);overflow-y:auto;overscroll-behavior:contain}.announcement-dialog footer{flex-shrink:0;border-top:1px solid var(--border-default-semantic);padding:var(--space-4) var(--space-6)}.announcement-dialog footer p{font-size:var(--text-size-xs);color:var(--text-muted-semantic);margin:var(--space-2) 0 var(--space-3)}.announcement-dialog footer>div{display:flex;justify-content:flex-end;gap:var(--space-3);flex-wrap:wrap}.announcement-action{display:inline-flex;align-items:center;margin-bottom:var(--space-2);margin-right:var(--space-3);text-decoration:none}.announcement-detail-link{color:var(--text-link);text-decoration:underline;display:inline-flex;min-height:44px;align-items:center}.announcement-dismiss{min-height:44px;padding:var(--space-2) var(--space-4);border:1px solid var(--border-default-semantic);border-radius:var(--radius-sm);background:var(--action-primary);color:var(--action-primary-text);cursor:pointer}.announcement-dismiss.secondary{background:var(--action-secondary);color:var(--action-secondary-text)}@media(max-width:600px){.announcement-dialog{max-height:90dvh;margin:auto auto max(12px,env(safe-area-inset-bottom))}.announcement-dialog header,.announcement-dialog-body{padding:var(--space-4)}.announcement-dialog footer{padding:var(--space-3) var(--space-4)}.announcement-dismiss{flex:1}}
 </style>

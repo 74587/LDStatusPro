@@ -19,7 +19,7 @@ async function open() {
 }
 async function close() { dialog().dispatchEvent(new Event('cancel', { cancelable: true })); await flushPromises() }
 async function navigate(name, path) {
-  fixtures.route.name = name; fixtures.route.fullPath = path
+  fixtures.route.name = name; fixtures.route.fullPath = path; fixtures.route.path = path.split(/[?#]/)[0]
   await flushPromises()
 }
 beforeEach(() => {
@@ -28,7 +28,7 @@ beforeEach(() => {
   HTMLDialogElement.prototype.close = function () { this.open = false }
   fixtures.state = { announcementItems: ref([announcement()]), announcementPreferencesReady: ref(true) }
   fixtures.account = reactive({ sessionReady: true, isLoggedIn: false, currentUser: null })
-  fixtures.route = reactive({ name: 'Home', fullPath: '/', meta: {} })
+  fixtures.route = reactive({ name: 'Home', fullPath: '/', path: '/', meta: {} })
 })
 afterEach(() => { wrapper?.unmount(); document.body.innerHTML = ''; document.body.style.overflow = ''; localStorage.clear(); sessionStorage.clear(); vi.useRealTimers() })
 it.each([['Home', '/'], ['SellerDashboard', '/seller']])('opens on %s even with an old session cap', async (name, path) => {
@@ -96,4 +96,20 @@ it('withdrawal or expiry closes the dialog without immediately opening another',
 it('switching an open item to banner closes the popup', async () => {
   await open(); fixtures.state.announcementItems.value = [{ ...announcement(), mode: 'banner' }]
   await flushPromises(); expect(dialog().open).toBe(false)
+})
+
+it('home tab, filter and hash changes retain the plain close, including after polling', async () => {
+  await open(); await close()
+  for (const path of ['/?section=hotboard', '/?section=buy', '/?section=stores', '/?section=products', '/?section=products&sort=price', '/#home-title']) {
+    await navigate('Home', path)
+    expect(dialog().open).toBe(false)
+    fixtures.state.announcementItems.value = [announcement()]
+    await flushPromises(); expect(dialog().open).toBe(false)
+  }
+  wrapper.unmount(); await open(); expect(dialog().open).toBe(true)
+})
+it('returning from another page to a home tab is a new visit', async () => {
+  await navigate('Home', '/?section=hotboard'); await open(); await close()
+  await navigate('SellerOrders', '/seller/orders'); expect(dialog().open).toBe(false)
+  await navigate('Home', '/?section=buy'); expect(dialog().open).toBe(true)
 })

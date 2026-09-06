@@ -1,6 +1,6 @@
 import { createApp, h, computed, watch } from 'vue'
 import { createPinia } from 'pinia'
-import { createRouter, createWebHistory, RouterView } from 'vue-router'
+import { createRouter, createWebHistory, RouterView, RouterLink } from 'vue-router'
 import Announcements from '../../../src/views/Announcements.vue'
 import CornerActionMenu from '../../../src/components/common/CornerActionMenu.vue'
 import AnnouncementBar from '../../../src/components/common/AnnouncementBar.vue'
@@ -42,7 +42,11 @@ globalThis.fetch = async (input) => {
   return new globalThis.Response(JSON.stringify({ success: true, data: { items, item: announcements.find(item => item.id === id) || rule, pagination: { page: 1, pageSize: 20, total: items.length, totalPages: 1 }, timestamp: Date.now() } }), { headers: { 'content-type': 'application/json' } })
 }
 const router = createRouter({ history: createWebHistory(), scrollBehavior: () => ({ top: 0 }), routes: [
-  { path: '/', name: 'Home', component: { render: () => h('main', {}, '士多首页 · 隔离预览') } },
+  { path: '/', name: 'Home', component: { render: () => h('main', {}, [
+    h('p', {}, '士多首页 · 隔离预览'),
+    h('nav', { 'aria-label': '首页板块' }, ['products', 'hotboard', 'buy', 'stores'].map((section, index) =>
+      h(RouterLink, { to: { path: '/', query: { section } }, replace: true, style: { display: 'inline-flex', padding: '12px' } }, () => ['物品广场', '士多热榜', '求购广场', '小店集市'][index])))
+  ]) } },
   { path: '/announcements', component: Announcements }, { path: '/announcements/:id', component: Announcements },
   { path: '/seller', component: SellerLayout, meta: { layout: 'seller' }, children: [
     { path: '', name: 'SellerDashboard', component: SellerPage, meta: { title: '经营概览' } },
