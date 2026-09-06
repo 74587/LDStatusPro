@@ -5,6 +5,7 @@ import {
   BuyOrderPaymentResponseSchema,
   CommerceActionResponseSchema,
   OrderCreatedResponseSchema,
+  OrderSubmissionResponseSchema,
   OrderDetailResponseSchema,
   OrderListResponseSchema,
   OrderPaymentResponseSchema
@@ -90,12 +91,15 @@ export async function createOrderRequest(
   productId: string | number,
   quantity = 1,
   couponClaimId: string | number | null = null,
-  discoveryToken = ''
+  discoveryToken = '',
+  submissionToken = '',
+  expectedAmount?: number
 ) {
   return withServiceFailure(async () => validateServiceResult(
     await api.post('/api/shop/orders', {
       productId,
       quantity,
+      ...(submissionToken ? { submissionToken, expectedAmount } : {}),
       ...(couponClaimId ? { couponClaimId } : {}),
       ...(discoveryToken ? { discoveryToken } : {})
     }),
@@ -103,6 +107,15 @@ export async function createOrderRequest(
     '/api/shop/orders',
     'OrderCreatedResponse'
   ), '创建订单失败，请稍后重试')
+}
+
+export async function getOrderSubmissionRequest(token: string) {
+  return withServiceFailure(async () => validateServiceResult(
+    await api.get(`/api/shop/order-submissions/${encodeURIComponent(token)}`),
+    OrderSubmissionResponseSchema,
+    '/api/shop/order-submissions/:token',
+    'OrderSubmissionResponse'
+  ), '暂时无法确认订单结果')
 }
 
 export async function cancelOrderRequest(orderNo: string) {

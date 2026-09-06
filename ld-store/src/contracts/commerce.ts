@@ -155,6 +155,11 @@ export const OrderCreatedResponseSchema = looseObject({
   expireAt: optional(unknown())
 })
 
+export const OrderSubmissionResponseSchema = looseObject({
+  exists: boolean(),
+  order: nullable(OrderCreatedResponseSchema)
+})
+
 export const OrderPaymentResponseSchema = looseObject({
   paymentUrl: optional(nullable(string())),
   status: optional(OrderStatusSchema),

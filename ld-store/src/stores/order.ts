@@ -5,6 +5,7 @@ import { clearDiscoveryTokenForProduct, getDiscoveryTokenForProduct } from '@/se
 import {
   cancelOrderRequest,
   createOrderRequest,
+  getOrderSubmissionRequest,
   deliverOrderRequest,
   fetchMyBuyOrdersRequest,
   fetchOrderDetailRequest,
@@ -118,9 +119,9 @@ export const useOrderStore = defineStore('order', () => {
     }
   }
 
-  async function createOrder(productId: string | number, quantity = 1, couponClaimId: string | number | null = null) {
+  async function createOrder(productId: string | number, quantity = 1, couponClaimId: string | number | null = null, submissionToken = '', expectedAmount?: number) {
     const discoveryToken = getDiscoveryTokenForProduct(productId)
-    const result = await createOrderRequest(productId, quantity, couponClaimId, discoveryToken)
+    const result = await createOrderRequest(productId, quantity, couponClaimId, discoveryToken, submissionToken, expectedAmount)
     if (result.success) clearDiscoveryTokenForProduct(productId)
     return result
   }
@@ -166,6 +167,7 @@ export const useOrderStore = defineStore('order', () => {
     fetchOrders,
     fetchOrderDetail: fetchOrderDetailRequest,
     createOrder,
+    getOrderSubmission: getOrderSubmissionRequest,
     cancelOrder,
     refreshOrderStatus: refreshOrderStatusRequest,
     getPaymentUrl: getPaymentUrlRequest,

@@ -6,7 +6,18 @@
         <span>返回物品详情</span>
       </button>
 
-      <div v-if="loading" class="checkout-loading" aria-live="polite">
+      <div v-if="pendingSubmission" class="submission-error" role="status" aria-live="polite">
+        <CircleAlert :size="20" aria-hidden="true" />
+        <div>
+          <strong>{{ confirmedSubmission ? '订单已创建' : '正在确认本次订单结果' }}</strong>
+          <p>{{ confirmedSubmission ? '请进入订单详情查看状态并继续支付。' : '网络可能中断，订单仍可能已创建。请先确认本次结果，避免重复兑换。' }}</p>
+          <button type="button" class="state-action" :disabled="submitting || checkingSubmission" @click="recoverSubmission(true)">
+            {{ checkingSubmission || submitting ? '正在确认…' : confirmedSubmission ? '进入订单详情' : '确认并继续本次订单' }}
+          </button>
+        </div>
+      </div>
+
+      <div v-else-if="loading" class="checkout-loading" aria-live="polite">
         <div class="skeleton skeleton-product"></div>
         <div class="skeleton skeleton-receipt"></div>
       </div>
@@ -34,7 +45,7 @@
         >
           <CircleAlert :size="20" aria-hidden="true" />
           <div>
-            <strong>订单尚未创建</strong>
+            <strong>订单提交未完成</strong>
             <p>{{ submissionError }}</p>
           </div>
         </div>
@@ -277,7 +288,7 @@
       </template>
     </section>
 
-    <div v-if="product" class="mobile-confirm-bar">
+    <div v-if="product && !pendingSubmission" class="mobile-confirm-bar">
       <div>
         <span>最终应付 · {{ quantity }} 件</span>
         <strong>{{ formatMoney(payableAmount) }} LDC</strong>
@@ -318,6 +329,7 @@ import {
   TicketPercent,
 } from '@lucide/vue'
 import { useProductStore } from '@/stores/product'
+import { useCheckoutSubmission } from '@/composables/orders/useCheckoutSubmission'
 import { useOrderStore } from '@/stores/order'
 import { useUserStore } from '@/stores/user'
 import { shouldPreserveCheckoutDraft, useCheckoutStore } from '@/stores/checkout'
@@ -385,6 +397,15 @@ const productId = computed(() => {
   const parsed = Number.parseInt(route.params.productId, 10)
   return Number.isInteger(parsed) && parsed > 0 ? parsed : 0
 })
+const submission = useCheckoutSubmission({
+  owner: JSON.stringify([userStore.user?.site || 'linux.do', String(userStore.user?.id || '')]),
+  productId: productId.value,
+  create: input => orderStore.createOrder(input.productId, input.quantity, input.couponClaimId, input.token, input.expectedAmount),
+  lookup: token => orderStore.getOrderSubmission(token),
+})
+const { pending: pendingSubmission, checking: checkingSubmission, confirmed: confirmedSubmission } = submission
+let checkoutActive = true
+
 const productName = computed(() => String(product.value?.name || '未命名物品'))
 const productImage = computed(() => String(product.value?.imageUrl || ''))
 const sellerUsername = computed(() => String(product.value?.sellerUsername || '未知'))
@@ -504,6 +525,7 @@ const submitBlockMessage = computed(() => {
 })
 const canSubmit = computed(() => (
   !loading.value
+  && !pendingSubmission.value
   && !submitting.value
   && !quoteLoading.value
   && !submitBlockMessage.value
@@ -660,6 +682,11 @@ async function loadProduct({ force = true } = {}) {
 }
 
 async function initializeCheckout() {
+  if (pendingSubmission.value) {
+    await recoverSubmission(false)
+    loading.value = false
+    return
+  }
   if (!productId.value) {
     loadError.value = '物品编号无效。'
     loading.value = false
@@ -737,28 +764,13 @@ async function submitOrder() {
       return
     }
 
-    const result = await orderStore.createOrder(productId.value, normalizedQuantity, selectedCouponClaimId.value)
-    const orderNo = result?.data?.orderNo
-
-    if (result?.success && orderNo) {
-      const paymentUrl = result.data?.paymentUrl
-      if (paymentUrl && preparedWindow && !preparedWindow.closed) {
-        const { popup, isPopup } = openPaymentPopup(paymentUrl, preparedWindow)
-        if (!isPopup) cleanupPreparedTab(preparedWindow)
-        if (isPopup && popup) {
-          watchPaymentPopup(popup, () => toast.info('支付窗口已关闭，可在订单详情检查支付状态'))
-        }
-        toast.success('订单已创建，支付窗口已打开')
-      } else if (paymentUrl) {
-        cleanupPreparedTab(preparedWindow)
-        toast.warning('支付窗口被浏览器拦截，请在订单详情点击“立即支付”')
-      } else {
-        cleanupPreparedTab(preparedWindow)
-        toast.warning('订单已创建，请在订单详情继续支付')
-      }
-
-      checkoutStore.clearCheckout(productId.value)
-      await router.replace({ name: 'OrderDetail', params: { id: orderNo }, query: { role: 'buyer' } })
+    const result = await submission.submit({
+      productId: productId.value, quantity: normalizedQuantity,
+      couponClaimId: selectedCouponClaimId.value, expectedAmount: payableAmount.value,
+    })
+    if (!checkoutActive) { cleanupPreparedTab(preparedWindow); return }
+    if (result?.success && result.data?.orderNo) {
+      await finishCreatedOrder(result.data, preparedWindow)
       return
     }
 
@@ -766,16 +778,52 @@ async function submitOrder() {
     submissionError.value = typeof result?.error === 'object'
       ? (result.error.message || result.error.code || '创建订单失败，请重新确认')
       : (result?.error || '创建订单失败，请重新确认')
-    await refreshAfterSubmitFailure()
+    if (!pendingSubmission.value) await refreshAfterSubmitFailure()
     await focusSubmissionError()
   } catch (error) {
     cleanupPreparedTab(preparedWindow)
     submissionError.value = error?.message || '创建订单失败，请重新确认'
-    await refreshAfterSubmitFailure()
+    if (!pendingSubmission.value) await refreshAfterSubmitFailure()
     await focusSubmissionError()
   } finally {
     submitting.value = false
     submissionGate.unlock()
+  }
+}
+
+async function finishCreatedOrder(order, preparedWindow = null) {
+  if (!checkoutActive) { cleanupPreparedTab(preparedWindow); return }
+  try {
+    if (order.paymentUrl && preparedWindow && !preparedWindow.closed) {
+      const { popup, isPopup } = openPaymentPopup(order.paymentUrl, preparedWindow)
+      if (!isPopup) cleanupPreparedTab(preparedWindow)
+      if (isPopup && popup) watchPaymentPopup(popup, () => toast.info('支付窗口已关闭，可在订单详情检查支付状态'))
+    } else {
+      cleanupPreparedTab(preparedWindow)
+      if (order.paymentUrl) toast.info('订单已创建，请在订单详情继续支付')
+    }
+  } catch {
+    cleanupPreparedTab(preparedWindow)
+    toast.info('订单已创建，请在订单详情继续支付')
+  }
+  try {
+    await router.replace({ name: 'OrderDetail', params: { id: order.orderNo }, query: { role: 'buyer' } })
+    if (router.currentRoute.value.name === 'OrderDetail') {
+      submission.complete()
+      checkoutStore.clearCheckout(productId.value)
+    }
+  } catch {
+    toast.warning('订单已创建，详情页暂时无法打开，请再次进入订单详情')
+  }
+}
+
+async function recoverSubmission(retry = false) {
+  const result = await submission.recover(retry)
+  if (!checkoutActive) return
+  if (result.success) await finishCreatedOrder(result.data)
+  else if (!pendingSubmission.value) {
+    submissionError.value = result.error || '本单需要重新确认，请核对最新金额。'
+    await initializeCheckout()
   }
 }
 
@@ -811,6 +859,8 @@ onBeforeRouteLeave(to => {
 
 onMounted(initializeCheckout)
 onBeforeUnmount(() => {
+  checkoutActive = false
+  submission.stop()
   if (quoteTimer) window.clearTimeout(quoteTimer)
   latestQuoteRequestId++
 })

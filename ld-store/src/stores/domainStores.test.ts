@@ -27,6 +27,7 @@ vi.mock('@/services/shop/orderService', () => ({
   fetchMyBuyOrdersRequest: mocks.fetchBuyOrders,
   fetchOrderDetailRequest: vi.fn(),
   createOrderRequest: vi.fn(),
+  getOrderSubmissionRequest: vi.fn(),
   cancelOrderRequest: vi.fn(),
   deliverOrderRequest: vi.fn(),
   getBuyOrderDetailRequest: vi.fn(),
