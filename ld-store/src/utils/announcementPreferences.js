@@ -15,8 +15,6 @@ function write(storage, key, value) {
   announcementPreferenceRevision.value++
 }
 export function preferenceKey(identity, item) { return `ld-announcement:${identity}:${item.id}:${item.reminderVersion || 1}` }
-export function sessionHasPopup(identity) { return Boolean(read('sessionStorage', `ld-announcement-session:${identity}`)) }
-export function markPopupShown(identity) { write('sessionStorage', `ld-announcement-session:${identity}`, true) }
 export function isAnnouncementDismissed(identity, item) {
   const record = read('localStorage', preferenceKey(identity, item))
   if (record?.forever || record?.dismissedUntil > Date.now()) return true

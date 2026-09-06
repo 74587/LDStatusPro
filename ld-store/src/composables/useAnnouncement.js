@@ -38,8 +38,9 @@ async function fetchAnnouncements(force = false) {
     try {
       const response = await fetchAnnouncementsRequest(undefined, placement.value)
       if (ticket !== generation) return activeItems.value
-      preferencesReady.value = await syncAnnouncementPreferences(account)
+      const synced = await syncAnnouncementPreferences(account)
       if (ticket !== generation) return activeItems.value
+      preferencesReady.value = synced
       if (!response?.success || !Array.isArray(response.data?.items)) throw new Error(response?.error?.message || '加载公告失败')
       serverOffset = response.data.timestamp - Date.now()
       now.value = Date.now() + serverOffset

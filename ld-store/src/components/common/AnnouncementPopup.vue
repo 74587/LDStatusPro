@@ -5,7 +5,7 @@ import { useRoute } from 'vue-router'
 import { Megaphone, X } from '@lucide/vue'
 import { useAnnouncement } from '@/composables/useAnnouncement'
 import { useUserStore } from '@/stores/user'
-import { announcementIdentity, announcementPreferenceRevision, sessionHasPopup, markPopupShown, isAnnouncementDismissed, dismissAnnouncement } from '@/utils/announcementPreferences'
+import { announcementIdentity, announcementPreferenceRevision, isAnnouncementDismissed, dismissAnnouncement } from '@/utils/announcementPreferences'
 import AnnouncementContent from './AnnouncementContent.vue'
 const route = useRoute(), store = useUserStore()
 const { announcementItems, announcementPreferencesReady } = useAnnouncement()
@@ -13,6 +13,7 @@ const identity = computed(() => announcementIdentity(store))
 const active = ref(null), dialog = ref(null), title = ref(null)
 const safeRoutes = new Set(['Home','Category','Search','MerchantProfile','ShopDetail','Shop','SellerDashboard'])
 let returnFocus = null, previousOverflow = '', openedIdentity = ''
+let visitKey = '', shownForVisit = false
 function dismiss(mode = 'session', countClose = true) {
   if (!active.value) return
   if (countClose) trackAnnouncement(active.value, 'close', route.meta.layout === 'seller' ? 'seller' : 'storefront')
@@ -24,23 +25,30 @@ function backdrop(event) {
   const rect = dialog.value.getBoundingClientRect()
   if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) dismiss()
 }
-watch([announcementItems, announcementPreferencesReady, () => route.name, identity, announcementPreferenceRevision, () => store.sessionReady], () => {
+watch([announcementItems, announcementPreferencesReady, () => route.fullPath, identity, announcementPreferenceRevision, () => store.sessionReady], () => {
+  const nextVisitKey = JSON.stringify([identity.value, route.fullPath])
+  if (nextVisitKey !== visitKey) {
+    visitKey = nextVisitKey
+    shownForVisit = false
+    active.value = null
+  }
   if (active.value) {
     const latest = announcementItems.value.find(item => item.id === active.value.id)
-    if (identity.value !== openedIdentity || !safeRoutes.has(route.name) || !latest || isAnnouncementDismissed(identity.value, latest)) active.value = null
+    if (!safeRoutes.has(route.name) || !latest || latest.mode !== 'popup' || isAnnouncementDismissed(identity.value, latest)) active.value = null
     else active.value = latest
     return
   }
-  if (!store.sessionReady || !announcementPreferencesReady.value || !safeRoutes.has(route.name) || sessionHasPopup(identity.value)) return
+  // A plain close lasts only for this visit. Polling must not reopen it;
+  // navigating or reloading starts another visit without a stored session cap.
+  if (!store.sessionReady || !announcementPreferencesReady.value || !safeRoutes.has(route.name) || shownForVisit) return
   const item = announcementItems.value.find(item => item.mode === 'popup' && !isAnnouncementDismissed(identity.value, item))
-  if (item) { openedIdentity = identity.value; active.value = item }
+  if (item) { openedIdentity = identity.value; shownForVisit = true; active.value = item }
 }, { immediate: true })
 watch(active, async (item, old) => {
   await nextTick()
   if (item && active.value && dialog.value && !dialog.value.open) {
     returnFocus = document.activeElement; previousOverflow = document.body.style.overflow
     dialog.value.showModal(); document.body.style.overflow = 'hidden'; title.value?.focus()
-    markPopupShown(openedIdentity)
   } else if (!item && old) {
     dialog.value?.close(); document.body.style.overflow = previousOverflow; returnFocus?.focus?.()
   }
@@ -51,7 +59,7 @@ onBeforeUnmount(() => { if (dialog.value?.open) { dialog.value.close(); document
   <Teleport to="body"><dialog ref="dialog" class="announcement-dialog" aria-labelledby="announcement-popup-title" @cancel.prevent="dismiss()" @click="backdrop">
     <template v-if="active"><header><div><p><Megaphone :size="16" aria-hidden="true" />站内公告</p><h2 id="announcement-popup-title" ref="title" tabindex="-1">{{ active.title || '公告提醒' }}</h2></div><button class="announcement-close" aria-label="本次关闭公告" @click="dismiss()"><X :size="22" aria-hidden="true" /></button></header>
       <div v-announcement-impression="{item:active,placement:route.meta.layout === 'seller' ? 'seller' : 'storefront'}" class="announcement-dialog-body"><AnnouncementContent :content="active.content" :content-type="active.contentType" /></div>
-      <footer><a v-if="active.actionUrl" class="announcement-dismiss announcement-action" :href="active.actionUrl" :target="active.actionUrl.startsWith('/') ? undefined : '_blank'" rel="noopener noreferrer" @click="trackAnnouncement(active, 'action', route.meta.layout === 'seller' ? 'seller' : 'storefront')">{{ active.actionLabel }}</a><router-link :to="`/announcements/${active.id}`" class="announcement-detail-link" @click="dismiss('session', false)">查看详情与历史公告</router-link><p>关闭后仍可在公告中心查阅。</p><div><button class="announcement-dismiss secondary" @click="dismiss('today')">今日不提醒</button><button class="announcement-dismiss" @click="dismiss('forever')">不再提醒本条</button></div></footer>
+      <footer><a v-if="active.actionUrl" class="announcement-dismiss announcement-action" :href="active.actionUrl" :target="active.actionUrl.startsWith('/') ? undefined : '_blank'" rel="noopener noreferrer" @click="trackAnnouncement(active, 'action', route.meta.layout === 'seller' ? 'seller' : 'storefront')">{{ active.actionLabel }}</a><router-link :to="`/announcements/${active.id}`" class="announcement-detail-link" @click="dismiss('session', false)">查看详情与历史公告</router-link><p>普通关闭后，下次进入页面仍会显示。历史公告可在公告中心查阅。</p><div><button class="announcement-dismiss secondary" @click="dismiss('today')">今日不再显示</button><button class="announcement-dismiss" @click="dismiss('forever')">从此不再显示</button></div></footer>
     </template>
   </dialog></Teleport>
 </template>

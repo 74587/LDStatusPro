@@ -59,7 +59,7 @@ const app = createApp({ setup() {
   return () => h('div', [
     h('button', { onClick: () => { globalThis.sessionStorage.clear(); globalThis.localStorage.clear(); globalThis.location.reload() } }, '重置隔离预览'),
     h('button', { onClick: () => globalThis.document.documentElement.classList.toggle('dark') }, '切换预览主题'),
-    !seller.value && h(AnnouncementBar), !seller.value && h(AnnouncementPopup), h(RouterView), !seller.value && h(CornerActionMenu)
+    !seller.value && h(AnnouncementBar), state.announcementLoaded.value && h(AnnouncementPopup), h(RouterView), !seller.value && h(CornerActionMenu)
   ])
 } })
 app.use(createPinia()).use(router).mount('#app')

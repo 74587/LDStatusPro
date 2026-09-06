@@ -2,17 +2,14 @@
 import { beforeEach, expect, it, vi } from 'vitest'
 const server = vi.hoisted(() => ({ fetch: vi.fn(), save: vi.fn() }))
 vi.mock('@/services/announcementService', () => ({fetchAnnouncementStates:server.fetch,saveAnnouncementState:server.save}))
-import { setAnnouncementPreferenceIdentity, syncAnnouncementPreferences, dismissAnnouncement, isAnnouncementDismissed, markPopupShown, sessionHasPopup } from './announcementPreferences'
+import { setAnnouncementPreferenceIdentity, syncAnnouncementPreferences, dismissAnnouncement, isAnnouncementDismissed } from './announcementPreferences'
 beforeEach(() => { localStorage.clear(); sessionStorage.clear() })
-it('separates accounts and reminder versions, and caps one popup per tab', () => {
+it('separates accounts and reminder versions', () => {
   const item = { id: 7, reminderVersion: 1 }
   dismissAnnouncement('a', item, 'forever')
   expect(isAnnouncementDismissed('a', item)).toBe(true)
   expect(isAnnouncementDismissed('b', item)).toBe(false)
   expect(isAnnouncementDismissed('a', { ...item, reminderVersion: 2 })).toBe(false)
-  markPopupShown('a')
-  expect(sessionHasPopup('a')).toBe(true)
-  expect(sessionHasPopup('b')).toBe(false)
 })
 it('keeps old unscoped suppression local and works when storage access is denied', () => {
   const item={id:99,reminderVersion:1,popupDismissKey:'legacy-test'}
