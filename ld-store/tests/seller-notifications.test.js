@@ -12,13 +12,14 @@ const initial = { available: true, status: 'unbound', telegramUsername: null, pe
 let wrapper
 beforeEach(() => { vi.useFakeTimers(); vi.resetAllMocks(); setActivePinia(createPinia()); requests.fetchNotificationChannel.mockResolvedValue({ success: true, data: { ...initial } }) })
 afterEach(() => { wrapper?.unmount(); vi.restoreAllMocks(); vi.useRealTimers() })
-async function open() { wrapper = mount(SellerNotifications); await flushPromises(); return wrapper }
+async function open() { wrapper = mount(SellerNotifications, { attachTo: document.body }); await flushPromises(); return wrapper }
 function button(label) { return wrapper.findAll('button').find(b => b.text() === label) }
 describe('seller notification settings', () => {
   it('opens a link for Telegram-side confirmation without a website confirmation button', async () => {
     requests.beginTelegramBinding.mockResolvedValue({ success: true, data: { url: 'https://t.me/test_bot?start=example', expiresAt: new Date(Date.now() + 600000).toISOString() } })
     await open(); await button('连接 Telegram').trigger('click'); await flushPromises()
     expect(wrapper.text()).toContain('无需切回网页')
+    expect(document.activeElement?.textContent).toBe('在 Telegram 内确认连接')
     expect(wrapper.find('a[href="https://t.me/test_bot?start=example"]').exists()).toBe(true)
     expect(button('确认绑定并开启')).toBeUndefined()
   })
@@ -26,7 +27,7 @@ describe('seller notification settings', () => {
     await open()
     requests.fetchNotificationChannel.mockResolvedValue({ success: true, data: { ...initial, status: 'enabled', telegramUsername: 'seller', lastDelivery: { status: 'accepted', error: null, at: new Date().toISOString() } } })
     window.dispatchEvent(new Event('focus')); await flushPromises()
-    expect(wrapper.text()).toContain('已连接账号：@seller')
+    expect(wrapper.text()).toContain('@seller')
     expect(wrapper.text()).toContain('不代表你已阅读')
   })
   it('keeps the existing binding on a failed pause and permits retry', async () => {
@@ -54,6 +55,24 @@ describe('seller notification settings', () => {
     await open(); expect(requests.changeTelegramChannel).not.toHaveBeenCalled()
     await button('解除绑定').trigger('click'); expect(button('确认解除绑定')).toBeDefined()
     expect(requests.changeTelegramChannel).not.toHaveBeenCalled()
+  })
+  it('focuses the safe unbind choice and preserves confirmation after a failed request', async () => {
+    requests.fetchNotificationChannel.mockResolvedValue({ success: true, data: { ...initial, status: 'enabled' } })
+    requests.changeTelegramChannel.mockResolvedValue({ success: false, error: '暂时无法解除绑定' })
+    await open(); await button('解除绑定').trigger('click'); await flushPromises()
+    expect(document.activeElement).toBe(button('保留绑定').element)
+    await button('确认解除绑定').trigger('click'); await flushPromises()
+    expect(button('确认解除绑定')).toBeDefined()
+    expect(useUiStore().toasts).toEqual(expect.arrayContaining([expect.objectContaining({ type: 'error', message: '暂时无法解除绑定' })]))
+    await wrapper.find('#notification-unbind-confirm').trigger('keydown', { key: 'Escape' }); await flushPromises()
+    expect(button('确认解除绑定')).toBeUndefined()
+    expect(document.activeElement).toBe(button('解除绑定').element)
+  })
+  it('returns focus to connect after a successful unbind', async () => {
+    requests.fetchNotificationChannel.mockResolvedValue({ success: true, data: { ...initial, status: 'enabled' } })
+    requests.changeTelegramChannel.mockResolvedValue({ success: true, data: { ...initial } })
+    await open(); await button('解除绑定').trigger('click'); await button('确认解除绑定').trigger('click'); await flushPromises()
+    expect(document.activeElement).toBe(button('连接 Telegram').element)
   })
   it('polls only while visible and never overlaps a slow status request', async () => {
     const pending = new Date(Date.now() + 600000).toISOString()
