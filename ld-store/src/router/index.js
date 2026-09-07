@@ -250,6 +250,12 @@ const routes = [
         meta: { title: '退款售后 - LD士多卖家后台' }
       },
       {
+        path: 'fulfillment',
+        name: 'SellerFulfillment',
+        component: () => import('@/views/seller/SellerFulfillment.vue'),
+        meta: { title: '发货与履约 - LD士多卖家后台' }
+      },
+      {
         path: 'products',
         name: 'SellerProducts',
         component: () => import('@/views/MyProducts.vue'),

@@ -1,18 +1,13 @@
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
-import type { InferOutput } from 'valibot'
-import type { FulfillmentPolicySchema, SellerFulfillment } from '@/contracts/fulfillment'
-import { acknowledgeFulfillment, fetchFulfillmentPolicy, fetchSellerFulfillment } from '@/services/shop/fulfillmentService'
-
-type Policy = InferOutput<typeof FulfillmentPolicySchema>
+import { storeToRefs } from 'pinia'
+import { useSellerFulfillmentStore } from '@/stores/sellerFulfillment'
 
 /** A confirmation belongs to one mounted publishing flow, account and policy version. */
 export function useFulfillmentReminder(getOwner: () => string) {
+  const fulfillmentStore = useSellerFulfillmentStore()
+  const { policy, status: state, loading, acknowledging: busy } = storeToRefs(fulfillmentStore)
   const open = ref(false)
-  const loading = ref(false)
-  const busy = ref(false)
   const error = ref('')
-  const state = ref<SellerFulfillment | null>(null)
-  const policy = ref<Policy | null>(null)
   const confirmedVersion = ref('')
   const pending = ref(false)
   const confirmationCount = ref(0)
@@ -24,8 +19,6 @@ export function useFulfillmentReminder(getOwner: () => string) {
   function finish(accepted: boolean) {
     generation++
     open.value = false
-    loading.value = false
-    busy.value = false
     pending.value = false
     const resolve = resolveCompletion
     resolveCompletion = null
@@ -36,41 +29,30 @@ export function useFulfillmentReminder(getOwner: () => string) {
   function reset() {
     finish(false)
     confirmedVersion.value = ''
-    state.value = null
-    policy.value = null
     error.value = ''
   }
 
   async function load() {
     const current = ++generation
-    loading.value = true
     error.value = ''
-    const [rules, seller] = await Promise.all([fetchFulfillmentPolicy(), fetchSellerFulfillment()])
+    const loaded = await fulfillmentStore.refresh({ force: true })
     if (current !== generation) return
-    loading.value = false
-    if (!rules.success) {
-      error.value = rules.error
-      open.value = true
-      return
-    }
-    policy.value = rules.data
-    if (!rules.data.enabled) {
+    if (policy.value && !policy.value.enabled) {
       confirmedVersion.value = ''
       finish(true)
       return
     }
-    if (!seller.success) {
-      error.value = seller.error
+    if (!loaded || !policy.value || !state.value) {
+      error.value = fulfillmentStore.error || '发货规则暂时无法加载'
       open.value = true
       return
     }
-    state.value = seller.data
-    if (seller.data.policyVersion !== rules.data.version || !seller.data.enabled) {
+    if (state.value.policyVersion !== policy.value.version || !state.value.enabled) {
       error.value = '发货规则已更新，请重新加载后确认。'
       open.value = true
       return
     }
-    if (!forceReminder && confirmedVersion.value === rules.data.version && seller.data.accepted && !seller.data.activeRestriction) {
+    if (!forceReminder && confirmedVersion.value === policy.value.version && state.value.accepted && !state.value.activeRestriction) {
       finish(true)
       return
     }
@@ -93,23 +75,17 @@ export function useFulfillmentReminder(getOwner: () => string) {
     if (loading.value || busy.value || error.value || !state.value || !policy.value || state.value.activeRestriction) return
     if (!state.value.accepted) {
       const current = generation
-      busy.value = true
-      const result = await acknowledgeFulfillment(policy.value.version)
+      const accepted = await fulfillmentStore.acknowledgeCurrent()
       if (current !== generation) return
-      busy.value = false
-      if (!result.success) {
-        if (result.errorCode === 'POLICY_VERSION_MISMATCH') {
-          confirmedVersion.value = ''
-          await load()
-        } else error.value = result.error
+      if (!accepted) {
+        error.value = fulfillmentStore.error || '确认发货规则失败'
         return
       }
-      state.value = result.data
-      if (!result.data.accepted || result.data.policyVersion !== policy.value.version) {
+      if (!state.value?.accepted || state.value.policyVersion !== policy.value.version) {
         await load()
         return
       }
-      if (result.data.activeRestriction) return
+      if (state.value.activeRestriction) return
     }
     confirmedVersion.value = policy.value.version
     confirmationCount.value++

@@ -20,7 +20,7 @@
     <h2 id="normal-product">发布普通物品</h2>
     <p>选择“普通物品”，设置可售库存并写清卖家如何履约。买家在平台内完成 LDC 支付后，订单通常进入待发货，由卖家到订单管理手动填写交付说明。</p>
     <HelpCallout title="首次发布前需要确认履约规则" tone="warning">
-      普通物品须在支付后 72 小时内真实交付。系统会在 48 小时下架物品，到期自动发起全额退款；3 笔有效超时记录会限制新增交易 7 天。<router-link to="/docs/shipping-deadline">阅读全文</router-link>
+      普通物品须在支付后 72 小时内真实交付。系统会在 48 小时下架物品，到期自动发起全额退款；3 笔有效超时记录会限制新增交易 7 天。可先到<router-link to="/seller/fulfillment">发货与履约</router-link>确认，或在选择普通物品时完成确认。<router-link to="/docs/shipping-deadline">阅读全文</router-link>
     </HelpCallout>
     <HelpSteps :steps="normalSteps" />
 
@@ -68,6 +68,7 @@
 
     <div class="help-actions">
       <router-link to="/seller/products/new">发布物品</router-link>
+      <router-link to="/seller/fulfillment" class="secondary">确认发货规则</router-link>
       <router-link to="/seller/products" class="secondary">管理我的物品</router-link>
     </div>
   </div>

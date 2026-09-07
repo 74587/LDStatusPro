@@ -41,8 +41,6 @@
         </router-link>
       </section>
 
-      <SellerFulfillmentPanel placement="summary" :state="fulfillmentState" />
-
       <section v-if="isNewSeller" class="opening-checklist" aria-labelledby="opening-title">
         <div class="section-heading opening-heading">
           <div>
@@ -261,21 +259,18 @@
         </div>
       </section>
     </template>
-    <SellerFulfillmentPanel placement="details" :state="fulfillmentState" :error="fulfillmentError" :loading="fulfillmentLoading" @refresh="loadFulfillment" />
   </div>
 </template>
 
 <script setup>
-import { fetchSellerFulfillment } from '@/services/shop/fulfillmentService'
-import { useUserStore } from '@/stores/user'
-import SellerFulfillmentPanel from '@/components/seller/SellerFulfillmentPanel.vue'
 import { computed, defineAsyncComponent, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import {
   AlertCircle, ArrowUpRight, CalendarDays, ChevronDown, ChevronRight, CircleCheck, ClipboardList,
   CreditCard, Eye, Minus, PackageCheck, PackageOpen, Plus, RefreshCw, ShoppingBag,
-  Sparkles, Store, TicketPercent, TrendingDown, TrendingUp, UsersRound, WalletCards
+  ShieldCheck, Sparkles, Store, TicketPercent, TrendingDown, TrendingUp, UsersRound, WalletCards
 } from '@lucide/vue'
 import { fetchMerchantDashboard } from '@/services/merchantDashboard'
+import { useSellerFulfillmentStore } from '@/stores/sellerFulfillment'
 import LiquidTabs from '@/components/common/LiquidTabs.vue'
 import {
   buildMerchantBrief,
@@ -287,6 +282,7 @@ import {
 } from '@/utils/merchantDashboard'
 
 const SellerTrendChart = defineAsyncComponent(() => import('@/components/seller/SellerTrendChart.vue'))
+const fulfillmentStore = useSellerFulfillmentStore()
 
 const loading = ref(true)
 const rangeLoading = ref(false)
@@ -358,8 +354,21 @@ const businessStatusItems = computed(() => {
   const status = dashboard.value?.businessStatus || {}
   const merchantReady = Boolean(status.merchant?.configured && status.merchant?.verified)
   const shopReady = Boolean(status.shop?.configured)
+  const fulfillment = fulfillmentStore.status
+  const fulfillmentMeta = !fulfillmentStore.loaded
+    ? fulfillmentStore.error
+      ? { value: '核对失败', tone: 'warn', description: '点击进入后重新加载当前规则状态' }
+      : { value: '核对中', tone: 'neutral', description: '正在读取当前规则状态' }
+    : fulfillment?.activeRestriction
+      ? { value: '交易受限', tone: 'danger', description: '已有订单仍可履约和处理售后' }
+      : fulfillmentStore.needsAcknowledgement
+        ? { value: '待确认', tone: 'warn', description: '普通物品暂时无法发布和成交' }
+        : fulfillment?.enabled
+          ? { value: '已确认', tone: 'good', description: '当前发货规则已确认' }
+          : { value: '未启用', tone: 'neutral', description: '当前无需确认发货规则' }
   return [
     { label: '收款配置', icon: CreditCard, href: '/seller/payment', value: merchantReady ? '已验证' : (status.merchant?.configured ? '待验证' : '未配置'), tone: merchantReady ? 'good' : 'warn', description: merchantReady ? '平台订单可正常收款' : '完成验证后再开始稳定经营' },
+    { label: '发货与履约', icon: ShieldCheck, href: '/seller/fulfillment', ...fulfillmentMeta },
     { label: '小店状态', icon: Store, href: '/seller/store', value: shopReady ? getShopStatus(status.shop?.status) : '未开通', tone: status.shop?.status === 'active' ? 'good' : 'neutral', description: shopReady ? (status.shop?.name || '已建立小店资料') : '建立聚合展示页与商家名片' },
     { label: '生效优惠券', icon: TicketPercent, href: '/seller/coupons', value: `${Number(status.coupons?.activeCount || 0)} 张`, tone: Number(status.coupons?.activeCount || 0) > 0 ? 'good' : 'neutral', description: '当前可被买家领取和使用' },
     { label: '商家服务', icon: Sparkles, href: '/seller/services', value: `${Number(status.services?.activeCount || 0)} 项`, tone: Number(status.services?.expiringSoon || 0) > 0 ? 'warn' : 'neutral', description: Number(status.services?.expiringSoon || 0) > 0 ? `${status.services.expiringSoon} 项将在 7 天内到期` : '推广和经营增值服务状态' },
@@ -436,26 +445,7 @@ function setupDeferredChart() {
   chartObserver.observe(chartLoadTarget.value)
 }
 
-const fulfillmentState = ref(null)
-const fulfillmentError = ref('')
-const fulfillmentLoading = ref(false)
-const fulfillmentUser = useUserStore()
-let fulfillmentRequest = 0
-async function loadFulfillment() {
-  const request = ++fulfillmentRequest
-  fulfillmentLoading.value = true
-  const result = await fetchSellerFulfillment()
-  if (request !== fulfillmentRequest) return
-  fulfillmentLoading.value = false
-  fulfillmentError.value = result.success ? '' : result.error
-  if (result.success) fulfillmentState.value = result.data
-}
-watch(() => `${fulfillmentUser.currentUser?.site}:${fulfillmentUser.currentUser?.id}`, () => {
-  fulfillmentState.value = null
-  void loadFulfillment()
-})
-onMounted(() => { void loadDashboard(); void loadFulfillment() })
-onUnmounted(() => { fulfillmentRequest++ })
+onMounted(() => { void loadDashboard(); void fulfillmentStore.refresh() })
 watch(dashboard, async (value) => {
   if (!value) return
   await nextTick()
@@ -583,6 +573,7 @@ html.dark .primary-action { color: var(--palette-hex-0d151d); background: var(--
 .status-value { color: var(--seller-muted); font-size: 11px; font-weight: 650; }
 .status-value.good { color: var(--seller-jade); }
 .status-value.warn { color: var(--seller-warning); }
+.status-value.danger { color: var(--seller-danger); }
 
 .recent-table-wrap { position: relative; width: 100%; max-width: 100%; min-width: 0; box-sizing: border-box; overflow-x: auto; overscroll-behavior-inline: contain; padding: 0 16px 18px; }
 .recent-table { min-width: 820px; }

@@ -34,6 +34,7 @@
 
     <div class="help-actions">
       <router-link to="/user/orders">查看买家订单</router-link>
+      <router-link to="/seller/fulfillment" class="secondary">发货与履约</router-link>
       <router-link to="/seller/orders" class="secondary">处理卖家订单</router-link>
       <router-link to="/docs/refunds" class="secondary">退款与争议</router-link>
     </div>

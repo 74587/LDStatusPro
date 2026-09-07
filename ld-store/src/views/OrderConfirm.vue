@@ -329,7 +329,7 @@ import {
   TicketPercent,
 } from '@lucide/vue'
 import { useProductStore } from '@/stores/product'
-import { useCheckoutSubmission } from '@/composables/orders/useCheckoutSubmission'
+import { getCheckoutSubmissionError, useCheckoutSubmission } from '@/composables/orders/useCheckoutSubmission'
 import { useOrderStore } from '@/stores/order'
 import { useUserStore } from '@/stores/user'
 import { shouldPreserveCheckoutDraft, useCheckoutStore } from '@/stores/checkout'
@@ -775,9 +775,7 @@ async function submitOrder() {
     }
 
     cleanupPreparedTab(preparedWindow)
-    submissionError.value = typeof result?.error === 'object'
-      ? (result.error.message || result.error.code || '创建订单失败，请重新确认')
-      : (result?.error || '创建订单失败，请重新确认')
+    submissionError.value = getCheckoutSubmissionError(result)
     if (!pendingSubmission.value) await refreshAfterSubmitFailure()
     await focusSubmissionError()
   } catch (error) {

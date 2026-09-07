@@ -99,3 +99,58 @@ test('catalog filters recover from errors and survive a detail round trip', asyn
   else await expect(page.locator('#home-price-min')).toHaveValue('5')
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true)
 })
+
+test('seller fulfillment entry stays visible and confirmation synchronizes the whole seller shell', async ({ page, scenario }, testInfo) => {
+  await signIn(page)
+  scenario.fulfillmentHistory = [{
+    id: 9, orderNo: 'E2E-FULFILLMENT-9', occurredAt: '2026-09-07T01:30:00Z',
+    penaltyId: null, exemptReason: null, revokedAt: null, revokeReason: null
+  }]
+  await page.setViewportSize(testInfo.project.name === 'mobile'
+    ? { width: 375, height: 812 }
+    : { width: 1280, height: 900 })
+  await page.goto('/seller/fulfillment')
+
+  await expect(page.getByRole('heading', { name: '完成规则确认，让普通物品恢复成交' })).toBeVisible()
+  await expect(page.locator('.seller-fulfillment-gate')).toContainText('普通物品无法发布，买家也无法下单')
+  await expect(page.locator('a[href="/seller/fulfillment"]').filter({ hasText: '发货与履约' })).toContainText('待确认')
+  await expect(page.getByText('E2E-FULFILLMENT-9', { exact: true })).toBeVisible()
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true)
+  await page.screenshot({ path: testInfo.outputPath('seller-fulfillment-unconfirmed-light.png'), fullPage: true })
+
+  const acknowledgement = page.getByRole('checkbox')
+  await acknowledgement.focus()
+  await page.keyboard.press('Space')
+  await expect(acknowledgement).toBeChecked()
+  await page.getByRole('button', { name: '我已阅读并确认' }).click()
+  await expect(page.getByText('当前版本已经确认')).toBeVisible()
+  await expect(page.locator('.seller-fulfillment-gate')).toHaveCount(0)
+  await expect(page.locator('.seller-nav-badge', { hasText: '待确认' })).toHaveCount(0)
+  expect(scenario.fulfillmentAckCount).toBe(1)
+  await page.reload()
+  await expect(page.getByText('当前版本已经确认')).toBeVisible()
+  await expect(page.locator('.seller-fulfillment-gate')).toHaveCount(0)
+
+  await page.emulateMedia({ colorScheme: 'dark', reducedMotion: 'reduce' })
+  await page.setViewportSize({ width: 812, height: 375 })
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true)
+  await page.screenshot({ path: testInfo.outputPath('seller-fulfillment-dark-landscape.png'), fullPage: true })
+})
+
+test('seller disablement warning takes priority over the fulfillment confirmation banner', async ({ page, scenario }) => {
+  await signIn(page)
+  scenario.sellingDisabled = true
+  await page.goto('/seller/fulfillment')
+  await expect(page.locator('.seller-enforcement')).toContainText('卖家功能已被平台禁用')
+  await expect(page.locator('.seller-fulfillment-gate')).toHaveCount(0)
+  await expect(page.locator('.seller-nav-badge', { hasText: '待确认' })).toHaveCount(1)
+})
+
+test('checkout translates the seller acknowledgement gate into buyer-facing copy', async ({ page, scenario }) => {
+  await signIn(page)
+  scenario.fulfillmentOrderBlocked = true
+  await page.goto('/checkout/7')
+  await confirm(page).click()
+  await expect(page.getByRole('alert')).toContainText('卖家尚未确认最新发货规则')
+  await expect(page.getByRole('alert')).not.toContainText('发布页')
+})

@@ -7,6 +7,9 @@ export const product = { id: 7, name: '回归测试物品', description: '仅供
 const pagination = { total: 1, page: 1, pageSize: 20, totalPages: 1, hasMore: false }
 export type Scenario = {
   lostResponse: boolean; lookupAvailable: boolean; priceChanged: boolean; failFilter: boolean
+  sellingDisabled: boolean
+  fulfillmentAccepted: boolean; fulfillmentAckCount: number; fulfillmentOrderBlocked: boolean
+  fulfillmentHistory: Record<string, unknown>[]
   quotes: number; submissions: Record<string, unknown>[]; reads: string[]
   order: null | { orderId: number; orderNo: string; paymentUrl: string; status: string }
 }
@@ -18,7 +21,11 @@ export async function signIn(page: Page) {
 }
 export const test = base.extend<{ scenario: Scenario }>({
   scenario: [async ({ context }, use) => {
-    const state: Scenario = { lostResponse: false, lookupAvailable: true, priceChanged: false, failFilter: false, quotes: 0, submissions: [], reads: [], order: null }
+    const state: Scenario = {
+      lostResponse: false, lookupAvailable: true, priceChanged: false, failFilter: false, sellingDisabled: false,
+      fulfillmentAccepted: false, fulfillmentAckCount: 0, fulfillmentOrderBlocked: false,
+      fulfillmentHistory: [], quotes: 0, submissions: [], reads: [], order: null
+    }
     const unexpected: string[] = []
     const pageErrors: string[] = []
     context.on('page', page => page.on('pageerror', error => pageErrors.push(error.message)))
@@ -46,7 +53,14 @@ export const test = base.extend<{ scenario: Scenario }>({
       if (path === '/api/shop/categories') return ok({ categories: [{ id: 1, name: '测试分类' }] })
       if (path === '/api/shop/stats') return ok({ products: { total: 1 }, orders: {}, stores: 0 })
       if (path === '/api/shop/hotboard') return ok({ trustLevel: 2, sellerTop: [], viewTop: [], soldTop: [], categoryTrend: [], hourlyTrend: [] })
-      if (path === '/api/shop/fulfillment-policy') return ok({ version: 'test', enabled: false, enabledAt: null, deliveryHours: 72, offlineHours: 48, strikeWindowDays: 30, strikeThreshold: 3, restrictionHours: 72, ruleUrl: '/docs/terms' })
+      if (path === '/api/shop/fulfillment-policy') return ok({ version: 'shipment-72h-test', enabled: true, enabledAt: '2026-09-01T00:00:00Z', deliveryHours: 72, offlineHours: 48, strikeWindowDays: 30, strikeThreshold: 3, restrictionHours: 168, ruleUrl: '/docs/shipping-deadline' })
+      if (path === '/api/shop/merchant/enforcement') return ok({ enforcement: { status: state.sellingDisabled ? 'disabled' : 'active', sellingAllowed: !state.sellingDisabled, version: state.sellingDisabled ? 1 : 0, reasonCode: state.sellingDisabled ? 'test_only' : null, reason: state.sellingDisabled ? '隔离浏览器测试中的卖家权限限制' : null, changedByName: null, changedAt: null }, history: [] })
+      if (path === '/api/shop/merchant/fulfillment/acknowledge' && request.method() === 'POST') {
+        state.fulfillmentAckCount++
+        state.fulfillmentAccepted = true
+        return ok({ enabled: true, accepted: true, policyVersion: 'shipment-72h-test', validCount: state.fulfillmentHistory.length, threshold: 3, windowDays: 30, restrictionHours: 168, activeRestriction: null, restrictions: [], history: state.fulfillmentHistory, ruleUrl: '/docs/shipping-deadline', supportUrl: '/support' })
+      }
+      if (path === '/api/shop/merchant/fulfillment') return ok({ enabled: true, accepted: state.fulfillmentAccepted, policyVersion: 'shipment-72h-test', validCount: state.fulfillmentHistory.length, threshold: 3, windowDays: 30, restrictionHours: 168, activeRestriction: null, restrictions: [], history: state.fulfillmentHistory, ruleUrl: '/docs/shipping-deadline', supportUrl: '/support' })
       if (path === '/api/shop/products') {
         state.reads.push(url.search)
         if (state.failFilter && url.searchParams.has('priceMin')) return fail(503, 'TEST_FILTER_FAILED')
@@ -62,6 +76,7 @@ export const test = base.extend<{ scenario: Scenario }>({
       }
       if (path === '/api/shop/orders' && request.method() === 'POST') {
         state.submissions.push(request.postDataJSON())
+        if (state.fulfillmentOrderBlocked) return fail(409, 'FULFILLMENT_RULE_NOT_ACCEPTED')
         state.order ??= { orderId: 31, orderNo: 'E2E_ORDER_31', paymentUrl: 'https://payment.invalid/test-only', status: 'pending' }
         if (state.lostResponse) return route.abort('failed')
         return ok(state.order)

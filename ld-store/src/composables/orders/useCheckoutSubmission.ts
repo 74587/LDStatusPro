@@ -13,6 +13,20 @@ interface Options {
 }
 const memory = new Map<string, Pending>()
 
+export function getCheckoutSubmissionError(result: unknown) {
+  const failure = result && typeof result === 'object'
+    ? result as { errorCode?: string; error?: unknown }
+    : null
+  if (failure?.errorCode === 'FULFILLMENT_RULE_NOT_ACCEPTED') {
+    return '该物品暂时无法兑换：卖家尚未确认最新发货规则。请稍后再试或选择其他物品。'
+  }
+  if (failure?.error && typeof failure.error === 'object') {
+    const nested = failure.error as { message?: unknown; code?: unknown }
+    return String(nested.message || nested.code || '创建订单失败，请重新确认')
+  }
+  return String(failure?.error || '创建订单失败，请重新确认')
+}
+
 export function useCheckoutSubmission(options: Options) {
   const key = `ld-store-order-submission:${JSON.stringify([options.owner, options.productId])}`
   let saved = memory.get(key) || null

@@ -15,4 +15,5 @@ export const SellerFulfillmentSchema = looseObject({
     exemptReason: nullable(string()), revokedAt: nullable(string()), revokeReason: optional(nullable(string())) })), ruleUrl: string(), supportUrl: string()
 })
 export type FulfillmentInfo = InferOutput<typeof FulfillmentInfoSchema>
+export type FulfillmentPolicy = InferOutput<typeof FulfillmentPolicySchema>
 export type SellerFulfillment = InferOutput<typeof SellerFulfillmentSchema>

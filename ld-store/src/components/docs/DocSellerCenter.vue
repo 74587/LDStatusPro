@@ -20,6 +20,7 @@
     <h2 id="navigation">后台功能分区</h2>
     <dl class="definition-list">
       <div><dt>订单管理</dt><dd>在商品销售与求购服务之间切换，搜索订单并处理待发货。</dd></div>
+      <div><dt>发货与履约</dt><dd>确认普通物品发货规则，查看超时记录、交易限制和申诉入口。</dd></div>
       <div><dt>我的物品</dt><dd>按状态、类型和库存筛选，编辑物品与管理卡密库存。</dd></div>
       <div><dt>发布物品</dt><dd>选择普通物品或自动发卡，填写资料并提交审核。</dd></div>
       <div><dt>优惠券管理</dt><dd>创建活动、分享领取链接，查看领取、占用、核销和让利。</dd></div>
@@ -71,6 +72,7 @@ const metricRows = [
 ]
 const firstRunSteps = [
   { title: '配置 LDC 收款', description: '保存凭证，复制页面生成的通知与回调地址，并完成测试。' },
+  { title: '确认发货规则', description: '计划发布普通物品时，先到“发货与履约”阅读并确认当前规则。' },
   { title: '发布第一件物品', description: '选择交付类型，填写资料、价格和库存，提交审核。' },
   { title: '关注经营状态', description: '在经营概览查看待办、收款状态和物品状态。' },
   { title: '处理订单', description: '普通物品及时手动履约；自动发卡也要关注异常和库存。', result: '后续可创建优惠券、完善小店或使用推广服务。' }

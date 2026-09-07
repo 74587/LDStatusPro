@@ -32,14 +32,15 @@
               <component :is="item.icon" :size="18" :stroke-width="1.8" aria-hidden="true" />
               <span>{{ item.label }}</span>
               <span
-                v-if="item.badge?.value"
+                v-if="item.badge?.value || item.badge?.text"
                 class="seller-nav-badge"
+                :class="{ 'is-attention': item.badge?.tone === 'warning' }"
                 role="status"
                 aria-live="polite"
                 aria-atomic="true"
-                :aria-label="`${item.badgeLabel || item.label}有 ${item.badge.value} 项待处理`"
+                :aria-label="item.badge?.ariaLabel || `${item.badgeLabel || item.label}有 ${item.badge.value} 项待处理`"
               >
-                {{ formatBadge(item.badge.value) }}
+                {{ item.badge.text || formatBadge(item.badge.value) }}
               </span>
             </router-link>
             <span
@@ -133,6 +134,31 @@
         </div>
       </section>
 
+      <section
+        v-if="!sellingDisabled && !fulfillmentRestricted && fulfillmentLoaded && fulfillmentNeedsAcknowledgement"
+        class="seller-fulfillment-gate"
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+      >
+        <ShieldAlert :size="20" aria-hidden="true" />
+        <div>
+          <strong>完成发货规则确认，恢复普通物品交易</strong>
+          <p>你尚未确认当前 72 小时发货规则，普通物品无法发布，买家也无法下单。</p>
+        </div>
+        <router-link to="/seller/fulfillment">查看并确认</router-link>
+      </section>
+
+      <section
+        v-else-if="!sellingDisabled && !fulfillmentLoading && fulfillmentError"
+        class="seller-fulfillment-load-error"
+        role="status"
+      >
+        <AlertTriangle :size="18" aria-hidden="true" />
+        <p>暂时无法核对发货规则状态。进入履约页面可重新加载。</p>
+        <router-link to="/seller/fulfillment">重新核对</router-link>
+      </section>
+
       <main id="seller-main" ref="sellerMain" class="seller-main" tabindex="-1">
         <AnnouncementBar />
         <div class="seller-view-stage">
@@ -165,6 +191,7 @@ import {
   PlusCircle,
   ShoppingBag,
   RotateCcw,
+  ShieldCheck,
   Sparkles,
   Store,
   ShieldAlert,
@@ -173,6 +200,7 @@ import {
 import { useUserStore } from '@/stores/user'
 import { useNotificationSummaryStore } from '@/stores/notificationSummary'
 import { useMerchantEnforcementStore } from '@/stores/merchantEnforcement'
+import { useSellerFulfillmentStore } from '@/stores/sellerFulfillment'
 import ThemeToggle from '@/components/common/ThemeToggle.vue'
 import AvatarImage from '@/components/common/AvatarImage.vue'
 import { MAINTENANCE_STATE, isRestrictedMaintenanceMode } from '@/config/maintenance'
@@ -183,11 +211,19 @@ const router = useRouter()
 const userStore = useUserStore()
 const notificationSummaryStore = useNotificationSummaryStore()
 const merchantEnforcementStore = useMerchantEnforcementStore()
+const sellerFulfillmentStore = useSellerFulfillmentStore()
 const {
   sellerPendingDeliveryCount: pendingDeliveryCount,
   sellerRefundPendingCount: refundPendingCount
 } = storeToRefs(notificationSummaryStore)
 const { enforcement, sellingDisabled } = storeToRefs(merchantEnforcementStore)
+const {
+  loaded: fulfillmentLoaded,
+  loading: fulfillmentLoading,
+  error: fulfillmentError,
+  status: fulfillmentStatus,
+  needsAcknowledgement: fulfillmentNeedsAcknowledgement
+} = storeToRefs(sellerFulfillmentStore)
 const drawerOpen = ref(false)
 const mobileMenuButton = ref(null)
 const sidebarCloseButton = ref(null)
@@ -199,6 +235,10 @@ const pageTitle = computed(() => String(route.meta.title || '卖家后台').spli
 const restrictedMaintenance = computed(() => isRestrictedMaintenanceMode())
 const orderBadge = computed(() => ({ value: pendingDeliveryCount.value }))
 const refundBadge = computed(() => ({ value: refundPendingCount.value }))
+const fulfillmentRestricted = computed(() => Boolean(fulfillmentStatus.value?.activeRestriction))
+const fulfillmentBadge = computed(() => fulfillmentNeedsAcknowledgement.value
+  ? { text: '待确认', tone: 'warning', ariaLabel: '发货与履约规则待确认' }
+  : null)
 
 const navigation = computed(() => [
   {
@@ -211,7 +251,8 @@ const navigation = computed(() => [
     label: '交易',
     items: [
       { label: '订单管理', to: '/seller/orders', activeRouteNames: ['SellerOrders', 'SellerOrderDetail'], icon: ShoppingBag, badge: orderBadge.value },
-      { label: '退款售后', to: '/seller/refunds', activeRouteNames: ['SellerRefunds'], icon: RotateCcw, badge: refundBadge.value, badgeLabel: '退款售后' }
+      { label: '退款售后', to: '/seller/refunds', activeRouteNames: ['SellerRefunds'], icon: RotateCcw, badge: refundBadge.value, badgeLabel: '退款售后' },
+      { label: '发货与履约', to: '/seller/fulfillment', activeRouteNames: ['SellerFulfillment'], icon: ShieldCheck, badge: fulfillmentBadge.value }
     ]
   },
   {
@@ -275,13 +316,16 @@ function handleKeydown(event) {
 function logout() {
   notificationSummaryStore.reset()
   merchantEnforcementStore.reset()
+  sellerFulfillmentStore.reset()
   userStore.logout()
   router.replace('/')
 }
 
 watch(() => route.path, async () => {
   closeDrawer()
-  await merchantEnforcementStore.refresh()
+  const enforcementRefresh = merchantEnforcementStore.refresh()
+  void sellerFulfillmentStore.refresh()
+  await enforcementRefresh
   if (sellingDisabled.value && ['SellerPublish', 'SellerEdit'].includes(String(route.name || ''))) {
     await router.replace({ name: 'SellerProducts', query: { sellingDisabled: '1' } })
   }
@@ -294,8 +338,13 @@ watch(drawerOpen, value => {
 
 onMounted(() => {
   document.addEventListener('keydown', handleKeydown)
-  merchantEnforcementStore.refresh({ force: true })
-  enforcementPollTimer = window.setInterval(() => merchantEnforcementStore.refresh({ force: true }), 30_000)
+  void Promise.all([
+    merchantEnforcementStore.refresh({ force: true }),
+    sellerFulfillmentStore.refresh({ force: true })
+  ])
+  enforcementPollTimer = window.setInterval(() => {
+    void merchantEnforcementStore.refresh({ force: true })
+  }, 30_000)
 })
 
 onUnmounted(() => {
@@ -428,6 +477,7 @@ html.dark .seller-shell {
 .seller-nav-item.active { color: var(--palette-hex-ffffff); background: var(--palette-rgba-145-178-154-p18); box-shadow: inset 3px 0 0 var(--seller-jade); }
 .seller-nav-item.is-disabled { color: var(--palette-rgba-240-244-246-p34); cursor: not-allowed; }
 .seller-nav-badge { min-width: 22px; height: 22px; padding: 0 6px; display: grid; place-items: center; border-radius: 999px; background: var(--palette-hex-e8d4b8); color: var(--palette-hex-3d3021); font: 700 11px/1 ui-monospace, SFMono-Regular, Menlo, monospace; }
+.seller-nav-badge.is-attention { min-width: auto; padding-inline: 7px; font-family: inherit; }
 
 .seller-sidebar-footer { margin-top: auto; padding-top: 20px; }
 .seller-market-link { min-height: 44px; display: flex; align-items: center; gap: 8px; padding: 8px 10px; color: var(--palette-rgba-233-237-240-p7); font-size: 13px; }
@@ -458,6 +508,17 @@ html.dark .seller-shell {
 
 .seller-maintenance { gap: 10px; margin: 18px clamp(18px, 3vw, 38px) 0; padding: 13px 16px; border: 1px solid color-mix(in srgb, var(--seller-warning) 45%, var(--seller-border)); border-radius: 12px; color: var(--seller-warning); background: color-mix(in srgb, var(--seller-warning) 9%, var(--seller-surface)); }
 .seller-maintenance p { margin: 2px 0 0; color: var(--seller-muted); font-size: 13px; }
+.seller-fulfillment-gate,
+.seller-fulfillment-load-error { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; margin: 18px clamp(18px, 3vw, 38px) 0; padding: 14px 16px; border: 1px solid color-mix(in srgb, var(--seller-warning) 48%, var(--seller-border)); border-radius: 12px; color: var(--seller-warning); background: color-mix(in srgb, var(--seller-warning) 9%, var(--seller-surface)); }
+.seller-fulfillment-gate strong { display: block; color: var(--seller-ink); font-size: 14px; }
+.seller-fulfillment-gate p,
+.seller-fulfillment-load-error p { margin: 3px 0 0; color: var(--seller-muted); font-size: 13px; line-height: 1.6; }
+.seller-fulfillment-gate a,
+.seller-fulfillment-load-error a { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; padding: 0 14px; border: 1px solid var(--seller-navy); border-radius: 10px; color: var(--palette-hex-ffffff); background: var(--seller-navy); font-size: 13px; font-weight: 700; }
+html.dark .seller-fulfillment-gate a,
+html.dark .seller-fulfillment-load-error a { border-color: var(--seller-jade); color: var(--palette-hex-0d151d); background: var(--seller-jade); }
+.seller-fulfillment-gate a:focus-visible,
+.seller-fulfillment-load-error a:focus-visible { outline: 3px solid var(--seller-jade-strong); outline-offset: 3px; }
 .seller-enforcement { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: start; gap: 12px; margin: 18px clamp(18px, 3vw, 38px) 0; padding: 14px 16px; border: 1px solid color-mix(in srgb, var(--seller-danger) 52%, var(--seller-border)); border-radius: 12px; color: var(--seller-danger); background: color-mix(in srgb, var(--seller-danger) 10%, var(--seller-surface)); }
 .seller-enforcement strong { display: block; font-size: 14px; }
 .seller-enforcement p { max-width: 78ch; margin: 3px 0 0; color: var(--seller-ink); font-size: 13px; line-height: 1.65; }
@@ -492,6 +553,10 @@ html.dark .seller-shell {
   .seller-main { padding: 18px 14px 32px; }
   .seller-view-stage { min-height: calc(100dvh - 114px); }
   .seller-maintenance { margin: 14px 14px 0; }
+  .seller-fulfillment-gate,
+  .seller-fulfillment-load-error { grid-template-columns: auto minmax(0, 1fr); align-items: start; margin: 14px 14px 0; }
+  .seller-fulfillment-gate a,
+  .seller-fulfillment-load-error a { grid-column: 1 / -1; width: 100%; }
   .seller-enforcement { grid-template-columns: auto minmax(0, 1fr); margin: 14px 14px 0; }
   .seller-enforcement a { grid-column: 1 / -1; justify-content: center; }
 }

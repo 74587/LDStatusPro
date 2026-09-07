@@ -3,9 +3,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, reactive } from 'vue'
 import { flushPromises, mount } from '@vue/test-utils'
+import { createPinia, setActivePinia } from 'pinia'
 import { useFulfillmentReminder } from '../src/composables/useFulfillmentReminder'
 import FulfillmentRuleDialog from '../src/components/seller/FulfillmentRuleDialog.vue'
-import SellerFulfillmentPanel from '../src/components/seller/SellerFulfillmentPanel.vue'
 import Publish from '../src/views/Publish.vue'
 import { writeProductPublishDraft, readProductPublishDraft } from '../src/utils/productPublishDraft'
 
@@ -29,7 +29,8 @@ const link = { props: ['to'], template: '<a :href="to"><slot /></a>' }
 const editor = { name: 'ProductEditorForm', props: ['modelValue'], emits: ['update:modelValue'], template: '<section class="editor-stub" />' }
 beforeEach(() => {
   vi.resetAllMocks(); localStorage.clear()
-  m.user = reactive({ currentUser: { id: 18, site: 'linux.do' } })
+  setActivePinia(createPinia())
+  m.user = reactive({ currentUser: { id: 18, site: 'linux.do' }, sessionKey: 'linux.do:18' })
   m.policy.mockResolvedValue(ok({ ...rules })); m.seller.mockResolvedValue(ok(seller())); m.ack.mockResolvedValue(ok(seller()))
   m.categories.mockResolvedValue(ok({ categories: [{ id: 3, name: '工具' }] }))
   m.merchant.mockResolvedValue(ok({ configured: true, isActive: true, isVerified: true }))
@@ -76,7 +77,7 @@ describe('per-flow fulfillment confirmation', () => {
     let resolve
     m.policy.mockReturnValueOnce(new Promise(r => { resolve = r }))
     const r = controller(), pending = r.request()
-    m.user.currentUser.id = 19; expect(await pending).toBe(false)
+    m.user.currentUser.id = 19; m.user.sessionKey = 'linux.do:19'; expect(await pending).toBe(false)
     resolve(ok(rules)); await flushPromises(); expect(r.dialogProps.value.open).toBe(false)
   })
   it('rechecks acceptance and policy version at submission', async () => {
@@ -201,7 +202,7 @@ describe('publish integration', () => {
   })
 })
 
-describe('dialog accessibility and overview', () => {
+describe('dialog accessibility', () => {
   it('requires explicit acceptance, traps focus and restores it after closing', async () => {
     const trigger = document.createElement('button'); document.body.append(trigger); trigger.focus()
     const w = keep(mount(FulfillmentRuleDialog, { attachTo: document.body, props: { open: false, loading: false, busy: false, error: '', state: seller({ accepted: false }), policy: rules } }))
@@ -214,15 +215,5 @@ describe('dialog accessibility and overview', () => {
     dialog.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); expect(w.emitted('cancel')).toHaveLength(1)
     await w.setProps({ open: false }); await flushPromises(); expect(document.body.style.overflow).toBe(''); expect(document.activeElement).toBe(trigger)
     await w.setProps({ open: true }); await flushPromises(); expect(visibleDialog().querySelector('input').checked).toBe(false)
-  })
-  it('hides healthy overview alerts and displays actionable records or restrictions', async () => {
-    const w = keep(mount(SellerFulfillmentPanel, { props: { placement: 'summary', state: seller() }, global: { stubs: { RouterLink: link } } }))
-    expect(w.find('aside').exists()).toBe(false); await w.setProps({ state: seller({ validCount: 2 }) }); expect(w.text()).toContain('再有 1 笔')
-    await w.setProps({ state: seller({ activeRestriction: restriction }) }); expect(w.text()).toContain('新增交易受限至'); expect(w.text()).toContain('已有订单仍可交付')
-  })
-  it('keeps history and acknowledgement behind a collapsed bottom entry', () => {
-    const w = keep(mount(SellerFulfillmentPanel, { props: { placement: 'details', state: seller({ accepted: false, history: [{ id: 1, orderNo: 'ORDER-1', occurredAt: '2026-09-01T00:00:00Z', revokedAt: '2026-09-02T00:00:00Z', revokeReason: '已核实误判' }] }) }, global: { stubs: { RouterLink: link } } }))
-    expect(w.find('details').element.open).toBe(false); expect(w.text()).toContain('阅读并确认发货规则')
-    expect(w.text()).toContain('已撤销'); expect(w.text()).toContain('已核实误判'); expect(w.find('.fulfillment-history').element.open).toBe(false)
   })
 })
