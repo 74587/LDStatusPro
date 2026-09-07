@@ -20,7 +20,8 @@ import {
   getRefundErrorMessage,
   getRefundReasonLabel,
   getRefundStatusMeta,
-  validateRefundForm
+  validateRefundForm,
+  validateSellerRejectionReason
 } from '@/utils/refund'
 
 type RefundRecord = Refund & Record<string, unknown>
@@ -76,6 +77,7 @@ export function useOrderRefund(options: UseOrderRefundOptions) {
   const sellerActionMode = ref('')
   const sellerMessage = ref('')
   const sellerActionError = ref('')
+  const sellerMessageInput = ref<HTMLTextAreaElement | null>(null)
   const sellerSubmitting = ref(false)
   const form = reactive<RefundFormState>({ reasonCode: '', reasonDetail: '', buyerContactedSeller: false })
   let loadRequestId = 0
@@ -108,6 +110,10 @@ export function useOrderRefund(options: UseOrderRefundOptions) {
   const canSellerContact = computed(() => !isBuyer.value && (refund.value?.allowedActions?.contact ?? ['requested', 'negotiating'].includes(String(refund.value?.status || ''))))
   const showSellerActions = computed(() => canSellerDecide.value || canSellerReject.value || canSellerContact.value)
   const refundSourceLabel = computed(() => ({ system: '系统超时保障', seller: '卖家主动退款', buyer: '买家售后申请' }[String(refund.value?.source || 'buyer')] || '退款处理'))
+  const sellerResponseLabel = computed(() => refund.value?.status === 'rejected'
+    || refund.value?.events?.some(event => event.action === 'rejected')
+    ? '卖家拒绝理由'
+    : '卖家说明')
   const contactActionLabel = computed(() => refund.value?.status === 'requested' ? '标记为协商中' : '补充协商记录')
   const buyerGuidance = computed(() => {
     const guidance: Record<string, { title: string; description: string; tone: string }> = {
@@ -208,6 +214,13 @@ export function useOrderRefund(options: UseOrderRefundOptions) {
     sellerActionError.value = ''
   }
 
+  function validateSellerActionField() {
+    sellerActionError.value = sellerActionMode.value === 'reject'
+      ? validateSellerRejectionReason(sellerMessage.value)
+      : ''
+    return !sellerActionError.value
+  }
+
   async function applySellerResult(result: Awaited<ReturnType<typeof approveRefundRequest>>, successMessage: string) {
     if (!result.success) {
       const message = getRefundErrorMessage(result, '处理退款申请失败，请稍后重试')
@@ -234,13 +247,14 @@ export function useOrderRefund(options: UseOrderRefundOptions) {
 
   async function submitSellerAction() {
     if (!sellerActionMode.value || sellerSubmitting.value) return
-    if (sellerActionMode.value === 'reject' && sellerMessage.value.trim().length < 5) {
-      sellerActionError.value = '请至少填写 5 个字，向买家说明拒绝原因'
+    if (!validateSellerActionField()) {
+      await nextTick()
+      sellerMessageInput.value?.focus()
       return
     }
     if (sellerActionMode.value === 'reject') {
       const confirmed = await dialog.confirm(
-        '拒绝后，买家将在订单页看到你的说明，并可前往 LINUX DO Credit 发起争议。',
+        '拒绝后，你填写的拒绝理由将展示给买家；买家也可前往 LINUX DO Credit 发起争议。',
         { title: '确认拒绝退款申请', confirmText: '确认拒绝', cancelText: '继续协商' }
       )
       if (!confirmed) return
@@ -302,10 +316,11 @@ export function useOrderRefund(options: UseOrderRefundOptions) {
   return {
     autoRefreshPaused, loading, loadError, refundState, refund, eligibility, formOpen, submitting, errors, errorSummary,
     sellerActionMode, sellerMessage, sellerActionError, sellerSubmitting, form, orderNo, isBuyer,
+    sellerMessageInput, sellerResponseLabel,
     canApplyRefund, refundAvailabilityMessage, disputeGuideUrl, statusMeta, stages, refundAmount,
     counterpartyMessageUrl, canSellerDecide, canSellerReject, canSellerContact, showSellerActions, contactActionLabel, refundSourceLabel,
     buyerGuidance, loadRefund, toggleForm, closeForm, validateField, submitRefund, openSellerAction,
-    closeSellerAction, submitSellerAction, approveRefund, proactivelyRefund, canProactivelyRefund, REFUND_REASON_OPTIONS, formatRefundDate,
+    closeSellerAction, validateSellerActionField, submitSellerAction, approveRefund, proactivelyRefund, canProactivelyRefund, REFUND_REASON_OPTIONS, formatRefundDate,
     getRefundReasonLabel
   }
 }

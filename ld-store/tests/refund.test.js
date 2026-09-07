@@ -8,7 +8,8 @@ import {
   getRefundEventMeta,
   getRefundReasonLabel,
   getRefundStatusMeta,
-  validateRefundForm
+  validateRefundForm,
+  validateSellerRejectionReason
 } from '../src/utils/refund'
 
 const refundPanelSource = readFileSync(new URL('../src/components/order/OrderRefundPanel.vue', import.meta.url), 'utf8')
@@ -45,6 +46,23 @@ describe('订单退款买家流程', () => {
     })).toEqual({})
     expect(validateRefundForm({ reasonCode: 'other', reasonDetail: 'a'.repeat(501) }).reasonDetail)
       .toBe('问题说明不能超过 500 个字')
+  })
+
+  it('校验卖家拒绝理由为去空格后的 5-500 字', () => {
+    expect(validateSellerRejectionReason('   ')).toBe('请至少填写 5 个字，向买家说明拒绝原因')
+    expect(validateSellerRejectionReason('不退')).toBe('请至少填写 5 个字，向买家说明拒绝原因')
+    expect(validateSellerRejectionReason(' 理由刚好五 ')).toBe('')
+    expect(validateSellerRejectionReason('a'.repeat(500))).toBe('')
+    expect(validateSellerRejectionReason('a'.repeat(501))).toBe('拒绝理由不能超过 500 个字')
+  })
+
+  it('明确拒绝理由必填、可见范围与错误焦点', () => {
+    expect(refundPanelSource).toContain('拒绝理由（必填）')
+    expect(refundPanelSource).toContain('refund-seller-message-hint')
+    expect(refundPanelSource).toContain('@blur="validateSellerActionField"')
+    expect(refundControllerSource).toContain('sellerMessageInput.value?.focus()')
+    expect(refundControllerSource).toContain('你填写的拒绝理由将展示给买家')
+    expect(refundControllerSource).toContain("? '卖家拒绝理由'")
   })
 
   it('未申请时不展示虚假进度，申请后准确标记当前阶段', () => {

@@ -232,7 +232,7 @@
               </dd>
             </div>
             <div class="wide"><dt>问题说明</dt><dd>{{ refund.reasonDetail }}</dd></div>
-            <div v-if="refund.sellerResponse" class="wide refund-seller-response"><dt>卖家说明</dt><dd>{{ refund.sellerResponse }}</dd></div>
+            <div v-if="refund.sellerResponse" class="wide refund-seller-response"><dt>{{ sellerResponseLabel }}</dt><dd>{{ refund.sellerResponse }}</dd></div>
           </dl>
           </section>
 
@@ -273,16 +273,25 @@
           </div>
 
           <form v-if="sellerActionMode" class="refund-seller-form" @submit.prevent="submitSellerAction">
-            <label for="refund-seller-message">{{ sellerActionMode === 'reject' ? '拒绝原因' : '协商备注（可选）' }}</label>
+            <div class="refund-field__label-row">
+              <label for="refund-seller-message">{{ sellerActionMode === 'reject' ? '拒绝理由（必填）' : '协商备注（可选）' }}</label>
+              <span v-if="sellerActionMode === 'reject'">{{ sellerMessage.length }}/500</span>
+            </div>
             <textarea
               id="refund-seller-message"
+              ref="sellerMessageInput"
               v-model.trim="sellerMessage"
               rows="4"
+              :required="sellerActionMode === 'reject'"
+              :minlength="sellerActionMode === 'reject' ? 5 : undefined"
               maxlength="500"
               :placeholder="sellerActionMode === 'reject' ? '请向买家明确说明未同意退款的原因（至少 5 个字）' : '可记录已经沟通的内容和下一步约定'"
               :aria-invalid="Boolean(sellerActionError)"
-              :aria-describedby="sellerActionError ? 'refund-seller-action-error' : undefined"
+              :aria-required="sellerActionMode === 'reject' ? 'true' : undefined"
+              :aria-describedby="sellerActionMode === 'reject' ? (sellerActionError ? 'refund-seller-message-hint refund-seller-action-error' : 'refund-seller-message-hint') : (sellerActionError ? 'refund-seller-action-error' : undefined)"
+              @blur="validateSellerActionField"
             ></textarea>
+            <p v-if="sellerActionMode === 'reject'" id="refund-seller-message-hint" class="refund-field__help">请填写 5–500 字的具体依据；提交后买家可在订单详情和通知中查看。</p>
             <p v-if="sellerActionError" id="refund-seller-action-error" class="refund-field__error" role="alert">{{ sellerActionError }}</p>
             <div class="refund-form__actions">
               <button type="button" class="refund-btn refund-btn--secondary" :disabled="sellerSubmitting" @click="closeSellerAction">取消</button>
@@ -355,6 +364,7 @@ const {
   sellerActionMode,
   sellerMessage,
   sellerActionError,
+  sellerMessageInput,
   sellerSubmitting,
   form,
   isBuyer,
@@ -371,6 +381,7 @@ const {
   showSellerActions,
   contactActionLabel,
   refundSourceLabel,
+  sellerResponseLabel,
   buyerGuidance,
   loadRefund,
   toggleForm,
@@ -379,6 +390,7 @@ const {
   submitRefund,
   openSellerAction,
   closeSellerAction,
+  validateSellerActionField,
   submitSellerAction,
   approveRefund,
   REFUND_REASON_OPTIONS,

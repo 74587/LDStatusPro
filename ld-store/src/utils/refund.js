@@ -234,6 +234,13 @@ export function validateRefundForm(form = {}) {
   return errors
 }
 
+export function validateSellerRejectionReason(value) {
+  const reason = String(value || '').trim()
+  if (reason.length < 5) return '请至少填写 5 个字，向买家说明拒绝原因'
+  if (reason.length > 500) return '拒绝理由不能超过 500 个字'
+  return ''
+}
+
 export function getRefundErrorMessage(result, fallback = '操作失败，请稍后重试') {
   if (typeof result?.error === 'string') return result.error
   if (result?.error?.message) return result.error.message
