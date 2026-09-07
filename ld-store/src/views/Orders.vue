@@ -985,6 +985,8 @@ function getStatusText(status, orderData) {
     }
     return buyMap[status] || status || '未知'
   }
+  const paymentState = orderData?.payment_init_status || orderData?.paymentInitStatus
+  if (status === 'pending' && ['pending', 'creating', 'unknown'].includes(paymentState)) return paymentState === 'unknown' ? '支付确认中' : '正在创建'
   return orderStatusLabel(status)
 }
 
