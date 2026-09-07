@@ -792,13 +792,14 @@ async function submitOrder() {
 async function finishCreatedOrder(order, preparedWindow = null) {
   if (!checkoutActive) { cleanupPreparedTab(preparedWindow); return }
   try {
-    if (order.paymentUrl && preparedWindow && !preparedWindow.closed) {
+    if (order.paymentUrl && !['cancelled', 'expired', 'paid', 'delivered', 'completed'].includes(order.status) && preparedWindow && !preparedWindow.closed) {
       const { popup, isPopup } = openPaymentPopup(order.paymentUrl, preparedWindow)
       if (!isPopup) cleanupPreparedTab(preparedWindow)
       if (isPopup && popup) watchPaymentPopup(popup, () => toast.info('支付窗口已关闭，可在订单详情检查支付状态'))
     } else {
       cleanupPreparedTab(preparedWindow)
-      if (order.paymentUrl) toast.info('订单已创建，请在订单详情继续支付')
+      if (['cancelled', 'expired'].includes(order.status)) toast.info('本次订单已取消，可重新确认商品后下单')
+      else if (order.paymentUrl) toast.info('订单已创建，请在订单详情继续支付')
       else if (['pending', 'creating', 'unknown'].includes(order.paymentState)) toast.info('订单已保存，支付结果确认中，请勿重复兑换')
     }
   } catch {
@@ -808,7 +809,7 @@ async function finishCreatedOrder(order, preparedWindow = null) {
   try {
     await router.replace({ name: 'OrderDetail', params: { id: order.orderNo }, query: { role: 'buyer' } })
     if (router.currentRoute.value.name === 'OrderDetail') {
-      if (!['pending', 'creating', 'unknown'].includes(order.paymentState)) submission.complete()
+      if (['cancelled', 'expired', 'paid', 'delivered', 'completed'].includes(order.status) || !['pending', 'creating', 'unknown'].includes(order.paymentState)) submission.complete()
       checkoutStore.clearCheckout(productId.value)
     }
   } catch {
@@ -819,7 +820,11 @@ async function finishCreatedOrder(order, preparedWindow = null) {
 async function recoverSubmission(retry = false) {
   const result = await submission.recover(retry)
   if (!checkoutActive) return
-  if (result.success) await finishCreatedOrder(result.data)
+  if (result.success && ['cancelled', 'expired'].includes(result.data.status)) {
+    submission.complete()
+    toast.info('原订单已取消，请重新确认后提交')
+    await initializeCheckout()
+  } else if (result.success) await finishCreatedOrder(result.data)
   else if (!pendingSubmission.value) {
     submissionError.value = result.error || '本单需要重新确认，请核对最新金额。'
     await initializeCheckout()

@@ -67,3 +67,19 @@ describe('checkout result recovery', () => {
     controller.complete()
   })
 })
+
+it('stops recovering a cancelled unknown intent until the user explicitly submits again', async () => {
+  const { controller, create, lookup } = setup()
+  create.mockResolvedValueOnce({ success: true, status: 200, data: { ...order, status: 'pending', paymentState: 'unknown' } })
+  await controller.submit(input)
+  const oldToken = controller.pending.value?.token
+  lookup.mockResolvedValueOnce({ success: true, status: 200, data: { exists: true, order: { ...order, status: 'cancelled', paymentState: 'unknown' } } })
+  await controller.recover()
+  await controller.recover(true)
+  expect(lookup).toHaveBeenCalledTimes(1)
+  expect(create).toHaveBeenCalledTimes(1)
+  controller.complete()
+  await controller.submit(input)
+  expect(controller.pending.value?.token).not.toBe(oldToken)
+  controller.complete()
+})

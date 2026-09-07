@@ -302,10 +302,15 @@
           </div>
         </div>
 
+        <div v-if="currentRole === 'buyer' && ['cancelled', 'expired'].includes(order.status) && productDetailPath" class="actions">
+          <button type="button" class="refresh-btn" @click="router.push(productDetailPath)">重新选购并下单</button>
+        </div>
         <!-- 操作按钮 -->
         <div class="actions" v-if="showActions">
           <p v-if="paymentConfirming" class="maintenance-action-hint" role="status" aria-live="polite">
-            订单已保存，支付结果确认中。页面会自动更新，请勿重复兑换；确认完成后可继续支付。
+            {{ (order?.payment_init_status || order?.paymentInitStatus) === 'creating' ? '正在创建支付，请稍候。' : '支付结果确认中，请勿重复兑换。' }}
+            <span v-if="order?.paymentResolutionDeadline">预计在 {{ new Date(order.paymentResolutionDeadline).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }) }} 前后完成核查；未确认支付的订单将自动取消。</span>
+            页面会自动更新。
           </p>
           <div class="actions-row">
             <button
@@ -478,13 +483,14 @@ const showActions = computed(() => {
   return order.value?.status === 'pending'
 })
 
-const paymentConfirming = computed(() => ['pending', 'creating', 'unknown'].includes(
+const paymentConfirming = computed(() => order.value?.status === 'pending' && ['pending', 'creating', 'unknown'].includes(
   order.value?.payment_init_status || order.value?.paymentInitStatus || ''
 ))
 
 const canRepay = computed(() => {
   return !isPaymentMaintenanceBlocked.value
     && !paymentConfirming.value
+    && !!(order.value?.payment_url || order.value?.paymentUrl)
     && currentRole.value === 'buyer'
     && order.value?.status === 'pending'
     && isPlatformOrder(order.value)
@@ -722,6 +728,7 @@ function getStatusTimeLabel(orderData) {
 
 // 状态文字（paid 即「待发货」：已支付未发货，与列表待发货筛选一致）
 function getStatusText(status) {
+  if (status === 'pending' && paymentConfirming.value) return (order.value?.payment_init_status || order.value?.paymentInitStatus) === 'creating' ? '正在创建' : '支付确认中'
   return orderStatusLabel(status)
 }
 
