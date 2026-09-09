@@ -8,7 +8,7 @@ import { validateServiceResult, withServiceFailure } from '@/services/serviceCon
 
 export async function fetchShopDetailRequest(shopId: string | number) {
   return withServiceFailure(async () => validateServiceResult(
-    await api.get(`/api/shops/${shopId}`),
+    await api.get(`/api/shops/${shopId}`, { auth: 'none' }),
     ShopDetailResponseSchema,
     '/api/shops/:id',
     'ShopDetailResponse'
@@ -17,7 +17,7 @@ export async function fetchShopDetailRequest(shopId: string | number) {
 
 export async function fetchMyShopRequest() {
   return withServiceFailure(async () => validateServiceResult(
-    await api.get('/api/shops/my'),
+    await api.get('/api/shops/my', { auth: 'required' }),
     MyShopResponseSchema,
     '/api/shops/my',
     'MyShopResponse'
@@ -26,7 +26,7 @@ export async function fetchMyShopRequest() {
 
 export async function createShopRequest(payload: Record<string, JsonValue>) {
   return withServiceFailure(async () => validateServiceResult(
-    await api.post('/api/shops', payload),
+    await api.post('/api/shops', payload, { auth: 'required' }),
     ShopMutationResponseSchema,
     '/api/shops',
     'ShopMutationResponse'
@@ -35,7 +35,7 @@ export async function createShopRequest(payload: Record<string, JsonValue>) {
 
 export async function updateShopRequest(payload: Record<string, JsonValue>) {
   return withServiceFailure(async () => validateServiceResult(
-    await api.put('/api/shops/my', payload),
+    await api.put('/api/shops/my', payload, { auth: 'required' }),
     ShopMutationResponseSchema,
     '/api/shops/my',
     'ShopMutationResponse'
@@ -44,7 +44,7 @@ export async function updateShopRequest(payload: Record<string, JsonValue>) {
 
 export async function offlineShopRequest() {
   return withServiceFailure(async () => validateServiceResult(
-    await api.post('/api/shops/my/offline'),
+    await api.post('/api/shops/my/offline', undefined, { auth: 'required' }),
     ShopMutationResponseSchema,
     '/api/shops/my/offline',
     'ShopMutationResponse'

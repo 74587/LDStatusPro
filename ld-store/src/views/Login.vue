@@ -125,7 +125,7 @@ async function handleLogin() {
     
     // 获取 OAuth 登录地址
     // 后端使用 /api/auth/init 端点，支持 site 和 return_url 参数
-    const result = await api.get(`/api/auth/init?site=linux.do&return_url=${encodeURIComponent(returnUrl)}`)
+    const result = await api.get(`/api/auth/init?site=linux.do&return_url=${encodeURIComponent(returnUrl)}`, { auth: 'none' })
     
     // 返回格式: { success: true, data: { auth_url: "...", state: "..." } }
     const authUrl = result.data?.auth_url || result.auth_url

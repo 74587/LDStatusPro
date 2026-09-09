@@ -23,7 +23,7 @@ interface TopServiceOrderPayload extends Record<string, string | number> {
 
 export async function fetchTopServiceOptionsRequest() {
   return withServiceFailure(async () => validateServiceResult(
-    await api.get('/api/shop/top-service/options'),
+    await api.get('/api/shop/top-service/options', { auth: 'required' }),
     TopServiceOptionsResponseSchema,
     '/api/shop/top-service/options',
     'TopServiceOptionsResponse'
@@ -32,7 +32,7 @@ export async function fetchTopServiceOptionsRequest() {
 
 export async function fetchTopServiceBoardRequest() {
   return withServiceFailure(async () => validateServiceResult(
-    await api.get('/api/shop/top-service/board'),
+    await api.get('/api/shop/top-service/board', { auth: 'required' }),
     TopServiceBoardResponseSchema,
     '/api/shop/top-service/board',
     'TopServiceBoardResponse'
@@ -49,7 +49,7 @@ export async function fetchTopServiceOrdersRequest(options: TopServiceOrderListO
   params.set('pageSize', String(pageSize))
   return withServiceFailure(async () => {
     const result = validateServiceResult(
-      await api.get(`/api/shop/top-service/orders?${params.toString()}`, { signal: options.signal }),
+      await api.get(`/api/shop/top-service/orders?${params.toString()}`, { auth: 'required', signal: options.signal }),
       TopServiceOrdersResponseSchema,
       '/api/shop/top-service/orders',
       'TopServiceOrdersResponse'
@@ -73,7 +73,7 @@ export async function fetchTopServiceOrdersRequest(options: TopServiceOrderListO
 
 export async function createTopServiceOrderRequest(payload: TopServiceOrderPayload) {
   return withServiceFailure(async () => validateServiceResult(
-    await api.post('/api/shop/top-service/orders', payload),
+    await api.post('/api/shop/top-service/orders', payload, { auth: 'required' }),
     TopServiceMutationResponseSchema,
     '/api/shop/top-service/orders',
     'TopServiceMutationResponse'
@@ -82,7 +82,7 @@ export async function createTopServiceOrderRequest(payload: TopServiceOrderPaylo
 
 export async function refreshTopServiceOrderRequest(orderNo: string) {
   return withServiceFailure(async () => validateServiceResult(
-    await api.post(`/api/shop/top-service/orders/${encodeURIComponent(orderNo)}/refresh`),
+    await api.post(`/api/shop/top-service/orders/${encodeURIComponent(orderNo)}/refresh`, undefined, { auth: 'required' }),
     TopServiceMutationResponseSchema,
     '/api/shop/top-service/orders/:orderNo/refresh',
     'TopServiceMutationResponse'
@@ -91,7 +91,7 @@ export async function refreshTopServiceOrderRequest(orderNo: string) {
 
 export async function getTopServicePaymentUrlRequest(orderNo: string) {
   return withServiceFailure(async () => validateServiceResult(
-    await api.get(`/api/shop/top-service/orders/${encodeURIComponent(orderNo)}/payment-url`),
+    await api.get(`/api/shop/top-service/orders/${encodeURIComponent(orderNo)}/payment-url`, { auth: 'required' }),
     TopServiceMutationResponseSchema,
     '/api/shop/top-service/orders/:orderNo/payment-url',
     'TopServiceMutationResponse'
@@ -100,7 +100,7 @@ export async function getTopServicePaymentUrlRequest(orderNo: string) {
 
 export async function cancelTopServiceOrderRequest(orderNo: string) {
   return withServiceFailure(async () => validateServiceResult(
-    await api.post(`/api/shop/top-service/orders/${encodeURIComponent(orderNo)}/cancel`),
+    await api.post(`/api/shop/top-service/orders/${encodeURIComponent(orderNo)}/cancel`, undefined, { auth: 'required' }),
     TopServiceMutationResponseSchema,
     '/api/shop/top-service/orders/:orderNo/cancel',
     'TopServiceMutationResponse'

@@ -112,7 +112,7 @@ function validateProductListResult(result: ApiResult<unknown>): ApiResult<Produc
 
 export async function fetchCategoriesRequest() {
   return validateApiResult(
-    await api.get('/api/shop/categories'),
+    await api.get('/api/shop/categories', { auth: 'optional' }),
     CategoriesResponseSchema,
     { endpoint: '/api/shop/categories', schemaName: 'CategoriesResponse' }
   )
@@ -173,7 +173,7 @@ export async function fetchProductsRequest(options: CatalogListOptions = {}): Pr
   }
 
   const result = validateProductListResult(
-    await api.get(`/api/shop/products?${params.toString()}`, { signal: options.signal })
+    await api.get(`/api/shop/products?${params.toString()}`, { auth: 'optional', signal: options.signal })
   )
   if (rotating && result?.success) rememberCatalogSlate(options, result.data?.rankingContext?.slateId)
   if (cursor && cursorRetry && result?.status === 409 && result?.errorCode === 'RANKING_CURSOR_STALE') {
@@ -188,7 +188,7 @@ export async function fetchProductsRequest(options: CatalogListOptions = {}): Pr
 
 export async function fetchProductRequest(id: string | number) {
   return validateApiResult(
-    await api.get(`/api/shop/products/${id}`),
+    await api.get(`/api/shop/products/${id}`, { auth: 'optional' }),
     ProductDetailResponseSchema,
     { endpoint: '/api/shop/products/:id', schemaName: 'ProductDetailResponse' }
   )
@@ -196,7 +196,7 @@ export async function fetchProductRequest(id: string | number) {
 
 export async function fetchExternalProductLinkRequest(id: string | number) {
   return validateApiResult(
-    await api.get(`/api/shop/products/${encodeURIComponent(String(id))}/external-link`),
+    await api.get(`/api/shop/products/${encodeURIComponent(String(id))}/external-link`, { auth: 'optional' }),
     ExternalProductLinkResponseSchema,
     { endpoint: '/api/shop/products/:id/external-link', schemaName: 'ExternalProductLinkResponse' }
   )
@@ -210,7 +210,7 @@ export async function fetchMerchantProfileRequest(username: string) {
 
   try {
     return validateApiResult(
-      await api.get(`/api/shop/merchants/${encodeURIComponent(safeUsername)}`),
+      await api.get(`/api/shop/merchants/${encodeURIComponent(safeUsername)}`, { auth: 'optional' }),
       MerchantProfileResponseSchema,
       { endpoint: '/api/shop/merchants/:username', schemaName: 'MerchantProfileResponse' }
     )
@@ -228,7 +228,7 @@ export async function reportProductRequest(id: string | number, payload: string 
       }
   try {
     return validateApiResult(
-      await api.post(`/api/shop/products/${id}/report`, requestPayload as JsonValue),
+      await api.post(`/api/shop/products/${id}/report`, requestPayload as JsonValue, { auth: 'required' }),
       ProductReportCreatedResponseSchema,
       { endpoint: '/api/shop/products/:id/report', schemaName: 'ProductReportCreatedResponse' }
     )
@@ -246,7 +246,7 @@ export async function fetchMyReportsRequest(options: PagedRequestOptions = {}) {
 
   try {
     return validateApiResult(
-      await api.get(`/api/shop/my-reports?${params.toString()}`),
+      await api.get(`/api/shop/my-reports?${params.toString()}`, { auth: 'required' }),
       ProductReportsResponseSchema,
       { endpoint: '/api/shop/my-reports', schemaName: 'ProductReportsResponse' }
     )
@@ -258,7 +258,7 @@ export async function fetchMyReportsRequest(options: PagedRequestOptions = {}) {
 export async function fetchMyReportDetailRequest(reportId: string | number) {
   try {
     return validateApiResult(
-      await api.get(`/api/shop/my-reports/${reportId}`),
+      await api.get(`/api/shop/my-reports/${reportId}`, { auth: 'required' }),
       ProductReportDetailResponseSchema,
       { endpoint: '/api/shop/my-reports/:id', schemaName: 'ProductReportDetailResponse' }
     )
@@ -273,7 +273,7 @@ export async function fetchProductCommentsRequest(productId: string | number, op
 
   try {
     return validateApiResult(
-      await api.get(`/api/shop/products/${productId}/comments?page=${page}&pageSize=${pageSize}`, { signal: options.signal }),
+      await api.get(`/api/shop/products/${productId}/comments?page=${page}&pageSize=${pageSize}`, { auth: 'optional', signal: options.signal }),
       ProductCommentsResponseSchema,
       { endpoint: '/api/shop/products/:id/comments', schemaName: 'ProductCommentsResponse' }
     )
@@ -293,7 +293,7 @@ export async function createProductCommentRequest(productId: string | number, pa
       }
   try {
     return validateApiResult(
-      await api.post(`/api/shop/products/${productId}/comments`, requestPayload),
+      await api.post(`/api/shop/products/${productId}/comments`, requestPayload, { auth: 'required' }),
       CommentCreatedResponseSchema,
       { endpoint: '/api/shop/products/:id/comments', schemaName: 'CommentCreatedResponse' }
     )
@@ -305,7 +305,7 @@ export async function createProductCommentRequest(productId: string | number, pa
 export async function deleteProductCommentRequest(commentId: string | number) {
   try {
     return validateApiResult(
-      await api.delete(`/api/shop/comments/${commentId}`),
+      await api.delete(`/api/shop/comments/${commentId}`, { auth: 'required' }),
       ActionAcknowledgementSchema,
       { endpoint: '/api/shop/comments/:id', schemaName: 'ActionAcknowledgement' }
     )
@@ -317,7 +317,7 @@ export async function deleteProductCommentRequest(commentId: string | number) {
 export async function reportProductCommentRequest(commentId: string | number, reason: string) {
   try {
     return validateApiResult(
-      await api.post(`/api/shop/comments/${commentId}/report`, { reason }),
+      await api.post(`/api/shop/comments/${commentId}/report`, { reason }, { auth: 'required' }),
       ProductReportCreatedResponseSchema,
       { endpoint: '/api/shop/comments/:id/report', schemaName: 'CommentReportCreatedResponse' }
     )
@@ -329,7 +329,7 @@ export async function reportProductCommentRequest(commentId: string | number, re
 export async function voteProductCommentRequest(commentId: string | number, voteType = '') {
   try {
     return validateApiResult(
-      await api.post(`/api/shop/comments/${commentId}/vote`, { voteType }),
+      await api.post(`/api/shop/comments/${commentId}/vote`, { voteType }, { auth: 'required' }),
       CommentVoteResponseSchema,
       { endpoint: '/api/shop/comments/:id/vote', schemaName: 'CommentVoteResponse' }
     )
@@ -344,7 +344,7 @@ export async function fetchProductCommentRepliesRequest(commentId: string | numb
 
   try {
     return validateApiResult(
-      await api.get(`/api/shop/comments/${commentId}/replies?page=${page}&pageSize=${pageSize}`, { signal: options.signal }),
+      await api.get(`/api/shop/comments/${commentId}/replies?page=${page}&pageSize=${pageSize}`, { auth: 'optional', signal: options.signal }),
       CommentRepliesResponseSchema,
       { endpoint: '/api/shop/comments/:id/replies', schemaName: 'CommentRepliesResponse' }
     )
@@ -356,7 +356,7 @@ export async function fetchProductCommentRepliesRequest(commentId: string | numb
 export async function createProductCommentReplyRequest(commentId: string | number, content: string) {
   try {
     return validateApiResult(
-      await api.post(`/api/shop/comments/${commentId}/replies`, { content }),
+      await api.post(`/api/shop/comments/${commentId}/replies`, { content }, { auth: 'required' }),
       CommentReplyCreatedResponseSchema,
       { endpoint: '/api/shop/comments/:id/replies', schemaName: 'CommentReplyCreatedResponse' }
     )
@@ -368,7 +368,7 @@ export async function createProductCommentReplyRequest(commentId: string | numbe
 export async function addFavoriteRequest(productId: string | number) {
   try {
     return validateApiResult(
-      await api.post(`/api/shop/products/${productId}/favorite`),
+      await api.post(`/api/shop/products/${productId}/favorite`, undefined, { auth: 'required' }),
       ActionAcknowledgementSchema,
       { endpoint: '/api/shop/products/:id/favorite', schemaName: 'ActionAcknowledgement' }
     )
@@ -380,7 +380,7 @@ export async function addFavoriteRequest(productId: string | number) {
 export async function removeFavoriteRequest(productId: string | number) {
   try {
     return validateApiResult(
-      await api.delete(`/api/shop/products/${productId}/favorite`),
+      await api.delete(`/api/shop/products/${productId}/favorite`, { auth: 'required' }),
       ActionAcknowledgementSchema,
       { endpoint: '/api/shop/products/:id/favorite', schemaName: 'ActionAcknowledgement' }
     )
@@ -392,7 +392,7 @@ export async function removeFavoriteRequest(productId: string | number) {
 export async function blockProductRequest(productId: string | number) {
   try {
     return validateApiResult(
-      await api.post(`/api/shop/products/${productId}/block`),
+      await api.post(`/api/shop/products/${productId}/block`, undefined, { auth: 'required' }),
       ActionAcknowledgementSchema,
       { endpoint: '/api/shop/products/:id/block', schemaName: 'ActionAcknowledgement' }
     )
@@ -404,7 +404,7 @@ export async function blockProductRequest(productId: string | number) {
 export async function unblockProductRequest(productId: string | number) {
   try {
     return validateApiResult(
-      await api.delete(`/api/shop/products/${productId}/block`),
+      await api.delete(`/api/shop/products/${productId}/block`, { auth: 'required' }),
       ActionAcknowledgementSchema,
       { endpoint: '/api/shop/products/:id/block', schemaName: 'ActionAcknowledgement' }
     )
@@ -416,7 +416,7 @@ export async function unblockProductRequest(productId: string | number) {
 export async function getProductRestockSubscriptionStatusRequest(productId: string | number) {
   try {
     return validateApiResult(
-      await api.get(`/api/shop/products/${productId}/restock-subscription`),
+      await api.get(`/api/shop/products/${productId}/restock-subscription`, { auth: 'required' }),
       RestockSubscriptionResponseSchema,
       { endpoint: '/api/shop/products/:id/restock-subscription', schemaName: 'RestockSubscriptionResponse' }
     )
@@ -428,7 +428,7 @@ export async function getProductRestockSubscriptionStatusRequest(productId: stri
 export async function subscribeProductRestockRequest(productId: string | number) {
   try {
     return validateApiResult(
-      await api.post(`/api/shop/products/${productId}/restock-subscription`),
+      await api.post(`/api/shop/products/${productId}/restock-subscription`, undefined, { auth: 'required' }),
       RestockSubscriptionResponseSchema,
       { endpoint: '/api/shop/products/:id/restock-subscription', schemaName: 'RestockSubscriptionResponse' }
     )
@@ -455,7 +455,7 @@ export async function fetchFavoritesRequest(options: PagedRequestOptions & { sea
   }
 
   return validateApiResult(
-    await api.get(`/api/shop/favorites?${params.toString()}`),
+    await api.get(`/api/shop/favorites?${params.toString()}`, { auth: 'required' }),
     ProductCollectionResponseSchema,
     { endpoint: '/api/shop/favorites', schemaName: 'ProductCollectionResponse' }
   )
@@ -471,7 +471,7 @@ export async function fetchBlockedProductsRequest(options: PagedRequestOptions &
   }
 
   return validateApiResult(
-    await api.get(`/api/shop/blocked-products?${params.toString()}`),
+    await api.get(`/api/shop/blocked-products?${params.toString()}`, { auth: 'required' }),
     ProductCollectionResponseSchema,
     { endpoint: '/api/shop/blocked-products', schemaName: 'ProductCollectionResponse' }
   )
@@ -479,7 +479,7 @@ export async function fetchBlockedProductsRequest(options: PagedRequestOptions &
 
 export async function fetchPublicStatsRequest() {
   return validateApiResult(
-    await api.get('/api/shop/stats'),
+    await api.get('/api/shop/stats', { auth: 'none' }),
     PublicStatsResponseSchema,
     { endpoint: '/api/shop/stats', schemaName: 'PublicStatsResponse' }
   )
@@ -487,7 +487,7 @@ export async function fetchPublicStatsRequest() {
 
 export async function fetchUserDashboardRequest() {
   return validateApiResult(
-    await api.get('/api/shop/user/dashboard'),
+    await api.get('/api/shop/user/dashboard', { auth: 'required' }),
     UserDashboardResponseSchema,
     { endpoint: '/api/shop/user/dashboard', schemaName: 'UserDashboardResponse' }
   )

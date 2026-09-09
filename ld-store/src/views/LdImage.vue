@@ -529,7 +529,7 @@ function isCurrentTier(tier) {
 async function loadPriceInfo() {
   priceLoading.value = true
   try {
-    const result = await api.get('/api/image/price-info')
+    const result = await api.get('/api/image/price-info', { auth: 'none' })
     if (result.success && result.data) {
       priceInfo.value = result.data
     }
@@ -639,7 +639,7 @@ async function startUpload() {
   // 免费用户：获取免费凭证后直接上传
   if (isFreeUser.value) {
     try {
-      const result = await api.get('/api/image/free-credential')
+      const result = await api.get('/api/image/free-credential', { auth: 'none' })
       if (result.success && result.data?.credential) {
         uploadCredential.value = result.data.credential
         await doUpload()
@@ -660,7 +660,7 @@ async function startUpload() {
   const preparedWindow = preparePaymentPopup()
 
   try {
-    const result = await api.post('/api/image/create-order')
+    const result = await api.post('/api/image/create-order', undefined, { auth: 'none' })
     const orderData = result.data?.data || result.data
     if (result.success && orderData) {
       paymentUrl.value = orderData.paymentUrl || ''
@@ -714,7 +714,7 @@ async function checkPayment() {
   payError.value = ''
 
   try {
-    const result = await api.get(`/api/image/check-payment?orderNo=${paymentOrderNo.value}`)
+    const result = await api.get(`/api/image/check-payment?orderNo=${paymentOrderNo.value}`, { auth: 'none' })
     if (result.success && result.data?.paid && result.data?.credential) {
       uploadCredential.value = result.data.credential
       toast.success('支付成功，开始上传')
@@ -761,7 +761,7 @@ async function doUpload() {
       formData.append('orderNo', paymentOrderNo.value)
     }
 
-    const result = await api.upload('/api/image/upload', formData)
+    const result = await api.upload('/api/image/upload', formData, { auth: 'none' })
 
     // 处理可能的嵌套响应格式
     const responseData = result.data?.data || result.data
@@ -903,7 +903,7 @@ async function doDelete() {
   
   deleting.value = true
   try {
-    const result = await api.delete(`/api/image/${deleteTarget.value.id}`)
+    const result = await api.delete(`/api/image/${deleteTarget.value.id}`, { auth: 'none' })
     if (result.success) {
       toast.success('图片已删除')
       // 从历史记录中移除
@@ -932,7 +932,7 @@ async function doDelete() {
 async function loadHistory() {
   historyLoading.value = true
   try {
-    const result = await api.get('/api/image/history')
+    const result = await api.get('/api/image/history', { auth: 'none' })
     if (result.success && result.data?.images) {
       history.value = result.data.images
     }

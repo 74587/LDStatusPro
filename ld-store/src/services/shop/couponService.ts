@@ -21,7 +21,7 @@ function buildQuery(params: QueryParams = {}): string {
 
 export async function getCouponRequest(token: string) {
   return validateServiceResult(
-    await api.get(`/api/shop/coupons/${encodeURIComponent(token)}`),
+    await api.get(`/api/shop/coupons/${encodeURIComponent(token)}`, { auth: 'optional' }),
     PublicCouponResponseSchema,
     '/api/shop/coupons/:token',
     'PublicCouponResponse'
@@ -30,7 +30,7 @@ export async function getCouponRequest(token: string) {
 
 export async function claimCouponRequest(token: string) {
   return validateServiceResult(
-    await api.post(`/api/shop/coupons/${encodeURIComponent(token)}/claim`),
+    await api.post(`/api/shop/coupons/${encodeURIComponent(token)}/claim`, undefined, { auth: 'required' }),
     CouponClaimResponseSchema,
     '/api/shop/coupons/:token/claim',
     'CouponClaimResponse'
@@ -39,7 +39,7 @@ export async function claimCouponRequest(token: string) {
 
 export async function fetchMyCouponsRequest(status = 'unused', page = 1, pageSize = 20) {
   return validateServiceResult(
-    await api.get(`/api/shop/my-coupons${buildQuery({ status, page, pageSize })}`),
+    await api.get(`/api/shop/my-coupons${buildQuery({ status, page, pageSize })}`, { auth: 'required' }),
     CouponListResponseSchema,
     '/api/shop/my-coupons',
     'CouponListResponse'
@@ -48,7 +48,7 @@ export async function fetchMyCouponsRequest(status = 'unused', page = 1, pageSiz
 
 export async function quoteOrderRequest(productId: string | number, quantity = 1) {
   return validateServiceResult(
-    await api.post('/api/shop/orders/quote', { productId, quantity }),
+    await api.post('/api/shop/orders/quote', { productId, quantity }, { auth: 'required' }),
     OrderQuoteResponseSchema,
     '/api/shop/orders/quote',
     'OrderQuoteResponse'
@@ -57,7 +57,7 @@ export async function quoteOrderRequest(productId: string | number, quantity = 1
 
 export async function fetchSellerCouponsRequest(params: QueryParams = {}) {
   return validateServiceResult(
-    await api.get(`/api/shop/merchant/coupons${buildQuery(params)}`),
+    await api.get(`/api/shop/merchant/coupons${buildQuery(params)}`, { auth: 'required' }),
     CouponListResponseSchema,
     '/api/shop/merchant/coupons',
     'CouponListResponse'
@@ -66,7 +66,7 @@ export async function fetchSellerCouponsRequest(params: QueryParams = {}) {
 
 export async function getSellerCouponRequest(id: string | number) {
   return validateServiceResult(
-    await api.get(`/api/shop/merchant/coupons/${id}`),
+    await api.get(`/api/shop/merchant/coupons/${id}`, { auth: 'required' }),
     CouponCampaignSchema,
     '/api/shop/merchant/coupons/:id',
     'CouponCampaign'
@@ -75,7 +75,7 @@ export async function getSellerCouponRequest(id: string | number) {
 
 export async function fetchSellerCouponClaimsRequest(id: string | number, params: QueryParams = {}) {
   return validateServiceResult(
-    await api.get(`/api/shop/merchant/coupons/${id}/claims${buildQuery(params)}`),
+    await api.get(`/api/shop/merchant/coupons/${id}/claims${buildQuery(params)}`, { auth: 'required' }),
     CouponListResponseSchema,
     '/api/shop/merchant/coupons/:id/claims',
     'CouponClaimListResponse'
@@ -84,7 +84,7 @@ export async function fetchSellerCouponClaimsRequest(id: string | number, params
 
 export async function createCouponRequest(data: Record<string, JsonValue>) {
   return validateServiceResult(
-    await api.post('/api/shop/merchant/coupons', data),
+    await api.post('/api/shop/merchant/coupons', data, { auth: 'required' }),
     CouponCampaignSchema,
     '/api/shop/merchant/coupons',
     'CouponCampaign'
@@ -93,7 +93,7 @@ export async function createCouponRequest(data: Record<string, JsonValue>) {
 
 export async function increaseCouponQuotaRequest(id: string | number, totalQuantity: number) {
   return validateServiceResult(
-    await api.request(`/api/shop/merchant/coupons/${id}/quota`, { method: 'PATCH', body: { totalQuantity } }),
+    await api.request(`/api/shop/merchant/coupons/${id}/quota`, { auth: 'required', method: 'PATCH', body: { totalQuantity } }),
     CouponCampaignSchema,
     '/api/shop/merchant/coupons/:id/quota',
     'CouponCampaign'
@@ -102,7 +102,7 @@ export async function increaseCouponQuotaRequest(id: string | number, totalQuant
 
 export async function closeCouponRequest(id: string | number) {
   return validateServiceResult(
-    await api.post(`/api/shop/merchant/coupons/${id}/close`),
+    await api.post(`/api/shop/merchant/coupons/${id}/close`, undefined, { auth: 'required' }),
     CouponCampaignSchema,
     '/api/shop/merchant/coupons/:id/close',
     'CouponCampaign'
@@ -112,6 +112,7 @@ export async function closeCouponRequest(id: string | number) {
 export async function setCouponClaimingRequest(id: string | number, enabled: boolean) {
   return validateServiceResult(
     await api.request(`/api/shop/merchant/coupons/${id}/claiming`, {
+      auth: 'required',
       method: 'PATCH',
       body: { enabled: Boolean(enabled) }
     }),

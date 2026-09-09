@@ -31,7 +31,7 @@ function buildConversationQuery(input: ConversationOptions = {}): string {
 export async function fetchConversationUnreadSummary(options: ConversationOptions = {}) {
   const query = buildConversationQuery(options)
   return withServiceFailure(async () => validateServiceResult(
-    await api.get(`/api/shop/conversations/unread-summary${query ? `?${query}` : ''}`, { signal: options.signal }),
+    await api.get(`/api/shop/conversations/unread-summary${query ? `?${query}` : ''}`, { auth: 'required', signal: options.signal }),
     NotificationSummaryResponseSchema,
     '/api/shop/conversations/unread-summary',
     'ConversationUnreadSummaryResponse'
@@ -41,7 +41,7 @@ export async function fetchConversationUnreadSummary(options: ConversationOption
 export async function fetchMyConversations(options: ConversationOptions = {}) {
   const query = buildConversationQuery(options)
   return withServiceFailure(async () => validateServiceResult(
-    await api.get(`/api/shop/conversations/my${query ? `?${query}` : ''}`, { signal: options.signal }),
+    await api.get(`/api/shop/conversations/my${query ? `?${query}` : ''}`, { auth: 'required', signal: options.signal }),
     ConversationListResponseSchema,
     '/api/shop/conversations/my',
     'ConversationListResponse'

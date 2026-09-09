@@ -38,8 +38,8 @@ describe('API request lifecycle', () => {
     const fetchMock = vi.fn().mockResolvedValue(mockResponse({ success: true }))
     vi.stubGlobal('fetch', fetchMock)
 
-    await api.get('/api/shop/products')
-    await api.post('/api/shop/products/1/favorite')
+    await api.get('/api/shop/products', { auth: 'none' })
+    await api.post('/api/shop/products/1/favorite', undefined, { auth: 'none' })
 
     for (const [, options] of fetchMock.mock.calls) {
       expect(options.body).toBeUndefined()
@@ -47,11 +47,42 @@ describe('API request lifecycle', () => {
     }
   })
 
+  it('keeps required and unclassified requests off the network when logged out', async () => {
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(api.get('/api/shop/merchant/enforcement', { auth: 'required' })).resolves.toEqual({
+      success: false,
+      status: 401,
+      error: '请先登录后再继续',
+      errorCode: 'AUTH_REQUIRED',
+      aborted: false,
+      kind: 'http'
+    })
+    await expect(api.get('/api/shop/unclassified')).resolves.toMatchObject({
+      success: false,
+      status: 401,
+      errorCode: 'AUTH_REQUIRED'
+    })
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('can force a public request to omit a stored token', async () => {
+    storage.set('token', 'synthetic-session')
+    const fetchMock = vi.fn().mockResolvedValue(mockResponse({ success: true }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await api.get('/api/shop/system-status', { auth: 'none' })
+
+    const [, options] = fetchMock.mock.calls[0]
+    expect(options.headers.has('Authorization')).toBe(false)
+  })
+
   it('serializes JSON bodies and adds the JSON content type', async () => {
     const fetchMock = vi.fn().mockResolvedValue(mockResponse({ success: true }))
     vi.stubGlobal('fetch', fetchMock)
 
-    await api.post('/api/shop/orders', { productId: 7 })
+    await api.post('/api/shop/orders', { productId: 7 }, { auth: 'none' })
 
     const [, options] = fetchMock.mock.calls[0]
     expect(options.body).toBe('{"productId":7}')
@@ -64,7 +95,7 @@ describe('API request lifecycle', () => {
     const formData = new FormData()
     formData.append('file', 'value')
 
-    await api.upload('/api/image/upload', formData)
+    await api.upload('/api/image/upload', formData, { auth: 'none' })
 
     const [, options] = fetchMock.mock.calls[0]
     expect(options.body).toBe(formData)
@@ -74,7 +105,7 @@ describe('API request lifecycle', () => {
   it('distinguishes caller cancellation from request timeout', async () => {
     vi.stubGlobal('fetch', vi.fn(abortableFetch))
     const caller = new AbortController()
-    const callerRequest = api.get('/api/shop/products', { signal: caller.signal })
+    const callerRequest = api.get('/api/shop/products', { auth: 'none', signal: caller.signal })
     caller.abort()
 
     await expect(callerRequest).resolves.toEqual({
@@ -87,7 +118,7 @@ describe('API request lifecycle', () => {
     })
 
     vi.useFakeTimers()
-    const timeoutRequest = api.get('/api/shop/products', { timeout: 25 })
+    const timeoutRequest = api.get('/api/shop/products', { auth: 'none', timeout: 25 })
     await vi.advanceTimersByTimeAsync(25)
 
     await expect(timeoutRequest).resolves.toEqual({
@@ -108,10 +139,10 @@ describe('API request lifecycle', () => {
       .mockRejectedValueOnce(new TypeError('Failed to fetch'))
     vi.stubGlobal('fetch', fetchMock)
 
-    await expect(api.get('/api/shop/orders')).resolves.toMatchObject({ success: false, status: 401, error: '请重新登录' })
-    await expect(api.get('/api/status')).resolves.toEqual({ success: true, status: 200, data: 'plain response' })
-    await expect(api.get('/api/shop/products/9')).resolves.toEqual({ success: true, status: 200, data: { id: 9 } })
-    await expect(api.get('/api/status')).resolves.toEqual({
+    await expect(api.get('/api/shop/orders', { auth: 'none' })).resolves.toMatchObject({ success: false, status: 401, error: '请重新登录' })
+    await expect(api.get('/api/status', { auth: 'none' })).resolves.toEqual({ success: true, status: 200, data: 'plain response' })
+    await expect(api.get('/api/shop/products/9', { auth: 'none' })).resolves.toEqual({ success: true, status: 200, data: { id: 9 } })
+    await expect(api.get('/api/status', { auth: 'none' })).resolves.toEqual({
       success: false,
       status: 0,
       error: '网络连接异常，请检查网络后重试',
@@ -133,13 +164,13 @@ describe('API request lifecycle', () => {
       .mockResolvedValueOnce(mockResponse({ success: false, status: 409, error: { code: 'STALE', message: '状态已更新' } }))
     vi.stubGlobal('fetch', fetchMock)
 
-    await expect(api.get('/api/auth/init')).resolves.toEqual({
+    await expect(api.get('/api/auth/init', { auth: 'none' })).resolves.toEqual({
       success: true,
       status: 200,
       data: { auth_url: 'https://example.test/login' },
       auth_url: 'https://example.test/login'
     })
-    await expect(api.get('/api/shop/products')).resolves.toEqual({
+    await expect(api.get('/api/shop/products', { auth: 'none' })).resolves.toEqual({
       success: false,
       status: 409,
       error: '状态已更新',

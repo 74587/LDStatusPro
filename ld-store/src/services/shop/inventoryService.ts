@@ -1,5 +1,6 @@
 import { api, type ApiRequestOptions, type ApiResult, type JsonValue } from '@/utils/api'
 import { storage } from '@/utils/storage'
+import { emitAuthExpired, isTokenExpired } from '@/utils/auth'
 import {
   CdkListResponseSchema,
   CommerceActionResponseSchema,
@@ -44,6 +45,7 @@ interface CdkExportPayload {
 function requestOptions(options: TimeoutOptions = {}): ApiRequestOptions {
   const timeout = Number(options.timeout || 0)
   return {
+    auth: 'required',
     ...(Number.isFinite(timeout) && timeout > 0 ? { timeout } : {}),
     ...(options.signal ? { signal: options.signal } : {})
   }
@@ -62,7 +64,7 @@ function inventoryQuery(options: InventoryListOptions): string {
 
 export async function fetchMyProductsRequest(options: InventoryListOptions = {}) {
   return validateServiceResult(
-    await api.get(`/api/shop/my-products${inventoryQuery(options)}`, { signal: options.signal, timeout: options.timeout }),
+    await api.get(`/api/shop/my-products${inventoryQuery(options)}`, { auth: 'required', signal: options.signal, timeout: options.timeout }),
     ProductInventoryResponseSchema,
     '/api/shop/my-products',
     'ProductInventoryResponse'
@@ -71,7 +73,7 @@ export async function fetchMyProductsRequest(options: InventoryListOptions = {})
 
 export async function fetchProductImagesRequest(options: InventoryListOptions = {}) {
   return validateServiceResult(
-    await api.get(`/api/shop/my-products${inventoryQuery(options)}`, { signal: options.signal, timeout: options.timeout }),
+    await api.get(`/api/shop/my-products${inventoryQuery(options)}`, { auth: 'required', signal: options.signal, timeout: options.timeout }),
     ProductImageLookupResponseSchema,
     '/api/shop/my-products',
     'ProductImageLookupResponse'
@@ -96,7 +98,7 @@ export async function getProductSubmissionStatusRequest(submissionToken: string)
   }
 
   return withServiceFailure(async () => validateServiceResult(
-    await api.get(`/api/shop/product-submission-status?token=${encodeURIComponent(safeToken)}`),
+    await api.get(`/api/shop/product-submission-status?token=${encodeURIComponent(safeToken)}`, { auth: 'required' }),
     ProductSubmissionStatusResponseSchema,
     '/api/shop/product-submission-status',
     'ProductSubmissionStatusResponse'
@@ -118,7 +120,7 @@ export async function updateProductRequest(
 
 export async function offlineProductRequest(id: string | number) {
   return withServiceFailure(async () => validateServiceResult(
-    await api.post(`/api/shop/my-products/${id}/offline`),
+    await api.post(`/api/shop/my-products/${id}/offline`, undefined, { auth: 'required' }),
     ProductMutationResponseSchema,
     '/api/shop/my-products/:id/offline',
     'ProductMutationResponse'
@@ -127,7 +129,7 @@ export async function offlineProductRequest(id: string | number) {
 
 export async function deleteProductRequest(id: string | number) {
   return withServiceFailure(async () => validateServiceResult(
-    await api.delete(`/api/shop/my-products/${id}`),
+    await api.delete(`/api/shop/my-products/${id}`, { auth: 'required' }),
     CommerceActionResponseSchema,
     '/api/shop/my-products/:id',
     'CommerceActionResponse'
@@ -136,7 +138,7 @@ export async function deleteProductRequest(id: string | number) {
 
 export async function fetchMyProductDetailRequest(id: string | number) {
   return validateServiceResult(
-    await api.get(`/api/shop/my-products/${id}`),
+    await api.get(`/api/shop/my-products/${id}`, { auth: 'required' }),
     ProductEditorDetailResponseSchema,
     '/api/shop/my-products/:id',
     'ProductEditorDetailResponse'
@@ -151,7 +153,7 @@ export async function fetchCdkListRequest(productId: string | number, options: C
   if (options.batchNo) params.set('batchNo', options.batchNo)
 
   return withServiceFailure(async () => validateServiceResult(
-    await api.get(`/api/shop/products/${productId}/cdk?${params.toString()}`, { signal: options.signal }),
+    await api.get(`/api/shop/products/${productId}/cdk?${params.toString()}`, { auth: 'required', signal: options.signal }),
     CdkListResponseSchema,
     '/api/shop/products/:id/cdk',
     'CdkListResponse'
@@ -160,7 +162,7 @@ export async function fetchCdkListRequest(productId: string | number, options: C
 
 export async function addCdkRequest(productId: string | number, codes: string[]) {
   return withServiceFailure(async () => validateServiceResult(
-    await api.post(`/api/shop/products/${productId}/cdk`, { codes }),
+    await api.post(`/api/shop/products/${productId}/cdk`, { codes }, { auth: 'required' }),
     CommerceActionResponseSchema,
     '/api/shop/products/:id/cdk',
     'CommerceActionResponse'
@@ -169,7 +171,7 @@ export async function addCdkRequest(productId: string | number, codes: string[])
 
 export async function deleteCdkRequest(productId: string | number, cdkId: string | number) {
   return withServiceFailure(async () => validateServiceResult(
-    await api.delete(`/api/shop/products/${productId}/cdk/${cdkId}`),
+    await api.delete(`/api/shop/products/${productId}/cdk/${cdkId}`, { auth: 'required' }),
     CommerceActionResponseSchema,
     '/api/shop/products/:id/cdk/:cdkId',
     'CommerceActionResponse'
@@ -178,7 +180,7 @@ export async function deleteCdkRequest(productId: string | number, cdkId: string
 
 export async function clearCdkRequest(productId: string | number) {
   return withServiceFailure(async () => validateServiceResult(
-    await api.post(`/api/shop/products/${productId}/cdk/clear`),
+    await api.post(`/api/shop/products/${productId}/cdk/clear`, undefined, { auth: 'required' }),
     CommerceActionResponseSchema,
     '/api/shop/products/:id/cdk/clear',
     'CommerceActionResponse'
@@ -188,6 +190,13 @@ export async function clearCdkRequest(productId: string | number) {
 export async function exportCdkRequest(productId: string | number, status = 'all'): Promise<ApiResult<CdkExportPayload>> {
   try {
     const token = storage.get('token') || ''
+    if (!token) {
+      return { success: false, status: 401, error: '请先登录后再继续', errorCode: 'AUTH_REQUIRED', aborted: false, kind: 'http' }
+    }
+    if (isTokenExpired(token)) {
+      emitAuthExpired({ source: 'download', url: '/api/shop/products/:id/cdk/export', method: 'GET', reason: 'local_token_expired' })
+      return { success: false, status: 401, error: '登录已过期，请重新登录', aborted: false, kind: 'http' }
+    }
     const response = await fetch(
       `${api.BASE_URL}/api/shop/products/${productId}/cdk/export?status=${encodeURIComponent(status)}&format=txt`,
       {

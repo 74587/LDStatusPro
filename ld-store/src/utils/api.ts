@@ -6,6 +6,7 @@ import { getDiscoveryRequestHeaders } from './discovery'
 export type JsonPrimitive = string | number | boolean | null
 export type JsonValue = JsonPrimitive | JsonValue[] | { [key: string]: JsonValue }
 export type AbortReason = 'caller' | 'timeout'
+export type ApiAuthMode = 'optional' | 'required' | 'none'
 export type ApiFailureKind = 'http' | 'network' | 'abort' | 'maintenance' | 'contract'
 
 export interface ApiSuccess<T> {
@@ -34,6 +35,12 @@ export interface ApiRequestOptions {
   headers?: HeadersInit
   signal?: AbortSignal
   timeout?: number
+  /**
+   * `required` (the default) prevents the request from reaching the network
+   * without a usable local session. `optional` preserves viewer-aware public
+   * responses, while `none` never attaches the stored storefront token.
+   */
+  auth?: ApiAuthMode
 }
 
 export interface ApiReadOptions extends Omit<ApiRequestOptions, 'method' | 'body'> {}
@@ -74,6 +81,7 @@ const ERROR_MESSAGES: Record<number, string> = {
 const NETWORK_ERROR_MESSAGE = '网络连接异常，请检查网络后重试'
 const UNKNOWN_ERROR_MESSAGE = '请求失败，请稍后重试'
 const AUTH_EXPIRED_MESSAGE = ERROR_MESSAGES[401]
+const AUTH_REQUIRED_MESSAGE = '请先登录后再继续'
 
 function normalizeMessage(value: unknown): string {
   if (value === undefined || value === null) return ''
@@ -304,8 +312,13 @@ async function request<T = unknown>(url: string, options: ApiRequestOptions = {}
     : (url.startsWith('/api/auth') ? AUTH_API_BASE : API_BASE)
   const fullUrl = url.startsWith('http') ? url : `${base}${url}`
 
-  // 获取 token
-  const token = storage.get('token')
+  const authMode = options.auth || 'required'
+  const token = authMode === 'none' ? null : storage.get('token')
+
+  // 私有接口在客户端会话边界内失败，避免匿名请求进入后端并污染安全事件。
+  if (authMode === 'required' && !token) {
+    return failureResponse('http', 401, AUTH_REQUIRED_MESSAGE, { code: 'AUTH_REQUIRED' })
+  }
 
   if (token && isTokenExpired(token)) {
     emitAuthExpired({ source: 'request', url, method, reason: 'local_token_expired' })

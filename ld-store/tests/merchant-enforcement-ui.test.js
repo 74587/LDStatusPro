@@ -26,7 +26,7 @@ describe('卖家禁用状态 UI', () => {
     const store = readSource('../src/stores/merchantEnforcement.js')
     const service = readSource('../src/services/shop/merchantService.ts')
     expect(store).toContain('fetchMerchantEnforcementRequest()')
-    expect(service).toContain("api.get('/api/shop/merchant/enforcement')")
+    expect(service).toContain("api.get('/api/shop/merchant/enforcement', { auth: 'required' })")
     expect(store).toContain("enforcement.value.status === 'disabled'")
     expect(store).not.toContain('@/utils/api')
   })

@@ -71,7 +71,7 @@ export function normalizeBuyOrderListOptions(options: OrderListOptions = {}) {
 export async function fetchOrdersByRoleRequest(role: string, options: OrderListInput = {}) {
   const meta = buildOrderListParams(role, options)
   return validateServiceResult(
-    await api.get(`/api/shop/orders?${meta.params.toString()}`, { signal: meta.signal }),
+    await api.get(`/api/shop/orders?${meta.params.toString()}`, { auth: 'required', signal: meta.signal }),
     OrderListResponseSchema,
     '/api/shop/orders',
     'OrderListResponse'
@@ -80,7 +80,7 @@ export async function fetchOrdersByRoleRequest(role: string, options: OrderListI
 
 export async function fetchOrderDetailRequest(orderNo: string, role = 'buyer', options: { signal?: AbortSignal } = {}) {
   return validateServiceResult(
-    await api.get(`/api/shop/orders/${encodeURIComponent(orderNo)}?role=${encodeURIComponent(role)}`, { signal: options.signal }),
+    await api.get(`/api/shop/orders/${encodeURIComponent(orderNo)}?role=${encodeURIComponent(role)}`, { auth: 'required', signal: options.signal }),
     OrderDetailResponseSchema,
     '/api/shop/orders/:orderNo',
     'OrderDetailResponse'
@@ -102,7 +102,7 @@ export async function createOrderRequest(
       ...(submissionToken ? { submissionToken, expectedAmount } : {}),
       ...(couponClaimId ? { couponClaimId } : {}),
       ...(discoveryToken ? { discoveryToken } : {})
-    }),
+    }, { auth: 'required' }),
     OrderCreatedResponseSchema,
     '/api/shop/orders',
     'OrderCreatedResponse'
@@ -111,7 +111,7 @@ export async function createOrderRequest(
 
 export async function getOrderSubmissionRequest(token: string) {
   return withServiceFailure(async () => validateServiceResult(
-    await api.get(`/api/shop/order-submissions/${encodeURIComponent(token)}`),
+    await api.get(`/api/shop/order-submissions/${encodeURIComponent(token)}`, { auth: 'required' }),
     OrderSubmissionResponseSchema,
     '/api/shop/order-submissions/:token',
     'OrderSubmissionResponse'
@@ -120,7 +120,7 @@ export async function getOrderSubmissionRequest(token: string) {
 
 export async function cancelOrderRequest(orderNo: string) {
   return withServiceFailure(async () => validateServiceResult(
-    await api.post(`/api/shop/orders/${encodeURIComponent(orderNo)}/cancel`),
+    await api.post(`/api/shop/orders/${encodeURIComponent(orderNo)}/cancel`, undefined, { auth: 'required' }),
     CommerceActionResponseSchema,
     '/api/shop/orders/:orderNo/cancel',
     'CommerceActionResponse'
@@ -129,7 +129,7 @@ export async function cancelOrderRequest(orderNo: string) {
 
 export async function refreshOrderStatusRequest(orderNo: string) {
   return withServiceFailure(async () => validateServiceResult(
-    await api.post(`/api/shop/orders/${encodeURIComponent(orderNo)}/refresh`),
+    await api.post(`/api/shop/orders/${encodeURIComponent(orderNo)}/refresh`, undefined, { auth: 'required' }),
     OrderPaymentResponseSchema,
     '/api/shop/orders/:orderNo/refresh',
     'OrderPaymentResponse'
@@ -138,7 +138,7 @@ export async function refreshOrderStatusRequest(orderNo: string) {
 
 export async function getPaymentUrlRequest(orderNo: string) {
   return withServiceFailure(async () => validateServiceResult(
-    await api.get(`/api/shop/orders/${encodeURIComponent(orderNo)}/payment-url`),
+    await api.get(`/api/shop/orders/${encodeURIComponent(orderNo)}/payment-url`, { auth: 'required' }),
     OrderPaymentResponseSchema,
     '/api/shop/orders/:orderNo/payment-url',
     'OrderPaymentResponse'
@@ -147,7 +147,7 @@ export async function getPaymentUrlRequest(orderNo: string) {
 
 export async function deliverOrderRequest(orderNo: string, content: string) {
   return withServiceFailure(async () => validateServiceResult(
-    await api.post(`/api/shop/orders/${encodeURIComponent(orderNo)}/deliver`, { content }),
+    await api.post(`/api/shop/orders/${encodeURIComponent(orderNo)}/deliver`, { content }, { auth: 'required' }),
     CommerceActionResponseSchema,
     '/api/shop/orders/:orderNo/deliver',
     'CommerceActionResponse'
@@ -162,7 +162,7 @@ export async function fetchMyBuyOrdersRequest(options: OrderListOptions = {}) {
   if (normalized.search) params.set('search', normalized.search)
   if (normalized.timeRange) params.set('timeRange', normalized.timeRange)
   return validateServiceResult(
-    await api.get(`/api/shop/buy-orders?${params.toString()}`, { signal: normalized.signal }),
+    await api.get(`/api/shop/buy-orders?${params.toString()}`, { auth: 'required', signal: normalized.signal }),
     BuyOrderListResponseSchema,
     '/api/shop/buy-orders',
     'BuyOrderListResponse'
@@ -171,7 +171,7 @@ export async function fetchMyBuyOrdersRequest(options: OrderListOptions = {}) {
 
 export async function getBuyOrderDetailRequest(orderNo: string) {
   return withServiceFailure(async () => validateServiceResult(
-    await api.get(`/api/shop/buy-orders/${encodeURIComponent(orderNo)}`),
+    await api.get(`/api/shop/buy-orders/${encodeURIComponent(orderNo)}`, { auth: 'required' }),
     BuyOrderDetailResponseSchema,
     '/api/shop/buy-orders/:orderNo',
     'BuyOrderDetailResponse'
@@ -180,7 +180,7 @@ export async function getBuyOrderDetailRequest(orderNo: string) {
 
 export async function getBuyOrderPaymentUrlRequest(orderNo: string) {
   return withServiceFailure(async () => validateServiceResult(
-    await api.get(`/api/shop/buy-orders/${encodeURIComponent(orderNo)}/payment-url`),
+    await api.get(`/api/shop/buy-orders/${encodeURIComponent(orderNo)}/payment-url`, { auth: 'required' }),
     BuyOrderPaymentResponseSchema,
     '/api/shop/buy-orders/:orderNo/payment-url',
     'BuyOrderPaymentResponse'
@@ -189,7 +189,7 @@ export async function getBuyOrderPaymentUrlRequest(orderNo: string) {
 
 export async function refreshBuyOrderStatusRequest(orderNo: string) {
   return withServiceFailure(async () => validateServiceResult(
-    await api.post(`/api/shop/buy-orders/${encodeURIComponent(orderNo)}/refresh`),
+    await api.post(`/api/shop/buy-orders/${encodeURIComponent(orderNo)}/refresh`, undefined, { auth: 'required' }),
     BuyOrderPaymentResponseSchema,
     '/api/shop/buy-orders/:orderNo/refresh',
     'BuyOrderPaymentResponse'

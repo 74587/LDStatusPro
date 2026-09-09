@@ -38,7 +38,7 @@ function listQuery(options: BuyRequestListOptions): string {
 
 export async function fetchMyBuyRequestsRequest(options: BuyRequestListOptions = {}) {
   return withServiceFailure(async () => validateServiceResult(
-    await api.get(`/api/shop/buy-requests/my?${listQuery(options)}`, { signal: options.signal }),
+    await api.get(`/api/shop/buy-requests/my?${listQuery(options)}`, { auth: 'required', signal: options.signal }),
     BuyRequestListResponseSchema,
     '/api/shop/buy-requests/my',
     'BuyRequestListResponse'
@@ -47,7 +47,7 @@ export async function fetchMyBuyRequestsRequest(options: BuyRequestListOptions =
 
 export async function fetchBuyRequestDetailRequest(requestId: string | number, signal?: AbortSignal) {
   return withServiceFailure(async () => validateServiceResult(
-    await api.get(`/api/shop/buy-requests/${requestId}`, { signal }),
+    await api.get(`/api/shop/buy-requests/${requestId}`, { auth: 'optional', signal }),
     BuyRequestDetailResponseSchema,
     '/api/shop/buy-requests/:id',
     'BuyRequestDetailResponse'
@@ -56,7 +56,7 @@ export async function fetchBuyRequestDetailRequest(requestId: string | number, s
 
 export async function createBuyRequestRequest(payload: Record<string, JsonValue>) {
   return withServiceFailure(async () => validateServiceResult(
-    await api.post('/api/shop/buy-requests', payload),
+    await api.post('/api/shop/buy-requests', payload, { auth: 'required' }),
     BuyRequestMutationResponseSchema,
     '/api/shop/buy-requests',
     'BuyRequestMutationResponse'
@@ -65,7 +65,7 @@ export async function createBuyRequestRequest(payload: Record<string, JsonValue>
 
 export async function updateBuyRequestStatusRequest(requestId: string | number, status: string) {
   return withServiceFailure(async () => validateServiceResult(
-    await api.post(`/api/shop/buy-requests/${requestId}/status`, { status }),
+    await api.post(`/api/shop/buy-requests/${requestId}/status`, { status }, { auth: 'required' }),
     BuyRequestMutationResponseSchema,
     '/api/shop/buy-requests/:id/status',
     'BuyRequestMutationResponse'
@@ -74,7 +74,7 @@ export async function updateBuyRequestStatusRequest(requestId: string | number, 
 
 export async function updateBuyRequestPriceRequest(requestId: string | number, price: number) {
   return withServiceFailure(async () => validateServiceResult(
-    await api.post(`/api/shop/buy-requests/${requestId}/price`, { price }),
+    await api.post(`/api/shop/buy-requests/${requestId}/price`, { price }, { auth: 'required' }),
     BuyRequestMutationResponseSchema,
     '/api/shop/buy-requests/:id/price',
     'BuyRequestMutationResponse'
@@ -83,7 +83,7 @@ export async function updateBuyRequestPriceRequest(requestId: string | number, p
 
 export async function fetchBuySessionDetailRequest(sessionId: string | number, signal?: AbortSignal) {
   return withServiceFailure(async () => validateServiceResult(
-    await api.get(`/api/shop/buy-sessions/${sessionId}`, { signal }),
+    await api.get(`/api/shop/buy-sessions/${sessionId}`, { auth: 'required', signal }),
     BuySessionDetailResponseSchema,
     '/api/shop/buy-sessions/:id',
     'BuySessionDetailResponse'
@@ -92,7 +92,7 @@ export async function fetchBuySessionDetailRequest(sessionId: string | number, s
 
 export async function createBuySessionRequest(requestId: string | number) {
   return withServiceFailure(async () => validateServiceResult(
-    await api.post(`/api/shop/buy-requests/${requestId}/sessions`, {}),
+    await api.post(`/api/shop/buy-requests/${requestId}/sessions`, {}, { auth: 'required' }),
     BuySessionMutationResponseSchema,
     '/api/shop/buy-requests/:id/sessions',
     'BuySessionMutationResponse'
@@ -106,7 +106,7 @@ export async function fetchBuySessionMessagesRequest(sessionId: string | number,
   if (Number(options.sinceId) > 0) params.set('sinceId', String(options.sinceId))
   if (Number(options.beforeId) > 0) params.set('beforeId', String(options.beforeId))
   return withServiceFailure(async () => validateServiceResult(
-    await api.get(`/api/shop/buy-sessions/${sessionId}/messages?${params.toString()}`, { signal: options.signal }),
+    await api.get(`/api/shop/buy-sessions/${sessionId}/messages?${params.toString()}`, { auth: 'required', signal: options.signal }),
     BuyMessagesResponseSchema,
     '/api/shop/buy-sessions/:id/messages',
     'BuyMessagesResponse'
@@ -115,7 +115,7 @@ export async function fetchBuySessionMessagesRequest(sessionId: string | number,
 
 export async function markBuySessionReadRequest(sessionId: string | number, lastReadMessageId: number) {
   return validateServiceResult(
-    await api.post(`/api/shop/buy-sessions/${sessionId}/read`, { lastReadMessageId }),
+    await api.post(`/api/shop/buy-sessions/${sessionId}/read`, { lastReadMessageId }, { auth: 'required' }),
     CommerceActionResponseSchema,
     '/api/shop/buy-sessions/:id/read',
     'CommerceActionResponse'
@@ -124,7 +124,7 @@ export async function markBuySessionReadRequest(sessionId: string | number, last
 
 export async function sendBuySessionMessageRequest(sessionId: string | number, content: string) {
   return withServiceFailure(async () => validateServiceResult(
-    await api.post(`/api/shop/buy-sessions/${sessionId}/messages`, { content }),
+    await api.post(`/api/shop/buy-sessions/${sessionId}/messages`, { content }, { auth: 'required' }),
     BuyMessageCreatedResponseSchema,
     '/api/shop/buy-sessions/:id/messages',
     'BuyMessageCreatedResponse'
@@ -133,7 +133,7 @@ export async function sendBuySessionMessageRequest(sessionId: string | number, c
 
 export async function createBuySessionPaymentRequest(sessionId: string | number) {
   return withServiceFailure(async () => validateServiceResult(
-    await api.post(`/api/shop/buy-sessions/${sessionId}/payment`, {}),
+    await api.post(`/api/shop/buy-sessions/${sessionId}/payment`, {}, { auth: 'required' }),
     BuySessionMutationResponseSchema,
     '/api/shop/buy-sessions/:id/payment',
     'BuySessionMutationResponse'
@@ -142,7 +142,7 @@ export async function createBuySessionPaymentRequest(sessionId: string | number)
 
 export async function closeBuySessionRequest(sessionId: string | number) {
   return withServiceFailure(async () => validateServiceResult(
-    await api.post(`/api/shop/buy-sessions/${sessionId}/close`, {}),
+    await api.post(`/api/shop/buy-sessions/${sessionId}/close`, {}, { auth: 'required' }),
     BuySessionMutationResponseSchema,
     '/api/shop/buy-sessions/:id/close',
     'BuySessionMutationResponse'

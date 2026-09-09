@@ -9,7 +9,7 @@ import { validateServiceResult, withServiceFailure } from '@/services/serviceCon
 
 export async function fetchMerchantConfigRequest() {
   return withServiceFailure(async () => validateServiceResult(
-    await api.get('/api/shop/merchant/config'),
+    await api.get('/api/shop/merchant/config', { auth: 'required' }),
     MerchantConfigSchema,
     '/api/shop/merchant/config',
     'MerchantConfig'
@@ -18,7 +18,7 @@ export async function fetchMerchantConfigRequest() {
 
 export async function createMerchantConfigRequest(config: Record<string, JsonValue>) {
   return withServiceFailure(async () => validateServiceResult(
-    await api.post('/api/shop/merchant/config', config),
+    await api.post('/api/shop/merchant/config', config, { auth: 'required' }),
     MerchantConfigMutationSchema,
     '/api/shop/merchant/config',
     'MerchantConfigMutation'
@@ -27,7 +27,7 @@ export async function createMerchantConfigRequest(config: Record<string, JsonVal
 
 export async function updateMerchantConfigRequest(config: Record<string, JsonValue>) {
   return withServiceFailure(async () => validateServiceResult(
-    await api.put('/api/shop/merchant/config', config),
+    await api.put('/api/shop/merchant/config', config, { auth: 'required' }),
     MerchantConfigMutationSchema,
     '/api/shop/merchant/config',
     'MerchantConfigMutation'
@@ -36,7 +36,7 @@ export async function updateMerchantConfigRequest(config: Record<string, JsonVal
 
 export async function deleteMerchantConfigRequest() {
   return withServiceFailure(async () => validateServiceResult(
-    await api.delete('/api/shop/merchant/config'),
+    await api.delete('/api/shop/merchant/config', { auth: 'required' }),
     CommerceActionResponseSchema,
     '/api/shop/merchant/config',
     'CommerceActionResponse'
@@ -45,7 +45,7 @@ export async function deleteMerchantConfigRequest() {
 
 export async function testMerchantCallbackRequest() {
   return withServiceFailure(async () => validateServiceResult(
-    await api.post('/api/shop/merchant/test-callback'),
+    await api.post('/api/shop/merchant/test-callback', undefined, { auth: 'required' }),
     MerchantConfigMutationSchema,
     '/api/shop/merchant/test-callback',
     'MerchantCallbackResponse'
@@ -54,7 +54,7 @@ export async function testMerchantCallbackRequest() {
 
 export async function fetchMerchantEnforcementRequest() {
   return withServiceFailure(async () => validateServiceResult(
-    await api.get('/api/shop/merchant/enforcement'),
+    await api.get('/api/shop/merchant/enforcement', { auth: 'required' }),
     MerchantEnforcementResponseSchema,
     '/api/shop/merchant/enforcement',
     'MerchantEnforcementResponse'

@@ -108,7 +108,7 @@ async function flushDiscoveryEvents(retry = true): Promise<void> {
   const events = eventQueue.splice(0, MAX_EVENT_BATCH)
   try {
     const result = validateApiResult(
-      await api.post('/api/shop/discovery/events', { events }, { timeout: 5000 }),
+      await api.post('/api/shop/discovery/events', { events }, { auth: 'optional', timeout: 5000 }),
       DiscoveryEventResponseSchema,
       { endpoint: '/api/shop/discovery/events', schemaName: 'DiscoveryEventResponse' }
     )
@@ -180,7 +180,7 @@ export function recordSearchOutcome({
 export async function fetchSearchSuggestionsRequest(query: string, limit = 8) {
   const params = new URLSearchParams({ q: String(query || '').trim(), limit: String(limit) })
   return validateApiResult(
-    await api.get(`/api/shop/search/suggestions?${params.toString()}`),
+    await api.get(`/api/shop/search/suggestions?${params.toString()}`, { auth: 'optional' }),
     SearchSuggestionsResponseSchema,
     { endpoint: '/api/shop/search/suggestions', schemaName: 'SearchSuggestionsResponse' }
   )
@@ -188,7 +188,7 @@ export async function fetchSearchSuggestionsRequest(query: string, limit = 8) {
 
 export async function fetchDiscoveryPreferenceRequest() {
   return validateApiResult(
-    await api.get('/api/shop/discovery/preferences'),
+    await api.get('/api/shop/discovery/preferences', { auth: 'required' }),
     DiscoveryPreferenceResponseSchema,
     { endpoint: '/api/shop/discovery/preferences', schemaName: 'DiscoveryPreferenceResponse' }
   )
@@ -196,7 +196,7 @@ export async function fetchDiscoveryPreferenceRequest() {
 
 export async function updateDiscoveryPreferenceRequest(personalizationEnabled: boolean) {
   return validateApiResult(
-    await api.put('/api/shop/discovery/preferences', { personalizationEnabled: !!personalizationEnabled }),
+    await api.put('/api/shop/discovery/preferences', { personalizationEnabled: !!personalizationEnabled }, { auth: 'required' }),
     DiscoveryPreferenceResponseSchema,
     { endpoint: '/api/shop/discovery/preferences', schemaName: 'DiscoveryPreferenceResponse' }
   )

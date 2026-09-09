@@ -26,35 +26,35 @@ function validatedRefundRequest(result: Awaited<ReturnType<typeof api.get>>, end
 
 export async function fetchOrderRefundRequest(orderNo: string, options: { signal?: AbortSignal } = {}) {
   return withServiceFailure(async () => validatedRefundRequest(
-    await api.get(orderPath(orderNo), { signal: options.signal }),
+    await api.get(orderPath(orderNo), { auth: 'required', signal: options.signal }),
     '/api/shop/orders/:orderNo/refund'
   ), '加载退款状态失败，请稍后重试')
 }
 
 export async function createRefundRequest(orderNo: string, payload: RefundPayload) {
   return withServiceFailure(async () => validatedRefundRequest(
-    await api.post(orderPath(orderNo), payload),
+    await api.post(orderPath(orderNo), payload, { auth: 'required' }),
     '/api/shop/orders/:orderNo/refund'
   ), '提交退款申请失败，请稍后重试')
 }
 
 export async function contactRefundBuyerRequest(orderNo: string, message = '') {
   return withServiceFailure(async () => validatedRefundRequest(
-    await api.post(`${orderPath(orderNo)}/contact`, { message }),
+    await api.post(`${orderPath(orderNo)}/contact`, { message }, { auth: 'required' }),
     '/api/shop/orders/:orderNo/refund/contact'
   ), '更新协商状态失败，请稍后重试')
 }
 
 export async function rejectRefundRequest(orderNo: string, message: string) {
   return withServiceFailure(async () => validatedRefundRequest(
-    await api.post(`${orderPath(orderNo)}/reject`, { message }),
+    await api.post(`${orderPath(orderNo)}/reject`, { message }, { auth: 'required' }),
     '/api/shop/orders/:orderNo/refund/reject'
   ), '拒绝退款申请失败，请稍后重试')
 }
 
 export async function approveRefundRequest(orderNo: string, message = '') {
   return withServiceFailure(async () => validatedRefundRequest(
-    await api.post(`${orderPath(orderNo)}/approve`, { message }),
+    await api.post(`${orderPath(orderNo)}/approve`, { message }, { auth: 'required' }),
     '/api/shop/orders/:orderNo/refund/approve'
   ), '执行退款失败，请稍后重试')
 }
@@ -67,7 +67,7 @@ export async function fetchSellerRefundsRequest(options: SellerRefundListOptions
   if (options.status) params.set('status', String(options.status))
   if (options.search) params.set('search', String(options.search).trim())
   return withServiceFailure(async () => validateServiceResult(
-    await api.get(`/api/shop/refunds?${params.toString()}`, { signal: options.signal }),
+    await api.get(`/api/shop/refunds?${params.toString()}`, { auth: 'required', signal: options.signal }),
     SellerRefundListResponseSchema,
     '/api/shop/refunds',
     'SellerRefundListResponse'
@@ -76,7 +76,7 @@ export async function fetchSellerRefundsRequest(options: SellerRefundListOptions
 
 export async function proactiveRefundRequest(orderNo: string) {
   return withServiceFailure(async () => validatedRefundRequest(
-    await api.post(`${orderPath(orderNo)}/proactive`, { confirm: true }),
+    await api.post(`${orderPath(orderNo)}/proactive`, { confirm: true }, { auth: 'required' }),
     '/api/shop/orders/:orderNo/refund/proactive'
   ), '执行主动退款失败，请查看退款状态')
 }

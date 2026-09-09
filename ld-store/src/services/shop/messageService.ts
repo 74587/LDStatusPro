@@ -16,7 +16,7 @@ interface SystemMessageListOptions {
 
 export async function fetchNotificationSummaryRequest() {
   return withServiceFailure(async () => validateServiceResult(
-    await api.get('/api/shop/messages/unread-summary'),
+    await api.get('/api/shop/messages/unread-summary', { auth: 'required' }),
     NotificationSummaryResponseSchema,
     '/api/shop/messages/unread-summary',
     'NotificationSummaryResponse'
@@ -35,7 +35,7 @@ export async function fetchSystemMessagesRequest(options: SystemMessageListOptio
   if (options.readStatus) params.set('readStatus', options.readStatus)
   if (options.search?.trim()) params.set('search', options.search.trim())
   return withServiceFailure(async () => validateServiceResult(
-    await api.get(`/api/shop/messages/system?${params.toString()}`, { signal: options.signal }),
+    await api.get(`/api/shop/messages/system?${params.toString()}`, { auth: 'required', signal: options.signal }),
     SystemMessagesResponseSchema,
     '/api/shop/messages/system',
     'SystemMessagesResponse'
@@ -44,7 +44,7 @@ export async function fetchSystemMessagesRequest(options: SystemMessageListOptio
 
 export async function markSystemMessageReadRequest(messageId: string | number) {
   return withServiceFailure(async () => validateServiceResult(
-    await api.post(`/api/shop/messages/system/${messageId}/read`),
+    await api.post(`/api/shop/messages/system/${messageId}/read`, undefined, { auth: 'required' }),
     CommerceActionResponseSchema,
     '/api/shop/messages/system/:id/read',
     'CommerceActionResponse'
@@ -53,7 +53,7 @@ export async function markSystemMessageReadRequest(messageId: string | number) {
 
 export async function markAllSystemMessagesReadRequest() {
   return withServiceFailure(async () => validateServiceResult(
-    await api.post('/api/shop/messages/system/read-all'),
+    await api.post('/api/shop/messages/system/read-all', undefined, { auth: 'required' }),
     CommerceActionResponseSchema,
     '/api/shop/messages/system/read-all',
     'CommerceActionResponse'

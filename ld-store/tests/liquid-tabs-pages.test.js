@@ -95,7 +95,7 @@ describe('migrated seller pages', () => {
     expect(wrapper.get('#coupon-events-tab').attributes('aria-selected')).toBe('true')
     await wrapper.get('#coupon-events-tab').trigger('keydown', { key: 'Home' })
     expect(wrapper.get('#coupon-claims-panel').isVisible()).toBe(true)
-    expect(requests.get).toHaveBeenCalledWith(`/api/shop/merchant/coupons/${previewCampaign.id}`)
+    expect(requests.get).toHaveBeenCalledWith(`/api/shop/merchant/coupons/${previewCampaign.id}`, { auth: 'required' })
   })
 
   it('keeps refund counts, search, page reset, and browser back/forward in sync', async () => {
