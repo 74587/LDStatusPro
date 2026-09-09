@@ -3,7 +3,7 @@
     <header class="page-header">
       <p class="notification-eyebrow">重要经营提醒</p>
       <h1 class="page-title">通知设置</h1>
-      <p class="notification-intro">连接 Telegram，让待发货、退款等重要待办及时找到你。</p>
+      <p class="notification-intro">连接 Telegram，在手机上查看经营待办、处理退款，并接收关键提醒。</p>
     </header>
     <div v-if="loading" class="notification-empty" role="status">正在加载通知设置…</div>
     <div v-else-if="!state" class="notification-empty">
@@ -13,8 +13,8 @@
     <div v-if="state" class="notification-layout">
       <section class="notification-card notification-channel" aria-labelledby="telegram-title" :aria-busy="busy">
         <div class="notification-heading">
-          <div class="notification-channel-icon"><Send :size="24" aria-hidden="true" /></div>
-          <div class="notification-channel-title"><h2 id="telegram-title">Telegram</h2><p>官方机器人 · 私聊通知</p></div>
+          <div class="notification-channel-icon"><Bot :size="24" aria-hidden="true" /></div>
+          <div class="notification-channel-title"><h2 id="telegram-title">Telegram 卖家工作台</h2><p>官方机器人 · 私聊使用</p></div>
           <SellerStatusBadge :label="statusLabel" :tone="statusTone" />
         </div>
 
@@ -29,12 +29,12 @@
         <div v-if="!binding" class="notification-actions notification-main-actions">
           <button v-if="state.status === 'unbound'" ref="connectButton" type="button" class="notification-button notification-primary" :disabled="busy || !state.available" @click="begin"><Link2 :size="16" aria-hidden="true" />连接 Telegram</button>
           <template v-else>
-            <button v-if="state.status !== 'enabled'" type="button" class="notification-button notification-primary" :disabled="busy || !state.available || confirmUnbind" @click="change('enable')"><Play :size="16" aria-hidden="true" />开启通知</button>
-            <button type="button" class="notification-button" :class="{ 'notification-primary': state.status === 'enabled' }" :disabled="busy || !state.available || state.status !== 'enabled' || confirmUnbind" @click="test"><Send :size="16" aria-hidden="true" />发送测试通知</button>
+            <a v-if="botUrl" class="notification-button notification-primary" :href="botUrl" target="_blank" rel="noopener noreferrer"><ExternalLink :size="16" aria-hidden="true" />打开卖家工作台</a>
+            <button v-if="state.status !== 'enabled'" type="button" class="notification-button" :disabled="busy || !state.available || confirmUnbind" @click="change('enable')"><Play :size="16" aria-hidden="true" />恢复通知</button>
             <button v-if="state.status === 'enabled'" type="button" class="notification-button notification-warning" :disabled="busy || confirmUnbind" @click="change('pause')"><Pause :size="16" aria-hidden="true" />暂停通知</button>
           </template>
         </div>
-        <p v-if="state.status === 'enabled' && !binding" class="notification-hint">测试消息可能延迟几秒，请稍候；短暂未收到不代表绑定失败。</p>
+        <p v-if="state.status !== 'unbound' && !binding" class="notification-hint">打开机器人后发送 /menu 可随时回到工作台。暂停通知期间仍可查询和处理业务。</p>
         <p v-if="state.status === 'unbound' && !binding" class="notification-hint">在机器人内确认即可完成连接，无需填写手机号或 Chat ID。</p>
 
         <div v-if="binding" class="notification-binding">
@@ -75,14 +75,13 @@
         </div>
 
         <div v-if="state.status !== 'unbound'" class="notification-management">
-          <div class="notification-management-heading"><h3>账号管理</h3><p>更换接收账号，或停止使用此渠道。</p></div>
+          <div class="notification-management-heading"><h3>解除连接</h3><p>解除后，机器人中的查询和业务处理能力也会一并撤销。</p></div>
           <div v-if="!confirmUnbind" class="notification-actions">
-            <button type="button" class="notification-button" :disabled="busy || !state.available" @click="begin"><RefreshCw :size="16" aria-hidden="true" />更换账号</button>
             <button ref="unbindButton" type="button" class="notification-button notification-danger" :disabled="busy" aria-controls="notification-unbind-confirm" :aria-expanded="confirmUnbind" @click="openUnbind"><Unlink :size="16" aria-hidden="true" />解除绑定</button>
           </div>
           <div v-else id="notification-unbind-confirm" class="notification-confirm" role="group" aria-labelledby="notification-unbind-title" @keydown.esc.stop.prevent="cancelUnbind">
             <h4 id="notification-unbind-title"><Unlink :size="17" aria-hidden="true" />解除 Telegram 绑定？</h4>
-            <p>解除后将停止向此账号发送通知，再次接收需要重新连接。若只想临时停收，可以使用「暂停通知」。</p>
+            <p>解除后将停止通知，并立即撤销此 Telegram 账号的工作台查询、退款处理和商品下架能力。若只想临时停收，请使用「暂停通知」。</p>
             <div class="notification-actions">
               <button ref="keepBindingButton" type="button" class="notification-button" :disabled="busy" @click="cancelUnbind">保留绑定</button>
               <button type="button" class="notification-button notification-danger" :disabled="busy" @click="unbind">{{ busy ? '正在解除…' : '确认解除绑定' }}</button>
@@ -92,24 +91,25 @@
       </section>
 
       <aside class="notification-card notification-scope-card" aria-labelledby="scope-title">
-        <div class="notification-scope-heading"><p class="notification-eyebrow">仅发送关键节点</p><h2 id="scope-title">会收到哪些提醒</h2><p>精选重要经营通知，日常消息仍可在站内查看。</p></div>
+        <div class="notification-scope-heading"><p class="notification-eyebrow">手机上的轻量工作台</p><h2 id="scope-title">绑定后可以做什么</h2><p>短流程直接在 Telegram 完成，复杂详情继续打开官网。</p></div>
         <ul class="notification-scope">
-          <li><Package :size="19" aria-hidden="true" /><div><h3>待发货订单</h3><p>支付后首次提醒，以及 24、48、70 小时精选节点。</p></div></li>
-          <li><RotateCcw :size="19" aria-hidden="true" /><div><h3>退款处理</h3><p>新申请、截止前 3 小时，以及重要处理结果。</p></div></li>
-          <li><Store :size="19" aria-hidden="true" /><div><h3>库存与经营状态</h3><p>零库存下架预警、实际下架，以及履约交易限制生效或解除。</p></div></li>
+          <li><ListTodo :size="19" aria-hidden="true" /><div><h3>查看经营待办</h3><p>按截止时间查看退款、待发货订单和零库存预警。</p></div></li>
+          <li><RotateCcw :size="19" aria-hidden="true" /><div><h3>处理退款</h3><p>核对退款金额后同意，或填写会同步给买家的拒绝理由。</p></div></li>
+          <li><ChartNoAxesCombined :size="19" aria-hidden="true" /><div><h3>查看经营概览</h3><p>查询今日、近 7 天和近 30 天订单量、销售额与当前待办。</p></div></li>
+          <li><Package :size="19" aria-hidden="true" /><div><h3>管理上架商品</h3><p>查看自己的商品摘要，并在二次确认后单件下架。</p></div></li>
         </ul>
-        <div class="notification-scope-footer"><p>消息类型由系统固定，当前无需逐项设置。</p><p>站内通知继续保留；通知延迟或未读不会延长发货、退款处理期限。</p></div>
+        <div class="notification-scope-footer"><p>主动通知仅发送待发货、退款、零库存与经营限制等关键节点。</p><p>站内通知继续保留；通知延迟或未读不会延长发货、退款处理期限。</p></div>
       </aside>
     </div>
   </div>
 </template>
 <script setup>
 import { computed, nextTick, ref, watch } from 'vue'
-import { Send, Link2, Unlink, Play, Pause, ExternalLink, Copy, RefreshCw, Clock3, CircleAlert, Package, RotateCcw, Store } from '@lucide/vue'
+import { Bot, Link2, Unlink, Play, Pause, ExternalLink, Copy, RefreshCw, Clock3, CircleAlert, Package, RotateCcw, ListTodo, ChartNoAxesCombined } from '@lucide/vue'
 import QRCode from 'qrcode'
 import SellerStatusBadge from '@/components/seller/SellerStatusBadge.vue'
 import { useSellerNotifications } from '@/composables/useSellerNotifications'
-const { state, binding, loading, busy, waiting, remainingMinutes, load, begin, change, test, copy } = useSellerNotifications()
+const { state, binding, loading, busy, waiting, remainingMinutes, load, begin, change, copy } = useSellerNotifications()
 const qr = ref('')
 const confirmUnbind = ref(false)
 const unbindButton = ref(null)
@@ -118,17 +118,18 @@ const connectButton = ref(null)
 const bindingHeading = ref(null)
 const statusLabel = computed(() => state.value?.status === 'unbound' && waiting.value ? '等待确认' : ({ unbound: '未绑定', enabled: '已开启', paused: '已暂停', unavailable: '渠道异常' })[state.value?.status] || '未绑定')
 const statusTone = computed(() => state.value?.status === 'enabled' ? 'success' : waiting.value || ['paused', 'unavailable'].includes(state.value?.status) ? 'warning' : 'neutral')
+const botUrl = computed(() => state.value?.botUsername && /^[A-Za-z0-9_]+bot$/i.test(state.value.botUsername) ? `https://t.me/${state.value.botUsername}` : '')
 const channelDescription = computed(() => ({
-  unbound: '连接后，重要经营通知会发送到你的 Telegram 私聊。',
-  enabled: '重要通知已开启。可发送一条测试通知，确认接收正常。',
-  paused: '通知已暂停，账号绑定仍保留。开启后接收新的重要通知。',
-  unavailable: '无法向此账号发送通知。请先在 Telegram 取消屏蔽机器人，再开启通知并测试。'
+  unbound: '连接后，可在 Telegram 查询经营信息、处理简单业务并接收关键提醒。',
+  enabled: '卖家工作台可以使用，重要主动通知也已开启。',
+  paused: '主动通知已暂停，卖家工作台仍可正常查询和处理业务。',
+  unavailable: '机器人曾被屏蔽。取消屏蔽后可继续使用工作台，再从这里恢复主动通知。'
 })[state.value?.status] || '')
 const deliveryLabel = computed(() => ({ pending: '等待发送', sending: '正在发送', accepted: 'Telegram 已接受', failed: '发送失败', unknown: '发送结果待核对', skipped: '已取消或无需提醒' })[state.value?.lastDelivery?.status] || '')
 const deliveryTone = computed(() => ({ accepted: 'success', failed: 'danger', unknown: 'warning' })[state.value?.lastDelivery?.status] || 'neutral')
 const deliveryDescription = computed(() => ({
   pending: '消息已排队，发送结果会自动更新。', sending: '正在提交至 Telegram，请稍候。',
-  accepted: 'Telegram 已接受消息，不代表你已阅读。', failed: '请检查渠道状态，稍后可发送测试通知确认。',
+  accepted: 'Telegram 已接受消息，不代表你已阅读。', failed: '请检查渠道状态，并打开机器人工作台确认连接。',
   unknown: '暂时无法确认发送结果，请先检查 Telegram 是否已收到。', skipped: '因渠道或业务状态变化，此条通知已取消或无需发送。'
 })[state.value?.lastDelivery?.status] || '')
 const formatDate = value => new Date(value).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })

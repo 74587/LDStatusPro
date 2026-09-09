@@ -1,6 +1,6 @@
 /* global window, URL */
 const scenario = new URL(window.location.href).searchParams.get('scenario') || 'unbound'
-const state = { available: true, status: scenario === 'accepted' ? 'enabled' : scenario, telegramUsername: scenario === 'unbound' ? null : 'preview_seller', pendingExpiresAt: null,
+const state = { available: true, status: scenario === 'accepted' ? 'enabled' : scenario, botUsername: 'example_notify_bot', telegramUsername: scenario === 'unbound' ? null : 'preview_seller', pendingExpiresAt: null,
   lastDelivery: scenario === 'accepted' ? { status: 'accepted', at: new Date().toISOString(), error: null } : null }
 const ok = data => ({ success: true, data: { ...data } })
 export async function fetchNotificationChannel() { return ok(state) }

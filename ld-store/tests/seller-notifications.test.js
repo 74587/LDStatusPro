@@ -8,7 +8,7 @@ import SellerNotifications from '../src/views/SellerNotifications.vue'
 const requests = vi.hoisted(() => ({ fetchNotificationChannel: vi.fn(), beginTelegramBinding: vi.fn(), changeTelegramChannel: vi.fn(), testTelegramChannel: vi.fn() }))
 vi.mock('../src/services/shop/notificationChannelService', () => requests)
 vi.mock('qrcode', () => ({ default: { toDataURL: vi.fn().mockResolvedValue('data:image/png;base64,dGVzdA==') } }))
-const initial = { available: true, status: 'unbound', telegramUsername: null, pendingExpiresAt: null, lastDelivery: null }
+const initial = { available: true, status: 'unbound', botUsername: 'test_bot', telegramUsername: null, pendingExpiresAt: null, lastDelivery: null }
 let wrapper
 beforeEach(() => { vi.useFakeTimers(); vi.resetAllMocks(); setActivePinia(createPinia()); requests.fetchNotificationChannel.mockResolvedValue({ success: true, data: { ...initial } }) })
 afterEach(() => { wrapper?.unmount(); vi.restoreAllMocks(); vi.useRealTimers() })
@@ -38,12 +38,14 @@ describe('seller notification settings', () => {
     expect(wrapper.find('.notification-error').exists()).toBe(false)
     expect(button('暂停通知').attributes('disabled')).toBeUndefined()
   })
-  it('uses the global success toast when a test notification is accepted', async () => {
+  it('opens the Bot workspace and only keeps pause or unbind management', async () => {
     requests.fetchNotificationChannel.mockResolvedValue({ success: true, data: { ...initial, status: 'enabled' } })
-    requests.testTelegramChannel.mockResolvedValue({ success: true, data: null })
-    await open(); await button('发送测试通知').trigger('click'); await flushPromises()
-    expect(useUiStore().toasts).toEqual(expect.arrayContaining([expect.objectContaining({ type: 'success', message: '测试通知已排队，可能延迟几秒，请稍候。' })]))
-    expect(wrapper.find('.notification-feedback').exists()).toBe(false)
+    await open()
+    expect(wrapper.find('a[href="https://t.me/test_bot"]').text()).toContain('打开卖家工作台')
+    expect(button('暂停通知')).toBeDefined()
+    expect(button('解除绑定')).toBeDefined()
+    expect(button('发送测试通知')).toBeUndefined()
+    expect(wrapper.text()).not.toContain('更换账号')
   })
   it('does not offer binding when the provider is not configured', async () => {
     requests.fetchNotificationChannel.mockResolvedValue({ success: true, data: { ...initial, available: false } })

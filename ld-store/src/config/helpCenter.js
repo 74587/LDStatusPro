@@ -133,9 +133,9 @@ export const HELP_ARTICLES = Object.freeze([
     id: 'seller-notifications',
     group: 'seller',
     title: '配置通知',
-    summary: '绑定 Telegram 接收重要经营提醒，发送测试消息，并排查延迟或未收到通知的问题。',
+    summary: '绑定 Telegram 卖家工作台，查询经营信息、处理退款与商品下架，并接收重要提醒。',
     audience: ['卖家'],
-    keywords: ['Telegram', 'TG', '机器人', '绑定', '通知设置', '测试消息', '消息延迟', '收不到通知', '暂停通知', '解除绑定'],
+    keywords: ['Telegram', 'TG', '机器人', '卖家工作台', '绑定', '通知设置', '消息延迟', '退款处理', '商品下架', '经营概览', '暂停通知', '解除绑定'],
     icon: 'BellRing',
     loader: () => import('@/components/docs/DocSellerNotifications.vue'),
     related: ['seller-center', 'seller-orders', 'shipping-deadline']
@@ -243,8 +243,8 @@ export const HELP_ARTICLES = Object.freeze([
 
 export const HELP_SEARCH_ENTRIES = Object.freeze([
   { articleId: 'seller-notifications', anchor: 'connect-telegram', title: '绑定 Telegram 机器人接收通知', keywords: ['TG绑定', '连接机器人', 'Start', '通知设置'] },
-  { articleId: 'seller-notifications', anchor: 'test-message', title: '测试消息延迟几秒是否绑定失败', keywords: ['测试消息没收到', '消息延迟', '测试通知', '通知已排队'] },
-  { articleId: 'seller-notifications', anchor: 'not-received', title: 'Telegram 没有收到通知怎么排查', keywords: ['收不到通知', '屏蔽机器人', '已暂停', '渠道异常'] },
+  { articleId: 'seller-notifications', anchor: 'workspace', title: '用 Telegram 处理退款和下架商品', keywords: ['卖家工作台', '同意退款', '拒绝退款', '商品搜索', '商品下架', '经营概览'] },
+  { articleId: 'seller-notifications', anchor: 'not-received', title: 'Telegram 机器人没有响应怎么排查', keywords: ['机器人没响应', '消息延迟', '屏蔽机器人', '已暂停', '渠道异常', 'menu'] },
   { articleId: 'shipping-deadline', anchor: 'timeline', title: '普通物品 48 与 72 小时规则', keywords: ['未发货自动退款', '物品下架', '发货倒计时'] },
   { articleId: 'shipping-deadline', anchor: 'seller-restriction', title: '3 笔超时退款与 7 天卖家限制', keywords: ['封禁卖家', '168小时', '申诉撤销'] },
   { articleId: 'shipping-deadline', anchor: 'refund-results', title: '自动退款失败或待核对怎么办', keywords: ['余额不足', '结果未知', 'credit处理'] },

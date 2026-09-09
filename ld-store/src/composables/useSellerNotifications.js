@@ -1,6 +1,6 @@
 import { useToast } from '@/composables/useToast'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
-import { beginTelegramBinding, changeTelegramChannel, fetchNotificationChannel, testTelegramChannel } from '@/services/shop/notificationChannelService'
+import { beginTelegramBinding, changeTelegramChannel, fetchNotificationChannel } from '@/services/shop/notificationChannelService'
 
 export function useSellerNotifications() {
   const state = ref(null)
@@ -77,15 +77,6 @@ export function useSellerNotifications() {
       toast.success(action === 'unbind' ? '已解除绑定' : action === 'pause' ? '已暂停重要通知' : '已开启重要通知')
     })
   }
-  async function test() {
-    await run(async () => {
-      const result = await testTelegramChannel()
-      if (disposed) return
-      if (!result.success) { reportError(result.error); return }
-      toast.success('测试通知已排队，可能延迟几秒，请稍候。')
-    })
-    if (!disposed && !error.value) await load()
-  }
   async function copy() {
     if (!binding.value || !waiting.value) return
     try { await navigator.clipboard.writeText(binding.value.url); toast.success('绑定链接已复制，请勿转发给他人。') }
@@ -111,5 +102,5 @@ export function useSellerNotifications() {
     document.removeEventListener('visibilitychange', resume)
     window.removeEventListener('focus', resume)
   })
-  return { state, binding, loading, busy, waiting, remainingMinutes, load, begin, change, test, copy }
+  return { state, binding, loading, busy, waiting, remainingMinutes, load, begin, change, copy }
 }
