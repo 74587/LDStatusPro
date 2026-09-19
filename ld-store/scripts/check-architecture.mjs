@@ -61,6 +61,10 @@ for (const file of sourceFiles(sourceRoot)) {
     if (!source.includes('useOrderRefund')) failures.push(`${path}: 退款状态机必须由 useOrderRefund 管理`)
     if (/from\s+['"][^'"]*services\//.test(source)) failures.push(`${path}: 退款视图不能直接依赖 service`)
   }
+
+  if (path === 'src/views/LdImage.vue' && /\/api\/image\/[^\n]*auth:\s*'none'/.test(source)) {
+    failures.push(`${path}: 图床接口需要 Bearer 登录态，不能使用 auth: 'none'`)
+  }
 }
 
 if (failures.length) {

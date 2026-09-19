@@ -102,6 +102,21 @@ describe('API request lifecycle', () => {
     expect(options.headers.has('content-type')).toBe(false)
   })
 
+  it('attaches the storefront token to authenticated image host requests', async () => {
+    storage.set('token', 'synthetic-session')
+    const fetchMock = vi.fn().mockResolvedValue(mockResponse({ success: true }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await api.get('/api/image/history')
+    await api.get('/api/image/price-info', { auth: 'required' })
+    await api.upload('/api/image/upload', new FormData(), { auth: 'required' })
+
+    expect(fetchMock).toHaveBeenCalledTimes(3)
+    for (const [, options] of fetchMock.mock.calls) {
+      expect(options.headers.get('Authorization')).toBe('Bearer synthetic-session')
+    }
+  })
+
   it('distinguishes caller cancellation from request timeout', async () => {
     vi.stubGlobal('fetch', vi.fn(abortableFetch))
     const caller = new AbortController()
