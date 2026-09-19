@@ -5,7 +5,7 @@
 
 > **Linux.do & IDCFlare Community Enhancement Tool** - Trust Level Tracking · Reading Stats · Cloud Sync · Leaderboard
 
-![Version](https://img.shields.io/badge/version-v3.5.4.6-blue)
+![Version](https://img.shields.io/badge/version-v3.9.0.3-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Tampermonkey](https://img.shields.io/badge/Tampermonkey-✓-brightgreen)
 ![Multi-Site](https://img.shields.io/badge/Multi--Site-✓-brightgreen)
@@ -16,6 +16,8 @@
 🌐 **[Website](https://ldspro.qzz.io/)** | 📖 **[Documentation](./DOCS.md)** | 🔄 **[Changelog](./update_log.md)**
 
 [简体中文](./README.md) | **English** | [繁體中文](./README_TW.md)
+
+The Simplified Chinese README is the source of truth for versions, repo layout, and API hosts. This translation may lag.
 
 </div>
 

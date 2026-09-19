@@ -5,7 +5,7 @@
 
 > **Linux.do & IDCFlare 社群增強工具** - 信任等級追蹤 · 閱讀統計 · 雲端同步 · 排行榜
 
-![Version](https://img.shields.io/badge/version-v3.5.4.6-blue)
+![Version](https://img.shields.io/badge/version-v3.9.0.3-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Tampermonkey](https://img.shields.io/badge/Tampermonkey-✓-brightgreen)
 ![Multi-Site](https://img.shields.io/badge/Multi--Site-✓-brightgreen)
@@ -16,6 +16,8 @@
 🌐 **[官網](https://ldspro.qzz.io/)** | 📖 **[詳細文件](./DOCS.md)** | 🔄 **[更新日誌](./update_log.md)**
 
 [简体中文](./README.md) | [English](./README_EN.md) | **繁體中文**
+
+版本、倉庫範圍與 API 位址以簡體中文 README 為準，本譯本可能落後。
 
 </div>
 

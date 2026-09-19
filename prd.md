@@ -1,5 +1,7 @@
 # LDStatus Pro 产品需求文档 (PRD)
 
+> **历史文档。** 写于 2026-01-12，产品版本 v3.5.4.8。当时士多仍内嵌在脚本、后端仍写成 Cloudflare Workers。现行脚本版本见 `LDStatusPro.user.js` `@version`；士多在 `ld-store/`；主站 API 在独立仓库 `ldsp-backend`。
+
 > **产品名称**: LDStatus Pro  
 > **版本**: v3.5.4.8  
 > **文档版本**: 1.0  

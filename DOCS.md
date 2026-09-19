@@ -1,6 +1,8 @@
 # LDStatusPro 详细说明文档
 
-> 本文档详细说明 LDStatusPro 的各项功能、数据存储、同步机制及规则。
+> 本文说明 **用户脚本** 的本地存储、阅读规则、云同步和排行榜。商城能力在独立站点 `https://ldcstore.com/`，不在脚本内。
+>
+> 云端 API 是 `https://api1.ldspro.qzz.io`，不是图床 Worker。脚本还匹配 `idcflare.com`。核对日期：2026-09-19。
 
 ## 📑 目录
 
@@ -72,6 +74,8 @@ LDStatusPro 使用两种存储方式：**本地存储** 和 **云端存储**。
 ---
 
 ## 阅读时间统计规则
+
+统计在 `linux.do` 与 `idcflare.com` 上分别进行，数据按站点隔离。
 
 ### 统计机制
 

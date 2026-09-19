@@ -5,7 +5,7 @@
 
 > **Linux.do & IDCFlare 社区增强工具** - 信任级别追踪 · 阅读统计 · 云同步 · 排行榜 · LD 士多入口
 
-![Version](https://img.shields.io/badge/version-v3.9.0.0-blue)
+![Version](https://img.shields.io/badge/version-v3.9.0.3-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Tampermonkey](https://img.shields.io/badge/Tampermonkey-✓-brightgreen)
 ![Multi-Site](https://img.shields.io/badge/Multi--Site-✓-brightgreen)
@@ -13,7 +13,9 @@
 ![Code Size](https://img.shields.io/github/languages/code-size/caigg188/LDStatusPro)
 ![Stars](https://img.shields.io/github/stars/caigg188/LDStatusPro?style=flat)
 
-🌐 **[官网](https://ldspro.qzz.io/)** | 📖 **[详细文档](./DOCS.md)** | 🔄 **[更新日志](./update_log.md)**
+🌐 **[官网](https://ldspro.qzz.io/)** | 🏪 **[LD 士多](https://ldcstore.com/)** | 📖 **[脚本说明](./DOCS.md)**
+
+脚本版本以 `LDStatusPro.user.js` 头部 `@version` 为准（当前 **3.9.0.3**）。`update_log.md` 停在 v3.5.4.10，后续变更看 git 与下方近期条目。
 
 **简体中文** | [English](./README_EN.md) | [繁體中文](./README_TW.md)
 
@@ -252,42 +254,29 @@
 
 ---
 
-## 🛠️ 技术架构
+## 🛠️ 本仓库范围
+
+本仓库只含前端三件套。后端、管理面板、安全服务、观测平台是独立仓库。
 
 ```
 LDStatusPro/
-├── LDStatusPro.user.js    # 客户端脚本 (Tampermonkey)
-├── backend/               # 后端服务 (Cloudflare Workers)
-│   ├── src/              # 源代码 (路由、服务、中间件)
-│   ├── scripts/          # 数据库迁移脚本
-│   ├── docs/             # API 文档
-│   └── wrangler.toml     # Workers 配置
-├── admin-panel/          # 管理面板 (Vue.js)
-│   ├── src/              # 前端源码
-│   ├── views/            # 页面组件
-│   └── stores/           # Pinia 状态管理
-├── website/              # 官网 (React + TypeScript)
-│   ├── src/              # 源代码
-│   └── hooks/            # 动态数据获取 Hook
-└── docs/                 # 项目文档
-    └── technicaDocs/     # 技术文档
+├── LDStatusPro.user.js    # Tampermonkey 脚本（主 API：api1）
+├── ld-store/              # LD 士多 Web（Vue 3 + Vite 8）→ https://ldcstore.com/
+└── website/               # 产品官网（React 19 + Vite 7）→ https://ldspro.qzz.io/
 ```
+
+| 前端 | 调用 |
+|---|---|
+| 用户脚本 | `https://api1.ldspro.qzz.io`（OAuth / 阅读 / 排行榜 / 工单） |
+| 士多 Web | auth → api1；业务 → api2；图床 → api |
+| 官网 | 首页静态文案；年报走 `https://api.ldspro.qzz.io` |
 
 ### 技术栈
 
-- **客户端**: 原生 JavaScript，零依赖，16000+ 行代码
-- **后端**: Cloudflare Workers + D1 Database + R2 Storage
-- **管理面板**: Vue 3 + Pinia + Vue Router 4 + Tailwind CSS
-- **官网**: React 19 + TypeScript + Framer Motion + Tailwind CSS 4
-- **认证**: OAuth 2.0 (超级管理员 + 子管理员双认证)
-
-### 后端架构
-
-- **缓存分层**: HTTP Cache → D1 Cache → Memory Buffer → D1 Tables
-- **数据缓冲**: 智能批量写入，减少数据库压力
-- **定时任务**: Cron Triggers 预计算排行榜
-- **备份系统**: R2 对象存储，自动清理
-- **安全防护**: 429 限流 + IP 黑名单 + 蜜罐检测
+- **用户脚本**: 原生 JavaScript，无运行时 npm 依赖，约 17665 行；版本 `3.9.0.3`
+- **士多 Web**: Vue 3.5 + Vite 8 + Pinia + Vue Router 4 + Tailwind 3.4
+- **官网**: React 19.2 + TypeScript + Vite 7.2 + Tailwind CSS 4 + Framer Motion；首页不走 CMS API
+- **认证**: 用户 OAuth 由 api1 签发 JWT；管理面板不在本仓
 
 ### 性能优化
 
@@ -301,6 +290,10 @@ LDStatusPro/
 ---
 
 ## 📋 更新日志
+
+### v3.9.0.3
+
+- 脚本元数据版本 `3.9.0.3`。近期变更主要在 `ld-store`（退款、公告、卖家 Telegram、checkout、图床鉴权），见 git log。
 
 ### v3.9.0.0
 
