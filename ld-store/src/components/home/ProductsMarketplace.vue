@@ -343,9 +343,10 @@ function setupInfiniteScroll() {
   if (!sentinel.value || !hasMore.value || typeof IntersectionObserver !== 'function') return
   observer = new IntersectionObserver(async (entries) => {
     if (!entries[0].isIntersecting || loading.value || !hasMore.value) return
-    activeRequest?.abort()
-    activeRequest = new AbortController()
-    const result = await shopStore.loadMore({ signal: activeRequest.signal })
+    const controller = new AbortController()
+    activeRequest = controller
+    const result = await shopStore.loadMore({ signal: controller.signal })
+    if (activeRequest !== controller) return
     if (result?.success === false) {
       if (!result.aborted) toast.error(result.error || consumeStoreError('加载更多失败，请稍后重试'))
       return

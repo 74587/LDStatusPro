@@ -79,10 +79,10 @@ function deferred<T>() {
   return { promise, resolve }
 }
 
-function productPage(id: number, page: number) {
+function productPage(id: number, page: number, pagination: Record<string, unknown> = {}) {
   return success({
     products: [{ id, name: `物品 ${id}` }],
-    pagination: { total: 2, page, pageSize: 20, totalPages: 1 },
+    pagination: { total: 2, page, pageSize: 20, totalPages: 1, ...pagination },
     rankingContext: { surface: 'home', version: 'v1', fallback: false }
   })
 }
@@ -214,5 +214,91 @@ describe('storefront domain stores', () => {
     expect(store.currentCategory).toBe('')
     expect(store.products.map(product => product.id)).toEqual([1])
     expect(store.loading).toBe(false)
+  })
+
+  it('keeps price filters and the current list when loading the next page', async () => {
+    mocks.fetchProducts.mockResolvedValueOnce(productPage(1, 1, {
+      total: 40,
+      totalPages: 2,
+      hasMore: true,
+      nextCursor: 'cursor-1'
+    }))
+    const store = useCatalogStore()
+    await store.fetchProducts({ categoryId: '', page: 1, priceMin: 5, priceMax: 20 })
+
+    mocks.fetchProducts.mockResolvedValueOnce(productPage(2, 2, {
+      total: 40,
+      totalPages: 2,
+      hasMore: false,
+      nextCursor: 'cursor-2'
+    }))
+    const result = await store.loadMore()
+
+    expect(result.success).toBe(true)
+    expect(mocks.fetchProducts).toHaveBeenLastCalledWith(expect.objectContaining({
+      page: 2,
+      priceMin: 5,
+      priceMax: 20,
+      cursor: 'cursor-1'
+    }))
+    expect(store.currentPriceMin).toBe(5)
+    expect(store.currentPriceMax).toBe(20)
+    expect(store.products.map(product => product.id)).toEqual([1, 2])
+    expect(store.page).toBe(2)
+    expect(store.hasMore).toBe(false)
+  })
+
+  it('does not treat omitted price keys as clearing the active range', async () => {
+    mocks.fetchProducts.mockResolvedValueOnce(productPage(1, 1, {
+      total: 40,
+      hasMore: true,
+      nextCursor: 'cursor-1'
+    }))
+    const store = useCatalogStore()
+    await store.fetchProducts({ categoryId: '', page: 1, priceMin: 8, priceMax: 30 })
+
+    mocks.fetchProducts.mockResolvedValueOnce(productPage(2, 2, {
+      total: 40,
+      hasMore: false,
+      nextCursor: 'cursor-2'
+    }))
+    await store.fetchProducts({ categoryId: '', page: 2 })
+
+    expect(mocks.fetchProducts).toHaveBeenLastCalledWith(expect.objectContaining({
+      page: 2,
+      priceMin: 8,
+      priceMax: 30,
+      cursor: 'cursor-1'
+    }))
+    expect(store.currentPriceMin).toBe(8)
+    expect(store.currentPriceMax).toBe(30)
+    expect(store.products.map(product => product.id)).toEqual([1, 2])
+  })
+
+  it('restarts at page 1 when the price range actually changes', async () => {
+    mocks.fetchProducts.mockResolvedValueOnce(productPage(1, 1, {
+      total: 40,
+      hasMore: true,
+      nextCursor: 'cursor-1'
+    }))
+    const store = useCatalogStore()
+    await store.fetchProducts({ categoryId: '', page: 1, priceMin: 5, priceMax: 20 })
+
+    mocks.fetchProducts.mockResolvedValueOnce(productPage(3, 1, {
+      total: 12,
+      hasMore: false,
+      nextCursor: 'cursor-new'
+    }))
+    await store.fetchProducts({ categoryId: '', page: 2, priceMin: 10, priceMax: 20, forceRefresh: true })
+
+    expect(mocks.fetchProducts).toHaveBeenLastCalledWith(expect.objectContaining({
+      page: 1,
+      priceMin: 10,
+      priceMax: 20,
+      cursor: ''
+    }))
+    expect(store.currentPriceMin).toBe(10)
+    expect(store.products.map(product => product.id)).toEqual([3])
+    expect(store.page).toBe(1)
   })
 })

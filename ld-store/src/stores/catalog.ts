@@ -183,15 +183,18 @@ export const useCatalogStore = defineStore('catalog', () => {
       requestedPage = Number.parseInt(String(categoryInput.page ?? ''), 10)
       forceRefresh = categoryInput.forceRefresh ?? forceRefresh
       requestSignal = categoryInput.signal
-      requestedPriceMin = Object.hasOwn(categoryInput, 'priceMin') ? categoryInput.priceMin : null
-      requestedPriceMax = Object.hasOwn(categoryInput, 'priceMax') ? categoryInput.priceMax : null
+      // Omit means keep the active range; only an explicit key (including null) changes it.
+      requestedPriceMin = Object.hasOwn(categoryInput, 'priceMin') ? categoryInput.priceMin : currentPriceMin.value
+      requestedPriceMax = Object.hasOwn(categoryInput, 'priceMax') ? categoryInput.priceMax : currentPriceMax.value
     }
     if (!Number.isFinite(requestedPage) || Number(requestedPage) <= 0) requestedPage = null
 
     const priceRange = normalizePriceRange(requestedPriceMin, requestedPriceMax)
+    const categoryChanged = String(categoryId) !== String(currentCategory.value)
     const sortChanged = Boolean(requestedSort && requestedSort !== currentSort.value)
     const priceChanged = priceRange.priceMin !== currentPriceMin.value || priceRange.priceMax !== currentPriceMax.value
-    const preserveCurrent = preserveRequested && categoryId === currentCategory.value && !sortChanged && !priceChanged
+    const queryChanged = categoryChanged || sortChanged || priceChanged || forceRefresh
+    const preserveCurrent = preserveRequested && !categoryChanged && !sortChanged && !priceChanged
     const restorePrevious = () => {
       if (!preserveCurrent) return
       products.value = previous.products
@@ -201,7 +204,7 @@ export const useCatalogStore = defineStore('catalog', () => {
       catalogCursor.value = previous.cursor
       rankingContext.value = previous.rankingContext
     }
-    const shouldReset = categoryId !== currentCategory.value || forceRefresh || sortChanged || priceChanged || requestedPage === 1
+    const shouldReset = queryChanged || requestedPage === 1
     if (loading.value && !shouldReset && requestedPage === null) return cancelledFailure('请求进行中，请稍后重试')
 
     if (shouldReset) {
@@ -209,7 +212,7 @@ export const useCatalogStore = defineStore('catalog', () => {
       if (requestedSort) currentSort.value = requestedSort
       currentPriceMin.value = priceRange.priceMin
       currentPriceMax.value = priceRange.priceMax
-      page.value = requestedPage || 1
+      page.value = queryChanged ? 1 : (requestedPage || 1)
       hasMore.value = true
       catalogCursor.value = ''
       rankingContext.value = null
@@ -290,9 +293,16 @@ export const useCatalogStore = defineStore('catalog', () => {
 
   async function loadMore(options: { signal?: AbortSignal } = {}) {
     if (loading.value || !hasMore.value) return cancelledFailure('')
-    page.value += 1
-    const result = await fetchProducts({ categoryId: currentCategory.value, page: page.value, signal: options.signal })
-    if (!result.success) page.value = Math.max(page.value - 1, 1)
+    const previousPage = page.value
+    const result = await fetchProducts({
+      categoryId: currentCategory.value,
+      page: previousPage + 1,
+      sort: currentSort.value,
+      priceMin: currentPriceMin.value,
+      priceMax: currentPriceMax.value,
+      signal: options.signal
+    })
+    if (!result.success) page.value = previousPage
     return result
   }
 
