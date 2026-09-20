@@ -3,7 +3,7 @@
     <div class="filter-section">
       <CategoryFilter
         :categories="marketCategories"
-        :current-category="currentCategory"
+        :current-category="selectedCategory"
         @select="handleCategorySelect"
       />
     </div>
@@ -122,7 +122,7 @@
       </span>
     </div>
 
-    <div v-if="initialLoading" class="products-loading">
+    <div v-if="showCatalogSkeleton" class="products-loading">
       <Skeleton type="card" :count="6" :columns="gridColumns" />
     </div>
 
@@ -179,17 +179,21 @@ const toast = useToast()
 const sentinel = ref(null)
 const initialLoading = ref(true)
 const hasInitialized = ref(false)
+const categorySwitchPending = ref(false)
+const selectedCategory = ref(shopStore.currentCategory)
 const priceMinInput = ref('')
 const priceMaxInput = ref('')
 const mobileFilterOpen = ref(false)
 const filterApplying = ref(false)
 const gridColumns = ref(2)
 const CATEGORY_CACHE_TTL = 5 * 60 * 1000
+const CATEGORY_SWITCH_DEBOUNCE_MS = 140
 const categoryCache = createTtlLruCache({ ttl: CATEGORY_CACHE_TTL, max: 24 })
 let lastLoadedAt = 0
 let observer = null
 let latestCatalogActionId = 0
 let activeRequest = null
+let categorySwitchTimer = null
 
 const sortTabs = [
   { value: 'default', label: '默认', mobileLabel: '默认排序' },
@@ -254,8 +258,10 @@ function tryRestoreFromCache(categoryId, sortKey, filters = buildCatalogFilters(
   const cached = categoryCache.get(key)
   if (cached && Array.isArray(cached.products)) {
     shopStore.restoreFromCache(cached)
+    selectedCategory.value = cached.categoryId ?? categoryId
     syncPriceFilterInputs(cached.priceMin, cached.priceMax)
     initialLoading.value = false
+    categorySwitchPending.value = false
     return true
   }
   return false
@@ -287,13 +293,16 @@ const marketProducts = computed(() => toSafeArray(shopStore.products).filter((pr
 const priorityImageIds = computed(() => new Set(
   marketProducts.value.filter((product) => !!product?.imageUrl).slice(0, 4).map((product) => product.id)
 ))
-const currentCategory = computed(() => shopStore.currentCategory)
-const currentCategoryName = computed(() => shopStore.currentCategoryName)
+const currentCategoryName = computed(() => {
+  if (!selectedCategory.value) return '全部'
+  return categories.value.find((item) => String(item.id) === String(selectedCategory.value))?.name || shopStore.currentCategoryName
+})
 const currentSort = computed(() => shopStore.currentSort)
 const inStockOnly = computed(() => shopStore.inStockOnly)
 const loading = computed(() => shopStore.loading)
 const hasMore = computed(() => shopStore.hasMore)
 const total = computed(() => shopStore.total)
+const showCatalogSkeleton = computed(() => initialLoading.value || categorySwitchPending.value)
 const hasActivePriceFilter = computed(() => shopStore.currentPriceMin !== null || shopStore.currentPriceMax !== null)
 const hasDraftPriceFilter = computed(() => (
   normalizePriceFilterInput(priceMinInput.value) !== null || normalizePriceFilterInput(priceMaxInput.value) !== null
@@ -337,8 +346,8 @@ function setupInfiniteScroll() {
     activeRequest?.abort()
     activeRequest = new AbortController()
     const result = await shopStore.loadMore({ signal: activeRequest.signal })
-    if (result?.success === false && !result.aborted) {
-      toast.error(result.error || consumeStoreError('加载更多失败，请稍后重试'))
+    if (result?.success === false) {
+      if (!result.aborted) toast.error(result.error || consumeStoreError('加载更多失败，请稍后重试'))
       return
     }
     saveCache(shopStore.currentCategory, shopStore.currentSort || 'default', buildCatalogFilters())
@@ -346,14 +355,36 @@ function setupInfiniteScroll() {
   observer.observe(sentinel.value)
 }
 
+function cancelScheduledCategorySwitch() {
+  if (categorySwitchTimer !== null) {
+    window.clearTimeout(categorySwitchTimer)
+    categorySwitchTimer = null
+  }
+}
+
+function discardInFlightCatalogAction() {
+  latestCatalogActionId += 1
+  activeRequest?.abort()
+  activeRequest = null
+}
+
+function restoreCachedCatalog(categoryId, sortKey, filters = buildCatalogFilters()) {
+  if (!tryRestoreFromCache(categoryId, sortKey, filters)) return false
+  cancelScheduledCategorySwitch()
+  discardInFlightCatalogAction()
+  void nextTick(setupInfiniteScroll)
+  return true
+}
+
 async function loadCatalogState({
-  categoryId = shopStore.currentCategory,
+  categoryId = selectedCategory.value,
   sortKey = shopStore.currentSort || 'default',
   filters = buildCatalogFilters(),
   actionId = null,
   useCache = true,
   signal
 } = {}) {
+  selectedCategory.value = categoryId
   if (useCache && tryRestoreFromCache(categoryId, sortKey, filters)) {
     await nextTick()
     if (actionId !== null && actionId !== latestCatalogActionId) return { success: false, cancelled: true, error: '' }
@@ -372,7 +403,9 @@ async function loadCatalogState({
   })
   if (actionId !== null && actionId !== latestCatalogActionId) return { success: false, cancelled: true, error: '' }
   initialLoading.value = false
+  categorySwitchPending.value = false
   if (!result?.success) return result
+  selectedCategory.value = categoryId
   if (isSameCatalogState(categoryId, sortKey, filters)) saveCache(categoryId, sortKey, filters)
   syncPriceFilterInputs(filters.priceMin, filters.priceMax)
   lastLoadedAt = Date.now()
@@ -383,6 +416,8 @@ async function loadCatalogState({
 }
 
 async function runCatalogAction(options) {
+  cancelScheduledCategorySwitch()
+  categorySwitchPending.value = false
   const actionId = ++latestCatalogActionId
   activeRequest?.abort()
   activeRequest = new AbortController()
@@ -394,11 +429,24 @@ async function runCatalogAction(options) {
 }
 
 function handleCategorySelect(categoryId) {
-  return runCatalogAction({ categoryId, sortKey: shopStore.currentSort || 'default', filters: buildCatalogFilters() })
+  const sortKey = shopStore.currentSort || 'default'
+  const filters = buildCatalogFilters()
+  selectedCategory.value = categoryId
+  if (restoreCachedCatalog(categoryId, sortKey, filters)) return Promise.resolve({ success: true, restored: true })
+
+  cancelScheduledCategorySwitch()
+  discardInFlightCatalogAction()
+  initialLoading.value = true
+  categorySwitchPending.value = true
+  categorySwitchTimer = window.setTimeout(() => {
+    categorySwitchTimer = null
+    void runCatalogAction({ categoryId, sortKey, filters, useCache: false })
+  }, CATEGORY_SWITCH_DEBOUNCE_MS)
+  return Promise.resolve({ success: true, scheduled: true })
 }
 
 function handleSortChange(sortKey) {
-  return runCatalogAction({ categoryId: shopStore.currentCategory, sortKey, filters: buildCatalogFilters() })
+  return runCatalogAction({ categoryId: selectedCategory.value, sortKey, filters: buildCatalogFilters() })
 }
 
 function handleMobileSortChange(event) {
@@ -450,7 +498,7 @@ async function handleMobileFilterApply(draft) {
   filterApplying.value = true
   try {
     const result = await runCatalogAction({
-      categoryId: shopStore.currentCategory,
+      categoryId: selectedCategory.value,
       sortKey: shopStore.currentSort || 'default',
       filters,
       useCache: !stockChanged
@@ -474,7 +522,7 @@ async function handleToggleInStock() {
   categoryCache.clear()
   shopStore.setInStockOnly(!shopStore.inStockOnly)
   await runCatalogAction({
-    categoryId: shopStore.currentCategory,
+    categoryId: selectedCategory.value,
     sortKey: shopStore.currentSort || 'default',
     filters: buildCatalogFilters(),
     useCache: false
@@ -484,7 +532,7 @@ async function handleToggleInStock() {
 function applyPriceFilter() {
   const filters = buildCatalogFilters(normalizePriceFilterRange(priceMinInput.value, priceMaxInput.value))
   syncPriceFilterInputs(filters.priceMin, filters.priceMax)
-  return runCatalogAction({ categoryId: shopStore.currentCategory, sortKey: shopStore.currentSort || 'default', filters })
+  return runCatalogAction({ categoryId: selectedCategory.value, sortKey: shopStore.currentSort || 'default', filters })
 }
 
 function clearPriceFilter() {
@@ -492,7 +540,7 @@ function clearPriceFilter() {
   priceMinInput.value = ''
   priceMaxInput.value = ''
   return runCatalogAction({
-    categoryId: shopStore.currentCategory,
+    categoryId: selectedCategory.value,
     sortKey: shopStore.currentSort || 'default',
     filters: buildCatalogFilters({ priceMin: null, priceMax: null })
   })
@@ -536,6 +584,8 @@ onActivated(async () => {
 })
 
 onDeactivated(() => {
+  cancelScheduledCategorySwitch()
+  categorySwitchPending.value = false
   latestCatalogActionId++
   activeRequest?.abort()
   observer?.disconnect()
@@ -544,6 +594,8 @@ onDeactivated(() => {
 })
 
 onUnmounted(() => {
+  cancelScheduledCategorySwitch()
+  categorySwitchPending.value = false
   activeRequest?.abort()
   observer?.disconnect()
   window.removeEventListener('resize', handleViewportResize)

@@ -90,12 +90,13 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onActivated, onDeactivated, nextTick } from 'vue'
+import { ref, computed, watch, onActivated, onDeactivated, onUnmounted, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import { useCatalogStore } from '@/stores/catalog'
 import { useToast } from '@/composables/useToast'
 import { fetchProductsRequest } from '@/services/shop/catalogService'
 import { MAINTENANCE_STATE, isMaintenanceFeatureEnabled, isRestrictedMaintenanceMode } from '@/config/maintenance'
+import { createTtlLruCache } from '@/utils/ttlLruCache'
 import ProductCard from '@/components/product/ProductCard.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 import Skeleton from '@/components/common/Skeleton.vue'
@@ -122,8 +123,14 @@ const priceMaxInput = ref('')
 const appliedPriceMin = ref(null)
 const appliedPriceMax = ref(null)
 
+const CATEGORY_CACHE_TTL = 5 * 60 * 1000
+const CATEGORY_SWITCH_DEBOUNCE_MS = 140
+const categoryCache = createTtlLruCache({ ttl: CATEGORY_CACHE_TTL, max: 12 })
 let savedScrollPosition = 0
 let lastCategory = ''
+let loadToken = 0
+let activeRequest = null
+let categorySwitchTimer = null
 
 const categoryIconFallback = {
   AI: '🤖',
@@ -215,17 +222,67 @@ async function ensureCategoriesLoaded() {
   await catalogStore.fetchCategories()
 }
 
+function categoryCacheKey(categoryId = resolvedCategoryId.value) {
+  return [
+    categoryId || category.value || '',
+    currentSort.value || 'default',
+    appliedPriceMin.value ?? 'min-any',
+    appliedPriceMax.value ?? 'max-any'
+  ].join('_')
+}
+
+function tryRestoreCategoryCache(categoryId = resolvedCategoryId.value) {
+  const cached = categoryCache.get(categoryCacheKey(categoryId))
+  if (!cached || !Array.isArray(cached.products)) return false
+  products.value = [...cached.products]
+  total.value = Number.isFinite(Number(cached.total)) ? Number(cached.total) : cached.products.length
+  hasMore.value = !!cached.hasMore
+  page.value = Number.isFinite(Number(cached.page)) ? Number(cached.page) : 1
+  nextCursor.value = cached.cursor || ''
+  loading.value = false
+  loadingMore.value = false
+  return true
+}
+
+function saveCategoryCache(categoryId = resolvedCategoryId.value) {
+  if (!categoryId) return
+  categoryCache.set(categoryCacheKey(categoryId), {
+    products: [...products.value],
+    total: total.value,
+    hasMore: hasMore.value,
+    page: page.value,
+    cursor: nextCursor.value || ''
+  })
+}
+
+function cancelScheduledCategoryLoad() {
+  if (categorySwitchTimer !== null) {
+    window.clearTimeout(categorySwitchTimer)
+    categorySwitchTimer = null
+  }
+}
+
+function discardInFlightCategoryLoad() {
+  loadToken += 1
+  activeRequest?.abort()
+  activeRequest = null
+}
+
 async function loadProducts(append = false) {
+  const token = ++loadToken
   try {
     if (!append) {
       loading.value = true
       page.value = 1
       nextCursor.value = ''
+      activeRequest?.abort()
+      activeRequest = new AbortController()
     } else {
       loadingMore.value = true
     }
 
     await ensureCategoriesLoaded()
+    if (token !== loadToken) return false
     const categoryId = resolvedCategoryId.value
     if (!categoryId) {
       products.value = []
@@ -241,16 +298,13 @@ async function loadProducts(append = false) {
       sort: currentSort.value,
       priceMin: appliedPriceMin.value,
       priceMax: appliedPriceMax.value,
-      cursor: append ? nextCursor.value : ''
+      cursor: append ? nextCursor.value : '',
+      signal: append ? undefined : activeRequest?.signal
     })
 
+    if (token !== loadToken || result?.aborted) return false
     if (!result?.success || !Array.isArray(result.data?.products)) {
       toast.error(result?.error || '加载分类物品失败，请稍后重试')
-      if (!append) {
-        products.value = []
-        total.value = 0
-        hasMore.value = false
-      }
       return false
     }
 
@@ -270,20 +324,39 @@ async function loadProducts(append = false) {
       ? pagination.hasMore
       : (pagination.page || page.value) < (pagination.totalPages || 0)
     syncPriceFilterInputs(appliedPriceMin.value, appliedPriceMax.value)
+    saveCategoryCache(categoryId)
     return true
   } catch (error) {
+    if (token !== loadToken) return false
     console.error('Load category products error:', error)
-    if (!append) {
-      products.value = []
-      total.value = 0
-      hasMore.value = false
-    }
     toast.error(error.message || '加载分类物品失败，请稍后重试')
     return false
   } finally {
-    loading.value = false
-    loadingMore.value = false
+    if (token === loadToken) {
+      loading.value = false
+      loadingMore.value = false
+    }
   }
+}
+
+function scheduleCategoryLoad({ immediate = false } = {}) {
+  cancelScheduledCategoryLoad()
+  loading.value = true
+  if (tryRestoreCategoryCache()) {
+    discardInFlightCategoryLoad()
+    return
+  }
+
+  if (immediate) {
+    void loadProducts()
+    return
+  }
+
+  discardInFlightCategoryLoad()
+  categorySwitchTimer = window.setTimeout(() => {
+    categorySwitchTimer = null
+    void loadProducts()
+  }, CATEGORY_SWITCH_DEBOUNCE_MS)
 }
 
 async function loadMore() {
@@ -296,6 +369,7 @@ async function loadMore() {
 
 function changeSort(sort) {
   currentSort.value = sort
+  cancelScheduledCategoryLoad()
   loadProducts()
 }
 
@@ -304,6 +378,7 @@ function applyPriceFilter() {
   appliedPriceMin.value = normalizedPriceRange.priceMin
   appliedPriceMax.value = normalizedPriceRange.priceMax
   syncPriceFilterInputs(appliedPriceMin.value, appliedPriceMax.value)
+  cancelScheduledCategoryLoad()
   loadProducts()
 }
 
@@ -312,15 +387,16 @@ function clearPriceFilter() {
   appliedPriceMin.value = null
   appliedPriceMax.value = null
   syncPriceFilterInputs(null, null)
+  cancelScheduledCategoryLoad()
   loadProducts()
 }
 
-watch(() => route.params.name, async (newCategory) => {
+watch(() => route.params.name, (newCategory, previousCategory) => {
   if (!newCategory) return
-  if (String(newCategory) !== lastCategory) {
-    lastCategory = String(newCategory)
-    await loadProducts()
-  }
+  const nextCategory = String(newCategory)
+  if (nextCategory === lastCategory && previousCategory !== undefined) return
+  lastCategory = nextCategory
+  scheduleCategoryLoad({ immediate: previousCategory === undefined })
 }, { immediate: true })
 
 onActivated(async () => {
@@ -332,6 +408,15 @@ onActivated(async () => {
 
 onDeactivated(() => {
   savedScrollPosition = window.scrollY
+  cancelScheduledCategoryLoad()
+  discardInFlightCategoryLoad()
+  loading.value = false
+  loadingMore.value = false
+})
+
+onUnmounted(() => {
+  cancelScheduledCategoryLoad()
+  discardInFlightCategoryLoad()
 })
 </script>
 

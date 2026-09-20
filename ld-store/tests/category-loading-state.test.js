@@ -13,6 +13,14 @@ describe('分类页加载骨架', () => {
     expect(categorySource).not.toContain('<Skeleton type="product"')
   })
 
+  it('ignores aborted and superseded category responses instead of rendering an empty list', () => {
+    expect(categorySource).toContain('const token = ++loadToken')
+    expect(categorySource).toContain('if (token !== loadToken || result?.aborted) return false')
+    expect(categorySource).toContain('if (token === loadToken)')
+    expect(categorySource).toContain('CATEGORY_SWITCH_DEBOUNCE_MS')
+    expect(categorySource).toContain('tryRestoreCategoryCache')
+  })
+
   it('渲染四张与商品列表结构一致的卡片占位', () => {
     const wrapper = mount(Skeleton, {
       props: { type: 'card', count: 4, columns: 2 }

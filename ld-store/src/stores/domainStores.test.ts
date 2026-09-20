@@ -69,6 +69,10 @@ function failure(error: string) {
   return { success: false as const, status: 503, error, aborted: false, kind: 'http' as const }
 }
 
+function aborted() {
+  return { success: false as const, status: 0, error: '', aborted: true, abortReason: 'caller' as const, kind: 'abort' as const }
+}
+
 function deferred<T>() {
   let resolve!: (value: T) => void
   const promise = new Promise<T>((done) => { resolve = done })
@@ -150,5 +154,65 @@ describe('storefront domain stores', () => {
     const result = await catalog.fetchProducts({ page: 1 })
     expect(result.success).toBe(true)
     expect(catalog.products[0]?.id).toBe(9)
+  })
+
+  it('keeps the current list while a category switch is in flight', async () => {
+    mocks.fetchProducts.mockResolvedValueOnce(productPage(1, 1))
+    const store = useCatalogStore()
+    await store.fetchProducts({ categoryId: '', page: 1 })
+
+    const pending = deferred<ReturnType<typeof productPage>>()
+    mocks.fetchProducts.mockReturnValueOnce(pending.promise)
+    const switching = store.fetchProducts({ categoryId: 2, forceRefresh: true })
+
+    expect(store.currentCategory).toBe(2)
+    expect(store.products.map(product => product.id)).toEqual([1])
+    expect(store.loading).toBe(true)
+
+    pending.resolve(productPage(2, 1))
+    await switching
+    expect(store.products.map(product => product.id)).toEqual([2])
+  })
+
+  it('does not treat an aborted category switch as an empty catalog', async () => {
+    mocks.fetchProducts.mockResolvedValueOnce(productPage(1, 1))
+    const store = useCatalogStore()
+    await store.fetchProducts({ categoryId: '', page: 1 })
+
+    const pending = deferred<ReturnType<typeof aborted>>()
+    mocks.fetchProducts.mockReturnValueOnce(pending.promise)
+    const controller = new AbortController()
+    const switching = store.fetchProducts({ categoryId: 2, forceRefresh: true, signal: controller.signal })
+    controller.abort()
+    pending.resolve(aborted())
+
+    const result = await switching
+    expect(result).toMatchObject({ success: false, aborted: true, kind: 'abort' })
+    expect(store.products.map(product => product.id)).toEqual([1])
+    expect(store.total).toBe(2)
+  })
+
+  it('ignores an in-flight category response after restoreFromCache', async () => {
+    mocks.fetchProducts.mockResolvedValueOnce(productPage(1, 1))
+    const store = useCatalogStore()
+    await store.fetchProducts({ categoryId: '', page: 1 })
+
+    const pending = deferred<ReturnType<typeof productPage>>()
+    mocks.fetchProducts.mockReturnValueOnce(pending.promise)
+    const switching = store.fetchProducts({ categoryId: 2, forceRefresh: true })
+    store.restoreFromCache({
+      categoryId: '',
+      products: [{ id: 1, name: '物品 1' }],
+      total: 2,
+      hasMore: false,
+      page: 1,
+      sort: 'default'
+    })
+    pending.resolve(productPage(2, 1))
+
+    expect(await switching).toMatchObject({ success: false, aborted: true, kind: 'abort' })
+    expect(store.currentCategory).toBe('')
+    expect(store.products.map(product => product.id)).toEqual([1])
+    expect(store.loading).toBe(false)
   })
 })

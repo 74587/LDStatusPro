@@ -213,7 +213,6 @@ export const useCatalogStore = defineStore('catalog', () => {
       hasMore.value = true
       catalogCursor.value = ''
       rankingContext.value = null
-      if (!preserveCurrent) products.value = []
     } else if (requestedPage) {
       page.value = requestedPage
     }
@@ -225,7 +224,7 @@ export const useCatalogStore = defineStore('catalog', () => {
       const result = await session.run(() => fetchProductsRequest({
         page: requestPage,
         pageSize: DEFAULT_PAGE_SIZE,
-        categoryId: currentCategory.value,
+        categoryId,
         sort: currentSort.value,
         inStockOnly: inStockOnly.value,
         priceMin: currentPriceMin.value,
@@ -235,6 +234,7 @@ export const useCatalogStore = defineStore('catalog', () => {
       }))
       if (session.isStale(result)) return result
       if (requestId !== latestProductsRequestId) return cancelledFailure('请求已过期')
+      if (result.aborted) return result
       if (!result.success) {
         restorePrevious()
         productsError.value = result.error || '加载物品失败，请稍后重试'
@@ -260,6 +260,7 @@ export const useCatalogStore = defineStore('catalog', () => {
       productsError.value = ''
       return result
     } catch (error) {
+      if (requestId !== latestProductsRequestId) return cancelledFailure('请求已过期')
       restorePrevious()
       const failure = serviceFailure(error, '加载物品失败，请稍后重试')
       productsError.value = failure.error
@@ -270,6 +271,8 @@ export const useCatalogStore = defineStore('catalog', () => {
   }
 
   function restoreFromCache(snapshot: CatalogSnapshot = {}) {
+    latestProductsRequestId += 1
+    loading.value = false
     const restoredProducts = Array.isArray(snapshot.products) ? snapshot.products as MutableProduct[] : []
     const priceRange = normalizePriceRange(snapshot.priceMin, snapshot.priceMax)
     currentCategory.value = snapshot.categoryId ?? ''
