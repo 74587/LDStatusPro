@@ -27,6 +27,7 @@
               :to="item.to"
               class="seller-nav-item"
               :class="{ active: isNavigationActive(item) }"
+              :title="item.label"
               @click="closeDrawer"
             >
               <component :is="item.icon" :size="18" :stroke-width="1.8" aria-hidden="true" />
@@ -103,7 +104,7 @@
             <span>物品广场</span>
           </router-link>
           <ThemeToggle :show-arrow="false" />
-          <router-link to="/user" class="seller-topbar-profile" aria-label="打开个人中心">
+          <router-link to="/user" class="seller-topbar-profile seller-topbar-profile-desktop" aria-label="打开个人中心">
             <AvatarImage
               :src="userStore.avatar"
               :candidates="userStore.avatarCandidates"
@@ -135,7 +136,7 @@
       </section>
 
       <section
-        v-if="!sellingDisabled && !fulfillmentRestricted && fulfillmentLoaded && fulfillmentNeedsAcknowledgement"
+        v-if="showFulfillmentGate"
         class="seller-fulfillment-gate"
         role="status"
         aria-live="polite"
@@ -170,6 +171,24 @@
         </div>
       </main>
     </div>
+
+    <nav class="seller-dock" aria-label="卖家主要功能">
+      <router-link
+        v-for="item in dockItems"
+        :key="item.to"
+        :to="item.to"
+        class="seller-dock-item"
+        :class="{ active: isDockActive(item) }"
+      >
+        <component :is="item.icon" :size="18" :stroke-width="1.8" aria-hidden="true" />
+        <span>{{ item.label }}</span>
+        <span v-if="item.badge?.value" class="seller-dock-badge">{{ formatBadge(item.badge.value) }}</span>
+      </router-link>
+      <button type="button" class="seller-dock-item" :class="{ active: drawerOpen || moreActive }" aria-controls="seller-navigation" :aria-expanded="drawerOpen" @click="openDrawer">
+        <Menu :size="18" aria-hidden="true" />
+        <span>我的</span>
+      </button>
+    </nav>
   </div>
 </template>
 
@@ -188,7 +207,6 @@ import {
   LogOut,
   Menu,
   Package,
-  PlusCircle,
   ShoppingBag,
   RotateCcw,
   ShieldCheck,
@@ -242,7 +260,7 @@ const fulfillmentBadge = computed(() => fulfillmentNeedsAcknowledgement.value
 
 const navigation = computed(() => [
   {
-    label: '概览',
+    label: '工作台',
     items: [
       { label: '经营概览', to: '/seller', exact: true, activeRouteNames: ['SellerDashboard'], icon: LayoutDashboard }
     ]
@@ -251,47 +269,55 @@ const navigation = computed(() => [
     label: '交易',
     items: [
       { label: '订单管理', to: '/seller/orders', activeRouteNames: ['SellerOrders', 'SellerOrderDetail'], icon: ShoppingBag, badge: orderBadge.value },
-      { label: '退款售后', to: '/seller/refunds', activeRouteNames: ['SellerRefunds'], icon: RotateCcw, badge: refundBadge.value, badgeLabel: '退款售后' },
-      { label: '发货与履约', to: '/seller/fulfillment', activeRouteNames: ['SellerFulfillment'], icon: ShieldCheck, badge: fulfillmentBadge.value }
+      { label: '退款售后', to: '/seller/refunds', activeRouteNames: ['SellerRefunds'], icon: RotateCcw, badge: refundBadge.value, badgeLabel: '退款售后' }
     ]
   },
   {
     label: '商品',
     items: [
-      { label: '我的物品', to: '/seller/products', activeRouteNames: ['SellerProducts', 'SellerEdit'], icon: Package },
-      {
-        label: '发布物品',
-        to: '/seller/products/new',
-        activeRouteNames: ['SellerPublish'],
-        matchChildren: false,
-        icon: PlusCircle,
-        disabled: sellingDisabled.value,
-        disabledReason: '卖家功能已被平台禁用，暂时无法发布物品'
-      }
+      { label: '我的物品', to: '/seller/products', activeRouteNames: ['SellerProducts', 'SellerEdit', 'SellerPublish'], icon: Package }
     ]
   },
   {
     label: '经营',
     items: [
       { label: '优惠券管理', to: '/seller/coupons', activeRouteNames: ['SellerCoupons'], icon: BadgePercent },
-      { label: '商家服务', to: '/seller/services', activeRouteNames: ['SellerServices'], icon: Sparkles },
+      { label: '推广', to: '/seller/services', activeRouteNames: ['SellerServices'], icon: Sparkles },
       { label: '小店管理', to: '/seller/store', activeRouteNames: ['SellerStore'], icon: Store }
     ]
   },
   {
     label: '设置',
     items: [
+      { label: '发货与履约', to: '/seller/fulfillment', activeRouteNames: ['SellerFulfillment'], icon: ShieldCheck, badge: fulfillmentBadge.value },
       { label: '通知设置', to: '/seller/notifications', activeRouteNames: ['SellerNotifications'], icon: Bell },
       { label: '收款设置', to: '/seller/payment', activeRouteNames: ['SellerPayment'], icon: CreditCard }
     ]
   }
 ])
+const dockItems = computed(() => [
+  { label: '概览', to: '/seller', exact: true, activeRouteNames: ['SellerDashboard'], icon: LayoutDashboard },
+  { label: '订单', to: '/seller/orders', activeRouteNames: ['SellerOrders', 'SellerOrderDetail'], icon: ShoppingBag, badge: orderBadge.value },
+  { label: '物品', to: '/seller/products', activeRouteNames: ['SellerProducts', 'SellerEdit', 'SellerPublish'], icon: Package }
+])
+const moreActive = computed(() => !dockItems.value.some(item => isNavigationActive(item)))
+const showFulfillmentGate = computed(() => (
+  !sellingDisabled.value
+  && !fulfillmentRestricted.value
+  && fulfillmentLoaded.value
+  && fulfillmentNeedsAcknowledgement.value
+  && route.name !== 'SellerFulfillment'
+))
 
 function isNavigationActive(item) {
   const refundDetail = route.name === 'SellerOrderDetail' && route.query.from === 'refunds'
   if (refundDetail && item.to === '/seller/refunds') return true
   if (refundDetail && item.to === '/seller/orders') return false
   return isSellerNavigationItemActive(route, item)
+}
+
+function isDockActive(item) {
+  return isNavigationActive(item)
 }
 
 function formatBadge(value) {
@@ -333,7 +359,7 @@ watch(() => route.path, async () => {
   sellerMain.value?.focus({ preventScroll: true })
 })
 watch(drawerOpen, value => {
-  document.body.style.overflow = value && window.innerWidth < 1024 ? 'hidden' : ''
+  document.body.style.overflow = value && window.innerWidth < 768 ? 'hidden' : ''
 })
 
 onMounted(() => {
@@ -376,6 +402,7 @@ onUnmounted(() => {
   --seller-warning: var(--status-paper-warning);
   --seller-shadow-sm: var(--elevation-paper-sm);
   --seller-shadow-md: var(--elevation-paper-md);
+  --seller-on-navy: var(--palette-hex-ffffff);
   --bg-primary: var(--seller-paper);
   --bg-secondary: var(--seller-surface-soft);
   --bg-tertiary: var(--palette-hex-e5e1d8);
@@ -402,7 +429,7 @@ onUnmounted(() => {
   overflow-x: clip;
   background: var(--seller-paper);
   color: var(--seller-ink);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-family: var(--font-sans);
 }
 
 html.dark .seller-shell {
@@ -453,7 +480,7 @@ html.dark .seller-shell {
 .seller-maintenance { display: flex; align-items: center; }
 
 .seller-brand-row { justify-content: space-between; margin-bottom: 24px; }
-.seller-brand { min-width: 0; gap: 11px; color: var(--palette-hex-ffffff); }
+.seller-brand { min-width: 0; gap: 11px; color: var(--seller-on-navy); }
 .seller-brand-mark { width: 38px; height: 38px; display: grid; place-items: center; border: 1px solid var(--palette-rgba-255-255-255-p16); border-radius: 11px; background: var(--palette-rgba-255-255-255-p07); }
 .seller-brand strong { display: block; font-family: "Noto Serif SC", "Source Han Serif SC", "Songti SC", STSong, serif; font-size: 17px; letter-spacing: .05em; }
 .seller-brand small { display: block; margin-top: 2px; color: var(--palette-rgba-233-237-240-p58); font-size: 11px; letter-spacing: .12em; }
@@ -473,17 +500,17 @@ html.dark .seller-shell {
 .seller-nav-item { width: 100%; min-width: 0; min-height: 44px; justify-self: stretch; box-sizing: border-box; display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 10px; color: var(--palette-rgba-240-244-246-p76); font-size: 14px; line-height: 1; transition: background 180ms ease, color 180ms ease, transform 180ms ease; }
 .seller-nav-item > svg { display: block; align-self: center; justify-self: center; }
 .seller-nav-item > span:not(.seller-nav-badge) { min-width: 0; align-self: center; line-height: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.seller-nav-item:hover { color: var(--palette-hex-ffffff); background: var(--palette-rgba-255-255-255-p06); transform: translateX(2px); }
-.seller-nav-item.active { color: var(--palette-hex-ffffff); background: var(--palette-rgba-145-178-154-p18); box-shadow: inset 3px 0 0 var(--seller-jade); }
+.seller-nav-item:hover { color: var(--seller-on-navy); background: var(--palette-rgba-255-255-255-p06); transform: translateX(2px); }
+.seller-nav-item.active { color: var(--seller-on-navy); background: var(--palette-rgba-145-178-154-p18); box-shadow: inset 3px 0 0 var(--seller-jade); }
 .seller-nav-item.is-disabled { color: var(--palette-rgba-240-244-246-p34); cursor: not-allowed; }
 .seller-nav-badge { min-width: 22px; height: 22px; padding: 0 6px; display: grid; place-items: center; border-radius: 999px; background: var(--palette-hex-e8d4b8); color: var(--palette-hex-3d3021); font: 700 11px/1 ui-monospace, SFMono-Regular, Menlo, monospace; }
 .seller-nav-badge.is-attention { min-width: auto; padding-inline: 7px; font-family: inherit; }
 
 .seller-sidebar-footer { margin-top: auto; padding-top: 20px; }
 .seller-market-link { min-height: 44px; display: flex; align-items: center; gap: 8px; padding: 8px 10px; color: var(--palette-rgba-233-237-240-p7); font-size: 13px; }
-.seller-market-link:hover { color: var(--palette-hex-ffffff); }
+.seller-market-link:hover { color: var(--seller-on-navy); }
 .seller-account { gap: 8px; margin-top: 10px; padding: 10px; border: 1px solid var(--palette-rgba-255-255-255-p09); border-radius: 13px; background: var(--palette-rgba-255-255-255-p04); }
-.seller-account-main { min-width: 0; flex: 1; gap: 9px; color: var(--palette-hex-ffffff); }
+.seller-account-main { min-width: 0; flex: 1; gap: 9px; color: var(--seller-on-navy); }
 .seller-avatar { width: 36px; height: 36px; border-radius: 10px; }
 .seller-account-main span { min-width: 0; }
 .seller-account-main strong,
@@ -491,13 +518,13 @@ html.dark .seller-shell {
 .seller-account-main strong { font-size: 13px; }
 .seller-account-main small { margin-top: 2px; color: var(--palette-rgba-233-237-240-p48); font-size: 11px; }
 .logout-button { flex: 0 0 38px; width: 38px; height: 38px; color: var(--palette-rgba-255-255-255-p62); }
-.logout-button:hover { color: var(--palette-hex-ffffff); background: var(--palette-rgba-165-83-77-p28); }
+.logout-button:hover { color: var(--seller-on-navy); background: var(--palette-rgba-165-83-77-p28); }
 
 .seller-workspace { min-width: 0; }
 .seller-topbar { position: sticky; top: 0; z-index: 40; justify-content: space-between; min-height: 72px; padding: 10px clamp(18px, 3vw, 38px); border-bottom: 1px solid color-mix(in srgb, var(--seller-border) 78%, transparent); background: color-mix(in srgb, var(--seller-paper) 90%, transparent); backdrop-filter: blur(14px); }
 .seller-topbar-title { gap: 10px; }
 .seller-topbar-title p { margin: 0 0 2px; color: var(--seller-jade); font-size: 11px; font-weight: 700; letter-spacing: .14em; }
-.seller-topbar-title h1 { margin: 0; color: var(--seller-ink); font-family: "Noto Serif SC", "Source Han Serif SC", "Songti SC", STSong, serif; font-size: clamp(18px, 2vw, 22px); font-weight: 600; }
+.seller-topbar-title h1 { margin: 0; color: var(--seller-ink); font-family: var(--font-sans); font-size: 20px; font-weight: 600; }
 .seller-topbar-actions { gap: 8px; }
 .seller-topbar-market { min-height: 44px; display: flex; align-items: center; gap: 7px; padding: 0 12px; border: 1px solid var(--seller-border); border-radius: 10px; color: var(--seller-muted); font-size: 13px; background: var(--seller-surface); }
 .seller-topbar-market:hover { color: var(--seller-ink); border-color: var(--seller-jade); }
@@ -514,7 +541,7 @@ html.dark .seller-shell {
 .seller-fulfillment-gate p,
 .seller-fulfillment-load-error p { margin: 3px 0 0; color: var(--seller-muted); font-size: 13px; line-height: 1.6; }
 .seller-fulfillment-gate a,
-.seller-fulfillment-load-error a { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; padding: 0 14px; border: 1px solid var(--seller-navy); border-radius: 10px; color: var(--palette-hex-ffffff); background: var(--seller-navy); font-size: 13px; font-weight: 700; }
+.seller-fulfillment-load-error a { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; padding: 0 14px; border: 1px solid var(--seller-navy); border-radius: 10px; color: var(--seller-on-navy); background: var(--seller-navy); font-size: 13px; font-weight: 700; }
 html.dark .seller-fulfillment-gate a,
 html.dark .seller-fulfillment-load-error a { border-color: var(--seller-jade); color: var(--palette-hex-0d151d); background: var(--seller-jade); }
 .seller-fulfillment-gate a:focus-visible,
@@ -535,23 +562,86 @@ html.dark .seller-fulfillment-load-error a { border-color: var(--seller-jade); c
 .seller-route-enter-from { opacity: 0; transform: translateY(6px); }
 .seller-route-leave-to { opacity: 0; }
 .seller-backdrop { display: none; }
+.seller-dock { display: none; }
 
-@media (max-width: 1023px) {
+@media (max-width: 1023px) and (min-width: 768px) {
+  .seller-shell { grid-template-columns: 72px minmax(0, 1fr); }
+  .seller-sidebar { width: 72px; padding: 16px 8px; }
+  .seller-brand span,
+  .seller-nav-group h2,
+  .seller-nav-item > span:not(.seller-nav-badge),
+  .seller-market-link,
+  .seller-account-main span { display: none; }
+  .seller-brand { justify-content: center; }
+  .seller-nav-item { grid-template-columns: 20px; justify-content: center; padding: 10px 0; }
+  .seller-nav-item.active { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--seller-jade) 55%, transparent); }
+  .seller-nav-badge { position: absolute; top: 4px; right: 6px; min-width: 16px; height: 16px; padding: 0 4px; font-size: 9px; }
+  .seller-nav-item { position: relative; }
+  .seller-account { justify-content: center; padding: 8px; }
+  .seller-account-main { justify-content: center; }
+  .logout-button { display: none; }
+  .seller-topbar-market span { display: none; }
+  .seller-topbar-market { width: 44px; padding: 0; justify-content: center; }
+}
+
+@media (max-width: 767px) {
   .seller-shell { grid-template-columns: minmax(0, 1fr); }
   .seller-sidebar { position: fixed; left: 0; width: min(86vw, 288px); transform: translateX(-105%); box-shadow: none; transition: transform 220ms ease; }
   .seller-sidebar.is-open { transform: translateX(0); }
   .seller-backdrop { position: fixed; inset: 0; z-index: 50; display: block; background: var(--palette-rgba-7-15-23-p48); backdrop-filter: blur(2px); }
-  .sidebar-close,
-  .mobile-menu { display: grid; }
-}
-
-@media (max-width: 640px) {
-  .seller-topbar { min-height: 64px; padding: 8px 14px; }
-  .seller-topbar-market span { display: none; }
-  .seller-topbar-market { width: 44px; padding: 0; justify-content: center; }
+  .sidebar-close { display: grid; }
+  .mobile-menu,
+  .seller-topbar-market,
+  .seller-topbar-profile-desktop { display: none; }
+  .seller-dock {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 45;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 4px;
+    padding: 8px 10px max(8px, env(safe-area-inset-bottom));
+    border-top: 1px solid var(--seller-border);
+    background: color-mix(in srgb, var(--seller-paper) 92%, transparent);
+    backdrop-filter: blur(14px);
+  }
+  .seller-dock-item {
+    position: relative;
+    min-height: 48px;
+    display: grid;
+    justify-items: center;
+    align-content: center;
+    gap: 3px;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--seller-muted);
+    font: inherit;
+    font-size: 11px;
+    font-weight: 650;
+    cursor: pointer;
+  }
+  .seller-dock-item.active { color: var(--seller-ink); background: color-mix(in srgb, var(--seller-jade) 12%, transparent); }
+  .seller-dock-badge {
+    position: absolute;
+    top: 2px;
+    right: calc(50% - 22px);
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    display: grid;
+    place-items: center;
+    border-radius: 999px;
+    background: var(--seller-danger);
+    color: var(--text-inverse);
+    font-size: 9px;
+  }
+  .seller-topbar { min-height: 56px; padding: 8px 14px; }
   .seller-topbar-title p { display: none; }
-  .seller-main { padding: 18px 14px 32px; }
-  .seller-view-stage { min-height: calc(100dvh - 114px); }
+  .seller-main { padding: 18px 14px 88px; }
+  .seller-view-stage { min-height: calc(100dvh - 168px); }
   .seller-maintenance { margin: 14px 14px 0; }
   .seller-fulfillment-gate,
   .seller-fulfillment-load-error { grid-template-columns: auto minmax(0, 1fr); align-items: start; margin: 14px 14px 0; }

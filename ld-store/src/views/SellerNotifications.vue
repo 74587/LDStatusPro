@@ -1,10 +1,6 @@
 <template>
   <div class="seller-notifications page-container">
-    <header class="page-header">
-      <p class="notification-eyebrow">重要经营提醒</p>
-      <h1 class="page-title">通知设置</h1>
-      <p class="notification-intro">连接 Telegram，在手机上查看经营待办、处理退款，并接收关键提醒。</p>
-    </header>
+    <SellerPageToolbar description="连接 Telegram，在手机上查看经营待办、处理退款，并接收关键提醒。" />
     <div v-if="loading" class="notification-empty" role="status">正在加载通知设置…</div>
     <div v-else-if="!state" class="notification-empty">
       <p>暂时无法加载通知设置，请重试。</p>
@@ -107,6 +103,7 @@
 import { computed, nextTick, ref, watch } from 'vue'
 import { Bot, Link2, Unlink, Play, Pause, ExternalLink, Copy, RefreshCw, Clock3, CircleAlert, Package, RotateCcw, ListTodo, ChartNoAxesCombined } from '@lucide/vue'
 import QRCode from 'qrcode'
+import SellerPageToolbar from '@/components/seller/SellerPageToolbar.vue'
 import SellerStatusBadge from '@/components/seller/SellerStatusBadge.vue'
 import { useSellerNotifications } from '@/composables/useSellerNotifications'
 const { state, binding, loading, busy, waiting, remainingMinutes, load, begin, change, copy } = useSellerNotifications()

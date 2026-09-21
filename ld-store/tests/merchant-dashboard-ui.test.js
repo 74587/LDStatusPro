@@ -78,20 +78,14 @@ describe('卖家后台稳定壳层与列表工具', () => {
     expect(resolveSellerViewKey({ name: 'SellerRefunds', path: '/seller/refunds' })).toBe('SellerRefunds')
   })
 
-  it('商品导航只激活所属入口且发布页不会同时选中我的物品', () => {
+  it('商品导航把发布和编辑都归到我的物品', () => {
     const productsItem = {
       to: '/seller/products',
-      activeRouteNames: ['SellerProducts', 'SellerEdit']
-    }
-    const publishItem = {
-      to: '/seller/products/new',
-      activeRouteNames: ['SellerPublish'],
-      matchChildren: false
+      activeRouteNames: ['SellerProducts', 'SellerEdit', 'SellerPublish']
     }
 
     expect(isSellerNavigationItemActive({ name: 'SellerProducts', path: '/seller/products' }, productsItem)).toBe(true)
-    expect(isSellerNavigationItemActive({ name: 'SellerPublish', path: '/seller/products/new' }, productsItem)).toBe(false)
-    expect(isSellerNavigationItemActive({ name: 'SellerPublish', path: '/seller/products/new' }, publishItem)).toBe(true)
+    expect(isSellerNavigationItemActive({ name: 'SellerPublish', path: '/seller/products/new' }, productsItem)).toBe(true)
     expect(isSellerNavigationItemActive({ name: 'SellerEdit', path: '/seller/products/12/edit' }, productsItem)).toBe(true)
   })
 

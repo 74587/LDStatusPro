@@ -3,8 +3,8 @@
     <template v-if="sellerMode">
       <SellerPageToolbar eyebrow="交易台账" description="统一处理商品订单与求购服务订单。筛选、页码与来源会保留在地址中。">
         <!-- Tab selection/focus belongs to each control; pending feedback belongs to the list. -->
-        <LiquidTabs :modelValue="currentRole" :tabs="roleTabs" class="seller-source-tabs" size="sm" aria-label="订单来源" @update:modelValue="switchRole" />
-        <OrderStatusFilter v-if="currentRole !== 'buy'" :modelValue="statusFilter" class="seller-status-tabs" size="sm" aria-label="订单状态" @update:modelValue="selectStatus" />
+        <SellerTabs :modelValue="currentRole" :tabs="roleTabs" class="seller-source-tabs" size="sm" aria-label="订单来源" @update:modelValue="switchRole" />
+        <OrderStatusFilter v-if="currentRole !== 'buy'" variant="seller" :modelValue="statusFilter" class="seller-status-tabs" size="sm" aria-label="订单状态" @update:modelValue="selectStatus" />
         <AppSelect v-model="timeRange" class="seller-order-select" :options="timeRangeOptions" placeholder="选择时间范围" @change="applyFilters" />
         <form class="seller-order-search" role="search" @submit.prevent="applyFilters">
           <Search :size="17" aria-hidden="true" />
@@ -335,6 +335,7 @@ import AppSelect from '@/components/common/AppSelect.vue'
 import OrderStatusFilter from '@/components/orders/OrderStatusFilter.vue'
 import { orderStatusLabel, displayOrderStatus, refundStageText, orderFulfillmentLabel } from '@/utils/orderPresentation'
 import LiquidTabs from '@/components/common/LiquidTabs.vue'
+import SellerTabs from '@/components/seller/SellerTabs.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 import SellerOrderPartyIdentity from '@/components/seller/SellerOrderPartyIdentity.vue'
 import SellerPageToolbar from '@/components/seller/SellerPageToolbar.vue'

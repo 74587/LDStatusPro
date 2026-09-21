@@ -1,13 +1,13 @@
 <template>
   <div class="seller-refunds-page">
-    <SellerPageToolbar eyebrow="AFTER-SALES LEDGER" description="集中处理买家退款申请。请在订单显示的处理期限内作出决定，协商不延长时限；逾期未决定，系统将自动同意并发起全额退款。">
+    <SellerPageToolbar eyebrow="退款台账" description="集中处理买家退款申请。请在订单显示的处理期限内作出决定，协商不延长时限；逾期未决定，系统将自动同意并发起全额退款。">
       <template #actions>
         <button type="button" class="refund-refresh" :disabled="loading" @click="loadRefunds">
           <RefreshCw :class="{ spinning: loading }" :size="16" aria-hidden="true" />刷新
         </button>
       </template>
       <form class="refund-filter-form" role="search" @submit.prevent="applySearch">
-        <LiquidTabs class="refund-tabs" :model-value="status" :tabs="refundTabs" size="sm" aria-label="退款状态筛选" @update:model-value="selectStatus" />
+        <SellerTabs class="refund-tabs" :model-value="status" :tabs="refundTabs" size="sm" aria-label="退款状态筛选" @update:model-value="selectStatus" />
         <label class="refund-search">
           <Search :size="16" aria-hidden="true" />
           <span class="seller-sr-only">搜索退款申请</span>
@@ -77,7 +77,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ArrowUpRight, BadgeCheck, CircleAlert, RefreshCw, Search } from '@lucide/vue'
 import SellerDataTable from '@/components/seller/SellerDataTable.vue'
 import RefundDeadlineNotice from '@/components/order/RefundDeadlineNotice.vue'
-import LiquidTabs from '@/components/common/LiquidTabs.vue'
+import SellerTabs from '@/components/seller/SellerTabs.vue'
 import SellerPageToolbar from '@/components/seller/SellerPageToolbar.vue'
 import SellerPagination from '@/components/seller/SellerPagination.vue'
 import SellerStatusBadge from '@/components/seller/SellerStatusBadge.vue'

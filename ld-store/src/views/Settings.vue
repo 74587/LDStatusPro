@@ -1,6 +1,7 @@
 <template>
   <div class="settings-page">
     <div class="page-container">
+      <SellerPageToolbar description="配置并验证 LDC 收款凭证后，平台订单才能稳定到账。" />
       <section v-if="showProductPublishReturn" class="publish-return-card" aria-labelledby="publish-return-title">
         <div class="publish-return-icon" aria-hidden="true">
           <PackageCheck :size="21" />
@@ -233,6 +234,7 @@ import {
 } from '@/services/shop/merchantService'
 import { PRODUCT_PUBLISH_PAYMENT_SOURCE } from '@/utils/productPublishDraft'
 import { fetchDiscoveryPreferenceRequest, updateDiscoveryPreferenceRequest } from '@/services/shop/discoveryService'
+import SellerPageToolbar from '@/components/seller/SellerPageToolbar.vue'
 import SellerStatusBadge from '@/components/seller/SellerStatusBadge.vue'
 import { ArrowLeft, CircleAlert, Copy, Eye, EyeOff, LockKeyhole, PackageCheck, Send } from '@lucide/vue'
 

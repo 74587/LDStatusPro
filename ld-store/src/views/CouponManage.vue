@@ -5,9 +5,9 @@
       :description="viewMode === 'list' ? '集中查看活动状态、领取进度和使用情况；打开详情可暂停领取、补充发行量或核对领取记录。' : '创建商品券或店铺券。核心规则发布后保持不变，领取状态可在有效期内暂停和恢复。'"
     >
       <template #actions>
-        <router-link to="/user/coupons" class="wallet-link"><WalletCards :size="16" aria-hidden="true" />我的优惠券</router-link>
+        <SellerButton v-if="viewMode === 'list'" variant="primary" @click="viewMode = 'create'">创建优惠券</SellerButton>
       </template>
-      <LiquidTabs v-model="viewMode" class="coupon-view-tabs" :tabs="viewTabs" mode="tabs" activation="automatic" size="sm" layout="equal" aria-label="优惠券管理功能" />
+      <SellerTabs v-model="viewMode" class="coupon-view-tabs" :tabs="viewTabs" mode="tabs" activation="automatic" size="sm" layout="equal" aria-label="优惠券管理功能" />
       <form v-if="viewMode === 'list'" class="coupon-filter-form" role="search" @submit.prevent="applyFilters">
         <label class="coupon-search"><Search :size="16" aria-hidden="true" /><span class="seller-sr-only">搜索优惠券活动</span><input v-model.trim="filter.search" type="search" placeholder="搜索优惠券或适用商品" /></label>
         <select v-model="filter.state" aria-label="活动状态" @change="applyFilters"><option v-for="option in COUPON_CAMPAIGN_STATES" :key="option.value" :value="option.value">{{ option.label }}</option></select>
@@ -90,11 +90,12 @@
 
 <script setup>
 import { computed, nextTick, onMounted, reactive, ref } from 'vue'
-import { ArrowUpRight, CircleAlert, CircleCheck, Link2, LockKeyhole, Search, TicketPercent, WalletCards } from '@lucide/vue'
+import { ArrowUpRight, CircleAlert, CircleCheck, Link2, LockKeyhole, Search, TicketPercent } from '@lucide/vue'
 import { useInventoryStore } from '@/stores/inventory'
 import { useToast } from '@/composables/useToast'
 import SellerCouponDetailDrawer from '@/components/seller/SellerCouponDetailDrawer.vue'
-import LiquidTabs from '@/components/common/LiquidTabs.vue'
+import SellerButton from '@/components/seller/SellerButton.vue'
+import SellerTabs from '@/components/seller/SellerTabs.vue'
 import SellerDataTable from '@/components/seller/SellerDataTable.vue'
 import SellerPageToolbar from '@/components/seller/SellerPageToolbar.vue'
 import SellerPagination from '@/components/seller/SellerPagination.vue'

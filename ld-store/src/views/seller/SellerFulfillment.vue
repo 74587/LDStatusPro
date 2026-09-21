@@ -24,12 +24,11 @@
 
       <section class="fulfillment-hero" :class="heroTone" aria-labelledby="fulfillment-page-title">
         <div class="hero-mark" aria-hidden="true">
-          <CirclePause v-if="!policy.enabled" :size="25" />
-          <ShieldAlert v-else-if="needsAcknowledgement" :size="25" />
-          <ShieldCheck v-else :size="25" />
+          <CirclePause v-if="!policy.enabled" :size="22" />
+          <ShieldAlert v-else-if="needsAcknowledgement" :size="22" />
+          <ShieldCheck v-else :size="22" />
         </div>
         <div class="hero-copy">
-          <p class="eyebrow">普通物品 · 手动交付</p>
           <h2 id="fulfillment-page-title">{{ heroTitle }}</h2>
           <p>{{ heroDescription }}</p>
           <div class="hero-badges" aria-label="当前履约状态">
@@ -59,12 +58,12 @@
         <header class="section-heading">
           <div>
             <p>发货时限</p>
-            <h2 id="rule-card-title">确认之前，先看清三个节点</h2>
+            <h2 id="rule-card-title">{{ needsAcknowledgement ? '确认之前，先看清三个节点' : '当前发货时限' }}</h2>
           </div>
           <router-link :to="policy.ruleUrl">查看完整规则 <ArrowUpRight :size="15" aria-hidden="true" /></router-link>
         </header>
 
-        <ol class="rule-timeline">
+        <ol v-if="needsAcknowledgement || !policy.enabled" class="rule-timeline">
           <li>
             <span class="timeline-marker">{{ policy.offlineHours }}</span>
             <div><strong>{{ policy.offlineHours }} 小时未发货</strong><p>系统自动下架对应物品，已付款订单仍保留处理入口。</p></div>
@@ -78,6 +77,23 @@
             <div><strong>{{ policy.strikeWindowDays }} 天内 {{ policy.strikeThreshold }} 笔有效超时退款</strong><p>限制新增交易 {{ restrictionDays }} 天；已有订单的履约与售后入口继续开放。</p></div>
           </li>
         </ol>
+        <details v-else class="rule-details">
+          <summary>查看 48 / 72 小时与限制节点</summary>
+          <ol class="rule-timeline">
+            <li>
+              <span class="timeline-marker">{{ policy.offlineHours }}</span>
+              <div><strong>{{ policy.offlineHours }} 小时未发货</strong><p>系统自动下架对应物品，已付款订单仍保留处理入口。</p></div>
+            </li>
+            <li>
+              <span class="timeline-marker">{{ policy.deliveryHours }}</span>
+              <div><strong>{{ policy.deliveryHours }} 小时未发货</strong><p>系统自动发起原订单实付全额退款；实际到账以退款结果为准。</p></div>
+            </li>
+            <li>
+              <span class="timeline-marker">{{ policy.strikeThreshold }}</span>
+              <div><strong>{{ policy.strikeWindowDays }} 天内 {{ policy.strikeThreshold }} 笔有效超时退款</strong><p>限制新增交易 {{ restrictionDays }} 天；已有订单的履约与售后入口继续开放。</p></div>
+            </li>
+          </ol>
+        </details>
 
         <form v-if="policy.enabled && needsAcknowledgement" class="confirmation-form" :aria-busy="acknowledging" @submit.prevent="confirmRules">
           <label class="confirmation-check">
@@ -267,12 +283,12 @@ onMounted(() => { void fulfillmentStore.refresh() })
 .history-card,
 .fulfillment-overview article,
 .fulfillment-load-error { border: 1px solid var(--seller-border); border-radius: 14px; background: var(--seller-surface); box-shadow: var(--seller-shadow-sm); }
-.fulfillment-hero { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 18px; min-height: 168px; padding: 26px 28px; overflow: hidden; }
-.fulfillment-hero::before { content: ''; position: absolute; inset: 0 auto 0 0; width: 7px; background: var(--seller-jade); }
+.fulfillment-hero { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 14px; min-height: 0; padding: 18px 20px; overflow: hidden; }
+.fulfillment-hero::before { content: ''; position: absolute; inset: 0 auto 0 0; width: 4px; background: var(--seller-jade); }
 .fulfillment-hero.is-warning::before { background: var(--seller-warning); }
 .fulfillment-hero.is-neutral::before { background: var(--seller-border-strong); }
 .fulfillment-hero.is-restricted::after { content: ''; position: absolute; inset: 0 0 auto; height: 3px; background: var(--seller-danger); }
-.hero-mark { width: 48px; height: 48px; display: grid; place-items: center; border-radius: 14px; color: var(--seller-jade-strong); background: var(--seller-jade-soft); }
+.hero-mark { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 10px; color: var(--seller-jade-strong); background: var(--seller-jade-soft); }
 .is-warning .hero-mark { color: var(--seller-warning); background: color-mix(in srgb, var(--seller-warning) 10%, var(--seller-surface)); }
 .is-neutral .hero-mark { color: var(--seller-muted); background: var(--seller-surface-soft); }
 .hero-copy { min-width: 0; }
@@ -281,7 +297,7 @@ onMounted(() => { void fulfillmentStore.refresh() })
 .fulfillment-hero.is-warning .eyebrow { color: var(--seller-warning); }
 .hero-copy h2,
 .section-heading h2,
-.fulfillment-load-error h2 { margin: 0; font: 600 clamp(22px, 3vw, 30px)/1.3 "Noto Serif SC", "Source Han Serif SC", "Songti SC", STSong, serif; text-wrap: balance; }
+.fulfillment-load-error h2 { margin: 0; font: 600 18px/1.35 var(--font-sans); text-wrap: balance; }
 .hero-copy > p:not(.eyebrow) { max-width: 720px; margin: 9px 0 0; color: var(--seller-muted); font-size: 14px; line-height: 1.75; }
 .hero-badges { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
 .hero-order-link,
@@ -300,9 +316,12 @@ onMounted(() => { void fulfillmentStore.refresh() })
 .status-refresh-error button { min-height: 44px; padding: 0 12px; border: 1px solid var(--seller-border-strong); border-radius: 9px; color: var(--seller-ink); background: var(--seller-surface); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
 .status-refresh-error button:disabled { opacity: .55; cursor: not-allowed; }
 
-.rule-card { padding: 24px; }
+.rule-card { padding: 20px; }
 .section-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; }
-.section-heading h2 { font-size: 22px; }
+.section-heading h2 { font-size: 16px; }
+.rule-details { margin-top: 16px; }
+.rule-details summary { min-height: 44px; display: flex; align-items: center; color: var(--seller-jade-strong); font-size: 13px; font-weight: 650; cursor: pointer; }
+.rule-details[open] summary { margin-bottom: 8px; }
 .rule-timeline { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; margin: 22px 0 0; padding: 0; overflow: hidden; border: 1px solid var(--seller-border); border-radius: 12px; background: var(--seller-border); list-style: none; }
 .rule-timeline li { min-width: 0; display: grid; grid-template-columns: 46px minmax(0, 1fr); align-content: start; gap: 12px; padding: 18px; background: var(--seller-surface-strong); }
 .timeline-marker { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 50%; color: var(--seller-jade-strong); background: var(--seller-jade-soft); font: 750 15px/1 ui-monospace, SFMono-Regular, Menlo, monospace; }
@@ -316,7 +335,7 @@ onMounted(() => { void fulfillmentStore.refresh() })
 .confirmation-error { margin: 8px 0 0 30px; color: var(--seller-muted); font-size: 12px; line-height: 1.55; }
 .confirmation-error { color: var(--seller-warning); }
 .confirmation-form button,
-.fulfillment-load-error button { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; margin: 15px 0 0 30px; padding: 0 17px; border: 1px solid var(--seller-navy); border-radius: 10px; color: var(--palette-hex-ffffff); background: var(--seller-navy); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+.fulfillment-load-error button { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; margin: 15px 0 0 30px; padding: 0 17px; border: 1px solid var(--seller-navy); border-radius: 10px; color: var(--seller-on-navy); background: var(--seller-navy); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
 .confirmation-form .confirmation-retry { border-color: var(--seller-border-strong); color: var(--seller-ink); background: var(--seller-surface); }
 .confirmation-form button:disabled,
 .fulfillment-load-error button:disabled { opacity: .55; cursor: not-allowed; }

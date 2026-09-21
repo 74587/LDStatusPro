@@ -1,6 +1,7 @@
 <template>
   <div class="my-shop-page">
     <div class="page-container">
+      <SellerPageToolbar description="维护小店资料与展示页。审核通过后会作为商家名片出现在广场。" />
       <div v-if="loading" class="loading-state">
         <div class="spinner"></div>
         <p>正在读取小店资料…</p>
@@ -160,6 +161,7 @@ import {
 } from '@/services/shop/shopService'
 import AvatarImage from '@/components/common/AvatarImage.vue'
 import ShopForm from '@/components/shop/ShopForm.vue'
+import SellerPageToolbar from '@/components/seller/SellerPageToolbar.vue'
 import SellerStatusBadge from '@/components/seller/SellerStatusBadge.vue'
 import { ArrowUpRight, CircleAlert, Eye, Store } from '@lucide/vue'
 import { buildAvatarCandidates } from '@/utils/avatar'

@@ -69,7 +69,7 @@
         <small>填写新的发行总量；暂停领取期间也可以先补充数量。</small>
       </form>
 
-      <LiquidTabs v-model="activeTab" class="detail-tabs" :tabs="detailTabs" mode="tabs" activation="automatic" size="sm" aria-label="优惠券详情内容" />
+      <SellerTabs v-model="activeTab" class="detail-tabs" :tabs="detailTabs" mode="tabs" activation="automatic" size="sm" aria-label="优惠券详情内容" />
 
       <section v-show="activeTab === 'claims'" id="coupon-claims-panel" class="claim-ledger" role="tabpanel" aria-labelledby="coupon-claims-tab" tabindex="0">
         <h3 id="claim-ledger-title" class="seller-sr-only">领取明细</h3>
@@ -162,7 +162,7 @@ import {
   getCouponEventLabel
 } from '@/utils/sellerCoupons'
 import SellerDrawer from './SellerDrawer.vue'
-import LiquidTabs from '@/components/common/LiquidTabs.vue'
+import SellerTabs from '@/components/seller/SellerTabs.vue'
 import SellerPagination from './SellerPagination.vue'
 import SellerStatusBadge from './SellerStatusBadge.vue'
 

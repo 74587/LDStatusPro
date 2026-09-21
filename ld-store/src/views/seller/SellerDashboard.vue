@@ -19,25 +19,23 @@
     </section>
 
     <template v-else-if="dashboard">
-      <section class="operating-note" aria-labelledby="operating-note-title">
-        <div class="note-spine" aria-hidden="true"></div>
-        <div class="note-date">
-          <CalendarDays :size="16" aria-hidden="true" />
-          <span>{{ todayLabel }}</span>
-          <small>数据截至 {{ generatedTime }}</small>
+      <section class="command-bar" aria-labelledby="command-bar-title">
+        <div>
+          <p>{{ todayLabel }} · 数据截至 {{ generatedTime }}</p>
+          <h2 id="command-bar-title">{{ brief.eyebrow }}</h2>
+          <span>{{ brief.summary }} · {{ brief.action }}</span>
         </div>
-        <div class="note-copy">
-          <p>{{ brief.eyebrow }}</p>
-          <h2 id="operating-note-title">今日经营笺</h2>
-          <div class="note-summary">{{ brief.summary }}</div>
-        </div>
-        <div class="note-priority">
-          <span>此刻最值得处理</span>
-          <strong>{{ brief.action }}</strong>
-        </div>
-        <router-link to="/seller/products/new" class="primary-action">
+        <SellerButton variant="primary" to="/seller/products/new">
           <Plus :size="17" aria-hidden="true" />
           发布物品
+        </SellerButton>
+      </section>
+
+      <section class="backlog-grid" aria-label="待处理积压">
+        <router-link v-for="item in backlogCards" :key="item.key" :to="item.href" class="backlog-card" :class="item.tone">
+          <span>{{ item.label }}</span>
+          <strong>{{ item.value }}</strong>
+          <small>{{ item.hint }}</small>
         </router-link>
       </section>
 
@@ -68,7 +66,7 @@
           <p>经营数据</p>
           <span>{{ periodLabel }}，与紧邻的等长上期对比</span>
         </div>
-        <LiquidTabs class="range-switch" :model-value="selectedRange" :tabs="rangeOptions" :disabled="rangeLoading" size="sm" layout="equal" aria-label="选择统计范围" @update:model-value="changeRange" />
+        <SellerTabs class="range-switch" :model-value="selectedRange" :tabs="rangeOptions" :disabled="rangeLoading" size="sm" layout="equal" aria-label="选择统计范围" @update:model-value="changeRange" />
       </div>
 
       <section class="kpi-grid" aria-label="经营核心指标" :aria-busy="rangeLoading">
@@ -97,7 +95,7 @@
               <p>变化</p>
               <h2 id="trend-title">经营趋势</h2>
             </div>
-            <LiquidTabs v-model="chartView" class="chart-view-switch" :tabs="chartViews" size="sm" aria-label="趋势图指标" />
+            <SellerTabs v-model="chartView" class="chart-view-switch" :tabs="chartViews" size="sm" aria-label="趋势图指标" />
           </div>
           <div ref="chartLoadTarget" class="seller-chart-load-boundary">
             <Suspense v-if="shouldLoadChart">
@@ -265,13 +263,14 @@
 <script setup>
 import { computed, defineAsyncComponent, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import {
-  AlertCircle, ArrowUpRight, CalendarDays, ChevronDown, ChevronRight, CircleCheck, ClipboardList,
+  AlertCircle, ArrowUpRight, ChevronDown, ChevronRight, CircleCheck, ClipboardList,
   CreditCard, Eye, Minus, PackageCheck, PackageOpen, Plus, RefreshCw, ShoppingBag,
   ShieldCheck, Sparkles, Store, TicketPercent, TrendingDown, TrendingUp, UsersRound, WalletCards
 } from '@lucide/vue'
 import { fetchMerchantDashboard } from '@/services/merchantDashboard'
 import { useSellerFulfillmentStore } from '@/stores/sellerFulfillment'
-import LiquidTabs from '@/components/common/LiquidTabs.vue'
+import SellerButton from '@/components/seller/SellerButton.vue'
+import SellerTabs from '@/components/seller/SellerTabs.vue'
 import {
   buildMerchantBrief,
   formatChangeRate,
@@ -330,6 +329,22 @@ const openingSteps = computed(() => {
 })
 const completedOpeningSteps = computed(() => openingSteps.value.filter(step => step.completed).length)
 
+const backlogCards = computed(() => {
+  const tasks = dashboard.value?.tasks || []
+  const countOf = (...types) => tasks.filter(task => types.includes(task.type)).reduce((sum, task) => sum + Number(task.count || 0), 0)
+  const hrefOf = (type, fallback) => tasks.find(task => task.type === type)?.href || fallback
+  const delivery = countOf('pending_delivery')
+  const refunds = countOf('refund_action_required')
+  const stock = countOf('out_of_stock', 'low_stock')
+  const review = countOf('pending_review', 'rejected_products')
+  return [
+    { key: 'delivery', label: '待发货', value: delivery, hint: delivery ? '优先履约' : '暂无积压', href: hrefOf('pending_delivery', '/seller/orders?source=product&status=paid'), tone: delivery ? 'warn' : 'ok' },
+    { key: 'refunds', label: '待退款', value: refunds, hint: refunds ? '需在时限内决定' : '暂无待办', href: hrefOf('refund_action_required', '/seller/refunds?status=action_required'), tone: refunds ? 'danger' : 'ok' },
+    { key: 'stock', label: '库存预警', value: stock, hint: stock ? '售罄或偏低' : '库存正常', href: hrefOf('out_of_stock', hrefOf('low_stock', '/seller/products?stock=low')), tone: stock ? 'warn' : 'ok' },
+    { key: 'review', label: '审核中', value: review, hint: review ? '含未通过项' : '没有待审', href: hrefOf('rejected_products', hrefOf('pending_review', '/seller/products?status=pending')), tone: review ? 'warn' : 'ok' }
+  ]
+})
+
 const kpiCards = computed(() => {
   const kpis = dashboard.value?.kpis || {}
   const source = [
@@ -371,7 +386,7 @@ const businessStatusItems = computed(() => {
     { label: '发货与履约', icon: ShieldCheck, href: '/seller/fulfillment', ...fulfillmentMeta },
     { label: '小店状态', icon: Store, href: '/seller/store', value: shopReady ? getShopStatus(status.shop?.status) : '未开通', tone: status.shop?.status === 'active' ? 'good' : 'neutral', description: shopReady ? (status.shop?.name || '已建立小店资料') : '建立聚合展示页与商家名片' },
     { label: '生效优惠券', icon: TicketPercent, href: '/seller/coupons', value: `${Number(status.coupons?.activeCount || 0)} 张`, tone: Number(status.coupons?.activeCount || 0) > 0 ? 'good' : 'neutral', description: '当前可被买家领取和使用' },
-    { label: '商家服务', icon: Sparkles, href: '/seller/services', value: `${Number(status.services?.activeCount || 0)} 项`, tone: Number(status.services?.expiringSoon || 0) > 0 ? 'warn' : 'neutral', description: Number(status.services?.expiringSoon || 0) > 0 ? `${status.services.expiringSoon} 项将在 7 天内到期` : '推广和经营增值服务状态' },
+    { label: '推广', icon: Sparkles, href: '/seller/services', value: `${Number(status.services?.activeCount || 0)} 项`, tone: Number(status.services?.expiringSoon || 0) > 0 ? 'warn' : 'neutral', description: Number(status.services?.expiringSoon || 0) > 0 ? `${status.services.expiringSoon} 项将在 7 天内到期` : '推广和经营增值服务状态' },
     { label: '在营物品', icon: PackageCheck, href: '/seller/products', value: `${Number(status.products?.approved || 0)} 件`, tone: Number(status.products?.approved || 0) > 0 ? 'good' : 'neutral', description: `共提交 ${Number(status.products?.total || 0)} 件物品` }
   ]
 })
@@ -459,25 +474,23 @@ onUnmounted(() => chartObserver?.disconnect())
 .dashboard-card, .opening-checklist { min-width: 0; border: 1px solid var(--seller-border); border-radius: 14px; background: var(--seller-surface); box-shadow: var(--seller-shadow-sm); }
 .section-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
 .section-heading p { margin: 0 0 4px; color: var(--seller-jade); font-size: 11px; font-weight: 700; letter-spacing: .14em; }
-.section-heading h2 { margin: 0; font: 600 21px/1.3 "Noto Serif SC", "Source Han Serif SC", "Songti SC", STSong, serif; }
+.section-heading h2 { margin: 0; font: 600 16px/1.3 var(--font-sans); }
 .section-heading > a { min-height: 40px; display: inline-flex; align-items: center; gap: 5px; color: var(--seller-muted); font-size: 13px; }
 .section-heading > a:hover { color: var(--seller-jade); }
 .card-heading { padding: 21px 22px 12px; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; }
 
-.operating-note { position: relative; display: grid; grid-template-columns: minmax(150px,.7fr) minmax(260px,1.6fr) minmax(190px,.8fr) auto; align-items: center; gap: 24px; min-height: 172px; padding: 25px 28px 25px 34px; overflow: hidden; border: 1px solid var(--seller-border); border-radius: 14px; background: var(--seller-surface); box-shadow: var(--seller-shadow-md); }
-.note-spine { position: absolute; inset: 0 auto 0 0; width: 7px; border-right: 1px solid color-mix(in srgb, var(--seller-jade) 35%, transparent); background: var(--seller-jade); }
-.note-date { align-self: stretch; display: flex; flex-wrap: wrap; align-content: center; gap: 8px; padding-right: 24px; border-right: 1px solid var(--seller-border); color: var(--seller-ink); font: 600 15px/1.3 "Noto Serif SC", "Source Han Serif SC", "Songti SC", STSong, serif; }
-.note-date small { flex-basis: 100%; color: var(--seller-muted); font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
-.note-copy p { margin: 0 0 7px; color: var(--seller-jade); font-size: 12px; font-weight: 700; letter-spacing: .12em; }
-.note-copy h2 { margin: 0 0 9px; font: 600 clamp(25px,3vw,34px)/1.15 "Noto Serif SC", "Source Han Serif SC", "Songti SC", STSong, serif; letter-spacing: .04em; }
-.note-summary { max-width: 600px; color: var(--seller-muted); font-size: 14px; line-height: 1.8; }
-.note-priority { padding-left: 20px; border-left: 1px solid var(--seller-border); }
-.note-priority span, .note-priority strong { display: block; }
-.note-priority span { margin-bottom: 6px; color: var(--seller-muted); font-size: 11px; letter-spacing: .08em; }
-.note-priority strong { font-size: 14px; line-height: 1.55; }
-.primary-action { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 0 17px; border-radius: 10px; color: var(--palette-hex-ffffff); background: var(--seller-navy); font-size: 14px; font-weight: 650; box-shadow: 0 8px 20px color-mix(in srgb, var(--seller-navy) 18%, transparent); }
-html.dark .primary-action { color: var(--palette-hex-0d151d); background: var(--seller-jade); }
+.command-bar { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; }
+.command-bar p { margin: 0 0 4px; color: var(--seller-muted); font-size: 12px; }
+.command-bar h2 { margin: 0; font: 600 18px/1.35 var(--font-sans); }
+.command-bar span { display: block; margin-top: 4px; color: var(--seller-muted); font-size: 13px; line-height: 1.5; }
+.backlog-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.backlog-card { min-width: 0; padding: 16px; border: 1px solid var(--seller-border); border-radius: 12px; background: var(--seller-surface); box-shadow: var(--seller-shadow-sm); color: var(--seller-ink); }
+.backlog-card span, .backlog-card small { display: block; color: var(--seller-muted); font-size: 12px; }
+.backlog-card strong { display: block; margin: 8px 0 6px; font: 650 28px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-variant-numeric: tabular-nums; }
+.backlog-card.warn strong { color: var(--seller-warning); }
+.backlog-card.danger strong { color: var(--seller-danger); }
+.backlog-card:hover { border-color: var(--seller-jade); }
 
 .opening-checklist { padding: 22px; }
 .opening-heading { align-items: center; margin-bottom: 16px; }
@@ -492,7 +505,7 @@ html.dark .primary-action { color: var(--palette-hex-0d151d); background: var(--
 .opening-checklist li > a, .completed-copy { grid-column: 2; min-height: 28px; display: inline-flex; align-items: center; align-self: end; gap: 2px; color: var(--seller-jade); font-size: 12px; font-weight: 650; }
 
 .dashboard-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 20px; }
-.dashboard-toolbar p { margin: 0; font: 600 18px/1.4 "Noto Serif SC", "Source Han Serif SC", "Songti SC", STSong, serif; }
+.dashboard-toolbar p { margin: 0; font: 600 16px/1.4 var(--font-sans); }
 .dashboard-toolbar span { display: block; margin-top: 3px; color: var(--seller-muted); font-size: 12px; }
 .range-switch { width: auto; flex-shrink: 0; }
 
@@ -595,31 +608,23 @@ html.dark .primary-action { color: var(--palette-hex-0d151d); background: var(--
 
 .dashboard-error { min-height: 380px; display: grid; place-items: center; align-content: center; gap: 10px; padding: 30px; border: 1px solid var(--seller-border); border-radius: 14px; color: var(--seller-muted); text-align: center; background: var(--seller-surface); }
 .dashboard-error svg { color: var(--seller-warning); }
-.dashboard-error h2 { margin: 0; color: var(--seller-ink); font: 600 23px/1.3 "Noto Serif SC", "Songti SC", serif; }
+.dashboard-error h2 { margin: 0; color: var(--seller-ink); font: 600 18px/1.3 var(--font-sans); }
 .dashboard-error p { margin: 0; font-size: 13px; }
-.dashboard-error button { min-height: 44px; display: inline-flex; align-items: center; gap: 7px; margin-top: 6px; padding: 0 16px; border-radius: 10px; color: var(--palette-hex-ffffff); background: var(--seller-navy); }
+.dashboard-error button { min-height: 44px; display: inline-flex; align-items: center; gap: 7px; margin-top: 6px; padding: 0 16px; border-radius: 10px; color: var(--seller-on-navy); background: var(--seller-navy); }
 .dashboard-loading { display: grid; gap: 16px; }
 .skeleton { border-radius: 14px; background: linear-gradient(90deg, var(--seller-surface-soft), var(--seller-surface), var(--seller-surface-soft)); background-size: 200% 100%; animation: skeleton-move 1.4s ease infinite; }
-.brief-skeleton { height: 172px; }.skeleton-row { display:grid;grid-template-columns:repeat(4,1fr);gap:14px}.kpi-skeleton{height:145px}.chart-skeleton{height:420px}
+.brief-skeleton { height: 88px; }.skeleton-row { display:grid;grid-template-columns:repeat(4,1fr);gap:14px}.kpi-skeleton{height:112px}.chart-skeleton{height:420px}
 @keyframes skeleton-move { to { background-position: -200% 0; } }
 
 @media (max-width: 1180px) {
-  .operating-note { grid-template-columns: 150px minmax(260px,1fr) auto; }
-  .note-priority { display: none; }
   .dashboard-primary-grid, .dashboard-secondary-grid { grid-template-columns: minmax(0,1fr); }
 }
 @media (max-width: 900px) {
-  .operating-note { grid-template-columns: minmax(0,1fr) auto; }
-  .note-date { grid-column: 1 / -1; min-height: 40px; align-self: auto; padding: 0 0 14px; border-right: 0; border-bottom: 1px solid var(--seller-border); }
-  .note-date small { flex-basis: auto; margin-left: auto; }
-  .opening-checklist ol, .kpi-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .backlog-grid, .opening-checklist ol, .kpi-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
 }
 @media (max-width: 640px) {
   .seller-dashboard { gap: 16px; }
-  .operating-note { grid-template-columns: minmax(0,1fr); gap: 18px; padding: 21px 18px 21px 25px; }
-  .note-date { display: grid; grid-template-columns: auto 1fr; justify-items: start; gap: 3px 7px; }
-  .note-date small { grid-column: 2; margin-left: 0; }
-  .primary-action { width: 100%; }
+  .command-bar { align-items: stretch; flex-direction: column; }
   .opening-checklist { padding: 17px; }
   .opening-checklist ol { grid-template-columns: minmax(0,1fr); }
   .kpi-grid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; }

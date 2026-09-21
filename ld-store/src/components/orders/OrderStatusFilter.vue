@@ -1,7 +1,7 @@
 <template>
   <div ref="rootRef" class="order-status-filter" @focusout="handleFocusOut">
     <div class="status-rail">
-      <LiquidTabs :model-value="mainValue" :tabs="tabs" layout="equal" size="sm" aria-label="订单状态" @update:model-value="select" />
+      <component :is="tabsComponent" :model-value="mainValue" :tabs="tabs" layout="equal" size="sm" aria-label="订单状态" @update:model-value="select" />
       <div class="other-wrap" @keydown="handleKeydown">
         <button
           ref="triggerRef"
@@ -47,11 +47,16 @@
 import { computed, getCurrentInstance, onMounted, onUnmounted, watch } from 'vue'
 import { ArrowUpRight, Check, ChevronDown, CircleCheck, Clock3, Hourglass, LoaderCircle, Truck } from '@lucide/vue'
 import LiquidTabs from '@/components/common/LiquidTabs.vue'
+import SellerTabs from '@/components/seller/SellerTabs.vue'
 import { useDropdownMenu } from '@/composables/useDropdownMenu'
 import { OTHER_ORDER_FILTERS } from '@/utils/orderFilters'
 import { ORDER_STATUS_LABELS } from '@/utils/orderPresentation'
 
-const props = defineProps({ modelValue: { type: String, default: '' } })
+const props = defineProps({
+  modelValue: { type: String, default: '' },
+  variant: { type: String, default: 'default' }
+})
+const tabsComponent = computed(() => props.variant === 'seller' ? SellerTabs : LiquidTabs)
 const emit = defineEmits(['update:modelValue'])
 const menuId = `order-status-menu-${getCurrentInstance().uid}`
 const tabs = [{ value: '', label: '全部' }, { value: 'paid', label: '待发货' }, { value: 'cancelled', label: '已取消' }, { value: 'refund', label: '退款' }]
@@ -97,7 +102,8 @@ onUnmounted(() => document.removeEventListener('pointerdown', outside))
   border-radius: 15px;
   background: var(--status-surface);
 }
-.status-rail > :deep(.liquid-tabs) {
+.status-rail > :deep(.liquid-tabs),
+.status-rail > :deep(.seller-tabs) {
   grid-column: span 4;
   min-width: 0;
   padding: 0;
@@ -106,14 +112,16 @@ onUnmounted(() => document.removeEventListener('pointerdown', outside))
   background: transparent;
   box-shadow: none;
 }
-.status-rail :deep(.liquid-tab) {
+.status-rail :deep(.liquid-tab),
+.status-rail :deep(.seller-tab) {
   min-width: 0;
   min-height: 44px;
   padding: 8px 4px;
   font-family: inherit;
   font-size: 13px;
 }
-.status-rail :deep(.liquid-tab:not(.active):hover) { background: color-mix(in srgb, var(--status-raised) 55%, transparent); }
+.status-rail :deep(.liquid-tab:not(.active):hover),
+.status-rail :deep(.seller-tab:not(.active):hover) { background: color-mix(in srgb, var(--status-raised) 55%, transparent); }
 .other-wrap { position: relative; min-width: 0; }
 .other-trigger {
   display: flex;

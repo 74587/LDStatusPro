@@ -1,17 +1,18 @@
 <template>
   <div class="merchant-services-page top-service-theme" :class="{ 'has-purchase-bar': activeTab === 'service' && !focusedOrder && products.length > 0 }">
     <div class="services-content" :inert="orderDialogOpen ? '' : null">
-    <header class="services-heading">
-      <div><p class="page-eyebrow">商家服务</p><h2>给你的物品，多一个被看见的位置</h2><p>选择展示范围与推广时长，支付确认后开始服务。</p></div>
-      <button type="button" class="text-button" @click="activeTab = 'board'">查看名额<ArrowRight :size="16" aria-hidden="true" /></button>
-    </header>
+    <SellerPageToolbar eyebrow="推广" description="选择展示范围与推广时长，支付确认后开始服务。">
+      <template #actions>
+        <SellerButton variant="ghost" @click="activeTab = 'board'">查看名额<ArrowRight :size="16" aria-hidden="true" /></SellerButton>
+      </template>
+    </SellerPageToolbar>
 
     <div v-if="pendingOrders.length" class="pending-banner">
       <Clock3 :size="19" aria-hidden="true" /><div><strong>你有 {{ pendingOrders.length }} 笔待支付订单</strong><span>名额正在保留，未付款可取消。</span></div>
       <button type="button" @click="showPendingOrders">去处理<ArrowRight :size="16" aria-hidden="true" /></button>
     </div>
 
-    <LiquidTabs v-model="activeTab" :tabs="serviceTabs" mode="tabs" layout="equal" aria-label="商家服务功能" />
+    <SellerTabs v-model="activeTab" :tabs="serviceTabs" mode="tabs" layout="equal" aria-label="推广功能" />
     <div v-show="activeTab === 'service'" id="merchant-panel-service" role="tabpanel" aria-labelledby="merchant-tab-service" tabindex="0" class="service-panel">
       <div class="panel-toolbar"><span>选好物品，再决定推广方式</span><button type="button" class="text-button" :disabled="optionsLoading || submitting" @click="loadOptions"><RefreshCw :size="16" aria-hidden="true" />{{ optionsLoading ? '更新中…' : '刷新名额与方案' }}</button></div>
       <div v-if="optionsError" class="inline-alert" role="alert"><span>{{ optionsError }}。{{ optionsLoaded ? '当前展示上次的数据，更新成功后才能下单。' : '请重新加载后选择服务。' }}</span><button type="button" :disabled="optionsLoading" @click="loadOptions">重新加载</button></div>
@@ -72,7 +73,9 @@
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ArrowRight, ChevronDown, CircleHelp, Clock3, LayoutGrid, Megaphone, Package, ReceiptText, RefreshCw, Search } from '@lucide/vue'
-import LiquidTabs from '@/components/common/LiquidTabs.vue'
+import SellerButton from '@/components/seller/SellerButton.vue'
+import SellerPageToolbar from '@/components/seller/SellerPageToolbar.vue'
+import SellerTabs from '@/components/seller/SellerTabs.vue'
 import SellerPagination from '@/components/seller/SellerPagination.vue'
 import SellerStatusBadge from '@/components/seller/SellerStatusBadge.vue'
 import TopServiceProductPicker from '@/components/seller/TopServiceProductPicker.vue'

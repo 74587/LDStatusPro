@@ -284,7 +284,7 @@ const routes = [
         path: 'services',
         name: 'SellerServices',
         component: () => import('@/views/MerchantServices.vue'),
-        meta: { title: '商家服务 - LD士多卖家后台' }
+        meta: { title: '推广 - LD士多卖家后台' }
       },
       {
         path: 'store',

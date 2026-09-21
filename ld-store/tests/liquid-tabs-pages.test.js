@@ -6,7 +6,7 @@ import { createMemoryHistory, createRouter } from 'vue-router'
 import { createPinia } from 'pinia'
 import { nextTick } from 'vue'
 import { previewCampaign, previewResponse } from './fixtures/liquid-tabs-data.js'
-import LiquidTabs from '../src/components/common/LiquidTabs.vue'
+import SellerTabs from '../src/components/seller/SellerTabs.vue'
 import CouponManage from '../src/views/CouponManage.vue'
 import SellerRefunds from '../src/views/seller/SellerRefunds.vue'
 import SellerDashboard from '../src/views/seller/SellerDashboard.vue'
@@ -64,7 +64,7 @@ afterEach(() => {
 describe('migrated seller pages', () => {
   it('preserves coupon draft input across automatic keyboard tabs and keeps panel links valid', async () => {
     const { wrapper } = await page(CouponManage, '/seller/coupons')
-    expect(wrapper.findComponent(LiquidTabs).props('activation')).toBe('automatic')
+    expect(wrapper.findComponent(SellerTabs).props('activation')).toBe('automatic')
     wrapper.get('#coupon-list-tab').element.focus()
     await wrapper.get('#coupon-list-tab').trigger('keydown', { key: 'ArrowRight' })
     expect(wrapper.get('#coupon-create-panel').isVisible()).toBe(true)
@@ -100,7 +100,7 @@ describe('migrated seller pages', () => {
 
   it('keeps refund counts, search, page reset, and browser back/forward in sync', async () => {
     const { wrapper, router } = await page(SellerRefunds, '/seller/refunds?status=requested&page=3&search=sample')
-    const tabs = wrapper.findComponent(LiquidTabs)
+    const tabs = wrapper.findComponent(SellerTabs)
     expect(tabs.attributes('role')).toBe('group')
     expect(tabs.findAll('.tab-badge').map(badge => badge.text())).toContain('0')
     await buttonByText(tabs, '执行异常0').trigger('click')
@@ -119,7 +119,7 @@ describe('migrated seller pages', () => {
   it('loads service panels only on activation and preserves query normalization', async () => {
     const { wrapper, router } = await page(MerchantServices, '/seller/services?tab=service&from=preview')
     expect(requests.get.mock.calls.map(([url]) => url)).toEqual(['/api/shop/top-service/options'])
-    const tabs = wrapper.findComponent(LiquidTabs)
+    const tabs = wrapper.findComponent(SellerTabs)
     expect(tabs.props('layout')).toBe('equal')
     expect(tabs.findAll('.tab-description')).toHaveLength(3)
     wrapper.get('#merchant-tab-service').element.focus()
@@ -143,7 +143,7 @@ describe('migrated seller pages', () => {
     const { wrapper } = await page(SellerDashboard, '/seller/dashboard')
     let finish
     requests.get.mockImplementationOnce(() => new Promise(resolve => { finish = resolve }))
-    const range = wrapper.findAllComponents(LiquidTabs)[0]
+    const range = wrapper.findAllComponents(SellerTabs)[0]
     await buttonByText(range, '近 7 天').trigger('click')
     expect(range.findAll('button:disabled')).toHaveLength(3)
     await buttonByText(range, '近 90 天').trigger('click')
@@ -152,8 +152,8 @@ describe('migrated seller pages', () => {
     await flushPromises()
     expect(range.findAll('button:disabled')).toHaveLength(0)
     const count = requests.get.mock.calls.length
-    await buttonByText(wrapper.findAllComponents(LiquidTabs)[1], '浏览').trigger('click')
-    expect(wrapper.findAllComponents(LiquidTabs)[1].props('modelValue')).toBe('views')
+    await buttonByText(wrapper.findAllComponents(SellerTabs)[1], '浏览').trigger('click')
+    expect(wrapper.findAllComponents(SellerTabs)[1].props('modelValue')).toBe('views')
     expect(requests.get).toHaveBeenCalledTimes(count)
   })
 
@@ -162,7 +162,7 @@ describe('migrated seller pages', () => {
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
     let finish
     requests.get.mockImplementationOnce(() => new Promise(resolve => { finish = resolve }))
-    const [sources, statuses] = wrapper.findAllComponents(LiquidTabs)
+    const [sources, statuses] = wrapper.findAllComponents(SellerTabs)
     const ledger = wrapper.get('.seller-order-ledger')
     const paid = buttonByText(statuses, '待发货')
     paid.element.focus()
@@ -195,11 +195,11 @@ describe('migrated seller pages', () => {
   it('does not highlight the status shell when returning to product orders', async () => {
     const { wrapper, router } = await page(Orders, '/seller/orders?source=service', { sellerMode: true })
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
-    const sources = wrapper.findComponent(LiquidTabs)
+    const sources = wrapper.findComponent(SellerTabs)
     const product = buttonByText(sources, '商品订单')
     product.element.focus()
     await product.trigger('click')
-    const statuses = wrapper.findAllComponents(LiquidTabs)[1]
+    const statuses = wrapper.findAllComponents(SellerTabs)[1]
     expect(sources.classes()).not.toContain('is-switching')
     expect(statuses.classes()).not.toContain('is-switching')
     expect(statuses.attributes('aria-busy')).toBeUndefined()
@@ -236,7 +236,7 @@ describe('migrated seller pages', () => {
   it('retains debounced order switching, page reset, and the other-status API mapping', async () => {
     const { wrapper, router } = await page(Orders, '/seller/orders?source=product&page=4', { sellerMode: true })
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
-    const statuses = wrapper.findAllComponents(LiquidTabs)[1]
+    const statuses = wrapper.findAllComponents(SellerTabs)[1]
     await buttonByText(statuses, '待发货').trigger('click')
     await buttonByText(statuses, '退款').trigger('click')
     expect(router.currentRoute.value.query.page).toBe('4')
@@ -246,11 +246,11 @@ describe('migrated seller pages', () => {
     expect(router.currentRoute.value.query.page).toBeUndefined()
     const orderCalls = requests.get.mock.calls.map(([url]) => url).filter(url => url.startsWith('/api/shop/orders?'))
     expect(new URL(orderCalls.at(-1), 'http://test.invalid').searchParams.get('displayStatus')).toBe('refund_pending,refunded,refund_failed')
-    await buttonByText(wrapper.findAllComponents(LiquidTabs)[0], '求购服务').trigger('click')
+    await buttonByText(wrapper.findAllComponents(SellerTabs)[0], '求购服务').trigger('click')
     await vi.advanceTimersByTimeAsync(150)
     await flushPromises()
     expect(router.currentRoute.value.query.source).toBe('service')
-    expect(wrapper.findAllComponents(LiquidTabs)).toHaveLength(1)
+    expect(wrapper.findAllComponents(SellerTabs)).toHaveLength(1)
     await router.push('/seller/orders?source=product&status=delivered&page=2')
     await nextTick()
     await flushPromises()
