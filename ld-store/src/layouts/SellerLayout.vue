@@ -86,7 +86,7 @@
       </div>
     </aside>
 
-    <div class="seller-workspace">
+    <div ref="sellerWorkspace" class="seller-workspace">
       <header class="seller-topbar">
         <div class="seller-topbar-title">
           <button ref="mobileMenuButton" type="button" class="seller-icon-button mobile-menu" aria-controls="seller-navigation" :aria-expanded="drawerOpen" aria-label="打开导航" @click="openDrawer">
@@ -246,6 +246,7 @@ const drawerOpen = ref(false)
 const mobileMenuButton = ref(null)
 const sidebarCloseButton = ref(null)
 const sellerMain = ref(null)
+const sellerWorkspace = ref(null)
 let enforcementPollTimer = 0
 
 const displayName = computed(() => userStore.user?.name || userStore.username || '卖家')
@@ -356,6 +357,7 @@ watch(() => route.path, async () => {
     await router.replace({ name: 'SellerProducts', query: { sellingDisabled: '1' } })
   }
   await nextTick()
+  sellerWorkspace.value?.scrollTo({ top: 0, left: 0 })
   sellerMain.value?.focus({ preventScroll: true })
 })
 watch(drawerOpen, value => {
@@ -363,6 +365,7 @@ watch(drawerOpen, value => {
 })
 
 onMounted(() => {
+  document.documentElement.classList.add('seller-console')
   document.addEventListener('keydown', handleKeydown)
   void Promise.all([
     merchantEnforcementStore.refresh({ force: true }),
@@ -374,6 +377,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  document.documentElement.classList.remove('seller-console')
   document.removeEventListener('keydown', handleKeydown)
   document.body.style.overflow = ''
   if (enforcementPollTimer) window.clearInterval(enforcementPollTimer)
@@ -423,10 +427,13 @@ onUnmounted(() => {
   width: 100%;
   max-width: 100%;
   min-width: 0;
+  height: 100dvh;
   min-height: 100dvh;
+  max-height: 100dvh;
   display: grid;
   grid-template-columns: 248px minmax(0, 1fr);
   overflow-x: clip;
+  overflow-y: hidden;
   background: var(--seller-paper);
   color: var(--seller-ink);
   font-family: var(--font-sans);
@@ -520,7 +527,14 @@ html.dark .seller-shell {
 .logout-button { flex: 0 0 38px; width: 38px; height: 38px; color: var(--palette-rgba-255-255-255-p62); }
 .logout-button:hover { color: var(--seller-on-navy); background: var(--palette-rgba-165-83-77-p28); }
 
-.seller-workspace { min-width: 0; }
+.seller-workspace {
+  min-width: 0;
+  min-height: 0;
+  overflow-x: clip;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+  overscroll-behavior: contain;
+}
 .seller-topbar { position: sticky; top: 0; z-index: 40; justify-content: space-between; min-height: 72px; padding: 10px clamp(18px, 3vw, 38px); border-bottom: 1px solid color-mix(in srgb, var(--seller-border) 78%, transparent); background: color-mix(in srgb, var(--seller-paper) 90%, transparent); backdrop-filter: blur(14px); }
 .seller-topbar-title { gap: 10px; }
 .seller-topbar-title p { margin: 0 0 2px; color: var(--seller-jade); font-size: 11px; font-weight: 700; letter-spacing: .14em; }

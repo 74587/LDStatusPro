@@ -1,3 +1,17 @@
+html.seller-console,
+html.seller-console body {
+  height: 100dvh;
+  overflow: hidden;
+}
+
+html.seller-console .app-container,
+html.seller-console .main-content {
+  min-height: 0;
+  height: 100dvh;
+  overflow: hidden;
+  padding-bottom: 0;
+}
+
 .seller-shell {
   --liquid-tabs-radius: 14px;
   --liquid-tab-radius: 10px;

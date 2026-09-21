@@ -20,6 +20,17 @@ describe('seller mobile horizontal overflow containment', () => {
     expect(shell).toMatch(/max-width:\s*100%/)
     expect(shell).toMatch(/min-width:\s*0/)
     expect(shell).toMatch(/overflow-x:\s*clip/)
+    expect(shell).toMatch(/overflow-y:\s*hidden/)
+    expect(shell).toMatch(/height:\s*100dvh/)
+  })
+
+  it('keeps seller workspace scrolling stable so page switches do not shift the topbar', () => {
+    const source = readSource('../src/layouts/SellerLayout.vue')
+    const workspace = cssDeclarations(source, '.seller-workspace')
+
+    expect(workspace).toMatch(/min-height:\s*0/)
+    expect(workspace).toMatch(/overflow-y:\s*auto/)
+    expect(workspace).toMatch(/scrollbar-gutter:\s*stable/)
   })
 
   it('keeps the recent transaction table scroll inside its card', () => {
@@ -55,6 +66,7 @@ describe('seller mobile horizontal overflow containment', () => {
   it('resets both scroll axes on ordinary route navigation', () => {
     const source = readSource('../src/router/index.js')
 
+    expect(source).toContain("to.meta?.layout === 'seller'")
     expect(source).toContain('return { left: 0, top: 0 }')
   })
 })

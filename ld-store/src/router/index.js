@@ -328,6 +328,7 @@ const router = createRouter({
   history: createWebHistory(),
   routes,
   scrollBehavior(to, from, savedPosition) {
+    if (to.meta?.layout === 'seller') return false
     // 如果是返回操作且有保存的位置，恢复滚动位置
     if (savedPosition) {
       return new Promise((resolve) => {
