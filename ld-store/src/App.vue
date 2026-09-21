@@ -278,7 +278,7 @@ onUnmounted(() => {
   opacity: 0;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 767px) {
   .maintenance-banner {
     width: min(100% - 20px, 1180px);
     margin-top: 12px;

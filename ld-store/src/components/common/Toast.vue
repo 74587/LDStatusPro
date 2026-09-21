@@ -334,7 +334,7 @@ onBeforeUnmount(() => {
   }
 }
 
-@media (max-width: 640px) {
+@media (max-width: 639px) {
   .toast-container {
     top: max(12px, calc(env(safe-area-inset-top, 0px) + 12px));
     left: 12px;

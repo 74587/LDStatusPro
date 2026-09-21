@@ -2,7 +2,7 @@
 
 > 范围：`LDStatusPro/ld-store` 买家前台（首页、搜索、分类、商品卡、顶栏）。  
 > 商家后台 Paper Console 已有 768–1023 紧凑侧栏，不套用本文密度变量；只要求断点数字与本文对齐。  
-> 核对日期：2026-09-21。阶段 1–4 已落地。
+> 核对日期：2026-09-21。阶段 1–5 已落地。卖家后台仍不在本合同内。
 
 ## 1. 问题
 
@@ -172,3 +172,16 @@ npm run test:e2e -- e2e/density.spec.ts
 ```
 
 `npm run test:e2e` 仍包含 desktop/mobile 的 commerce 回归；密度视口由同一次运行里的额外 project 覆盖。
+
+### 阶段 5 — 全局组件、公共页、帮助中心、登录
+
+范围是前台公共壳，不碰卖家后台。
+
+| 组 | 文件 | 做法 |
+| --- | --- | --- |
+| 全局组件 | `Dialog` `Toast` `ThemeToggle` `CornerActionMenu` `StarRatingInput` `AnnouncementBar` `AnnouncementPopup` `App.vue` | `640/600/768` → `639/767`；主题按钮不再收到 32px（保持 ≥44 触控） |
+| 登录 / 404 / 维护 | `Login` `NotFound` `Maintenance` | 标题走 `--text-display`；维护双列在 `767` 叠栏 |
+| 公告 | `Announcements.vue` | `601/600/900` → `640/639/767`；页标题不再用到 38px |
+| 帮助中心 | `doc-styles.css` `Docs.vue` | `1230/899/520` → `1279/767/639`；⌘K 搜索目标与 `isMobileNav()` 对齐；Hero 标题收口 |
+
+合入 `CONTRACT_LAYOUT_FILES`。

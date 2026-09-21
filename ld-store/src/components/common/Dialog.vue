@@ -270,7 +270,7 @@ function handleSecondary() {
 }
 
 /* 移动端适配 */
-@media (max-width: 640px) {
+@media (max-width: 639px) {
   .dialog-overlay {
     padding: 16px;
     align-items: flex-end;

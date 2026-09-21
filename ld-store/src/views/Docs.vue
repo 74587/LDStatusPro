@@ -245,6 +245,7 @@ import {
   resolveHelpArticleId,
   searchHelpCenter
 } from '@/config/helpCenter'
+import { isMobileNav } from '@/config/breakpoints'
 
 const route = useRoute()
 const router = useRouter()
@@ -507,7 +508,7 @@ watch(() => [route.params.section, route.hash], async () => {
 function handleGlobalKeydown(event) {
   if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
     event.preventDefault()
-    const target = window.innerWidth < 900 ? document.getElementById('help-search-drawer') : document.getElementById(isLanding.value ? 'help-search-hero' : 'help-search-desktop')
+    const target = isMobileNav(window.innerWidth) ? document.getElementById('help-search-drawer') : document.getElementById(isLanding.value ? 'help-search-hero' : 'help-search-desktop')
     if (target) target.focus()
     else openDrawer(true)
   }

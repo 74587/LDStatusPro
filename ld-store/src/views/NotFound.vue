@@ -70,7 +70,7 @@ function goBack() {
 }
 
 .title {
-  font-size: 28px;
+  font-size: var(--text-display);
   font-weight: 700;
   color: var(--text-primary);
   margin: 0 0 12px;

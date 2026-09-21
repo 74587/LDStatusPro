@@ -251,22 +251,10 @@ onUnmounted(() => {
   }
 }
 
-/* 移动端适配 */
-@media (max-width: 640px) {
+@media (max-width: 639px) {
   .theme-btn {
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
-  }
-
-  .theme-icon :deep(svg) {
-    width: 16px;
-    height: 16px;
-  }
-
-  .theme-icon {
-    width: 16px;
-    height: 16px;
+    min-width: 44px;
+    min-height: 44px;
   }
 
   .theme-text {

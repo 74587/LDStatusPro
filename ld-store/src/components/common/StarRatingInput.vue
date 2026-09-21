@@ -286,7 +286,7 @@ onUnmounted(() => {
   line-height: 1;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 639px) {
   .star-rating-value {
     font-size: 15px;
   }

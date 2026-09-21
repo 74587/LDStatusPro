@@ -149,7 +149,7 @@ async function handleLogin() {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px;
+  padding: var(--page-gutter);
 }
 
 .login-container {
@@ -182,7 +182,7 @@ async function handleLogin() {
 }
 
 .login-title {
-  font-size: 28px;
+  font-size: var(--text-display);
   font-weight: 700;
   color: var(--text-primary);
   margin: 0 0 8px;
@@ -197,8 +197,8 @@ async function handleLogin() {
 
 .login-info {
   background: var(--bg-card);
-  border-radius: 20px;
-  padding: 24px;
+  border-radius: var(--card-radius);
+  padding: var(--detail-pad);
   margin-bottom: 24px;
   text-align: left;
   box-shadow: var(--shadow-md);

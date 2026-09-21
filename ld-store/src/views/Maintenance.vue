@@ -308,7 +308,7 @@ function reloadPage() {
 
 .maintenance-title {
   margin: 0;
-  font-size: clamp(32px, 5vw, 48px);
+  font-size: clamp(22px, 1.4vw + 16px, 32px);
   line-height: 1.05;
   color: var(--text-primary);
 }
@@ -539,7 +539,7 @@ function reloadPage() {
   text-align: center;
 }
 
-@media (max-width: 920px) {
+@media (max-width: 767px) {
   .shell-grid {
     grid-template-columns: 1fr;
   }
@@ -549,18 +549,14 @@ function reloadPage() {
   }
 }
 
-@media (max-width: 640px) {
+@media (max-width: 639px) {
   .maintenance-page {
-    padding: 16px;
+    padding: var(--page-gutter);
   }
 
   .maintenance-shell {
     border-radius: 26px;
     padding: 20px;
-  }
-
-  .maintenance-title {
-    font-size: 30px;
   }
 
   .action-row {

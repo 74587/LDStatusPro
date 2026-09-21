@@ -681,7 +681,7 @@ watch(
   }
 }
 
-@media (max-width: 640px) {
+@media (max-width: 639px) {
   .corner-menu {
     right: 16px;
     bottom: 96px;

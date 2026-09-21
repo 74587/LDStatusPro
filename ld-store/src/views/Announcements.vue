@@ -250,7 +250,7 @@ onUnmounted(() => { sequence++; controller?.abort() })
 .announcement-navigation-label { display: flex; gap: var(--space-3); font-size: var(--text-size-xs); color: var(--text-muted-semantic); }
 .announcement-heading { display: flex; align-items: center; justify-content: space-between; gap: var(--space-8); padding: var(--space-5) 0 40px; }
 .announcement-eyebrow { display: inline-flex; align-items: center; gap: var(--space-2); color: var(--action-primary); font-size: var(--text-size-xs); font-weight: 600; letter-spacing: .06em; margin: 0; }
-.announcement-heading h1 { margin: var(--space-4) 0 var(--space-3); font-family: var(--font-serif); font-size: clamp(27px, 3.2vw, 38px); font-weight: 600; letter-spacing: .02em; line-height: 1.45; text-wrap: balance; }
+.announcement-heading h1 { margin: var(--space-4) 0 var(--space-3); font-family: var(--font-serif); font-size: var(--text-display); font-weight: 600; letter-spacing: .02em; line-height: 1.45; text-wrap: balance; }
 .announcement-intro { margin: 0; color: var(--text-secondary-semantic); line-height: 1.8; font-size: var(--text-size-sm); }
 .announcement-help { display: flex; flex-shrink: 0; align-items: center; gap: var(--space-3); max-width: 290px; padding: var(--space-5); border-left: 1px solid var(--border-default-semantic); color: var(--text-link); text-decoration: none; }
 .announcement-help strong { display: block; font-weight: 500; font-size: var(--text-size-sm); }
@@ -274,7 +274,7 @@ onUnmounted(() => { sequence++; controller?.abort() })
 .announcement-list li + li { border-top: 1px solid var(--border-default-semantic); }
 .announcement-list-item { position: relative; display: flex; align-items: flex-start; gap: var(--space-8); padding: var(--space-8) 0; color: inherit; text-decoration: none; }
 .announcement-date-stamp { display: flex; flex-direction: column; gap: var(--space-1); flex-shrink: 0; width: 84px; padding-top: var(--space-1); font-variant-numeric: tabular-nums; color: var(--text-muted-semantic); }
-.announcement-date-stamp strong { font-size: 27px; font-weight: 400; line-height: 1.2; color: var(--action-primary); letter-spacing: -.02em; }
+.announcement-date-stamp strong { font-size: var(--text-display); font-weight: 400; line-height: 1.2; color: var(--action-primary); letter-spacing: -.02em; }
 .announcement-date-stamp span { font-size: var(--text-size-xs); }
 .announcement-list-copy { min-width: 0; flex: 1; }
 .announcement-list-meta { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-3); }
@@ -340,10 +340,10 @@ onUnmounted(() => { sequence++; controller?.abort() })
 .announcement-acknowledgement .announcement-button { flex-shrink: 0; }
 .announcement-feedback { margin: var(--space-4) 0 0; color: var(--text-link); font-size: var(--text-size-sm); }
 .announcement-reading-footer { display: flex; justify-content: space-between; gap: var(--space-4); margin-top: var(--space-4); }
-@media (min-width: 601px) {
+@media (min-width: 640px) {
   .announcement-list-date { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 }
-@media (max-width: 900px) {
+@media (max-width: 767px) {
   .announcement-help { display: none; }
   .announcement-toolbar { flex-wrap: wrap; gap: var(--space-4); }
   .announcement-search { flex: 1; }
@@ -351,12 +351,12 @@ onUnmounted(() => { sequence++; controller?.abort() })
   .announcement-list-item { gap: var(--space-6); }
   .announcement-acknowledgement { flex-wrap: wrap; }
 }
-@media (max-width: 600px) {
+@media (max-width: 639px) {
   .announcements-page { width: calc(100% - 32px); padding-top: var(--space-3); }
   .announcement-navigation { margin-bottom: var(--space-3); }
   .announcement-navigation-label { font-size: 11px; gap: 6px; }
   .announcement-heading { padding: var(--space-4) 0 var(--space-6); }
-  .announcement-heading h1 { font-size: 28px; max-width: 10em; }
+  .announcement-heading h1 { max-width: 10em; }
   .announcement-intro { max-width: 23em; }
   .announcement-toolbar { padding: var(--space-4); }
   .announcement-filters { width: 100%; }
@@ -375,7 +375,7 @@ onUnmounted(() => { sequence++; controller?.abort() })
   .announcement-footnote svg { margin-top: 3px; }
   .announcement-document { padding: var(--space-6) var(--space-5); }
   .announcement-document-header { padding-bottom: var(--space-6); margin-bottom: var(--space-6); }
-  .announcement-document-header h1 { font-size: 27px; margin-top: var(--space-5); }
+  .announcement-document-header h1 { font-size: var(--text-display); margin-top: var(--space-5); }
   .announcement-document-kicker { gap: var(--space-2); }
   .announcement-document-kicker .announcement-eyebrow { font-size: 11px; letter-spacing: 0; }
   .announcement-document-summary { font-size: var(--text-size-sm); }
