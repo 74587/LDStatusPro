@@ -60,7 +60,7 @@ npm run check                # 全部门禁（含测试）
 |---|---|
 | `npm run dev` | Vite :3001 |
 | `npm test` | Vitest（禁真实外网） |
-| `npm run test:e2e` | Playwright desktop + Pixel 5 |
+| `npm run test:e2e` | Playwright desktop + Pixel 5；密度视口只跑 `density.spec.ts` |
 | `npm run lint` / `typecheck` / `build` | 质量与构建 |
 | `npm run check` | 含测试的全部门禁 |
 | `npm run check:deploy` | 部署门禁，不含 `npm test` |

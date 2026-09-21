@@ -114,7 +114,7 @@ function isActive(path) {
 }
 
 /* 仅在移动端显示底部导航 */
-@media (max-width: 768px) {
+@media (max-width: 767px) {
   .app-footer {
     display: flex;
   }

@@ -6,6 +6,12 @@ export default {
   ],
   theme: {
     extend: {
+      screens: {
+        compact: '768px',
+        laptop: '1024px',
+        desktop: '1280px',
+        wide: '1440px',
+      },
       // 莫兰迪色系配色
       colors: {
         // 主色调 - 莫兰迪灰粉色系

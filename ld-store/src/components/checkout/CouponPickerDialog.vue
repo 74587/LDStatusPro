@@ -449,7 +449,7 @@ onBeforeUnmount(() => {
   transform: translateY(12px) scale(.985);
 }
 
-@media (max-width: 640px) {
+@media (max-width: 639px) {
   .coupon-picker-layer {
     place-items: end stretch;
     padding: 0;

@@ -1,7 +1,8 @@
 // Helpers to open payment in a popup window on desktop, falling back to new tab on mobile.
+import { isMobileNav } from '@/config/breakpoints'
 
 function isMobile() {
-  return window.innerWidth < 768 || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+  return isMobileNav(window.innerWidth) || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
 }
 
 const POPUP_WIDTH = 480

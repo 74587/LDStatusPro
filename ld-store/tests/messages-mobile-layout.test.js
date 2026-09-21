@@ -25,7 +25,7 @@ describe('消息页移动端布局', () => {
   })
 
   it('手机端显示精简相对时间并保留完整时间语义', () => {
-    const mobileSource = source.slice(source.indexOf('@media (max-width: 640px)'))
+    const mobileSource = source.slice(source.indexOf('@media (max-width: 639px)'))
     const exactTime = cssDeclarations(mobileSource, '.system-time-exact')
 
     expect(source).toContain('class="system-time-relative">{{ formatRelativeTime(item.createdAt) }}')
@@ -34,7 +34,7 @@ describe('消息页移动端布局', () => {
   })
 
   it('手机端底部将消息类型与操作按钮固定在同一行两端', () => {
-    const mobileSource = source.slice(source.indexOf('@media (max-width: 640px)'))
+    const mobileSource = source.slice(source.indexOf('@media (max-width: 639px)'))
     const systemBottom = cssDeclarations(mobileSource, '.system-bottom')
     const systemMeta = cssDeclarations(mobileSource, '.system-meta')
     const systemActions = cssDeclarations(mobileSource, '.system-actions')
@@ -47,7 +47,7 @@ describe('消息页移动端布局', () => {
   })
 
   it('极窄屏幕允许筛选工具栏换行', () => {
-    const narrowSource = source.slice(source.indexOf('@media (max-width: 360px)'))
+    const narrowSource = source.slice(source.indexOf('@media (max-width: 359px)'))
     const toolbar = cssDeclarations(narrowSource, '.toolbar')
     const toolbarSearch = cssDeclarations(narrowSource, '.toolbar-search')
 

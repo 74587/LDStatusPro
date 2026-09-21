@@ -2177,8 +2177,6 @@ async function handleOpenStore() {
 
 .page-container {
   max-width: 900px;
-  margin: 0 auto;
-  padding: 16px;
   padding-bottom: 100px;
 }
 
@@ -2338,8 +2336,8 @@ async function handleOpenStore() {
   grid-template-columns: 1fr;
   gap: 24px;
   background: var(--bg-card);
-  border-radius: 20px;
-  padding: 24px;
+  border-radius: var(--card-radius);
+  padding: var(--detail-pad);
   box-shadow: var(--shadow-sm);
   border: 1px solid var(--border-light);
   margin-bottom: 20px;
@@ -2357,7 +2355,6 @@ async function handleOpenStore() {
 @media (min-width: 768px) {
   .detail-main {
     grid-template-columns: 1fr 1fr;
-    padding: 32px;
   }
 
   .detail-main--landscape {
@@ -2767,7 +2764,7 @@ async function handleOpenStore() {
   box-shadow: none;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 639px) {
   .report-modal {
     padding: 16px;
     border-radius: 18px;
@@ -4092,14 +4089,9 @@ async function handleOpenStore() {
 }
 
 /* 移动端适配 */
-@media (max-width: 640px) {
+@media (max-width: 639px) {
   .page-container {
-    padding: 12px;
     padding-bottom: 116px;
-  }
-  
-  .detail-main {
-    padding: 20px;
   }
   
   .detail-nav {

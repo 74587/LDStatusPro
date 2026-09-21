@@ -451,11 +451,11 @@ onMounted(async () => {
 
 <style scoped>
 .collections-page { min-height: 100vh; padding-bottom: 80px; background: var(--bg-primary); }
-.page-container { max-width: 960px; margin: 0 auto; padding: 24px 18px; }
+.page-container { max-width: 960px; }
 .page-header { position: relative; display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 18px; padding-left: 18px; }
 .page-header::before { position: absolute; inset: 2px auto 2px 0; width: 4px; border-radius: 999px; background: linear-gradient(180deg, var(--color-warning) 0 48%, var(--color-danger) 52% 100%); content: ''; }
 .page-eyebrow { margin: 0 0 4px; color: var(--text-tertiary); font-size: 11px; font-weight: 700; letter-spacing: .14em; }
-.page-title { margin: 0; color: var(--text-primary); font-size: clamp(24px, 4vw, 32px); line-height: 1.2; }
+.page-title { margin: 0; color: var(--text-primary); font-size: var(--text-display); line-height: 1.2; }
 .page-subtitle { margin: 7px 0 0; color: var(--text-tertiary); font-size: 13px; text-wrap: balance; }
 .browse-link { min-height: 44px; display: inline-flex; align-items: center; padding: 0 16px; border: 1px solid var(--border-color); border-radius: 999px; background: var(--bg-card); color: var(--text-secondary); font-size: 13px; text-decoration: none; }
 .collection-workspace { overflow: hidden; border: 1px solid var(--border-light); border-radius: 18px; background: var(--bg-card); box-shadow: var(--shadow-sm); }
@@ -501,10 +501,8 @@ onMounted(async () => {
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 @keyframes loading-pulse { to { opacity: .28; transform: scale(.76); } }
 
-@media (max-width: 640px) {
-  .page-container { padding: 16px 10px; }
+@media (max-width: 639px) {
   .page-header { align-items: flex-start; gap: 12px; padding-left: 14px; }
-  .page-title { font-size: 23px; }
   .page-subtitle { max-width: 240px; font-size: 12px; }
   .browse-link { min-width: 44px; padding: 0 12px; white-space: nowrap; }
   .collection-workspace { border-radius: 15px; }

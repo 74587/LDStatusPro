@@ -177,6 +177,6 @@ h1 { margin: 0; font-size: clamp(24px, 5vw, 34px); line-height: 1.25; }
 .state-card { padding-block: 56px; }.state-icon { width: 64px; fill: none; stroke: var(--color-warning); stroke-width: 1.6; }.state-card p { margin: 12px 0 0; color: var(--text-secondary); }
 .skeleton { border-radius: 10px; background: var(--skeleton-gradient); background-size: 200% 100%; animation: shimmer 1.4s infinite; }.skeleton-icon { width: 72px; height: 72px; margin: 0 auto 20px; }.skeleton-title { width: 58%; height: 30px; margin: 0 auto 14px; }.skeleton-line { width: 82%; height: 18px; margin: 0 auto 32px; }.skeleton-button { width: 100%; height: 48px; }
 @keyframes shimmer { to { background-position: -200% 0; } }
-@media (max-width: 520px) { .coupon-claim-page { padding-top: 20px; }.coupon-card { border-radius: 22px; }.rule-list { padding-inline: 14px; }.rule-list div { grid-template-columns: 78px 1fr; gap: 10px; font-size: 13px; } }
+@media (max-width: 639px) { .coupon-claim-page { padding-top: 20px; }.coupon-card { border-radius: 22px; }.rule-list { padding-inline: 14px; }.rule-list div { grid-template-columns: 78px 1fr; gap: 10px; font-size: 13px; } }
 @media (prefers-reduced-motion: reduce) { .primary-button, .skeleton { transition: none; animation: none; } }
 </style>

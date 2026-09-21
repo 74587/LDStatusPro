@@ -469,7 +469,7 @@ onBeforeUnmount(() => {
   transform: translateY(20px);
 }
 
-@media (min-width: 769px) {
+@media (min-width: 768px) {
   .catalog-filter-layer {
     place-items: center;
     padding: 20px;

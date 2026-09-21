@@ -281,6 +281,7 @@ import { DEFAULT_SEARCH_KEYWORDS, loadSearchHistory, saveSearchHistory, clearSea
 import { buildUserDropdownMenuGroups } from '@/config/userMenu'
 import { useDropdownMenu } from '@/composables/useDropdownMenu'
 import { buildUserIdentity } from '@/utils/userIdentity'
+import { isMobileNav } from '@/config/breakpoints'
 
 const router = useRouter()
 const route = useRoute()
@@ -480,7 +481,7 @@ function goToPublish() {
 }
 
 function checkMobile() {
-  isMobile.value = window.innerWidth < 768
+  isMobile.value = isMobileNav(window.innerWidth)
   if (isMobile.value) {
     closeSearchPanel()
   }
@@ -501,8 +502,6 @@ onUnmounted(() => {
 
 <style scoped>
 .app-header {
-  --header-control-size: 38px;
-  --header-profile-size: 40px;
   position: sticky;
   top: 0;
   left: 0;
@@ -521,10 +520,10 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  max-width: 1200px;
+  max-width: var(--page-max);
   margin: 0 auto;
-  padding: 12px 16px;
-  gap: 16px;
+  padding: 12px var(--page-gutter);
+  gap: var(--grid-gap);
 }
 
 .header-brand {
@@ -781,7 +780,7 @@ onUnmounted(() => {
   align-items: center;
   gap: 8px;
   box-sizing: border-box;
-  width: 180px;
+  width: var(--header-user-width);
   height: var(--header-profile-size);
   padding: 4px 12px 4px 8px;
   background: var(--input-bg);
@@ -1240,15 +1239,21 @@ onUnmounted(() => {
   color: var(--text-secondary);
 }
 
-/* 移动端适配 */
-@media (max-width: 767px) {
-  .app-header {
-    --header-control-size: 44px;
-    --header-profile-size: 44px;
+@media (max-width: 1279px), (min-width: 768px) and (max-height: 800px) and (pointer: fine) {
+  .user-identity {
+    display: none;
   }
 
+  .user-info {
+    padding: 8px;
+    justify-content: center;
+  }
+}
+
+/* 移动端适配 */
+@media (max-width: 767px) {
   .header-content {
-    padding: 10px 12px;
+    padding: 10px var(--page-gutter);
   }
 
   .header-logo {

@@ -300,7 +300,7 @@ const getTagClass = (tag) => {
 
 /* 小店信息 */
 .shop-info {
-  padding: 14px 16px 16px;
+  padding: var(--card-pad);
 }
 
 .shop-name {
@@ -388,11 +388,7 @@ const getTagClass = (tag) => {
 }
 
 /* 移动端适配 */
-@media (max-width: 640px) {
-  .shop-info {
-    padding: 12px 14px 14px;
-  }
-  
+@media (max-width: 639px) {
   .shop-name {
     font-size: 15px;
     margin-bottom: 8px;

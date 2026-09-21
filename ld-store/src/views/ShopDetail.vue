@@ -222,8 +222,6 @@ onMounted(() => {
 
 .page-container {
   max-width: 800px;
-  margin: 0 auto;
-  padding: 16px;
 }
 
 /* 返回导航 */
@@ -368,11 +366,11 @@ onMounted(() => {
 
 /* 小店信息卡片 */
 .shop-info-card {
-  padding: 24px;
+  padding: var(--detail-pad);
 }
 
 .shop-name {
-  font-size: 24px;
+  font-size: var(--text-display);
   font-weight: 700;
   color: var(--text-primary);
   margin: 0 0 20px;
@@ -575,17 +573,9 @@ onMounted(() => {
 }
 
 /* 移动端适配 */
-@media (max-width: 640px) {
-  .page-container {
-    padding: 12px;
-  }
-  
+@media (max-width: 639px) {
   .shop-info-card {
-    padding: 20px 16px;
-  }
-  
-  .shop-name {
-    font-size: 20px;
+    padding: var(--detail-pad);
   }
   
   .owner-link {

@@ -29,7 +29,7 @@ button:focus-visible { outline: 3px solid var(--palette-rgba-99-102-241-0p2); ou
 .nav-block-btn:hover { color: var(--color-danger); background: var(--palette-rgba-220-38-38-0p08); border-color: var(--palette-rgba-220-38-38-0p3); }
 .nav-report-btn { color: var(--palette-hex-8a6500); background: var(--palette-rgba-250-204-21-0p16); border: 1px solid var(--palette-rgba-234-179-8-0p35); }
 .nav-report-btn:hover { color: var(--palette-hex-6f5200); background: var(--palette-rgba-250-204-21-0p24); border-color: var(--palette-rgba-234-179-8-0p5); }
-@media (max-width: 640px) {
+@media (max-width: 639px) {
   button { min-height: 44px; }
 }
 </style>

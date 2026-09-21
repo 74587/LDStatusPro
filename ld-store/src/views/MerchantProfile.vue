@@ -638,7 +638,7 @@ function openStoreMessage() {
 }
 
 /* ── Responsive: Tablet ── */
-@media (max-width: 768px) {
+@media (max-width: 767px) {
   .merchant-header {
     flex-wrap: wrap;
   }
@@ -658,7 +658,7 @@ function openStoreMessage() {
 }
 
 /* ── Responsive: Mobile ── */
-@media (max-width: 520px) {
+@media (max-width: 639px) {
   .merchant-profile-page {
     padding-top: 8px;
     padding-bottom: 64px;
@@ -779,7 +779,7 @@ function openStoreMessage() {
 }
 
 /* ── Responsive: Narrow ── */
-@media (max-width: 380px) {
+@media (max-width: 359px) {
   .merchant-card {
     padding: 12px;
     border-radius: 14px;

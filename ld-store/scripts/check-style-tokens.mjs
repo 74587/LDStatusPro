@@ -28,8 +28,84 @@ const REQUIRED_TOKENS = [
   '--radius-md',
   '--space-4',
   '--font-sans',
-  '--motion-duration-fast'
+  '--motion-duration-fast',
+  '--ui-density',
+  '--page-max',
+  '--page-gutter',
+  '--section-gap',
+  '--grid-gap',
+  '--header-control-size',
+  '--text-display',
+  '--card-cover-h',
+  '--banner-pad',
+  '--detail-pad'
 ]
+
+export const CONTRACT_LAYOUT_FILES = [
+  'src/styles/tokens.css',
+  'src/styles/main.css',
+  'src/components/layout/AppHeader.vue',
+  'src/components/layout/AppFooter.vue',
+  'src/views/Home.vue',
+  'src/components/product/ProductCard.vue',
+  'src/components/product/PurchaseLimitSelector.vue',
+  'src/components/home/ProductsMarketplace.vue',
+  'src/components/home/StoresMarketplace.vue',
+  'src/components/home/BuyRequestMarketplace.vue',
+  'src/components/home/HotboardMarketplace.vue',
+  'src/components/home/HotboardProductRow.vue',
+  'src/components/home/CatalogFilterSheet.vue',
+  'src/components/common/LiquidTabs.vue',
+  'src/components/shop/ShopCard.vue',
+  'src/views/Search.vue',
+  'src/views/Category.vue',
+  'src/views/ProductDetail.vue',
+  'src/components/product-detail/ProductMedia.vue',
+  'src/components/product-detail/ProductInteractionPanel.vue',
+  'src/components/checkout/CouponPickerDialog.vue',
+  'src/views/OrderConfirm.vue',
+  'src/views/Orders.vue',
+  'src/views/OrderDetail.vue',
+  'src/views/User.vue',
+  'src/views/BuyRequestDetail.vue',
+  'src/views/BuyOrderDetail.vue',
+  'src/views/MyBuyRequests.vue',
+  'src/views/MyCoupons.vue',
+  'src/views/MyFavorites.vue',
+  'src/views/MyBuyChats.vue',
+  'src/views/ShopDetail.vue',
+  'src/views/Support.vue',
+  'src/views/Settings.vue',
+  'src/views/CouponClaim.vue',
+  'src/views/MerchantProfile.vue',
+  'src/views/MyReports.vue',
+  'src/views/MyReportDetail.vue'
+]
+
+const ALLOWED_MIN_WIDTH = new Set([360, 640, 768, 1024, 1280, 1440])
+const ALLOWED_MAX_WIDTH = new Set([359, 639, 767, 1023, 1279, 1439])
+const ALLOWED_MAX_HEIGHT = new Set([800])
+
+function layoutQueryViolations(relativePath, source) {
+  const violations = []
+  for (const match of source.matchAll(/@media([^{]+)\{/g)) {
+    const query = match[1]
+    for (const dimension of query.matchAll(/(min|max)-(width|height)\s*:\s*(\d+)px/gi)) {
+      const edge = dimension[1].toLowerCase()
+      const axis = dimension[2].toLowerCase()
+      const value = Number(dimension[3])
+      const allowed = axis === 'width'
+        ? (edge === 'min' ? ALLOWED_MIN_WIDTH : ALLOWED_MAX_WIDTH)
+        : (edge === 'max' ? ALLOWED_MAX_HEIGHT : new Set())
+      if (!allowed.has(value)) {
+        violations.push(
+          `${relativePath}:${lineNumber(source, match.index)} layout media ${edge}-${axis}:${value}px is outside the breakpoint contract`
+        )
+      }
+    }
+  }
+  return violations
+}
 
 const CONTRAST_PAIRS = [
   ['--text-primary-semantic', '--surface-canvas', 4.5],
@@ -121,9 +197,15 @@ export function validateStylePolicy({ rootDir = path.resolve(import.meta.dirname
   const files = walk(sourceRoot)
 
   for (const filePath of files) {
-    if (filePath === tokenFile || filePath.endsWith('theme-bootstrap.css')) continue
+    if (filePath.endsWith('theme-bootstrap.css')) continue
     const source = fs.readFileSync(filePath, 'utf8')
-    const relativePath = path.relative(rootDir, filePath)
+    const relativePath = path.relative(rootDir, filePath).split(path.sep).join('/')
+
+    if (CONTRACT_LAYOUT_FILES.includes(relativePath)) {
+      violations.push(...layoutQueryViolations(relativePath, source))
+    }
+
+    if (filePath === tokenFile) continue
 
     const rawColorPattern = /#[0-9a-fA-F]{3,8}\b|\b(?:rgba?|hsla?)\([^\n)]*\)/g
     for (const match of source.matchAll(rawColorPattern)) {

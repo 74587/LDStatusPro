@@ -480,15 +480,13 @@ async function handleLogout() {
 
 .page-container {
   max-width: 760px;
-  margin: 0 auto;
-  padding: 16px;
 }
 
 .user-card {
-  margin-bottom: 20px;
-  padding: 24px;
+  margin-bottom: var(--section-gap);
+  padding: var(--detail-pad);
   border: 1px solid var(--user-card-border);
-  border-radius: 24px;
+  border-radius: var(--card-radius);
   background: var(--user-card-bg);
   box-shadow: var(--user-card-shadow);
   isolation: isolate;
@@ -550,7 +548,7 @@ async function handleLogout() {
 
 .user-name {
   margin: 0;
-  font-size: 24px;
+  font-size: var(--text-display);
   font-weight: 700;
   color: var(--text-primary);
 }
@@ -701,7 +699,7 @@ async function handleLogout() {
 }
 
 .balance-card strong {
-  font-size: 28px;
+  font-size: var(--text-display);
   line-height: 1;
   color: var(--user-balance-amount);
 }
@@ -762,7 +760,7 @@ async function handleLogout() {
 }
 
 .stat-value {
-  font-size: 28px;
+  font-size: var(--text-display);
   line-height: 1.1;
   color: var(--text-primary);
 }
@@ -1133,10 +1131,7 @@ async function handleLogout() {
   }
 }
 
-@media (max-width: 720px) {
-  .page-container {
-    padding: 12px;
-  }
+@media (max-width: 767px) {
 
   .user-card {
     padding: 18px;
@@ -1166,10 +1161,7 @@ async function handleLogout() {
   }
 }
 
-@media (max-width: 520px) {
-  .page-container {
-    padding: 8px;
-  }
+@media (max-width: 639px) {
 
   .user-card {
     padding: 12px;
@@ -1351,7 +1343,7 @@ async function handleLogout() {
   }
 }
 
-@media (max-width: 360px) {
+@media (max-width: 359px) {
   .balance-grid,
   .stats-grid {
     grid-template-columns: minmax(0, 1fr);

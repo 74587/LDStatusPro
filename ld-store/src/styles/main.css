@@ -581,10 +581,17 @@ html.dark {
   .tap-highlight {
     -webkit-tap-highlight-color: var(--palette-rgba-181-168-152-0p1);
   }
+
+  .page-container {
+    width: min(100%, var(--page-max));
+    margin-inline: auto;
+    padding: var(--page-gutter);
+    box-sizing: border-box;
+  }
 }
 
 /* 响应式断点 */
-@media (max-width: 640px) {
+@media (max-width: 639px) {
   html {
     font-size: 14px;
   }

@@ -214,6 +214,7 @@ import { fetchSearchSuggestionsRequest, recordSearchOutcome } from '@/services/s
 import ProductCard from '@/components/product/ProductCard.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 import Skeleton from '@/components/common/Skeleton.vue'
+import { catalogColumns } from '@/config/breakpoints'
 
 const route = useRoute()
 const shopStore = useCatalogStore()
@@ -332,10 +333,7 @@ function syncPriceFilterInputs(priceMin, priceMax) {
 }
 
 function updateGridColumns() {
-  const width = window.innerWidth
-  if (width >= 1024) gridColumns.value = 4
-  else if (width >= 768) gridColumns.value = 3
-  else gridColumns.value = 2
+  gridColumns.value = catalogColumns(window.innerWidth)
 }
 
 function loadHistory() {
@@ -1115,7 +1113,7 @@ onBeforeUnmount(() => {
 .products-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
+  gap: var(--grid-gap);
 }
 
 .load-more {
@@ -1163,7 +1161,7 @@ onBeforeUnmount(() => {
   }
 }
 
-@media (max-width: 640px) {
+@media (max-width: 639px) {
   .search-shell {
     padding: 12px;
   }

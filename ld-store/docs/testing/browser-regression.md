@@ -2,7 +2,9 @@
 
 Run `npm ci`, `npx playwright install chromium`, then `npm run test:e2e`.
 For a single project: `npm run test:e2e -- --project=mobile`.
-The CI browser job installs Chromium and runs the same desktop and mobile cases.
+Density-only viewports: `--project=tablet-1024`, `--project=laptop-1280x720`, `--project=desktop-wide`, `--project=tablet-768`.
+Those extra projects only run `e2e/density.spec.ts`; they do not repeat the commerce suite.
+The CI browser job installs Chromium and runs desktop, mobile, and the density viewports.
 Failures retain a screenshot, trace and HTML report for seven days in CI.
 
 The suite loads the actual application, router, Pinia stores, components and

@@ -597,8 +597,6 @@ onUnmounted(() => {
 
 .page-container {
   max-width: 980px;
-  margin: 0 auto;
-  padding: 16px;
 }
 
 .page-header {
@@ -611,7 +609,7 @@ onUnmounted(() => {
 
 .page-title {
   margin: 0;
-  font-size: 24px;
+  font-size: var(--text-display);
   color: var(--text-primary);
 }
 
@@ -1108,7 +1106,7 @@ onUnmounted(() => {
 }
 
 /* Mobile */
-@media (max-width: 640px) {
+@media (max-width: 639px) {
   .page-header {
     margin-bottom: 10px;
   }
@@ -1318,7 +1316,7 @@ onUnmounted(() => {
   }
 }
 
-@media (max-width: 360px) {
+@media (max-width: 359px) {
   .toolbar {
     flex-wrap: wrap;
   }

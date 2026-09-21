@@ -187,8 +187,6 @@ onMounted(loadRequests)
 
 .page-container {
   max-width: 900px;
-  margin: 0 auto;
-  padding: 16px;
 }
 
 .page-header {
@@ -224,7 +222,7 @@ onMounted(loadRequests)
 
 .page-title {
   margin: 0;
-  font-size: 24px;
+  font-size: var(--text-display);
   color: var(--text-primary);
 }
 
@@ -390,7 +388,7 @@ onMounted(loadRequests)
   color: var(--palette-hex-dc2626);
 }
 
-@media (max-width: 720px) {
+@media (max-width: 767px) {
   .toolbar {
     grid-template-columns: 1fr;
   }

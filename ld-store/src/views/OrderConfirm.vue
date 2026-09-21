@@ -873,7 +873,7 @@ onBeforeUnmount(() => {
 <style scoped>
 .checkout-page {
   min-height: calc(100dvh - 72px);
-  padding: 30px 16px 112px;
+  padding: var(--section-gap) var(--page-gutter) 112px;
 }
 
 .checkout-shell {
@@ -932,8 +932,8 @@ onBeforeUnmount(() => {
 }
 
 .checkout-card {
-  padding: 24px;
-  border-radius: 22px;
+  padding: var(--detail-pad);
+  border-radius: var(--card-radius);
 }
 
 .section-heading {
@@ -1611,7 +1611,7 @@ button.order-option-row:disabled {
   outline-offset: 3px;
 }
 
-@media (max-width: 820px) {
+@media (max-width: 767px) {
   .checkout-page {
     padding: 20px 12px calc(126px + env(safe-area-inset-bottom, 0px));
   }
@@ -1698,7 +1698,7 @@ button.order-option-row:disabled {
   }
 }
 
-@media (max-width: 520px) {
+@media (max-width: 639px) {
   .product-summary {
     grid-template-columns: 72px minmax(0, 1fr);
     gap: 12px;

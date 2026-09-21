@@ -171,6 +171,7 @@ import Skeleton from '@/components/common/Skeleton.vue'
 import { MAINTENANCE_STATE, isMaintenanceFeatureEnabled, isRestrictedMaintenanceMode } from '@/config/maintenance'
 import { createTtlLruCache } from '@/utils/ttlLruCache'
 import { normalizePriceFilterInput, normalizePriceFilterRange } from '@/utils/catalogFilters'
+import { catalogColumns, isMobileNav } from '@/config/breakpoints'
 
 defineOptions({ name: 'ProductsMarketplace' })
 
@@ -329,13 +330,12 @@ watch(
 )
 
 function updateGridColumns() {
-  const width = window.innerWidth
-  gridColumns.value = width >= 1024 ? 4 : (width >= 768 ? 3 : 2)
+  gridColumns.value = catalogColumns(window.innerWidth)
 }
 
 function handleViewportResize() {
   updateGridColumns()
-  if (window.innerWidth > 768) mobileFilterOpen.value = false
+  if (!isMobileNav(window.innerWidth)) mobileFilterOpen.value = false
 }
 
 function setupInfiniteScroll() {
@@ -636,14 +636,14 @@ watch(hasMore, (value) => {
 .products-count strong { color: var(--text-primary); }
 .filter-tag { display: inline-block; margin-left: 8px; padding: 2px 8px; font-size: 11px; color: var(--color-success); background: var(--color-success-bg); border-radius: 10px; }
 .filter-tag.price-tag { color: var(--color-primary); background: var(--color-primary-bg); }
-.products-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.products-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--grid-gap); }
 .load-more, .loaded-all { grid-column: 1 / -1; display: flex; align-items: center; justify-content: center; min-height: 64px; padding: 20px; color: var(--text-tertiary); font-size: 13px; }
 .loading-indicator { gap: 8px; }
 .spinner { width: 16px; height: 16px; border: 2px solid var(--border-medium); border-top-color: var(--color-primary); border-radius: 50%; animation: spin .8s linear infinite; }
 .products-loading { min-height: 360px; padding: 20px 0; }
 @media (min-width: 768px) { .products-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media (min-width: 1024px) { .products-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
-@media (max-width: 768px) {
+@media (max-width: 767px) {
   .sort-section { display: none; }
   .mobile-catalog-toolbar { width: 100%; min-width: 0; display: flex; align-items: center; gap: 8px; }
   .mobile-sort-control { position: relative; min-width: 0; flex: 1 1 auto; display: flex; align-items: center; }

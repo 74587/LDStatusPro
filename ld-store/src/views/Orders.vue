@@ -1346,16 +1346,14 @@ onUnmounted(() => {
 
 .page-container {
   max-width: 600px;
-  margin: 0 auto;
-  padding: 16px;
 }
 
 .page-header {
-  margin-bottom: 20px;
+  margin-bottom: var(--section-gap);
 }
 
 .page-title {
-  font-size: 24px;
+  font-size: var(--text-display);
   font-weight: 700;
   color: var(--text-primary);
   margin: 0;
@@ -2019,7 +2017,7 @@ onUnmounted(() => {
   cursor: not-allowed;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 639px) {
   /* role-tabs via LiquidTabs */
   .role-tabs {
     margin-bottom: 12px;
@@ -2294,8 +2292,6 @@ onUnmounted(() => {
 .seller-orders-empty strong { color: var(--seller-ink); font-family: "Noto Serif SC", "Source Han Serif SC", "Songti SC", STSong, serif; font-size: 18px; }
 .seller-orders-empty p { margin: 0; font-size: 13px; }
 
-@media (max-width: 900px) {
-}
 @media (max-width: 767px) {
   .seller-status-tabs {
     width: 100%;

@@ -200,18 +200,17 @@ onMounted(() => {
 
 .page-container {
   max-width: 940px;
-  margin: 0 auto;
-  padding: 20px 16px 40px;
+  padding-bottom: 40px;
 }
 
 /* Hero */
 .hero-card {
   position: relative;
   overflow: hidden;
-  margin-bottom: 18px;
-  padding: 24px;
+  margin-bottom: var(--section-gap);
+  padding: var(--detail-pad);
   border: 1px solid var(--border-light);
-  border-radius: 20px;
+  border-radius: var(--card-radius);
   background: var(--bg-card);
   box-shadow: var(--shadow-sm);
   isolation: isolate;
@@ -234,7 +233,7 @@ onMounted(() => {
 
 .page-title {
   margin: 0;
-  font-size: 24px;
+  font-size: var(--text-display);
   line-height: 1.2;
   font-weight: 800;
   color: var(--text-primary);
@@ -523,9 +522,9 @@ onMounted(() => {
 }
 
 /* Mobile */
-@media (max-width: 640px) {
+@media (max-width: 639px) {
   .page-container {
-    padding: 12px 12px 32px;
+    padding-bottom: 32px;
   }
 
   .hero-card {

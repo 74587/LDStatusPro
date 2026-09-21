@@ -128,9 +128,13 @@ describe('个人菜单动效和无障碍接线', () => {
     expect(source).toContain('.dropdown-item:focus-visible')
   })
 
-  it('桌面普通控件为 38px、胶囊为 40px，手机统一保留 44px 触摸尺寸', () => {
-    expect(source).toContain('--header-control-size: 38px')
-    expect(source).toContain('--header-profile-size: 40px')
+  it('顶栏控件吃密度 token：手机 44px，小桌面 compact，宽屏 38/40px', () => {
+    const tokens = readFileSync(new URL('../src/styles/tokens.css', import.meta.url), 'utf8')
+    expect(tokens).toContain('--header-control-size: 44px')
+    expect(tokens).toContain('--header-profile-size: 44px')
+    expect(tokens).toContain('--header-control-size: 38px')
+    expect(tokens).toContain('--header-profile-size: 40px')
+    expect(tokens).toContain('--header-control-size: 36px')
     for (const selector of ['.search-input', '.search-btn', '.github-btn', '.action-btn', '.login-btn', '.header-theme :deep(.theme-btn)']) {
       const block = source.slice(source.indexOf(`${selector} {`)).split('}')[0]
       expect(block, selector).toContain('height: var(--header-control-size)')
@@ -138,11 +142,11 @@ describe('个人菜单动效和无障碍接线', () => {
     }
     const capsule = source.slice(source.indexOf('.user-info {')).split('}')[0]
     expect(capsule).toContain('height: var(--header-profile-size)')
+    expect(capsule).toContain('width: var(--header-user-width)')
     expect(capsule).toContain('padding: 4px 12px 4px 8px')
     expect(capsule).not.toContain('transition: all')
-    const mobile = source.slice(source.indexOf('@media (max-width: 767px)'))
-    expect(mobile).toContain('--header-control-size: 44px')
-    expect(mobile).toContain('--header-profile-size: 44px')
+    expect(source).toContain('@media (max-width: 1279px)')
+    expect(source).toContain('.user-identity')
     for (const selector of ['.header-content', '.header-center', '.header-actions']) {
       const block = source.slice(source.indexOf(`${selector} {`)).split('}')[0]
       expect(block, selector).toContain('align-items: center')
@@ -173,8 +177,10 @@ describe('个人菜单动效和无障碍接线', () => {
   })
 
   it('长昵称和账号不能撑宽胶囊，展开菜单可完整换行阅读', () => {
+    const tokens = readFileSync(new URL('../src/styles/tokens.css', import.meta.url), 'utf8')
+    expect(tokens).toContain('--header-user-width: 180px')
     const capsule = source.slice(source.indexOf('.user-info {')).split('}')[0]
-    expect(capsule).toContain('width: 180px')
+    expect(capsule).toContain('width: var(--header-user-width)')
     const identity = source.slice(source.indexOf('.user-identity {')).split('}')[0]
     expect(identity).toContain('min-width: 0')
     for (const selector of ['.user-name', '.user-handle']) {

@@ -498,8 +498,6 @@ html.dark .settings-page {
 
 .page-container {
   max-width: 600px;
-  margin: 0 auto;
-  padding: 16px;
 }
 
 .discovery-preference-card {
@@ -591,7 +589,7 @@ html.dark .settings-page {
   transform: translateX(12px);
 }
 
-@media (max-width: 560px) {
+@media (max-width: 639px) {
   .discovery-preference-card {
     align-items: stretch;
     flex-direction: column;
@@ -679,7 +677,7 @@ html.dark .settings-page {
   cursor: not-allowed;
 }
 
-@media (max-width: 560px) {
+@media (max-width: 639px) {
   .publish-return-card {
     align-items: flex-start;
     flex-wrap: wrap;
@@ -695,7 +693,7 @@ html.dark .settings-page {
 }
 
 .page-title {
-  font-size: 24px;
+  font-size: var(--text-display);
   font-weight: 700;
   color: var(--text-primary);
   margin: 0;
@@ -1247,11 +1245,11 @@ html.dark .settings-page {
 .settings-error-state h2 { margin: 0; color: var(--seller-ink); font-size: 18px; }
 .settings-error-state p { margin: 0 0 6px; }
 
-@media (min-width: 980px) {
+@media (min-width: 1024px) {
   .payment-workspace { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
 }
 
-@media (max-width: 700px) {
+@media (max-width: 767px) {
   .payment-status-strip,
   .payment-danger-zone { align-items: stretch; flex-direction: column; }
   .payment-status-strip .stats-grid { width: 100%; }

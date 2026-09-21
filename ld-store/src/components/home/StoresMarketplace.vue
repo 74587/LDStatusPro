@@ -68,6 +68,7 @@ import { fetchMarketplaceShops } from '@/services/homeMarketplaceService'
 import ShopCard from '@/components/shop/ShopCard.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 import Skeleton from '@/components/common/Skeleton.vue'
+import { catalogColumns } from '@/config/breakpoints'
 
 defineOptions({ name: 'StoresMarketplace' })
 
@@ -95,8 +96,7 @@ let requestId = 0
 let lastLoadedAt = 0
 
 function updateGridColumns() {
-  const width = window.innerWidth
-  gridColumns.value = width >= 1024 ? 4 : (width >= 768 ? 3 : 2)
+  gridColumns.value = catalogColumns(window.innerWidth)
 }
 
 function toggleTag(tag) {
@@ -221,14 +221,14 @@ watch(hasMore, (value) => {
 .stores-reset-btn { min-height: 36px; padding: 8px 14px; font-size: 12px; font-weight: 600; border-radius: 10px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-secondary); cursor: pointer; }
 .products-header { justify-content: space-between; gap: 12px; margin-bottom: 16px; }
 .products-count { font-size: 13px; color: var(--text-tertiary); }.products-count strong { color: var(--text-primary); }
-.products-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.products-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--grid-gap); }
 .load-more, .loaded-all { grid-column: 1 / -1; display: flex; justify-content: center; align-items: center; min-height: 64px; color: var(--text-tertiary); font-size: 13px; }
 .loading-indicator { gap: 8px; }.spinner { width: 16px; height: 16px; border: 2px solid var(--border-medium); border-top-color: var(--color-primary); border-radius: 50%; animation: spin .8s linear infinite; }
 .products-loading { min-height: 360px; padding: 20px 0; }
 button:focus-visible, input:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 3px; }
 @media (min-width: 768px) { .products-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media (min-width: 1024px) { .products-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
-@media (max-width: 640px) { .stores-filter { flex-direction: column; align-items: stretch; gap: 8px; }.stores-search-input, .stores-tag-btn, .stores-reset-btn { min-height: 44px; }.stores-search-input { font-size: 16px; }.stores-search-btn { width: 40px; height: 40px; } }
+@media (max-width: 639px) { .stores-filter { flex-direction: column; align-items: stretch; gap: 8px; }.stores-search-input, .stores-tag-btn, .stores-reset-btn { min-height: 44px; }.stores-search-input { font-size: 16px; }.stores-search-btn { width: 40px; height: 40px; } }
 @keyframes fade-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 @keyframes spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .section-content, .spinner { animation: none; } }

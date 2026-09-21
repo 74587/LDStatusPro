@@ -5,6 +5,7 @@
 | [卖家后台 Paper Console](./seller-console.md) | `/seller` 布局、组件套件、信息架构与页面改造验收 |
 | [Open Graph 功能说明](./open-graph.md) | Linux DO 分享预览的显示逻辑、接口、OG Image、安全、缓存、部署和验收 |
 | [ADR-0001：全站 noindex 与分享元数据并存](./adr/0001-noindex-sharing-metadata.md) | 继续禁止搜索收录、允许分享抓取的决策、门禁与重新评估条件 |
+| [前台响应式与密度合同](./responsive-layout.md) | 断点、密度 token、货架列数与小屏桌面 compact 落地顺序 |
 
 关键实现入口：
 

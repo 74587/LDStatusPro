@@ -198,8 +198,7 @@ onMounted(() => {
 
 .page-container {
   max-width: 940px;
-  margin: 0 auto;
-  padding: 20px 16px 40px;
+  padding-bottom: 40px;
 }
 
 .page-header {
@@ -654,12 +653,7 @@ onMounted(() => {
   background: var(--palette-rgba-117-98-78-0p44);
 }
 
-@media (max-width: 760px) {
-  .page-container {
-    padding-top: 16px;
-    padding-left: 12px;
-    padding-right: 12px;
-  }
+@media (max-width: 767px) {
 
   .hero-card,
   .content-card,

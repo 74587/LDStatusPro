@@ -312,6 +312,10 @@ onUnmounted(stopObserving)
 .active .tab-badge { background: var(--liquid-badge-active-bg, var(--bg-tertiary)); color: var(--liquid-tab-active-text, var(--text-primary)); }
 .liquid-tabs--sm .liquid-tab { min-height: 40px; padding: 8px 13px; font-size: 13px; }
 
+@media (min-width: 768px) and (max-width: 1279px), (min-width: 768px) and (max-height: 800px) and (pointer: fine) {
+  .liquid-tabs:not(.liquid-tabs--sm) .liquid-tab { min-height: 40px; padding: 8px 14px; }
+}
+
 @media (max-width: 767px) {
   .liquid-tabs { border-radius: var(--liquid-tabs-radius, 14px); }
   .liquid-tabs .liquid-tab { min-height: 44px; padding: 10px 14px; font-size: 13px; }

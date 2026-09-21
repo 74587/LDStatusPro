@@ -294,8 +294,6 @@ onMounted(loadOrderDetail)
 
 .page-container {
   max-width: 860px;
-  margin: 0 auto;
-  padding: 16px;
 }
 
 .top-nav {
@@ -339,7 +337,7 @@ onMounted(loadOrderDetail)
 
 .order-title {
   margin: 0;
-  font-size: 22px;
+  font-size: var(--text-subtitle);
   color: var(--text-primary);
 }
 
@@ -442,7 +440,7 @@ onMounted(loadOrderDetail)
   font-size: 12px;
 }
 
-@media (max-width: 720px) {
+@media (max-width: 767px) {
   .order-head {
     flex-direction: column;
   }

@@ -50,7 +50,7 @@ describe('home marketplace accessibility', () => {
   })
 
   it('replaces the three-row mobile filters with one compact toolbar', () => {
-    const mobileStyles = productsSource.slice(productsSource.indexOf('@media (max-width: 768px)'))
+    const mobileStyles = productsSource.slice(productsSource.indexOf('@media (max-width: 767px)'))
     expect(mobileStyles).toContain('.sort-section { display: none; }')
     expect(mobileStyles).toContain('.mobile-catalog-toolbar { width: 100%; min-width: 0; display: flex;')
     expect(mobileStyles).toContain('.mobile-sort-control select { width: 100%; min-width: 0; min-height: 44px;')

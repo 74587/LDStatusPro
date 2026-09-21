@@ -907,8 +907,6 @@ watch(
 
 .page-container {
   max-width: 980px;
-  margin: 0 auto;
-  padding: 16px;
 }
 
 .top-nav {
@@ -960,7 +958,7 @@ watch(
 
 .request-title {
   margin: 0;
-  font-size: 24px;
+  font-size: var(--text-display);
   color: var(--text-primary);
 }
 
@@ -978,7 +976,7 @@ watch(
 }
 
 .price-value {
-  font-size: 26px;
+  font-size: var(--text-display);
   font-weight: 700;
   color: var(--color-success);
 }
@@ -1266,7 +1264,7 @@ watch(
   padding: 8px 14px;
 }
 
-@media (max-width: 720px) {
+@media (max-width: 767px) {
   .request-head,
   .chat-head {
     flex-direction: column;

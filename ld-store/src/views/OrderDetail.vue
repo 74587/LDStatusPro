@@ -960,8 +960,6 @@ onUnmounted(() => {
 
 .page-container {
   max-width: 600px;
-  margin: 0 auto;
-  padding: 16px;
 }
 
 .top-nav {
@@ -994,11 +992,7 @@ onUnmounted(() => {
   border-color: var(--border-hover);
 }
 
-@media (max-width: 640px) {
-  .page-container {
-    padding: 12px;
-  }
-
+@media (max-width: 639px) {
   .top-nav {
     flex-wrap: nowrap;
     gap: 8px;
@@ -1740,11 +1734,7 @@ onUnmounted(() => {
   color: var(--text-tertiary);
 }
 
-@media (max-width: 640px) {
-  .page-container {
-    padding: 12px;
-  }
-
+@media (max-width: 639px) {
   .status-card {
     padding: 20px;
   }

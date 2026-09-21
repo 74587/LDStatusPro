@@ -203,7 +203,7 @@ const supportTiers = [
 
 .support-hero-title {
   position: relative;
-  font-size: 26px;
+  font-size: var(--text-display);
   font-weight: 700;
   color: var(--text-primary);
   display: flex;
@@ -549,13 +549,9 @@ const supportTiers = [
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 767px) {
   .support-hero {
     padding: 22px 20px;
-  }
-
-  .support-hero-title {
-    font-size: 22px;
   }
 
   .support-grid {
@@ -563,7 +559,7 @@ const supportTiers = [
   }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 639px) {
   .support-github-card {
     flex-direction: column;
     align-items: flex-start;

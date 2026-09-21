@@ -222,6 +222,7 @@ import { useSellerFulfillmentStore } from '@/stores/sellerFulfillment'
 import ThemeToggle from '@/components/common/ThemeToggle.vue'
 import AvatarImage from '@/components/common/AvatarImage.vue'
 import { MAINTENANCE_STATE, isRestrictedMaintenanceMode } from '@/config/maintenance'
+import { isMobileNav } from '@/config/breakpoints'
 import { isSellerNavigationItemActive, resolveSellerViewKey } from '@/utils/sellerNavigation'
 
 const route = useRoute()
@@ -361,7 +362,7 @@ watch(() => route.path, async () => {
   sellerMain.value?.focus({ preventScroll: true })
 })
 watch(drawerOpen, value => {
-  document.body.style.overflow = value && window.innerWidth < 768 ? 'hidden' : ''
+  document.body.style.overflow = value && isMobileNav(window.innerWidth) ? 'hidden' : ''
 })
 
 onMounted(() => {

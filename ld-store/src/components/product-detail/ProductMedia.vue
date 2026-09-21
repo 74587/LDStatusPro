@@ -30,7 +30,7 @@ const emit = defineEmits<{ open: []; load: [event: Event]; error: [event: Event]
 .discount-tag { position: absolute; top: 12px; right: 12px; padding: 8px 12px; color: var(--palette-hex-ffffff); background: linear-gradient(135deg, var(--palette-hex-ad9090), var(--palette-hex-937474)); border-radius: 10px; font-size: 13px; font-weight: 700; }
 .media-zoom-hint { position: absolute; right: 0; bottom: 0; left: 0; display: flex; align-items: center; justify-content: center; gap: 5px; padding: 10px; color: var(--palette-hex-ffffff); background: linear-gradient(transparent, var(--palette-rgba-0-0-0-0p5)); opacity: 0; font-size: 12px; transition: opacity 0.3s; }
 .media-wrapper:hover .media-zoom-hint, .media-wrapper:focus-visible .media-zoom-hint { opacity: 1; }
-@media (max-width: 640px) {
+@media (max-width: 639px) {
   .media-wrapper { max-width: 100%; max-height: 350px; }
   .media-image { max-height: 350px; }
 }

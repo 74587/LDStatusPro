@@ -503,7 +503,7 @@ defineExpose({ focus, scrollIntoView })
   color: var(--color-danger);
 }
 
-@media (max-width: 560px) {
+@media (max-width: 639px) {
   .purchase-limit-option {
     grid-template-columns: 20px minmax(0, 1fr);
   }
