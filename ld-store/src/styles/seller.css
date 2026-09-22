@@ -306,16 +306,22 @@ html.seller-console .main-content {
 
   .seller-shell .seller-product-form > .form-card,
   .seller-shell .seller-edit-form > .form-card { padding: 18px 16px; }
+}
 
+/* Dock is position:fixed at z-index 45 and paints above this column. */
+@media (max-width: 767px) {
   .seller-shell .seller-product-summary.seller-sticky-summary { overflow: visible; }
+
+  .seller-shell .seller-main .publish-page,
+  .seller-shell .seller-main .edit-page { padding-bottom: 104px; }
 
   .seller-shell .seller-product-summary .seller-summary-action {
     position: fixed;
-    z-index: 45;
+    z-index: 44;
     right: 0;
-    bottom: 0;
+    bottom: var(--seller-dock-offset, 0px);
     left: 0;
-    padding: 12px 14px max(12px, env(safe-area-inset-bottom));
+    padding: 12px 14px;
     border-top: 1px solid var(--seller-border);
     background: color-mix(in srgb, var(--seller-bg) 94%, transparent);
     backdrop-filter: blur(12px);

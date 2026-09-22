@@ -63,6 +63,22 @@ describe('seller mobile horizontal overflow containment', () => {
     expect(formInputs).toMatch(/min-width:\s*0/)
   })
 
+  it('pins publish and edit actions above the mobile dock instead of underneath it', () => {
+    const layout = readSource('../src/layouts/SellerLayout.vue')
+    const sellerCss = readSource('../src/styles/seller.css')
+    const promotion = readSource('../src/components/seller/TopServiceSummary.vue')
+    const mobileLayout = layout.slice(layout.indexOf('@media (max-width: 767px)'))
+    const mobileAction = sellerCss.slice(sellerCss.indexOf('@media (max-width: 767px)'))
+
+    expect(layout).toContain('--seller-dock-offset: 0px')
+    expect(mobileLayout).toContain('--seller-dock-offset: calc(57px + max(8px, env(safe-area-inset-bottom)))')
+    expect(mobileLayout).toContain('padding: 18px 14px calc(var(--seller-dock-offset) + 24px)')
+    expect(mobileAction).toContain('bottom: var(--seller-dock-offset, 0px)')
+    expect(mobileAction).not.toContain('bottom: 0')
+    expect(promotion).toContain('bottom:var(--seller-dock-offset, 0px)')
+    expect(promotion).not.toContain('bottom:0')
+  })
+
   it('resets both scroll axes on ordinary route navigation', () => {
     const source = readSource('../src/router/index.js')
 

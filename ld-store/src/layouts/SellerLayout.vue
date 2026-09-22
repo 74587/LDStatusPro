@@ -408,6 +408,7 @@ onUnmounted(() => {
   --seller-shadow-sm: var(--elevation-paper-sm);
   --seller-shadow-md: var(--elevation-paper-md);
   --seller-on-navy: var(--palette-hex-ffffff);
+  --seller-dock-offset: 0px;
   --bg-primary: var(--seller-paper);
   --bg-secondary: var(--seller-surface-soft);
   --bg-tertiary: var(--palette-hex-e5e1d8);
@@ -653,9 +654,13 @@ html.dark .seller-fulfillment-load-error a { border-color: var(--seller-jade); c
     color: var(--text-inverse);
     font-size: 9px;
   }
+  .seller-shell {
+    /* 1px border + 8px padding + 48px item + bottom inset. Keep in sync with .seller-dock. */
+    --seller-dock-offset: calc(57px + max(8px, env(safe-area-inset-bottom)));
+  }
   .seller-topbar { min-height: 56px; padding: 8px 14px; }
   .seller-topbar-title p { display: none; }
-  .seller-main { padding: 18px 14px 88px; }
+  .seller-main { padding: 18px 14px calc(var(--seller-dock-offset) + 24px); }
   .seller-view-stage { min-height: calc(100dvh - 168px); }
   .seller-maintenance { margin: 14px 14px 0; }
   .seller-fulfillment-gate,

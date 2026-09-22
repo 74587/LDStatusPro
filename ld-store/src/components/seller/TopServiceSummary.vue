@@ -51,7 +51,7 @@ button:disabled { background:var(--seller-surface-soft); color:var(--seller-mute
 .mobile-price { display:none; }
 @media(max-width:767px) {
   .purchase-summary { padding:20px; }
-  .purchase-action-bar { position:fixed; bottom:0; left:0; right:0; z-index:50; display:grid; grid-template-columns:1fr; gap:8px; padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px)); border-top:1px solid var(--seller-border); background:var(--seller-surface-strong); box-shadow:0 -4px 18px var(--palette-rgba-0-0-0-p06); }
+  .purchase-action-bar { position:fixed; bottom:var(--seller-dock-offset, 0px); left:0; right:0; z-index:44; display:grid; grid-template-columns:1fr; gap:8px; padding:12px 16px; border-top:1px solid var(--seller-border); background:var(--seller-surface-strong); box-shadow:0 -4px 18px var(--palette-rgba-0-0-0-p06); }
   .mobile-price { display:flex; justify-content:space-between; align-items:baseline; color:var(--seller-muted); font-size:12px; }
   .mobile-price strong { font-size:20px; color:var(--seller-ink); font-variant-numeric:tabular-nums; }
   .purchase-action-bar button { font-size:14px; }

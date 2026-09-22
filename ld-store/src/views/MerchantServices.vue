@@ -199,9 +199,9 @@ button:disabled { opacity:.6; cursor:not-allowed; }
 @media(max-width:1180px) { .purchase-layout { grid-template-columns:minmax(0,1fr) 310px; gap:18px; } .purchase-form { padding:22px; } .record-row { grid-template-columns:minmax(0,1fr) 140px auto; } .record-package { grid-column:1; grid-row:2; } .record-status { grid-column:2; grid-row:1/3; } .record-row>button { grid-column:3; grid-row:1/3; } }
 @media(max-width:980px) { .purchase-layout { grid-template-columns:1fr; } .purchase-aside { position:static; } }
 @media(max-width:767px) {
-  :global(html:has(.merchant-services-page.has-purchase-bar)) { scroll-padding-bottom:calc(170px + env(safe-area-inset-bottom,0px)); }
-  .has-purchase-bar :deep(button),.has-purchase-bar :deep(input),.has-purchase-bar :deep(summary) { scroll-margin-bottom:170px; }
-  .merchant-services-page.has-purchase-bar { padding-bottom:calc(178px + env(safe-area-inset-bottom,0px)); scroll-padding-bottom:178px; }
+  :global(html:has(.merchant-services-page.has-purchase-bar)) { scroll-padding-bottom:calc(150px + var(--seller-dock-offset, 0px)); }
+  .has-purchase-bar :deep(button),.has-purchase-bar :deep(input),.has-purchase-bar :deep(summary) { scroll-margin-bottom:calc(150px + var(--seller-dock-offset, 0px)); }
+  .merchant-services-page.has-purchase-bar { padding-bottom:168px; scroll-padding-bottom:calc(150px + var(--seller-dock-offset, 0px)); }
   .services-heading { align-items:flex-start; gap:10px; padding-bottom:18px; }
   .services-heading h2 { font-size:22px; }
   .services-heading>.text-button { display:none; }
