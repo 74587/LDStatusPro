@@ -20,6 +20,7 @@ export default [
         requestAnimationFrame: 'readonly',
         cancelAnimationFrame: 'readonly',
         alert: 'readonly',
+        prompt: 'readonly',
         FileReader: 'readonly',
         Blob: 'readonly',
         DOMParser: 'readonly',
@@ -36,6 +37,7 @@ export default [
         sessionStorage: 'readonly',
         MutationObserver: 'readonly',
         IntersectionObserver: 'readonly',
+        ResizeObserver: 'readonly',
         AbortController: 'readonly',
         Request: 'readonly',
         Response: 'readonly',
@@ -44,6 +46,7 @@ export default [
         GM_xmlhttpRequest: 'readonly',
         GM_info: 'readonly',
         GM_notification: 'readonly',
+        GM_openInTab: 'readonly',
         GM_addValueChangeListener: 'readonly',
         GM_removeValueChangeListener: 'readonly',
         unsafeWindow: 'readonly'

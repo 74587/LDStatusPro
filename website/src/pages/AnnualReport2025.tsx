@@ -6,7 +6,8 @@ import {
   ChevronRight, Share2, ArrowRight,
   Crown, Zap, Heart, TrendingUp,
   BarChart3, Activity, Star,
-  Copy, Check
+  Copy, Check,
+  type LucideIcon
 } from 'lucide-react'
 
 // API 配置
@@ -111,7 +112,7 @@ function parseJwt(token: string) {
       return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
     }).join(''))
     return JSON.parse(jsonPayload)
-  } catch (e) {
+  } catch {
     return null
   }
 }
@@ -365,7 +366,14 @@ function CircleProgress({ percentage, color, label, value }: { percentage: numbe
 }
 
 // 里程碑事件卡片
-function MilestoneCard({ icon: Icon, title, description, date, color, index }: any) {
+function MilestoneCard({ icon: Icon, title, description, date, color, index }: {
+  icon: LucideIcon
+  title: string
+  description: string
+  date: string
+  color: string
+  index: number
+}) {
   return (
     <motion.div
       initial={{ opacity: 0, x: -20 }}

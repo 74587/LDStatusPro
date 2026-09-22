@@ -174,6 +174,7 @@ describe('入口与买家错误文案', () => {
     const dashboard = readFileSync(resolve(process.cwd(), 'src/views/seller/SellerDashboard.vue'), 'utf8')
     expect(layout).toContain("label: '发货与履约', to: '/seller/fulfillment'")
     expect(layout).toContain('class="seller-fulfillment-gate"')
+    expect(layout).toContain("route.name !== 'SellerFulfillment'")
     expect(layout).not.toContain('seller-fulfillment-gate-close')
     expect(router).toContain("name: 'SellerFulfillment'")
     expect(dashboard).toContain("href: '/seller/fulfillment'")

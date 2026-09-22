@@ -463,6 +463,7 @@ LDStatusPro/
 - 🐛 [报告问题](https://github.com/caigg188/LDStatusPro/issues)
 - 💡 [功能建议](https://github.com/caigg188/LDStatusPro/issues)
 - 📖 [详细文档](./DOCS.md)
+- 🔧 [CI / CD](./CI.md)：推送跑检查，Pages 生产发布是手动的
 
 ---
 

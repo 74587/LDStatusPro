@@ -6,6 +6,7 @@ import { compileTemplate, parse } from '@vue/compiler-sfc'
 const productCardSource = readFileSync(new URL('../src/components/product/ProductCard.vue', import.meta.url), 'utf8')
 const productsSource = readFileSync(new URL('../src/components/home/ProductsMarketplace.vue', import.meta.url), 'utf8')
 const dashboardSource = readFileSync(new URL('../src/views/seller/SellerDashboard.vue', import.meta.url), 'utf8')
+const tokensSource = readFileSync(new URL('../src/styles/tokens.css', import.meta.url), 'utf8')
 
 describe('visible media and chart scheduling', () => {
   it('gives ProductCard safe lazy defaults and binds browser priority attributes', () => {
@@ -13,7 +14,10 @@ describe('visible media and chart scheduling', () => {
     expect(productCardSource).toContain("default: 'auto'")
     expect(productCardSource).toContain(':loading="imageLoading"')
     expect(productCardSource).toContain(':fetchpriority="fetchPriority"')
-    expect(productCardSource).toContain('height: 140px;')
+    expect(productCardSource).toContain('height: var(--card-cover-h);')
+    expect(tokensSource).toContain('--card-cover-h: 120px;')
+    expect(tokensSource).toContain('--card-cover-h: 112px;')
+    expect(tokensSource).toContain('--card-cover-h: 140px;')
   })
 
   it('prioritizes only the first four marketplace products that have images', () => {

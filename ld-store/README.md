@@ -68,7 +68,7 @@ npm run check                # 全部门禁（含测试）
 
 `deploy` 要求：`main`、干净工作区、与 `origin/main` 一致；Faro 必须开，collector 必须是 `https://api1.ldspro.qzz.io/faro/collect`。公开 dist 禁止 source map。
 
-CI：`.github/workflows/storefront-ci.yml`。
+CI：仓库根目录 [CI.md](../CI.md)。推送只跑 `.github/workflows/ci.yml` 里的质量检查和浏览器回归；生产 Pages 用手动的 Deploy Pages，不随推送发布。
 
 仓库内没有 `wrangler.toml`。边缘逻辑在 `public/_worker.js`（OG、oEmbed、CSP、noindex）。全站 `X-Robots-Tag: noindex`。
 

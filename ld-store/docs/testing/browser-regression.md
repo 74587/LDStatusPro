@@ -5,7 +5,9 @@ For a single project: `npm run test:e2e -- --project=mobile`.
 Density-only viewports: `--project=tablet-1024`, `--project=laptop-1280x720`, `--project=desktop-wide`, `--project=tablet-768`.
 Those extra projects only run `e2e/density.spec.ts`; they do not repeat the commerce suite.
 The CI browser job installs Chromium and runs desktop, mobile, and the density viewports.
-Failures retain a screenshot, trace and HTML report for seven days in CI.
+It runs on `ubuntu-24.04` with Node.js 22. Failures retain a screenshot, trace and HTML report for seven days.
+Touch-target checks round the measured height: a 2.625 device pixel ratio can report 43.999px for a 44px control.
+The seller fulfillment page does not render `.seller-fulfillment-gate`; that banner is for other seller routes.
 
 The suite loads the actual application, router, Pinia stores, components and
 service contracts. It exercises login/redirect/logout, checkout response loss,

@@ -1,0 +1,161 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-24.04
+    outputs:
+      userscript: ${{ steps.filter.outputs.userscript }}
+      website: ${{ steps.filter.outputs.website }}
+      storefront: ${{ steps.filter.outputs.storefront }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - id: filter
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          EVENT_BEFORE: ${{ github.event.before }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          if [[ "$EVENT_NAME" == "pull_request" ]]; then
+            base="$PR_BASE"
+          else
+            base="$EVENT_BEFORE"
+          fi
+          mark_all() {
+            echo "userscript=true" >> "$GITHUB_OUTPUT"
+            echo "website=true" >> "$GITHUB_OUTPUT"
+            echo "storefront=true" >> "$GITHUB_OUTPUT"
+          }
+          if [[ -z "$base" || "$base" =~ ^0+$ ]]; then
+            mark_all
+            exit 0
+          fi
+          if ! git cat-file -e "${base}^{commit}" 2>/dev/null; then
+            git fetch --no-tags origin "$base" || { mark_all; exit 0; }
+          fi
+          files="$(git diff --name-only "$base" HEAD)"
+          if printf '%s\n' "$files" | grep -Eq '^\.github/workflows/'; then
+            mark_all
+            exit 0
+          fi
+          set_flag() {
+            if printf '%s\n' "$files" | grep -Eq "$2"; then
+              echo "$1=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "$1=false" >> "$GITHUB_OUTPUT"
+            fi
+          }
+          set_flag userscript '^(LDStatusPro\.user\.js|eslint\.config\.js|package\.json|package-lock\.json)$'
+          set_flag website '^website/'
+          set_flag storefront '^ld-store/'
+
+  userscript:
+    name: Userscript
+    needs: changes
+    if: needs.changes.outputs.userscript == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci
+      - run: npm run lint:userscript
+
+  website:
+    name: Website
+    needs: changes
+    if: needs.changes.outputs.website == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: website
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: website/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
+
+  storefront-quality:
+    name: Storefront quality
+    needs: changes
+    if: needs.changes.outputs.storefront == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: ld-store
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: ld-store/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run check:architecture
+      - run: npm run check:styles
+      - run: npm run check:csp
+      - run: npm run validate:noindex
+      - run: npm audit --audit-level=low
+      - run: npm run test
+      - run: npm run build
+      - run: npm run check:csp:build
+      - run: npm run validate:noindex:build
+      - run: npm run validate:og
+      - run: npm run check:bundle
+
+  storefront-browser:
+    name: Storefront browser
+    needs: changes
+    if: needs.changes.outputs.storefront == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: ld-store
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: ld-store/package-lock.json
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: storefront-browser-failures
+          path: |
+            ld-store/playwright-report/
+            ld-store/test-results/
+          retention-days: 7
+          if-no-files-found: ignore

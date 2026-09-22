@@ -359,7 +359,7 @@ html.dark .confirmation-form .confirmation-retry { border-color: var(--seller-bo
 .history-heading > span { color: var(--seller-muted); font: 650 12px/1 ui-monospace, SFMono-Regular, Menlo, monospace; }
 .history-table-wrap { max-width: 100%; min-width: 0; padding: 0 16px 18px; overflow-x: auto; }
 .history-table { width: 100%; min-width: 820px; border-collapse: collapse; }
-.history-table th { padding: 10px; color: var(--seller-muted); font-size: 11px; font-weight: 650; text-align: left; }
+.history-table th { position: relative; padding: 10px; color: var(--seller-muted); font-size: 11px; font-weight: 650; text-align: left; }
 .history-table td { padding: 12px 10px; border-top: 1px solid var(--seller-border); color: var(--seller-muted); font-size: 12px; line-height: 1.55; vertical-align: middle; }
 .history-table td strong { color: var(--seller-ink); font: 650 12px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; overflow-wrap: anywhere; }
 .history-empty { min-height: 190px; display: grid; place-items: center; align-content: center; gap: 7px; padding: 28px; color: var(--seller-muted); text-align: center; }
@@ -376,7 +376,7 @@ html.dark .confirmation-form .confirmation-retry { border-color: var(--seller-bo
 .skeleton { border-radius: 14px; background: linear-gradient(90deg, var(--seller-surface-soft), var(--seller-surface), var(--seller-surface-soft)); background-size: 200% 100%; animation: skeleton-move 1.4s ease infinite; }
 .hero-skeleton { height: 168px; }
 .rule-skeleton { height: 390px; }
-.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+.sr-only { position: absolute; top: 0; left: 0; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); clip-path: inset(50%); white-space: nowrap; border: 0; }
 
 button:focus-visible,
 a:focus-visible,

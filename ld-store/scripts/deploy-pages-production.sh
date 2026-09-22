@@ -4,11 +4,18 @@ set -euo pipefail
 project_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 cd "$project_dir"
 
-current_branch=$(git branch --show-current)
-[[ "$current_branch" == 'main' ]] || {
-  echo "Refusing Pages deployment: expected branch main, found ${current_branch:-detached HEAD}" >&2
-  exit 1
-}
+if [[ "${GITHUB_ACTIONS:-}" == "true" ]]; then
+  [[ "${GITHUB_REF:-}" == "refs/heads/main" ]] || {
+    echo "Refusing Pages deployment: GitHub Actions ref must be refs/heads/main, found ${GITHUB_REF:-unset}" >&2
+    exit 1
+  }
+else
+  current_branch=$(git branch --show-current)
+  [[ "$current_branch" == 'main' ]] || {
+    echo "Refusing Pages deployment: expected branch main, found ${current_branch:-detached HEAD}" >&2
+    exit 1
+  }
+fi
 [[ -z "$(git status --porcelain)" ]] || {
   echo 'Refusing Pages deployment: Git worktree is not clean' >&2
   exit 1
@@ -96,7 +103,7 @@ public_hashes=$(find dist/assets -type f -name '*.js' -exec shasum -a 256 {} \; 
 }
 npm run check:bundle
 
-npx wrangler pages deploy dist --project-name=ld-store --branch main
+npx wrangler pages deploy dist --project-name=ld-store --branch main --commit-dirty=true
 
 release=$(git rev-parse --short=12 HEAD)
 printf 'Pages deployment completed: release=%s source-map artifact=.private-artifacts/ldstore-web-%s.tar.gz\n' "$release" "$release"

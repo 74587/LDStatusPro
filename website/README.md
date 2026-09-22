@@ -44,6 +44,6 @@ npm run preview
 npm run deploy    # build + wrangler pages deploy dist --project-name=ldstatus-pro
 ```
 
-无测试脚本、无 GitHub workflow。无 Vite proxy、无 `.env.example`。
+无测试脚本、无 Vite proxy、无 `.env.example`。推送 `website/**` 时 GitHub Actions 跑 `npm run lint` 和 `npm run build`。生产发布不随推送执行，见 [CI.md](../CI.md)。
 
 更细的结构见 [docs/WEBSITE.md](./docs/WEBSITE.md)。

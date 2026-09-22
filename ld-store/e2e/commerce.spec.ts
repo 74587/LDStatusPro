@@ -112,7 +112,9 @@ test('seller fulfillment entry stays visible and confirmation synchronizes the w
   await page.goto('/seller/fulfillment')
 
   await expect(page.getByRole('heading', { name: '完成规则确认，让普通物品恢复成交' })).toBeVisible()
-  await expect(page.locator('.seller-fulfillment-gate')).toContainText('普通物品无法发布，买家也无法下单')
+  await expect(page.locator('.fulfillment-hero')).toContainText('买家也无法创建订单')
+  // The shell banner is for other seller routes. This page is the confirmation surface.
+  await expect(page.locator('.seller-fulfillment-gate')).toHaveCount(0)
   await expect(page.locator('a[href="/seller/fulfillment"]').filter({ hasText: '发货与履约' })).toContainText('待确认')
   await expect(page.getByText('E2E-FULFILLMENT-9', { exact: true })).toBeVisible()
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true)
