@@ -8,7 +8,7 @@
     <!-- 顶部导航栏 -->
     <AppHeader v-if="showHeader" />
     <AnnouncementBar v-if="showAnnouncementBar" />
-    <AnnouncementPopup v-if="!isMaintenanceRoute && announcementLoaded" />
+    <AnnouncementPopup v-if="!isMaintenanceRoute && !isBareRoute && announcementLoaded" />
 
     <!-- 主内容区域 -->
     <component :is="isSellerRoute ? 'div' : 'main'" class="main-content">
@@ -91,16 +91,18 @@ const userStore = useUserStore()
 const notificationSummaryStore = useNotificationSummaryStore()
 const { announcementLoaded, configureAnnouncements, startAnnouncements, stopAnnouncements } = useAnnouncement()
 const isMaintenanceRoute = computed(() => route.name === 'Maintenance')
+const isBareRoute = computed(() => route.meta.bare === true)
 const isSellerRoute = computed(() => route.meta.layout === 'seller')
 const isRestrictedHomeRoute = computed(() => false)
 const showRestrictedMaintenanceBanner = computed(() =>
-  !isMaintenanceRoute.value && !isSellerRoute.value && isRestrictedMaintenanceMode()
+  !isMaintenanceRoute.value && !isSellerRoute.value && !isBareRoute.value && isRestrictedMaintenanceMode()
 )
-const showDecorativeShell = computed(() => !isMaintenanceRoute.value && !isSellerRoute.value)
-const showHeader = computed(() => !isMaintenanceRoute.value && !isSellerRoute.value && userStore.sessionReady)
+const showDecorativeShell = computed(() => !isMaintenanceRoute.value && !isSellerRoute.value && !isBareRoute.value)
+const showHeader = computed(() => !isMaintenanceRoute.value && !isSellerRoute.value && !isBareRoute.value && userStore.sessionReady)
 const showAnnouncementBar = computed(() => (
   !isMaintenanceRoute.value
   && !isSellerRoute.value
+  && !isBareRoute.value
   && announcementLoaded.value
 ))
 watch([() => announcementIdentity(userStore), isSellerRoute], ([account, seller]) => configureAnnouncements(account, seller ? 'seller' : 'storefront'), { immediate: true })

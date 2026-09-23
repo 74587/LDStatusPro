@@ -178,6 +178,12 @@ const routes = [
     meta: { title: '订单详情 - LD士多', requiresAuth: true }
   },
   {
+    path: '/pay/signal',
+    name: 'PaymentSignal',
+    component: () => import('@/views/PaymentSignal.vue'),
+    meta: { title: '支付结果 - LD士多', bare: true }
+  },
+  {
     path: '/login',
     name: 'Login',
     component: () => import('@/views/Login.vue'),

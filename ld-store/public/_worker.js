@@ -30,6 +30,7 @@ const STATIC_ROUTES = [
   { pattern: /^\/auth\/callback\/?$/, title: '登录中 - LD士多', description: DEFAULT_DESCRIPTION },
   { pattern: /^\/checkout\/[^/]+\/?$/, title: '确认订单 - LD士多', description: DEFAULT_DESCRIPTION },
   { pattern: /^\/order\/[^/]+\/?$/, title: '订单详情 - LD士多', description: DEFAULT_DESCRIPTION },
+  { pattern: /^\/pay\/signal\/?$/, title: '支付结果 - LD士多', description: '正在把支付结果同步回 LD士多 订单页面。' },
   { pattern: /^\/edit\/[^/]+\/?$/, title: '编辑商品 - LD士多', description: DEFAULT_DESCRIPTION },
   { pattern: /^\/publish\/?$/, title: '发布商品 - LD士多', description: DEFAULT_DESCRIPTION },
   { pattern: /^\/buy-requests\/new\/?$/, title: '发布求购 - LD士多', description: DEFAULT_DESCRIPTION },

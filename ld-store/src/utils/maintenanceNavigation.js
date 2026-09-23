@@ -1,6 +1,6 @@
 import { MAINTENANCE_MODES } from '@/config/maintenance'
 
-const FULL_MAINTENANCE_ALLOWED_ROUTES = new Set(['Maintenance', 'Login', 'AuthCallback'])
+const FULL_MAINTENANCE_ALLOWED_ROUTES = new Set(['Maintenance', 'Login', 'AuthCallback', 'PaymentSignal'])
 const RESTRICTED_MAINTENANCE_ALLOWED_ROUTES = new Set([
   'Home',
   'ProductDetail',
@@ -20,6 +20,7 @@ const RESTRICTED_MAINTENANCE_ALLOWED_ROUTES = new Set([
   'SellerOrderDetail',
   'OrderDetail',
   'BuyOrderDetail',
+  'PaymentSignal',
   'CouponClaim',
   'MyCoupons',
 ])

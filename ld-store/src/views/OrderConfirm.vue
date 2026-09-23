@@ -353,7 +353,8 @@ import {
   isPlatformOrderProduct,
   isUnlimitedStock,
 } from '@/utils/shopProduct'
-import { cleanupPreparedTab, openPaymentPopup, preparePaymentPopup, watchPaymentPopup } from '@/utils/newTab'
+import { cleanupPreparedTab, openPaymentPopup, preparePaymentPopup } from '@/utils/newTab'
+import { trackPaymentPopup } from '@/utils/paymentReturn'
 import CouponPickerDialog from '@/components/checkout/CouponPickerDialog.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 import ProductStockIndicator from '@/components/product/ProductStockIndicator.vue'
@@ -795,7 +796,7 @@ async function finishCreatedOrder(order, preparedWindow = null) {
     if (order.paymentUrl && !['cancelled', 'expired', 'paid', 'delivered', 'completed'].includes(order.status) && preparedWindow && !preparedWindow.closed) {
       const { popup, isPopup } = openPaymentPopup(order.paymentUrl, preparedWindow)
       if (!isPopup) cleanupPreparedTab(preparedWindow)
-      if (isPopup && popup) watchPaymentPopup(popup, () => toast.info('支付窗口已关闭，可在订单详情检查支付状态'))
+      if (isPopup && popup) trackPaymentPopup(order.orderNo, popup)
     } else {
       cleanupPreparedTab(preparedWindow)
       if (['cancelled', 'expired'].includes(order.status)) toast.info('本次订单已取消，可重新确认商品后下单')

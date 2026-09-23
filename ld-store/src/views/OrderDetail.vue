@@ -312,6 +312,9 @@
             <span v-if="order?.paymentResolutionDeadline">预计在 {{ new Date(order.paymentResolutionDeadline).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }) }} 前后完成核查；未确认支付的订单将自动取消。</span>
             页面会自动更新。
           </p>
+          <p v-if="paymentPopupOpen" class="maintenance-action-hint" role="status" aria-live="polite">
+            支付窗口打开中。支付完成或关闭窗口后，这里会自动更新订单状态。
+          </p>
           <div class="actions-row">
             <button
               v-if="canRepay"
@@ -391,12 +394,14 @@ import { useToast } from '@/composables/useToast'
 import { useDialog } from '@/composables/useDialog'
 import { useOrderActions } from '@/composables/orders/useOrderActions'
 import { useOrderDetail } from '@/composables/orders/useOrderDetail'
+import { usePaymentPopupSync } from '@/composables/orders/usePaymentPopupSync'
 import { isMaintenanceFeatureEnabled, isRestrictedMaintenanceMode } from '@/config/maintenance'
 import EmptyState from '@/components/common/EmptyState.vue'
 import OrderRefundPanel from '@/components/order/OrderRefundPanel.vue'
 import { isValidLdcPaymentUrl } from '@/utils/security'
 import { renderProductDescription } from '@/utils/renderProductDescription'
-import { preparePaymentPopup, openPaymentPopup, watchPaymentPopup, cleanupPreparedTab } from '@/utils/newTab'
+import { preparePaymentPopup, openPaymentPopup, cleanupPreparedTab } from '@/utils/newTab'
+import { trackPaymentPopup } from '@/utils/paymentReturn'
 import {
   isCdkProduct,
   isNormalProduct,
@@ -815,6 +820,47 @@ function extractErrorMessage(result, fallback) {
   return fallback
 }
 
+let announcedPaymentStatus = ''
+
+function toastPaymentSyncResult(status, pendingMessage = '') {
+  if (status && status !== 'pending' && status === announcedPaymentStatus) return
+  if (status && status !== 'pending') announcedPaymentStatus = status
+  if (status === 'delivered') {
+    toast.success(isNormalOrder(order.value) ? '支付成功，卖家已完成交付' : '支付成功，已自动发货')
+  } else if (status === 'paid') {
+    toast.success(requiresBuyerContactOrder(order.value) ? '支付成功，请主动联系卖家获取服务' : '支付成功，订单状态已更新')
+  } else if (status === 'expired') {
+    toast.warning('订单已过期，请重新下单')
+  } else if (pendingMessage) {
+    toast.show(pendingMessage)
+  }
+}
+
+let deliveryFollowUpTimer = null
+
+function scheduleDeliveryFollowUp() {
+  const current = order.value
+  if (!current || current.status !== 'paid' || current.deliveryType !== 'auto' || getDeliveryContent(current)) return
+  if (deliveryFollowUpTimer) return
+  deliveryFollowUpTimer = window.setTimeout(() => {
+    deliveryFollowUpTimer = null
+    if (order.value?.status === 'paid') void loadOrder({ silent: true })
+  }, 2000)
+}
+
+async function reloadOrderAfterPayment() {
+  const before = order.value?.status
+  await loadOrder({ silent: true })
+  const after = order.value?.status || ''
+  if (before === 'pending' && after && after !== before) toastPaymentSyncResult(after)
+  scheduleDeliveryFollowUp()
+}
+
+async function refreshPaymentFromPopup() {
+  await handleRefreshPaymentStatus()
+  scheduleDeliveryFollowUp()
+}
+
 async function handleRefreshPaymentStatus() {
   if (!canRefreshPaymentStatus.value || !order.value || checkingPayment.value) return
 
@@ -829,22 +875,19 @@ async function handleRefreshPaymentStatus() {
       return
     }
 
-    const status = result?.data?.status || ''
-    if (status === 'delivered') {
-      toast.success(isNormalOrder(order.value) ? '支付成功，卖家已完成交付' : '支付成功，已自动发货')
-    } else if (status === 'paid') {
-      toast.success(requiresBuyerContactOrder(order.value) ? '支付成功，请主动联系卖家获取服务' : '支付成功，订单状态已更新')
-    } else if (status === 'expired') {
-      toast.warning('订单已过期，请重新下单')
-    } else {
-      toast.show(result?.data?.message || '订单尚未支付')
-    }
-
+    toastPaymentSyncResult(result?.data?.status || '', result?.data?.message || '订单尚未支付')
     await loadOrder({ silent: true })
   } catch (error) {
     toast.error(error?.message || '检查支付状态失败')
   }
 }
+
+const { paymentPopupOpen, start: startPaymentPopupSync, stop: stopPaymentPopupSync } = usePaymentPopupSync({
+  orderNo: () => String(route.params.id || order.value?.orderNo || ''),
+  canQueryPayment: () => canRefreshPaymentStatus.value && !checkingPayment.value,
+  reload: () => reloadOrderAfterPayment(),
+  refreshPayment: () => refreshPaymentFromPopup()
+})
 
 async function handleRepay() {
   if (!canRepay.value || !order.value) return
@@ -881,9 +924,8 @@ async function handleRepay() {
     const { popup, isPopup } = openPaymentPopup(paymentUrl, preparedWindow)
     if (!isPopup) cleanupPreparedTab(preparedWindow)
     if (isPopup && popup) {
-      watchPaymentPopup(popup, () => {
-        handleRefreshPaymentStatus()
-      })
+      trackPaymentPopup(orderNo, popup)
+      startPaymentPopupSync()
     }
     toast.update(loadingId, { type: 'success', message: '支付窗口已打开' })
   } catch (error) {
@@ -922,6 +964,7 @@ onMounted(async () => {
     catalogStore.fetchCategories()
   ])
   startPendingOrderAutoRefresh()
+  startPaymentPopupSync()
 })
 
 watch(canRefreshPaymentStatus, (enabled) => {
@@ -936,12 +979,19 @@ watch(
   () => `${String(route.params.id || '')}|${String(currentRole.value)}`,
   async (next, previous) => {
     if (!previous || next === previous) return
+    announcedPaymentStatus = ''
     await loadOrder()
     startPendingOrderAutoRefresh()
+    startPaymentPopupSync()
   }
 )
 
 onUnmounted(() => {
+  if (deliveryFollowUpTimer) {
+    clearTimeout(deliveryFollowUpTimer)
+    deliveryFollowUpTimer = null
+  }
+  stopPaymentPopupSync()
   stopOrderDetail()
   detailActions.clear()
 })
